@@ -236,11 +236,11 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             SSet(settingKey, value)
         end
     end
-    local SVal = context.SVal
+    local ReadSetting = context.SVal
     -- A row getter over SVal: the key's value, or the default given.
     local function SValRow(settingKey, default)
         return function()
-            return SVal(settingKey, default)
+            return ReadSetting(settingKey, default)
         end
     end
     local _, height
@@ -452,7 +452,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                         end,
                         disabledTooltip = "Change health visibility out of combat",
                         get = function()
-                            return SVal("showWhenHealthMissing", false) == true
+                            return ReadSetting("showWhenHealthMissing", false) == true
                         end,
                         set = function(value)
                             SSet("showWhenHealthMissing", value)
@@ -466,7 +466,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                         label = "Fade Out of Combat",
                         tooltip = "Fades the entire frame (portrait, health and power bars, text) while out of combat.",
                         get = function()
-                            return SVal("oocFadeEnabled", false) == true
+                            return ReadSetting("oocFadeEnabled", false) == true
                         end,
                         set = function(value)
                             SSet("oocFadeEnabled", value)
@@ -482,12 +482,12 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                         max = 100,
                         step = 1,
                         disabled = function()
-                            return not SVal("oocFadeEnabled", false)
+                            return not ReadSetting("oocFadeEnabled", false)
                         end,
                         disabledTooltip = "Enable Fade Out of Combat first",
                         rawTooltip = true,
                         get = function()
-                            return math.floor((SVal("oocAlpha", 0.5)) * 100 + 0.5)
+                            return math.floor((ReadSetting("oocAlpha", 0.5)) * 100 + 0.5)
                         end,
                         set = function(value)
                             SSet("oocAlpha", value / 100)
@@ -576,7 +576,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         values = hbtValues,
         order = hbtOrder,
         getValue = function()
-            return SVal("healthBarTexture", saved.profile.healthBarTexture or "none")
+            return ReadSetting("healthBarTexture", saved.profile.healthBarTexture or "none")
         end,
         setValue = function(value)
             SSet("healthBarTexture", value)
@@ -677,7 +677,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 text = "Border Size",
                 trackWidth = 120,
                 getStep = function()
-                    return SVal("borderSize", 1)
+                    return ReadSetting("borderSize", 1)
                 end,
                 setStep = function(step)
                     SDB().borderSize = step
@@ -708,10 +708,10 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                     return SGet("borderTexture") or "solid"
                 end,
                 getStep = function()
-                    return SVal("borderSize", 1)
+                    return ReadSetting("borderSize", 1)
                 end,
                 getSizeKey = function()
-                    return SVal("borderSize", 1)
+                    return ReadSetting("borderSize", 1)
                 end,
                 getPx = function()
                     return SGet("borderSizePx")
@@ -757,7 +757,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                             return value
                         end
                         local texture = SGet("borderTexture") or "solid"
-                        local sz = SVal("borderSize", 1)
+                        local sz = ReadSetting("borderSize", 1)
                         local _, _, dsx = CludesUI.GetBorderDefaults("unitframes", texture, sz)
                         return dsx
                     end,
@@ -778,7 +778,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                             return value
                         end
                         local texture = SGet("borderTexture") or "solid"
-                        local sz = SVal("borderSize", 1)
+                        local sz = ReadSetting("borderSize", 1)
                         local _, _, _, dsy = CludesUI.GetBorderDefaults("unitframes", texture, sz)
                         return dsy
                     end,
@@ -804,18 +804,18 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                     label = "Power Bar Seam",
                     tooltip = "Draws the border style's seam art between the health bar and an attached power bar.",
                     disabled = function()
-                        local place = SVal("powerPosition", "below")
+                        local place = ReadSetting("powerPosition", "below")
                         return not (
                             CludesUI.GetBorderCompanion(SGet("borderTexture") or "solid", "sepH")
-                            and SVal("borderSize", 1) > 0
+                            and ReadSetting("borderSize", 1) > 0
                             and (place == "above" or place == "below")
-                            and SVal("powerHeight", 6) > 0
+                            and ReadSetting("powerHeight", 6) > 0
                         )
                     end,
                     disabledTooltip = "This option requires an attached Power Bar, a Border Size above 0 and a border style with seam art.",
                     rawTooltip = true,
                     get = function()
-                        return SVal("borderPowerSeam", false) == true
+                        return ReadSetting("borderPowerSeam", false) == true
                     end,
                     set = SSetRow("borderPowerSeam"),
                 },
@@ -982,7 +982,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             sharedScaleBorderRow:GetFrameLevel() + 3,
             function()
                 local color = SGet("borderColor") or { r = 0, g = 0, b = 0 }
-                return color.r, color.g, color.b, SVal("borderAlpha", 1)
+                return color.r, color.g, color.b, ReadSetting("borderAlpha", 1)
             end,
             function(red, green, blue, a)
                 UNIT_DB_MAP[optionState.selectedUnit]().borderColor = { r = red, g = green, b = blue }
@@ -1065,10 +1065,10 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             tipItems,
             function(keyName)
                 if keyName == "unit" then
-                    return SVal("showUnitTooltip", true)
+                    return ReadSetting("showUnitTooltip", true)
                 end
                 if keyName == "auras" then
-                    return SVal("showAuraTooltips", true)
+                    return ReadSetting("showAuraTooltips", true)
                 end
                 if keyName == "bossauras" then
                     return UNIT_DB_MAP["boss"]().showAuraTooltips ~= false
@@ -1559,11 +1559,11 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
             UpdatePreview()
         end
     end
-    local SVal = context.SVal
+    local ReadSetting = context.SVal
     -- A row getter over SVal: the key's value, or the default given.
     local function SValRow(settingKey, default)
         return function()
-            return SVal(settingKey, default)
+            return ReadSetting(settingKey, default)
         end
     end
     local _, height
@@ -1594,16 +1594,16 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 if CludesUI.BlizzStyle.Get("unitframes") then
                     return "attached"
                 end
-                return SVal("portraitStyle", "attached")
+                return ReadSetting("portraitStyle", "attached")
             end,
             setValue = function(value)
                 -- Any mode change flips row visibility below (Size/Position and the
                 -- dragon row hidden at None, Shape detached-only), so a real
                 -- change forces a rebuild.
-                local prevStyle = SVal("portraitStyle", "attached")
+                local prevStyle = ReadSetting("portraitStyle", "attached")
                 SSet("portraitStyle", value)
                 -- Auto-set shape to "none" when entering detached + 3D
-                if value == "detached" and SVal("portraitMode", "2d") == "3d" then
+                if value == "detached" and ReadSetting("portraitMode", "2d") == "3d" then
                     UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitShape = "none"
                 end
                 -- Reset detached-only settings when leaving detached mode
@@ -1643,7 +1643,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
             -- Blizzard Style renders the portrait whatever the saved mode says.
             disabled = function()
                 return not CludesUI.BlizzStyle.Get("unitframes")
-                    and SVal("portraitStyle", "attached") == "none"
+                    and ReadSetting("portraitStyle", "attached") == "none"
             end,
             disabledTooltip = "Portrait Mode is set to None",
             rawTooltip = true,
@@ -1662,7 +1662,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
             getValue = function()
                 local value = SGet("portraitMode")
                 if value == "class" then
-                    return SVal("classThemeStyle", "modern")
+                    return ReadSetting("classThemeStyle", "modern")
                 end
                 return value or "2d"
             end,
@@ -1692,12 +1692,12 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                     ApplyArt()
                     CludesUI:RefreshPage(true)
                 end
-                if value == "3d" and SVal("portraitMode", "2d") ~= "3d" and mod.UF_Ask3DPortraits(ConfirmArt) then
+                if value == "3d" and ReadSetting("portraitMode", "2d") ~= "3d" and mod.UF_Ask3DPortraits(ConfirmArt) then
                     return
                 end
                 if
                     value == "2d"
-                    and SVal("portraitMode", "2d") ~= "2d"
+                    and ReadSetting("portraitMode", "2d") ~= "2d"
                     and prefs.portraitMirror
                     and not CludesUI.BlizzStyle.Get("unitframes")
                     and mod.UF_Ask2DMirroredPortraits(ConfirmArt)
@@ -1736,13 +1736,13 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 end,
             },
         }
-        if SVal("portraitStyle", "attached") == "attached" then
+        if ReadSetting("portraitStyle", "attached") == "attached" then
             rowList[#rowList + 1] = {
                 type = "toggle",
                 label = "Vertical Border Separator",
                 tooltip = "Draws the selected border style between the attached portrait and the bars.",
                 disabled = function()
-                    return SVal("borderSize", 1) <= 0
+                    return ReadSetting("borderSize", 1) <= 0
                         or not CludesUI.GetBorderCompanion(SGet("borderTexture") or "solid", "sepV")
                 end,
                 disabledTooltip = "This option requires a border style with divider art and a Border Size above 0.",
@@ -1753,7 +1753,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 end,
             }
         end
-        if SVal("portraitStyle", "attached") == "detached" then
+        if ReadSetting("portraitStyle", "attached") == "detached" then
             rowList[#rowList + 1] = {
                 type = "toggle",
                 label = "Clickable Portrait",
@@ -1769,7 +1769,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 hasAlpha = true,
                 tooltip = "Fill color behind the detached portrait.",
                 disabled = function()
-                    return SVal("detachedPortraitShape", "portrait") == "none"
+                    return ReadSetting("detachedPortraitShape", "portrait") == "none"
                 end,
                 disabledTooltip = "This option requires a Shape other than None.",
                 rawTooltip = true,
@@ -1792,8 +1792,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 label = "3D Portrait Below Border",
                 tooltip = "Draws a 3D portrait inside the shape's border instead of over it.",
                 disabled = function()
-                    return SVal("portraitMode", "2d") ~= "3d"
-                        or SVal("detachedPortraitShape", "portrait") == "none"
+                    return ReadSetting("portraitMode", "2d") ~= "3d"
+                        or ReadSetting("detachedPortraitShape", "portrait") == "none"
                 end,
                 disabledTooltip = "This option requires the 3D Art Style and a Shape other than None.",
                 rawTooltip = true,
@@ -1807,7 +1807,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
         CludesUI.BuildInlineCog(sharedPortraitModeRow._leftRegion, {
             title = "Portrait Settings",
             disabled = function()
-                return CludesUI.BlizzStyle.Get("unitframes") or SVal("portraitStyle", "attached") == "none"
+                return CludesUI.BlizzStyle.Get("unitframes") or ReadSetting("portraitStyle", "attached") == "none"
             end,
             disabledTooltip = function()
                 if CludesUI.BlizzStyle.Get("unitframes") then
@@ -1837,7 +1837,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
     -- Row 1b: Non-Player Portrait (right half blank), built only while the
     -- Portrait Mode cog's opt-in is on and the portrait shows (Portrait
     -- Mode's setValue rebuilds the page on any mode change).
-    if SVal("portraitNonPlayerOn", false) and SVal("portraitStyle", "attached") ~= "none" then
+    if ReadSetting("portraitNonPlayerOn", false) and ReadSetting("portraitStyle", "attached") ~= "none" then
         local nonPlayerRow
         nonPlayerRow, height = W:DualRow(
             hostFrame,
@@ -1848,15 +1848,15 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 values = portraitNonPlayerValues,
                 order = portraitNonPlayerOrder,
                 disabled = function()
-                    return SVal("portraitMode", "2d") ~= "class"
+                    return ReadSetting("portraitMode", "2d") ~= "class"
                 end,
                 disabledTooltip = "This option requires Art Style to be set to Class",
                 rawTooltip = true,
                 -- A 3D model cannot be masked: a Detached shape keeps NPCs on 2D.
                 itemDisabled = function(value)
                     return value == "3d"
-                        and SVal("portraitStyle", "attached") == "detached"
-                        and SVal("detachedPortraitShape", "portrait") ~= "none"
+                        and ReadSetting("portraitStyle", "attached") == "detached"
+                        and ReadSetting("detachedPortraitShape", "portrait") ~= "none"
                 end,
                 itemDisabledTooltip = function(value)
                     if value == "3d" then
@@ -1867,7 +1867,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 setValue = function(value)
                     if
                         value == "3d"
-                        and SVal("portraitNonPlayer", "2d") ~= "3d"
+                        and ReadSetting("portraitNonPlayer", "2d") ~= "3d"
                         and mod.UF_Ask3DPortraits(function()
                             SSet("portraitNonPlayer", "3d")
                             CludesUI:RefreshPage()
@@ -1904,7 +1904,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
     -- Row 2: Size + Position. HIDDEN entirely while Portrait Mode is None
     -- (the mode dropdown's setValue forces the rebuild on any mode change).
     -- Blizzard Style always shows the portrait, so the row stays.
-    if CludesUI.BlizzStyle.Get("unitframes") or SVal("portraitStyle", "attached") ~= "none" then
+    if CludesUI.BlizzStyle.Get("unitframes") or ReadSetting("portraitStyle", "attached") ~= "none" then
         local portraitLocationValues = {
             ["left"] = "Left",
             ["right"] = "Right",
@@ -1922,8 +1922,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
             max = 100,
             step = 1,
             disabled = function()
-                local styleName = SVal("portraitStyle", "attached")
-                local edgeSide = SVal("portraitSide", "left")
+                local styleName = ReadSetting("portraitStyle", "attached")
+                local edgeSide = ReadSetting("portraitSide", "left")
                 local isInside = edgeSide == "insideleft" or edgeSide == "insideright" or edgeSide == "insidecenter"
                 return styleName ~= "detached" and not isInside
             end,
@@ -1937,12 +1937,12 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
             values = portraitLocationValues,
             order = portraitLocationOrder,
             itemDisabled = function(value)
-                local pStyle = SVal("portraitStyle", "attached")
+                local pStyle = ReadSetting("portraitStyle", "attached")
                 if value == "top" and pStyle == "attached" then
                     return true
                 end
                 if value == "insideleft" or value == "insideright" or value == "insidecenter" then
-                    if SVal("portraitMode", "2d") ~= "3d" then
+                    if ReadSetting("portraitMode", "2d") ~= "3d" then
                         return true
                     end
                     if pStyle ~= "detached" then
@@ -1956,7 +1956,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                     return "Top position is only available in Detached mode"
                 end
                 if value == "insideleft" or value == "insideright" or value == "insidecenter" then
-                    if SVal("portraitMode", "2d") ~= "3d" then
+                    if ReadSetting("portraitMode", "2d") ~= "3d" then
                         return "Inside positions require 3D Art Style"
                     end
                     return "Inside positions require Detached mode"
@@ -2004,7 +2004,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         step = 1,
                         disabled = function()
                             return CludesUI.BlizzStyle.Get("unitframes")
-                                or SVal("portraitMode", "2d") ~= "class"
+                                or ReadSetting("portraitMode", "2d") ~= "class"
                         end,
                         disabledTooltip = function()
                             if CludesUI.BlizzStyle.Get("unitframes") then
@@ -2039,7 +2039,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                             if
                                 value
                                 and not prefs.portraitMirror
-                                and SVal("portraitMode", "2d") == "2d"
+                                and ReadSetting("portraitMode", "2d") == "2d"
                                 and mod.UF_Ask2DMirroredPortraits(function()
                                     ApplyMirror()
                                     CludesUI:RefreshPage()
@@ -2069,7 +2069,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
             local posRgn = sharedSizePosRow._rightRegion
             CludesUI.BuildInlineCog(posRgn, {
                 disabled = function()
-                    return SVal("portraitStyle", "attached") ~= "detached"
+                    return ReadSetting("portraitStyle", "attached") ~= "detached"
                 end,
                 disabledTooltip = "This option requires Portrait Mode to be set to Detached.",
                 title = "Portrait Position Offsets",
@@ -2099,7 +2099,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
 
     -- Row 3: Shape + Shape Border (swatch + cog). HIDDEN unless Portrait Mode is
     -- Detached; the mode dropdown's setValue forces the rebuild on any change.
-    if SVal("portraitStyle", "attached") == "detached" then
+    if ReadSetting("portraitStyle", "attached") == "detached" then
         local sharedShapeBorderRow
         sharedShapeBorderRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
@@ -2107,7 +2107,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
             values = detPortraitShapeValues,
             order = detPortraitShapeOrder,
             itemDisabled = function(value)
-                return value == "none" and SVal("portraitMode", "2d") ~= "3d"
+                return value == "none" and ReadSetting("portraitMode", "2d") ~= "3d"
             end,
             itemDisabledTooltip = function(value)
                 if value == "none" then
@@ -2135,7 +2135,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         UpdatePreview()
                     end,
                     onClick = function(self)
-                        if SVal("detachedPortraitClassColor", true) then
+                        if ReadSetting("detachedPortraitClassColor", true) then
                             SSet("detachedPortraitClassColor", false)
                             ReloadAndUpdate()
                             UpdatePreview()
@@ -2147,7 +2147,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         end
                     end,
                     refreshAlpha = function()
-                        return SVal("detachedPortraitClassColor", true) and 0.3 or 1
+                        return ReadSetting("detachedPortraitClassColor", true) and 0.3 or 1
                     end,
                 },
                 {
@@ -2169,7 +2169,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        return SVal("detachedPortraitClassColor", true) and 1 or 0.3
+                        return ReadSetting("detachedPortraitClassColor", true) and 1 or 0.3
                     end,
                 },
             },
@@ -2180,7 +2180,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
             local borderRgn = sharedShapeBorderRow._rightRegion
             local borderCog = {
                 disabled = function()
-                    return SVal("portraitStyle", "attached") ~= "detached"
+                    return ReadSetting("portraitStyle", "attached") ~= "detached"
                 end,
                 disabledTooltip = "This option is only available when Portrait Mode is Detached.",
                 title = "Shape Border Settings",
@@ -2209,7 +2209,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         tooltip = "Keeps the unit's class or reaction color on the ring in Dark Mode instead of your own class color.",
                         disabled = function()
                             return not (
-                                SVal("detachedPortraitClassColor", true) and mod.UF_DarkThemeOn(SDB())
+                                ReadSetting("detachedPortraitClassColor", true) and mod.UF_DarkThemeOn(SDB())
                             )
                         end,
                         disabledTooltip = "This option requires the Class Colored Shape Border and Dark Mode.",
@@ -2242,7 +2242,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         ddWidth = 190,
                         tooltip = "Adds a second ring around a round portrait; Match Frame Border follows your frame border style.",
                         disabled = function()
-                            return not mod.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")]
+                            return not mod.UF_ROUND_SHAPES[ReadSetting("detachedPortraitShape", "portrait")]
                         end,
                         disabledTooltip = "This option requires a Circle or Pixels Circle Shape.",
                         rawTooltip = true,
@@ -2257,11 +2257,11 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         step = 1,
                         tooltip = "Size of the outer ring relative to the portrait.",
                         disabled = function()
-                            return not mod.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")]
-                                or SVal("detachedPortraitOuterRing", "none") == "none"
+                            return not mod.UF_ROUND_SHAPES[ReadSetting("detachedPortraitShape", "portrait")]
+                                or ReadSetting("detachedPortraitOuterRing", "none") == "none"
                         end,
                         disabledTooltip = function()
-                            if not mod.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")] then
+                            if not mod.UF_ROUND_SHAPES[ReadSetting("detachedPortraitShape", "portrait")] then
                                 return "This option requires a Circle or Pixels Circle Shape."
                             end
                             return "This option requires an Outer Ring other than None."
@@ -2276,11 +2276,11 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         label = "Inner Shadow",
                         tooltip = "Adds a soft shadow inside a round portrait.",
                         disabled = function()
-                            return not mod.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")]
-                                or SVal("portraitMode", "2d") == "3d"
+                            return not mod.UF_ROUND_SHAPES[ReadSetting("detachedPortraitShape", "portrait")]
+                                or ReadSetting("portraitMode", "2d") == "3d"
                         end,
                         disabledTooltip = function()
-                            if not mod.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")] then
+                            if not mod.UF_ROUND_SHAPES[ReadSetting("detachedPortraitShape", "portrait")] then
                                 return "This option requires a Circle or Pixels Circle Shape."
                             end
                             return "This option requires a 2D Portrait or Class Art Style."
@@ -2354,7 +2354,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
     -- a stock style gates both slots, which drops the row. Values read through
     -- ns.UF_DragonSettings (the "wingless" Elite/Rare style shows its own
     -- values); every setter pins that view first (ns.UF_PinLegacyDragon).
-    if SVal("portraitStyle", "attached") ~= "none" then
+    if ReadSetting("portraitStyle", "attached") ~= "none" then
         local playerDragon = optionState.selectedUnit == "player"
         local dragonName = playerDragon and "Player Frame Dragon" or "Elite Enemy Dragon"
         local function DVal(keyName)
@@ -2520,11 +2520,11 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         environ.btbPositionValues, environ.btbTextOrder, environ.btbTextValues, environ.classIconLocOrder
     local classIconLocValues, classIconOrder, classIconValues, optionState =
         environ.classIconLocValues, environ.classIconOrder, environ.classIconValues, environ.optState
-    local W, SGet, SSet, SVal = context.W, context.SGet, context.SSet, context.SVal
+    local W, SGet, SSet, ReadSetting = context.W, context.SGet, context.SSet, context.SVal
     -- A row getter over SVal: the key's value, or the default given.
     local function SValRow(settingKey, default)
         return function()
-            return SVal(settingKey, default)
+            return ReadSetting(settingKey, default)
         end
     end
     -- Row setters over SSet: the key written with the row's value, then UpdatePreview() for the Then form.
@@ -2558,7 +2558,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             -- DependentSetValue: Rows 2-4 below are hidden while the Text
             -- Bar is off; the flip forces the full rebuild.
             setValue = CludesUI.DependentSetValue(function()
-                return SVal("bottomTextBar", false)
+                return ReadSetting("bottomTextBar", false)
             end, function(value)
                 SSet("bottomTextBar", value)
                 UpdatePreview()
@@ -2570,7 +2570,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             values = btbPositionValues,
             order = btbPositionOrder,
             disabled = function()
-                return not SVal("bottomTextBar", false)
+                return not ReadSetting("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
             getValue = SValRow("btbPosition", "bottom"),
@@ -2620,7 +2620,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             btbRgn._lastInline = swatch
             -- Disabled state for swatch when text bar is off
             local function UpdateBtbSwatchState()
-                local btbOn = SVal("bottomTextBar", false)
+                local btbOn = ReadSetting("bottomTextBar", false)
                 if not btbOn then
                     swatch:SetAlpha(0.15)
                     swatch:Disable()
@@ -2647,12 +2647,12 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             local posRgn = sharedBtbToggleRow._rightRegion
             CludesUI.BuildInlineCog(posRgn, {
                 disabled = function()
-                    local place = SVal("btbPosition", "bottom")
-                    return not SVal("bottomTextBar", false)
+                    local place = ReadSetting("btbPosition", "bottom")
+                    return not ReadSetting("bottomTextBar", false)
                         or (place ~= "detached_top" and place ~= "detached_bottom")
                 end,
                 disabledTooltip = function()
-                    return not SVal("bottomTextBar", false) and "Text Bar"
+                    return not ReadSetting("bottomTextBar", false) and "Text Bar"
                         or "This option requires a detached position to be active."
                 end,
                 title = "Detached Position Offsets",
@@ -2684,7 +2684,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
     -- on flips) and under Blizzard Style. Row locals referenced by the element-nav
     -- map are hoisted above the gate so the map never reads nil globals.
     local btbTextRow, sharedBtbCenterRow
-    if SVal("bottomTextBar", false) and not CludesUI.BlizzStyle.Get("unitframes") then
+    if ReadSetting("bottomTextBar", false) and not CludesUI.BlizzStyle.Get("unitframes") then
         -- Row 2: Height + Width
         local sharedBtbHeightRow
         sharedBtbHeightRow, height = W:DualRow(hostFrame, cursorY, {
@@ -2694,7 +2694,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             max = 100,
             step = 1,
             disabled = function()
-                return not SVal("bottomTextBar", false)
+                return not ReadSetting("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
             getValue = SValRow("bottomTextBarHeight", 16),
@@ -2706,14 +2706,14 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             max = 400,
             step = 1,
             disabled = function()
-                if not SVal("bottomTextBar", false) then
+                if not ReadSetting("bottomTextBar", false) then
                     return true
                 end
-                local place = SVal("btbPosition", "bottom")
+                local place = ReadSetting("btbPosition", "bottom")
                 return place ~= "detached_top" and place ~= "detached_bottom"
             end,
             disabledTooltip = function()
-                if not SVal("bottomTextBar", false) then
+                if not ReadSetting("bottomTextBar", false) then
                     return "Text Bar"
                 end
                 return "This option requires the position setting to be detached"
@@ -2724,7 +2724,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         cursorY = cursorY - height
         _sharedBtbWidthRgn = sharedBtbHeightRow._rightRegion
         do
-            local place = SVal("btbPosition", "bottom")
+            local place = ReadSetting("btbPosition", "bottom")
             local isDet = (place == "detached_top" or place == "detached_bottom")
             if _sharedBtbWidthRgn._control and _sharedBtbWidthRgn._control.SetEnabled then
                 _sharedBtbWidthRgn._control:SetEnabled(isDet)
@@ -2795,7 +2795,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         end
         local function BtbValues(prefixText, setValue)
             return mod.UFO_CustomTextValues(btbTextValues, function()
-                return SVal(prefixText .. "Content", "none")
+                return ReadSetting(prefixText .. "Content", "none")
             end, function()
                 mod.UFO_EditCustomText(prefixText, context.SDB(), optionState.selectedUnit, function()
                     setValue("custom")
@@ -2810,7 +2810,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             values = BtbValues("btbLeft", SetBtbLeft),
             order = btbTextOrder,
             disabled = function()
-                return not SVal("bottomTextBar", false)
+                return not ReadSetting("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
             getValue = SValRow("btbLeftContent", "none"),
@@ -2821,7 +2821,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             values = BtbValues("btbRight", SetBtbRight),
             order = btbTextOrder,
             disabled = function()
-                return not SVal("bottomTextBar", false)
+                return not ReadSetting("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
             getValue = SValRow("btbRightContent", "none"),
@@ -2837,7 +2837,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 btbTextRow._leftRegion,
                 "BTB Left Text",
                 "btbLeft",
-                SVal("btbLeftContent", "none"),
+                ReadSetting("btbLeftContent", "none"),
                 context.SDB,
                 apply
             )
@@ -2845,7 +2845,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 btbTextRow._rightRegion,
                 "BTB Right Text",
                 "btbRight",
-                SVal("btbRightContent", "none"),
+                ReadSetting("btbRightContent", "none"),
                 context.SDB,
                 apply
             )
@@ -2855,14 +2855,14 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             local btbLRgn = btbTextRow._leftRegion
             CludesUI.BuildInlineCog(btbLRgn, {
                 disabled = function()
-                    return not SVal("bottomTextBar", false) or SVal("btbLeftContent", "none") == "none"
+                    return not ReadSetting("bottomTextBar", false) or ReadSetting("btbLeftContent", "none") == "none"
                 end,
                 disabledTooltip = function()
-                    return not SVal("bottomTextBar", false) and "Text Bar"
+                    return not ReadSetting("bottomTextBar", false) and "Text Bar"
                         or "This option requires a text selection other than none."
                 end,
                 title = "BTB Left Text Settings",
-                rows = mod.UF_NameFormatRows("btbLeft", "none", SVal, SSet, {
+                rows = mod.UF_NameFormatRows("btbLeft", "none", ReadSetting, SSet, {
                     {
                         type = "slider",
                         label = "Size",
@@ -2903,7 +2903,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                         type = "multiswatch",
                         label = "Indicator Color",
                         disabled = function()
-                            return SVal("btbLeftContent", "none") ~= "nametotarget"
+                            return ReadSetting("btbLeftContent", "none") ~= "nametotarget"
                         end,
                         disabledTooltip = "Only applies when Name > Target is selected.",
                         swatches = {
@@ -2911,7 +2911,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                 tooltip = "Custom Colored",
                                 hasAlpha = false,
                                 getValue = function()
-                                    local color = SVal("btbLeftTargetSepColor", nil)
+                                    local color = ReadSetting("btbLeftTargetSepColor", nil)
                                     if type(color) == "table" then
                                         return color.r or 1, color.g or 1, color.b or 1
                                     end
@@ -2922,7 +2922,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     UpdatePreview()
                                 end,
                                 onClick = function(self)
-                                    if SVal("btbLeftTargetSepClassColor", false) then
+                                    if ReadSetting("btbLeftTargetSepClassColor", false) then
                                         SSet("btbLeftTargetSepClassColor", false)
                                         UpdatePreview()
                                         return
@@ -2932,7 +2932,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     end
                                 end,
                                 refreshAlpha = function()
-                                    return SVal("btbLeftTargetSepClassColor", false) and 0.3 or 1
+                                    return ReadSetting("btbLeftTargetSepClassColor", false) and 0.3 or 1
                                 end,
                             },
                             {
@@ -2945,7 +2945,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     UpdatePreview()
                                 end,
                                 refreshAlpha = function()
-                                    return SVal("btbLeftTargetSepClassColor", false) and 1 or 0.3
+                                    return ReadSetting("btbLeftTargetSepClassColor", false) and 1 or 0.3
                                 end,
                             },
                         },
@@ -2964,7 +2964,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                             UpdatePreview()
                         end,
                         disabled = function()
-                            return SVal("btbLeftContent", "none") ~= "nametotarget"
+                            return ReadSetting("btbLeftContent", "none") ~= "nametotarget"
                         end,
                         disabledTooltip = "Only applies when Name > Target is selected.",
                     },
@@ -2976,7 +2976,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local btbLRgn = btbTextRow._leftRegion
             local function blOff()
-                return SVal("btbLeftContent", "none") == "none" or not SVal("bottomTextBar", false)
+                return ReadSetting("btbLeftContent", "none") == "none" or not ReadSetting("bottomTextBar", false)
             end
             local blClassSwatch, blUpdateClassSwatch = CludesUI.BuildColorSwatch(
                 btbLRgn,
@@ -3005,7 +3005,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             end)
             CludesUI.HoverTip(blClassSwatch, "Class Colored")
             local blSwGet = function()
-                return SVal("btbLeftColorR", 1), SVal("btbLeftColorG", 1), SVal("btbLeftColorB", 1)
+                return ReadSetting("btbLeftColorR", 1), ReadSetting("btbLeftColorG", 1), ReadSetting("btbLeftColorB", 1)
             end
             local blSwSet = function(red, green, blue)
                 SSet("btbLeftColorR", red)
@@ -3022,7 +3022,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 if blOff() then
                     return
                 end
-                if SVal("btbLeftClassColor", false) or SVal("btbLeftPowerColor", false) then
+                if ReadSetting("btbLeftClassColor", false) or ReadSetting("btbLeftPowerColor", false) then
                     SSet("btbLeftClassColor", false)
                     SSet("btbLeftPowerColor", false)
                     UpdatePreview()
@@ -3066,8 +3066,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             CludesUI.HoverTip(blPowerSwatch, "Power Colored")
             local function UpdateBlSwatches()
                 local isOff = blOff()
-                local classMode = SVal("btbLeftClassColor", false)
-                local powerMode = SVal("btbLeftPowerColor", false)
+                local classMode = ReadSetting("btbLeftClassColor", false)
+                local powerMode = ReadSetting("btbLeftPowerColor", false)
                 blSwatch:SetAlpha((classMode or powerMode or isOff) and 0.3 or 1)
                 blClassSwatch:SetAlpha((classMode and not isOff) and 1 or 0.3)
                 blPowerSwatch:SetAlpha((powerMode and not isOff) and 1 or 0.3)
@@ -3085,14 +3085,14 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             local btbRRgn = btbTextRow._rightRegion
             CludesUI.BuildInlineCog(btbRRgn, {
                 disabled = function()
-                    return not SVal("bottomTextBar", false) or SVal("btbRightContent", "none") == "none"
+                    return not ReadSetting("bottomTextBar", false) or ReadSetting("btbRightContent", "none") == "none"
                 end,
                 disabledTooltip = function()
-                    return not SVal("bottomTextBar", false) and "Text Bar"
+                    return not ReadSetting("bottomTextBar", false) and "Text Bar"
                         or "This option requires a text selection other than none."
                 end,
                 title = "BTB Right Text Settings",
-                rows = mod.UF_NameFormatRows("btbRight", "none", SVal, SSet, {
+                rows = mod.UF_NameFormatRows("btbRight", "none", ReadSetting, SSet, {
                     {
                         type = "slider",
                         label = "Size",
@@ -3133,7 +3133,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                         type = "multiswatch",
                         label = "Indicator Color",
                         disabled = function()
-                            return SVal("btbRightContent", "none") ~= "nametotarget"
+                            return ReadSetting("btbRightContent", "none") ~= "nametotarget"
                         end,
                         disabledTooltip = "Only applies when Name > Target is selected.",
                         swatches = {
@@ -3141,7 +3141,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                 tooltip = "Custom Colored",
                                 hasAlpha = false,
                                 getValue = function()
-                                    local color = SVal("btbRightTargetSepColor", nil)
+                                    local color = ReadSetting("btbRightTargetSepColor", nil)
                                     if type(color) == "table" then
                                         return color.r or 1, color.g or 1, color.b or 1
                                     end
@@ -3152,7 +3152,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     UpdatePreview()
                                 end,
                                 onClick = function(self)
-                                    if SVal("btbRightTargetSepClassColor", false) then
+                                    if ReadSetting("btbRightTargetSepClassColor", false) then
                                         SSet("btbRightTargetSepClassColor", false)
                                         UpdatePreview()
                                         return
@@ -3162,7 +3162,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     end
                                 end,
                                 refreshAlpha = function()
-                                    return SVal("btbRightTargetSepClassColor", false) and 0.3 or 1
+                                    return ReadSetting("btbRightTargetSepClassColor", false) and 0.3 or 1
                                 end,
                             },
                             {
@@ -3175,7 +3175,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     UpdatePreview()
                                 end,
                                 refreshAlpha = function()
-                                    return SVal("btbRightTargetSepClassColor", false) and 1 or 0.3
+                                    return ReadSetting("btbRightTargetSepClassColor", false) and 1 or 0.3
                                 end,
                             },
                         },
@@ -3194,7 +3194,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                             UpdatePreview()
                         end,
                         disabled = function()
-                            return SVal("btbRightContent", "none") ~= "nametotarget"
+                            return ReadSetting("btbRightContent", "none") ~= "nametotarget"
                         end,
                         disabledTooltip = "Only applies when Name > Target is selected.",
                     },
@@ -3206,7 +3206,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local btbRRgn = btbTextRow._rightRegion
             local function brOff()
-                return SVal("btbRightContent", "none") == "none" or not SVal("bottomTextBar", false)
+                return ReadSetting("btbRightContent", "none") == "none" or not ReadSetting("bottomTextBar", false)
             end
             local brClassSwatch, brUpdateClassSwatch = CludesUI.BuildColorSwatch(
                 btbRRgn,
@@ -3235,7 +3235,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             end)
             CludesUI.HoverTip(brClassSwatch, "Class Colored")
             local brSwGet = function()
-                return SVal("btbRightColorR", 1), SVal("btbRightColorG", 1), SVal("btbRightColorB", 1)
+                return ReadSetting("btbRightColorR", 1), ReadSetting("btbRightColorG", 1), ReadSetting("btbRightColorB", 1)
             end
             local brSwSet = function(red, green, blue)
                 SSet("btbRightColorR", red)
@@ -3252,7 +3252,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 if brOff() then
                     return
                 end
-                if SVal("btbRightClassColor", false) or SVal("btbRightPowerColor", false) then
+                if ReadSetting("btbRightClassColor", false) or ReadSetting("btbRightPowerColor", false) then
                     SSet("btbRightClassColor", false)
                     SSet("btbRightPowerColor", false)
                     UpdatePreview()
@@ -3296,8 +3296,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             CludesUI.HoverTip(brPowerSwatch, "Power Colored")
             local function UpdateBrSwatches()
                 local isOff = brOff()
-                local classMode = SVal("btbRightClassColor", false)
-                local powerMode = SVal("btbRightPowerColor", false)
+                local classMode = ReadSetting("btbRightClassColor", false)
+                local powerMode = ReadSetting("btbRightPowerColor", false)
                 brSwatch:SetAlpha((classMode or powerMode or isOff) and 0.3 or 1)
                 brClassSwatch:SetAlpha((classMode and not isOff) and 1 or 0.3)
                 brPowerSwatch:SetAlpha((powerMode and not isOff) and 1 or 0.3)
@@ -3327,7 +3327,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             values = BtbValues("btbCenter", SetBtbCenter),
             order = btbTextOrder,
             disabled = function()
-                return not SVal("bottomTextBar", false)
+                return not ReadSetting("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
             getValue = SValRow("btbCenterContent", "none"),
@@ -3338,7 +3338,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             values = classIconValues,
             order = classIconOrder,
             disabled = function()
-                return not SVal("bottomTextBar", false)
+                return not ReadSetting("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
             getValue = SValRow("btbClassIcon", "none"),
@@ -3350,7 +3350,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 sharedBtbCenterRow._leftRegion,
                 "BTB Center Text",
                 "btbCenter",
-                SVal("btbCenterContent", "none"),
+                ReadSetting("btbCenterContent", "none"),
                 context.SDB,
                 function()
                     ReloadAndUpdate()
@@ -3363,14 +3363,14 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             local btbCRgn = sharedBtbCenterRow._leftRegion
             CludesUI.BuildInlineCog(btbCRgn, {
                 disabled = function()
-                    return not SVal("bottomTextBar", false) or SVal("btbCenterContent", "none") == "none"
+                    return not ReadSetting("bottomTextBar", false) or ReadSetting("btbCenterContent", "none") == "none"
                 end,
                 disabledTooltip = function()
-                    return not SVal("bottomTextBar", false) and "Text Bar"
+                    return not ReadSetting("bottomTextBar", false) and "Text Bar"
                         or "This option requires a text selection other than none."
                 end,
                 title = "BTB Center Text Settings",
-                rows = mod.UF_NameFormatRows("btbCenter", "none", SVal, SSet, {
+                rows = mod.UF_NameFormatRows("btbCenter", "none", ReadSetting, SSet, {
                     {
                         type = "slider",
                         label = "Size",
@@ -3411,7 +3411,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                         type = "multiswatch",
                         label = "Indicator Color",
                         disabled = function()
-                            return SVal("btbCenterContent", "none") ~= "nametotarget"
+                            return ReadSetting("btbCenterContent", "none") ~= "nametotarget"
                         end,
                         disabledTooltip = "Only applies when Name > Target is selected.",
                         swatches = {
@@ -3419,7 +3419,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                 tooltip = "Custom Colored",
                                 hasAlpha = false,
                                 getValue = function()
-                                    local color = SVal("btbCenterTargetSepColor", nil)
+                                    local color = ReadSetting("btbCenterTargetSepColor", nil)
                                     if type(color) == "table" then
                                         return color.r or 1, color.g or 1, color.b or 1
                                     end
@@ -3430,7 +3430,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     UpdatePreview()
                                 end,
                                 onClick = function(self)
-                                    if SVal("btbCenterTargetSepClassColor", false) then
+                                    if ReadSetting("btbCenterTargetSepClassColor", false) then
                                         SSet("btbCenterTargetSepClassColor", false)
                                         UpdatePreview()
                                         return
@@ -3440,7 +3440,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     end
                                 end,
                                 refreshAlpha = function()
-                                    return SVal("btbCenterTargetSepClassColor", false) and 0.3 or 1
+                                    return ReadSetting("btbCenterTargetSepClassColor", false) and 0.3 or 1
                                 end,
                             },
                             {
@@ -3453,7 +3453,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     UpdatePreview()
                                 end,
                                 refreshAlpha = function()
-                                    return SVal("btbCenterTargetSepClassColor", false) and 1 or 0.3
+                                    return ReadSetting("btbCenterTargetSepClassColor", false) and 1 or 0.3
                                 end,
                             },
                         },
@@ -3472,7 +3472,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                             UpdatePreview()
                         end,
                         disabled = function()
-                            return SVal("btbCenterContent", "none") ~= "nametotarget"
+                            return ReadSetting("btbCenterContent", "none") ~= "nametotarget"
                         end,
                         disabledTooltip = "Only applies when Name > Target is selected.",
                     },
@@ -3484,7 +3484,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local btbCRgn = sharedBtbCenterRow._leftRegion
             local function bcOff()
-                return SVal("btbCenterContent", "none") == "none" or not SVal("bottomTextBar", false)
+                return ReadSetting("btbCenterContent", "none") == "none" or not ReadSetting("bottomTextBar", false)
             end
             local bcClassSwatch, bcUpdateClassSwatch = CludesUI.BuildColorSwatch(
                 btbCRgn,
@@ -3513,7 +3513,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             end)
             CludesUI.HoverTip(bcClassSwatch, "Class Colored")
             local bcSwGet = function()
-                return SVal("btbCenterColorR", 1), SVal("btbCenterColorG", 1), SVal("btbCenterColorB", 1)
+                return ReadSetting("btbCenterColorR", 1), ReadSetting("btbCenterColorG", 1), ReadSetting("btbCenterColorB", 1)
             end
             local bcSwSet = function(red, green, blue)
                 SSet("btbCenterColorR", red)
@@ -3530,7 +3530,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 if bcOff() then
                     return
                 end
-                if SVal("btbCenterClassColor", false) or SVal("btbCenterPowerColor", false) then
+                if ReadSetting("btbCenterClassColor", false) or ReadSetting("btbCenterPowerColor", false) then
                     SSet("btbCenterClassColor", false)
                     SSet("btbCenterPowerColor", false)
                     UpdatePreview()
@@ -3574,8 +3574,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             CludesUI.HoverTip(bcPowerSwatch, "Power Colored")
             local function UpdateBcSwatches()
                 local isOff = bcOff()
-                local classMode = SVal("btbCenterClassColor", false)
-                local powerMode = SVal("btbCenterPowerColor", false)
+                local classMode = ReadSetting("btbCenterClassColor", false)
+                local powerMode = ReadSetting("btbCenterPowerColor", false)
                 bcSwatch:SetAlpha((classMode or powerMode or isOff) and 0.3 or 1)
                 bcClassSwatch:SetAlpha((classMode and not isOff) and 1 or 0.3)
                 bcPowerSwatch:SetAlpha((powerMode and not isOff) and 1 or 0.3)
@@ -3593,10 +3593,10 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             local combatRegion = sharedBtbCenterRow._rightRegion
             CludesUI.BuildInlineCog(combatRegion, {
                 disabled = function()
-                    return not SVal("bottomTextBar", false) or SVal("btbClassIcon", "none") == "none"
+                    return not ReadSetting("bottomTextBar", false) or ReadSetting("btbClassIcon", "none") == "none"
                 end,
                 disabledTooltip = function()
-                    return not SVal("bottomTextBar", false) and "Text Bar"
+                    return not ReadSetting("bottomTextBar", false) and "Text Bar"
                         or "This option requires a Class Icon other than None."
                 end,
                 title = "Class Icon Settings",

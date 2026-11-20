@@ -98,8 +98,8 @@ local function SaveBarPosition(barId)
         -- restore-skip at RestoreBarPositions fires correctly.
         if anchorPoint == "CENTER" and relPoint == "CENTER" then
             local es = widget:GetEffectiveScale() or 1
-            local PPa = CludesUI and CludesUI.PP
-            local onePx = PPa and PPa.perfect and (PPa.perfect / es) or 1
+            local PixKit = CludesUI and CludesUI.PP
+            local onePx = PixKit and PixKit.perfect and (PixKit.perfect / es) or 1
             if math.abs(posX) < onePx then
                 posX = 0
             end
@@ -121,7 +121,7 @@ local function RestoreBarPositions()
     if not positions then
         return
     end
-    local PPa = CludesUI and CludesUI.PP
+    local PixKit = CludesUI and CludesUI.PP
     for _, details in ipairs(BAR_CONFIG) do
         local key = details.key
         local place = positions[key]
@@ -147,15 +147,15 @@ local function RestoreBarPositions()
                     -- SnapCenterForDim with the frame's actual size so odd-pixel
                     -- dimensions get the +0.5 center offset they need (plain
                     -- SnapForES drifts by 1px on save & exit for odd dimensions).
-                    if PPa then
+                    if PixKit then
                         local es = widget:GetEffectiveScale()
                         local isCenterAnchor = (pt == "CENTER" and rpt == "CENTER")
-                        if isCenterAnchor and PPa.SnapCenterForDim then
-                            px = PPa.SnapCenterForDim(px, widget:GetWidth() or 0, es)
-                            py = PPa.SnapCenterForDim(py, widget:GetHeight() or 0, es)
-                        elseif PPa.SnapForES then
-                            px = PPa.SnapForES(px, es)
-                            py = PPa.SnapForES(py, es)
+                        if isCenterAnchor and PixKit.SnapCenterForDim then
+                            px = PixKit.SnapCenterForDim(px, widget:GetWidth() or 0, es)
+                            py = PixKit.SnapCenterForDim(py, widget:GetHeight() or 0, es)
+                        elseif PixKit.SnapForES then
+                            px = PixKit.SnapForES(px, es)
+                            py = PixKit.SnapForES(py, es)
                         end
                     end
                     widget:ClearAllPoints()
@@ -425,11 +425,11 @@ local function RegisterWithUnlockMode()
                                 end
                             end
                             if pt ~= "CENTER" then
-                                local PPa = CludesUI and CludesUI.PP
-                                if PPa and PPa.SnapForES then
+                                local PixKit = CludesUI and CludesUI.PP
+                                if PixKit and PixKit.SnapForES then
                                     local es = widget:GetEffectiveScale()
-                                    px = PPa.SnapForES(px, es)
-                                    py = PPa.SnapForES(py, es)
+                                    px = PixKit.SnapForES(px, es)
+                                    py = PixKit.SnapForES(py, es)
                                 end
                                 widget:ClearAllPoints()
                                 widget:SetPoint(pt, UIParent, place.relPoint or "CENTER", px, py)
@@ -443,17 +443,17 @@ local function RegisterWithUnlockMode()
                 if place and widget then
                     local pt = place.point
                     local px, py = place.x, place.y
-                    local PPa = CludesUI and CludesUI.PP
-                    if PPa and px and py then
+                    local PixKit = CludesUI and CludesUI.PP
+                    if PixKit and px and py then
                         local es = widget:GetEffectiveScale()
                         local isCenterAnchor = (pt == "CENTER")
                             and (place.relPoint == "CENTER" or place.relPoint == nil)
-                        if isCenterAnchor and PPa.SnapCenterForDim then
-                            px = PPa.SnapCenterForDim(px, widget:GetWidth() or 0, es)
-                            py = PPa.SnapCenterForDim(py, widget:GetHeight() or 0, es)
-                        elseif PPa.SnapForES then
-                            px = PPa.SnapForES(px, es)
-                            py = PPa.SnapForES(py, es)
+                        if isCenterAnchor and PixKit.SnapCenterForDim then
+                            px = PixKit.SnapCenterForDim(px, widget:GetWidth() or 0, es)
+                            py = PixKit.SnapCenterForDim(py, widget:GetHeight() or 0, es)
+                        elseif PixKit.SnapForES then
+                            px = PixKit.SnapForES(px, es)
+                            py = PixKit.SnapForES(py, es)
                         end
                     end
                     widget:ClearAllPoints()
@@ -538,17 +538,17 @@ local function RegisterWithUnlockMode()
                     if place then
                         local pt = place.point
                         local px, py = place.x, place.y
-                        local PPa = CludesUI and CludesUI.PP
-                        if PPa and px and py then
+                        local PixKit = CludesUI and CludesUI.PP
+                        if PixKit and px and py then
                             local es = holderFrame:GetEffectiveScale()
                             local isCenterAnchor = (pt == "CENTER")
                                 and (place.relPoint == "CENTER" or place.relPoint == nil)
-                            if isCenterAnchor and PPa.SnapCenterForDim then
-                                px = PPa.SnapCenterForDim(px, holderFrame:GetWidth() or 0, es)
-                                py = PPa.SnapCenterForDim(py, holderFrame:GetHeight() or 0, es)
-                            elseif PPa.SnapForES then
-                                px = PPa.SnapForES(px, es)
-                                py = PPa.SnapForES(py, es)
+                            if isCenterAnchor and PixKit.SnapCenterForDim then
+                                px = PixKit.SnapCenterForDim(px, holderFrame:GetWidth() or 0, es)
+                                py = PixKit.SnapCenterForDim(py, holderFrame:GetHeight() or 0, es)
+                            elseif PixKit.SnapForES then
+                                px = PixKit.SnapForES(px, es)
+                                py = PixKit.SnapForES(py, es)
                             end
                         end
                         holderFrame:SetPoint(pt, UIParent, place.relPoint or pt, px, py)

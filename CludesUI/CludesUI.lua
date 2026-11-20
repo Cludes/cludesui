@@ -209,7 +209,7 @@ end
 -- Widget style constants, one table instead of ~75 file-scope locals, which
 -- would push this main chunk past Lua 5.1's 200-active-locals limit. Read them
 -- as STYLE.X here; other files get them through the CludesUI.X exports below.
-local STYLE = {
+local LOOK = {
     -- The dark surfaces below (and the options' popups) share one faint cool
     -- slate tint, matching the panel art, each at its own lightness.
 
@@ -360,12 +360,12 @@ local function RegAccent(record)
         end
     end
 end
-local DARK_BG = { r = STYLE.PANEL_BG_R, g = STYLE.PANEL_BG_G, b = STYLE.PANEL_BG_B }
-local BORDER_COLOR = { r = STYLE.BORDER_R, g = STYLE.BORDER_G, b = STYLE.BORDER_B, a = STYLE.BORDER_A }
-local TEXT_WHITE = { r = STYLE.TEXT_WHITE_R, g = STYLE.TEXT_WHITE_G, b = STYLE.TEXT_WHITE_B }
-local TEXT_DIM = { r = STYLE.TEXT_DIM_R, g = STYLE.TEXT_DIM_G, b = STYLE.TEXT_DIM_B, a = STYLE.TEXT_DIM_A }
+local DARK_BG = { r = LOOK.PANEL_BG_R, g = LOOK.PANEL_BG_G, b = LOOK.PANEL_BG_B }
+local BORDER_COLOR = { r = LOOK.BORDER_R, g = LOOK.BORDER_G, b = LOOK.BORDER_B, a = LOOK.BORDER_A }
+local TEXT_WHITE = { r = LOOK.TEXT_WHITE_R, g = LOOK.TEXT_WHITE_G, b = LOOK.TEXT_WHITE_B }
+local TEXT_DIM = { r = LOOK.TEXT_DIM_R, g = LOOK.TEXT_DIM_G, b = LOOK.TEXT_DIM_B, a = LOOK.TEXT_DIM_A }
 local TEXT_SECTION =
-    { r = STYLE.TEXT_SECTION_R, g = STYLE.TEXT_SECTION_G, b = STYLE.TEXT_SECTION_B, a = STYLE.TEXT_SECTION_A }
+    { r = LOOK.TEXT_SECTION_R, g = LOOK.TEXT_SECTION_G, b = LOOK.TEXT_SECTION_B, a = LOOK.TEXT_SECTION_A }
 
 -- Dropdown widget colours: widgets reference DD_BG_*, DD_BRD_*, DD_TXT_* directly
 
@@ -1372,29 +1372,29 @@ local IsAddonLoaded = C_AddOns.IsAddOnLoaded
 -------------------------------------------------------------------------------
 --  Forward declarations
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI or {}
-_G.CludesUI = CludesUI
-CludesUI.GLOBAL_KEY = "_CUIGlobal"
-CludesUI.ADDON_ROSTER = ADDON_ROSTER
-CludesUI.LOCALE_FONT_FALLBACK = LOCALE_FONT_FALLBACK
+local CUI = _G.CludesUI or {}
+_G.CludesUI = CUI
+CUI.GLOBAL_KEY = "_CUIGlobal"
+CUI.ADDON_ROSTER = ADDON_ROSTER
+CUI.LOCALE_FONT_FALLBACK = LOCALE_FONT_FALLBACK
 -- Script the fallback stands in for: "cyrillic" | "cjk" | nil. Table field, not a
 -- file-scope local: this file sits on the Lua 5.1 200-local cap.
-CludesUI.LOCALE_SCRIPT = CludesUI._localeScript
-CludesUI.EXPRESSWAY = LOCALE_FONT_FALLBACK or EXPRESSWAY
+CUI.LOCALE_SCRIPT = CUI._localeScript
+CUI.EXPRESSWAY = LOCALE_FONT_FALLBACK or EXPRESSWAY
 
 -- Re-sync once the override-aware effective locale is known (the values above
 -- are captured before CludesUIDB's displayLocale override is readable).
-function CludesUI.RefreshLocaleFontFallback()
-    LOCALE_FONT_FALLBACK = CludesUI._localeFont
-    CludesUI.LOCALE_FONT_FALLBACK = LOCALE_FONT_FALLBACK
-    CludesUI.LOCALE_SCRIPT = CludesUI._localeScript
-    CludesUI.EXPRESSWAY = LOCALE_FONT_FALLBACK or EXPRESSWAY
-    CludesUI.InvalidateFontCache()
+function CUI.RefreshLocaleFontFallback()
+    LOCALE_FONT_FALLBACK = CUI._localeFont
+    CUI.LOCALE_FONT_FALLBACK = LOCALE_FONT_FALLBACK
+    CUI.LOCALE_SCRIPT = CUI._localeScript
+    CUI.EXPRESSWAY = LOCALE_FONT_FALLBACK or EXPRESSWAY
+    CUI.InvalidateFontCache()
 end
 
 -- Taint-safe print: AddMessage, never global print() (its C-side handler taints the chat
 -- frame). Drops silently in protected instances (raid combat, active M+) to avoid tainting FCF_OpenTemporaryWindow's whisper chain.
-function CludesUI.Print(...)
+function CUI.Print(...)
     local frame = DEFAULT_CHAT_FRAME
     if not frame then
         return
@@ -1438,7 +1438,7 @@ end
 -- predecessor; a sequence that cannot should stay synchronous instead.
 -- `onDone` (optional) runs after the last step, in that final execution.
 -- No file-scope locals here on purpose: this file sits on the 200-local cap.
-function CludesUI.RunBudgeted(steps, msBudget, onDone)
+function CUI.RunBudgeted(steps, msBudget, onDone)
     local slotIndex, n = 1, #steps
     local budget = msBudget or 8
     local function drain()
@@ -1472,15 +1472,15 @@ local _widgetRefreshList = {}
 local function RegisterWidgetRefresh(func)
     _widgetRefreshList[#_widgetRefreshList + 1] = func
 end
-CludesUI.RegisterWidgetRefresh = RegisterWidgetRefresh
+CUI.RegisterWidgetRefresh = RegisterWidgetRefresh
 
 -- Collapse callbacks -- fn(true) when the panel folds to its mini window, fn(false)
 -- when it unfolds back on screen. The options session stays open across both, so
 -- neither the OnShow nor the OnHide callbacks run; a close from the mini window
 -- runs the OnHide callbacks instead of fn(false). For panel-owned surfaces that
 -- live outside the panel body (UIParent-parented popouts) or panel-only work.
-CludesUI._onCollapseCallbacks = {}
-function CludesUI:RegisterOnCollapse(func)
+CUI._onCollapseCallbacks = {}
+function CUI:RegisterOnCollapse(func)
     local entries = self._onCollapseCallbacks
     entries[#entries + 1] = func
 end
@@ -1504,7 +1504,7 @@ local function SolidTex(hostFrame, layer, red, green, blue, a)
 end
 
 -- PP and PanelPP come from CludesUI_PixelPerfect.lua, which loads before this file
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 
 -- Disable WoW pixel snapping on a texture/frame so 1px elements never round to 0.
 local function DisablePixelSnap(object)
@@ -1531,19 +1531,19 @@ end
 -- whole suite. On: a page built again gets its earlier frames back reset to
 -- fresh instead of building new ones. Off: every page takes the old
 -- build-and-drop path (the one-line rollback).
-CludesUI._reusePages = true
+CUI._reusePages = true
 -- The frame pool's table (CludesUI_PixelPerfect.lua makes it): for the
 -- resident helpers that build options frames (MakeBorder, AttachSmoothScrollbar)
 -- a plain CreateFrame until the options addon loads the pool, which fills this
 -- same table in place. Read through this local, never the public slot.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 if type(POOL) ~= "table" then
     POOL = {
         CreateFrame = function(...)
             return CreateFrame(...)
         end,
     }
-    CludesUI._Pool = POOL
+    CUI._Pool = POOL
 end
 
 local function MakeBorder(hostFrame, red, green, blue, a, ppOverride)
@@ -1581,13 +1581,13 @@ local function RowBg(widget, hostFrame)
         rowCounters[hostFrame] = 0
     end
     rowCounters[hostFrame] = rowCounters[hostFrame] + 1
-    local alpha = (rowCounters[hostFrame] % 2 == 0) and STYLE.ROW_BG_EVEN or STYLE.ROW_BG_ODD
+    local alpha = (rowCounters[hostFrame] % 2 == 0) and LOOK.ROW_BG_EVEN or LOOK.ROW_BG_ODD
     local splitParent = hostFrame._splitParent
     local bgParent = splitParent or widget
     local backdrop = bgParent:CreateTexture(nil, "BACKGROUND")
     backdrop:SetColorTexture(0, 0, 0, alpha)
     -- Always panel context: PanelPP (CludesUI_PixelPerfect.lua, loaded before this file)
-    local ppp = CludesUI.PanelPP or Pix
+    local ppp = CUI.PanelPP or Pix
     ppp.DisablePixelSnap(backdrop)
     backdrop:SetIgnoreParentAlpha(true)
     if splitParent then
@@ -1628,7 +1628,7 @@ do
     local PENDING_SECONDS = 10 -- after this a reply counts as lost; a call asks again
     local widget, pendingAt, sum, level, at, charLevel
 
-    function CludesUI.RequestTimePlayed()
+    function CUI.RequestTimePlayed()
         local nowTime = GetTime()
         if sum and charLevel == UnitLevel("player") then
             return sum + (nowTime - at), level + (nowTime - at)
@@ -1654,21 +1654,21 @@ do
 end
 
 -- A duration in whole minutes: 3d 4h, 1h 24m, 22m (a negative one reads 0m).
-function CludesUI.FormatDuration(secondary)
+function CUI.FormatDuration(secondary)
     local m = math.floor((secondary > 0 and secondary or 0) / 60)
     local hgt = math.floor(m / 60)
     if hgt >= 24 then
         local d = math.floor(hgt / 24)
-        return string.format(CludesUI.L("%dd %dh"), d, hgt - d * 24)
+        return string.format(CUI.L("%dd %dh"), d, hgt - d * 24)
     elseif hgt > 0 then
-        return string.format(CludesUI.L("%dh %dm"), hgt, m - hgt * 60)
+        return string.format(CUI.L("%dh %dm"), hgt, m - hgt * 60)
     end
-    return string.format(CludesUI.L("%dm"), m)
+    return string.format(CUI.L("%dm"), m)
 end
 
 -- Realm a character roster groups by. Forever is realmless: the ruleset name.
-function CludesUI.RealmGroupName()
-    if not CludesUI.IS_FOREVER then
+function CUI.RealmGroupName()
+    if not CUI.IS_FOREVER then
         return GetRealmName()
     end
     local R = Enum.GameRule
@@ -1708,12 +1708,12 @@ end
 -- builds filed under "Name<sep>Ruleset" or "Name<sep>Realm"; nothing files
 -- those keys any more, so an entry two characters shared goes to the first
 -- of them to log in.
-function CludesUI.CharKey(sep, ...)
-    local label, set = UnitName("player"), CludesUI.RealmGroupName()
+function CUI.CharKey(sep, ...)
+    local label, set = UnitName("player"), CUI.RealmGroupName()
     if not label or not set then
         return nil
     end
-    if not CludesUI.IS_FOREVER then
+    if not CUI.IS_FOREVER then
         return label .. sep .. set
     end
     local unitGuid = UnitGUID("player")
@@ -1736,7 +1736,7 @@ end
 
 -- "Name-Realm" whisper/invite target. With realmName it builds (realm wins,
 -- spaces stripped); with a finished name alone it only collapses a stacked realm.
-function CludesUI.BuildFullName(charName, realm)
+function CUI.BuildFullName(charName, realm)
     -- type()/issecretvalue() before any comparison: `== ""` on a secret throws.
     if type(charName) ~= "string" then
         return nil
@@ -1786,7 +1786,7 @@ end
 -- A friend or guild note for display. Older Friends builds wrote a "||<tag>:Group||" tag
 -- into friend notes that was never removed: the text before it is kept, trailing
 -- space trimmed. nil for a non-string, secret or empty note.
-function CludesUI.StripFriendNoteTag(noteText)
+function CUI.StripFriendNoteTag(noteText)
     if type(noteText) ~= "string" or issecretvalue(noteText) or noteText == "" then
         return nil
     end
@@ -1804,29 +1804,29 @@ end
 --  Exports  (shared locals CludesUI table for split files)
 -------------------------------------------------------------------------------
 -- Visual constants (tables)
-CludesUI.CLUDES_GREEN = CLUDES_GREEN
-CludesUI.DARK_BG = DARK_BG
-CludesUI.BORDER_COLOR = BORDER_COLOR
-CludesUI.TEXT_WHITE = TEXT_WHITE
-CludesUI.TEXT_DIM = TEXT_DIM
-CludesUI.TEXT_SECTION = TEXT_SECTION
-CludesUI.CS = CS
+CUI.CLUDES_GREEN = CLUDES_GREEN
+CUI.DARK_BG = DARK_BG
+CUI.BORDER_COLOR = BORDER_COLOR
+CUI.TEXT_WHITE = TEXT_WHITE
+CUI.TEXT_DIM = TEXT_DIM
+CUI.TEXT_SECTION = TEXT_SECTION
+CUI.CS = CS
 
 -- Shared icon paths
 -- The settings cog (the inline cog's default, owner 2026-11-05); Unlock Mode's
 -- mover cog keeps the cogwheel art.
-CludesUI.COGS_ICON = MEDIA_PATH .. "icons\\settings.png"
-CludesUI.UNDO_ICON = MEDIA_PATH .. "icons\\undo.png"
-CludesUI.RESIZE_ICON = MEDIA_PATH .. "icons\\cui-resize-5.png"
-CludesUI.DIRECTIONS_ICON = MEDIA_PATH .. "icons\\cui-directions.png"
-CludesUI.SYNC_ICON = MEDIA_PATH .. "icons\\sync.png"
-CludesUI.EYE_VISIBLE_ICON = MEDIA_PATH .. "icons\\cui-visible.png"
-CludesUI.EYE_INVISIBLE_ICON = MEDIA_PATH .. "icons\\cui-invisible.png"
-CludesUI.UNLOCK_ICON = MEDIA_PATH .. "icons\\unlockmode.png"
+CUI.COGS_ICON = MEDIA_PATH .. "icons\\settings.png"
+CUI.UNDO_ICON = MEDIA_PATH .. "icons\\undo.png"
+CUI.RESIZE_ICON = MEDIA_PATH .. "icons\\cui-resize-5.png"
+CUI.DIRECTIONS_ICON = MEDIA_PATH .. "icons\\cui-directions.png"
+CUI.SYNC_ICON = MEDIA_PATH .. "icons\\sync.png"
+CUI.EYE_VISIBLE_ICON = MEDIA_PATH .. "icons\\cui-visible.png"
+CUI.EYE_INVISIBLE_ICON = MEDIA_PATH .. "icons\\cui-invisible.png"
+CUI.UNLOCK_ICON = MEDIA_PATH .. "icons\\unlockmode.png"
 
 -- Shared chat/tooltip colour escapes. Leave codes inside L()/Lf() literals alone:
 -- that text is the translation key.
-CludesUI.COLOR_CODES = {
+CUI.COLOR_CODES = {
     WHITE = "|cffffffff",
     DIM = "|cff888888",
     BAD = "|cffff5959",
@@ -1835,7 +1835,7 @@ CludesUI.COLOR_CODES = {
 }
 
 -- 0-1 r, g, b -> "|cffRRGGBB" (each channel rounded).
-function CludesUI.HexColor(red, green, blue)
+function CUI.HexColor(red, green, blue)
     return string.format(
         "|cff%02x%02x%02x",
         math.floor(red * 255 + 0.5),
@@ -1845,14 +1845,14 @@ function CludesUI.HexColor(red, green, blue)
 end
 
 -- Red "[CludesUI]" chat line through Print (same combat/instance muting).
-function CludesUI.PrintError(message)
-    CludesUI.Print(CludesUI.COLOR_CODES.ERROR .. "[CludesUI]|r " .. message)
+function CUI.PrintError(message)
+    CUI.Print(CUI.COLOR_CODES.ERROR .. "[CludesUI]|r " .. message)
 end
 
 -- Shared options-dropdown data, read-only. The menu renders ONLY the keys its order array
 -- lists, so a subset-order site may share the full labels dict. Never mutate these or feed
 -- them to the SharedMedia appenders (which mutate args in place); sites with a different sequence (none-first, bottomright-first, "same"-prefixed) keep local orders.
-CludesUI.POSITION_GRID_VALUES = {
+CUI.POSITION_GRID_VALUES = {
     ["topleft"] = "Top Left",
     ["top"] = "Top",
     ["topright"] = "Top Right",
@@ -1863,7 +1863,7 @@ CludesUI.POSITION_GRID_VALUES = {
     ["bottom"] = "Bottom",
     ["bottomright"] = "Bottom Right",
 }
-CludesUI.POSITION_GRID_VALUES_NONE = {
+CUI.POSITION_GRID_VALUES_NONE = {
     ["topleft"] = "Top Left",
     ["top"] = "Top",
     ["topright"] = "Top Right",
@@ -1875,9 +1875,9 @@ CludesUI.POSITION_GRID_VALUES_NONE = {
     ["bottomright"] = "Bottom Right",
     ["none"] = "None",
 }
-CludesUI.POSITION_GRID_ORDER =
+CUI.POSITION_GRID_ORDER =
     { "topleft", "top", "topright", "left", "center", "right", "bottomleft", "bottom", "bottomright" }
-CludesUI.FRAME_STRATA_LABELS = {
+CUI.FRAME_STRATA_LABELS = {
     BACKGROUND = "Background",
     LOW = "Low",
     MEDIUM = "Medium",
@@ -1887,18 +1887,18 @@ CludesUI.FRAME_STRATA_LABELS = {
     FULLSCREEN_DIALOG = "Fullscreen Dialog",
     TOOLTIP = "Tooltip",
 }
-CludesUI.FRAME_STRATA_ORDER_BASE = { "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG" }
-CludesUI.FRAME_STRATA_ORDER_FULL =
+CUI.FRAME_STRATA_ORDER_BASE = { "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG" }
+CUI.FRAME_STRATA_ORDER_FULL =
     { "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP" }
-CludesUI.GROW_DIR_VALUES_FULL =
+CUI.GROW_DIR_VALUES_FULL =
     { RIGHT = "Right", LEFT = "Left", UP = "Up", DOWN = "Down", CENTER = "Center" }
-CludesUI.GROW_DIR_ORDER_FULL = { "RIGHT", "LEFT", "UP", "DOWN", "CENTER" }
-CludesUI.GROW_DIR_VALUES_BASE = { RIGHT = "Right", LEFT = "Left", UP = "Up", DOWN = "Down" }
-CludesUI.GROW_DIR_ORDER_BASE = { "RIGHT", "LEFT", "UP", "DOWN" }
+CUI.GROW_DIR_ORDER_FULL = { "RIGHT", "LEFT", "UP", "DOWN", "CENTER" }
+CUI.GROW_DIR_VALUES_BASE = { RIGHT = "Right", LEFT = "Left", UP = "Up", DOWN = "Down" }
+CUI.GROW_DIR_ORDER_BASE = { "RIGHT", "LEFT", "UP", "DOWN" }
 
 -- Alert sound catalogue: shared LITERAL data only. Every consumer takes its OWN tables from
 -- BuildAlertSoundTables() -- SM appenders mutate in place and cache by table identity, so a shared table collapses two dropdowns into one and loses SM entries.
-CludesUI.ALERT_SOUND_FILES = {
+CUI.ALERT_SOUND_FILES = {
     airhorn = "AirHorn.ogg",
     banana = "BananaPeelSlip.ogg",
     bikehorn = "BikeHorn.ogg",
@@ -1916,7 +1916,7 @@ CludesUI.ALERT_SOUND_FILES = {
     water = "WaterDrop.ogg",
     wilhelm = "Wilhelm.ogg",
 }
-CludesUI.ALERT_SOUND_NAMES = {
+CUI.ALERT_SOUND_NAMES = {
     none = "None",
     airhorn = "Air Horn",
     banana = "Banana Peel Slip",
@@ -1935,7 +1935,7 @@ CludesUI.ALERT_SOUND_NAMES = {
     water = "Water Drop",
     wilhelm = "Wilhelm",
 }
-CludesUI.ALERT_SOUND_ORDER = {
+CUI.ALERT_SOUND_ORDER = {
     "none",
     "airhorn",
     "banana",
@@ -1955,13 +1955,13 @@ CludesUI.ALERT_SOUND_ORDER = {
     "wilhelm",
 }
 -- FRESH paths/names/order tables from the catalogue ("none" = name-only, no path). Safe for the SM appenders.
-function CludesUI.BuildAlertSoundTables()
+function CUI.BuildAlertSoundTables()
     local dir = MEDIA_PATH .. "sounds\\"
     local paths, nameList, sequence = {}, {}, {}
-    for i, key in ipairs(CludesUI.ALERT_SOUND_ORDER) do
+    for i, key in ipairs(CUI.ALERT_SOUND_ORDER) do
         sequence[i] = key
-        nameList[key] = CludesUI.ALERT_SOUND_NAMES[key]
-        local file = CludesUI.ALERT_SOUND_FILES[key]
+        nameList[key] = CUI.ALERT_SOUND_NAMES[key]
+        local file = CUI.ALERT_SOUND_FILES[key]
         if file then
             paths[key] = dir .. file
         end
@@ -1971,7 +1971,7 @@ end
 
 -- Plays one catalogue path: a file path, a SoundKit id (1 = silent), or a
 -- FileDataID when isFile is set (a number the catalogue cannot tell apart).
-function CludesUI.PlaySoundPath(filePath, isFile)
+function CUI.PlaySoundPath(filePath, isFile)
     if type(filePath) == "number" then
         if isFile then
             PlaySoundFile(filePath, "Master")
@@ -1984,7 +1984,7 @@ function CludesUI.PlaySoundPath(filePath, isFile)
 end
 
 -- Statusbar texture catalogue: same contract as the sound catalogue above.
-CludesUI.BAR_TEXTURE_FILES = {
+CUI.BAR_TEXTURE_FILES = {
     melli = "melli.tga",
     beautiful = "beautiful.tga",
     plating = "plating.tga",
@@ -2007,7 +2007,7 @@ CludesUI.BAR_TEXTURE_FILES = {
     ["blinkii-diamonds"] = "blinkii-diamonds.tga",
     ["kringel-window"] = "kringel-window.tga",
 }
-CludesUI.BAR_TEXTURE_NAMES = {
+CUI.BAR_TEXTURE_NAMES = {
     none = "None",
     melli = "Melli (ElvUI)",
     beautiful = "Beautiful",
@@ -2031,7 +2031,7 @@ CludesUI.BAR_TEXTURE_NAMES = {
     ["blinkii-diamonds"] = "Blinkii Diamonds",
     ["kringel-window"] = "Kringel Window",
 }
-CludesUI.BAR_TEXTURE_ORDER = {
+CUI.BAR_TEXTURE_ORDER = {
     "none",
     "melli",
     "atrocity",
@@ -2057,14 +2057,14 @@ CludesUI.BAR_TEXTURE_ORDER = {
 }
 -- FRESH textures/names/order tables. includeExtras=true = full 22-key set; else core set
 -- without the pattern textures (blinkii-diamonds, kringel-window). "none" is name-only.
-function CludesUI.BuildBarTextureTables(includeExtras)
+function CUI.BuildBarTextureTables(includeExtras)
     local dir = MEDIA_PATH .. "textures\\"
     local texture, nameList, sequence = {}, {}, {}
-    for _, key in ipairs(CludesUI.BAR_TEXTURE_ORDER) do
+    for _, key in ipairs(CUI.BAR_TEXTURE_ORDER) do
         if includeExtras or (key ~= "blinkii-diamonds" and key ~= "kringel-window") then
             sequence[#sequence + 1] = key
-            nameList[key] = CludesUI.BAR_TEXTURE_NAMES[key]
-            local file = CludesUI.BAR_TEXTURE_FILES[key]
+            nameList[key] = CUI.BAR_TEXTURE_NAMES[key]
+            local file = CUI.BAR_TEXTURE_FILES[key]
             if file then
                 texture[key] = dir .. file
             end
@@ -2078,7 +2078,7 @@ end
 -- stretches; striped3 is a stretch texture, never add "striped"), the dropdown
 -- names and the shield / heal absorb orders. Readers copy the names and orders
 -- before appending the SharedMedia tail; never mutate these.
-CludesUI.ABSORB_STYLE_TEX = {
+CUI.ABSORB_STYLE_TEX = {
     striped = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped3.tga",
     stripedReversed = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped-5-reversed.png",
     stripedThick = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped-thick.png",
@@ -2093,7 +2093,7 @@ CludesUI.ABSORB_STYLE_TEX = {
     pixelsShieldEdge = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield-edge.tga",
     pixelsShieldFill = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield-fill.tga",
 }
-CludesUI.ABSORB_TILED_STYLES = {
+CUI.ABSORB_TILED_STYLES = {
     stripedReversed = true,
     stripedThick = true,
     stripedThickR = true,
@@ -2103,7 +2103,7 @@ CludesUI.ABSORB_TILED_STYLES = {
     largeOutlinedStripesR = true,
     pixelsShieldFill = true,
 }
-CludesUI.ABSORB_STYLE_NAMES = {
+CUI.ABSORB_STYLE_NAMES = {
     none = "None",
     striped = "Striped",
     stripedReversed = "Striped Reversed",
@@ -2119,7 +2119,7 @@ CludesUI.ABSORB_STYLE_NAMES = {
     pixelsShieldEdge = "Pixels Shield Edge", -- shield only
     pixelsShieldFill = "Pixels Shield Fill", -- shield only
 }
-CludesUI.ABSORB_STYLE_ORDER = {
+CUI.ABSORB_STYLE_ORDER = {
     "none",
     "striped",
     "stripedReversed",
@@ -2133,7 +2133,7 @@ CludesUI.ABSORB_STYLE_ORDER = {
     "pixelsShieldEdge",
     "pixelsShieldFill",
 }
-CludesUI.HEAL_ABSORB_STYLE_ORDER = {
+CUI.HEAL_ABSORB_STYLE_ORDER = {
     "none",
     "striped",
     "stripedReversed",
@@ -2154,20 +2154,20 @@ CludesUI.HEAL_ABSORB_STYLE_ORDER = {
 -- Plain Striped tiles here, unlike on the absorbs; the pre-colored heal absorb
 -- styles draw untinted. Sets the fill's texture, tint, opacity and layer and
 -- returns it; the caller owns the fill rotation, any mask and the backing.
-CludesUI.MAX_HEALTH_STRIPES_TEX = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped-maxhp.png"
-CludesUI.MAX_HEALTH_COLOR = { r = 0.7, g = 0.1, b = 0.1 }
+CUI.MAX_HEALTH_STRIPES_TEX = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped-maxhp.png"
+CUI.MAX_HEALTH_COLOR = { r = 0.7, g = 0.1, b = 0.1 }
 do
     local UNTINTED = { healBlizzModern = true, largeOutlinedStripes = true, largeOutlinedStripesR = true }
     local WHITE = { r = 1, g = 1, b = 1 }
-    function CludesUI.ApplyMaxHealthStyle(bar, look, prefs, resolveTex)
+    function CUI.ApplyMaxHealthStyle(bar, look, prefs, resolveTex)
         local texture, tiled
         if look == "maxHealthStripes" then
-            texture, tiled = CludesUI.MAX_HEALTH_STRIPES_TEX, true
+            texture, tiled = CUI.MAX_HEALTH_STRIPES_TEX, true
         else
             texture = resolveTex(look, "Interface\\Buttons\\WHITE8X8")
-            tiled = look == "striped" or CludesUI.ABSORB_TILED_STYLES[look] == true
+            tiled = look == "striped" or CUI.ABSORB_TILED_STYLES[look] == true
         end
-        local mc = UNTINTED[look] and WHITE or (prefs and prefs.maxHealthColor) or CludesUI.MAX_HEALTH_COLOR
+        local mc = UNTINTED[look] and WHITE or (prefs and prefs.maxHealthColor) or CUI.MAX_HEALTH_COLOR
         bar:SetStatusBarTexture(texture)
         bar:SetStatusBarColor(
             mc.r or 0.7,
@@ -2186,80 +2186,80 @@ do
 end
 
 -- Numeric constants
-CludesUI.TEXT_WHITE_R = STYLE.TEXT_WHITE_R
-CludesUI.TEXT_WHITE_G = STYLE.TEXT_WHITE_G
-CludesUI.TEXT_WHITE_B = STYLE.TEXT_WHITE_B
-CludesUI.TEXT_DIM_R = STYLE.TEXT_DIM_R
-CludesUI.TEXT_DIM_G = STYLE.TEXT_DIM_G
-CludesUI.TEXT_DIM_B = STYLE.TEXT_DIM_B
-CludesUI.TEXT_DIM_A = STYLE.TEXT_DIM_A
-CludesUI.TEXT_SECTION_R = STYLE.TEXT_SECTION_R
-CludesUI.TEXT_SECTION_G = STYLE.TEXT_SECTION_G
-CludesUI.TEXT_SECTION_B = STYLE.TEXT_SECTION_B
-CludesUI.TEXT_SECTION_A = STYLE.TEXT_SECTION_A
-CludesUI.ROW_BG_ODD = STYLE.ROW_BG_ODD
-CludesUI.ROW_BG_EVEN = STYLE.ROW_BG_EVEN
-CludesUI.BORDER_R = STYLE.BORDER_R
-CludesUI.BORDER_G = STYLE.BORDER_G
-CludesUI.BORDER_B = STYLE.BORDER_B
-CludesUI.CONTENT_PAD = CONTENT_PAD
+CUI.TEXT_WHITE_R = LOOK.TEXT_WHITE_R
+CUI.TEXT_WHITE_G = LOOK.TEXT_WHITE_G
+CUI.TEXT_WHITE_B = LOOK.TEXT_WHITE_B
+CUI.TEXT_DIM_R = LOOK.TEXT_DIM_R
+CUI.TEXT_DIM_G = LOOK.TEXT_DIM_G
+CUI.TEXT_DIM_B = LOOK.TEXT_DIM_B
+CUI.TEXT_DIM_A = LOOK.TEXT_DIM_A
+CUI.TEXT_SECTION_R = LOOK.TEXT_SECTION_R
+CUI.TEXT_SECTION_G = LOOK.TEXT_SECTION_G
+CUI.TEXT_SECTION_B = LOOK.TEXT_SECTION_B
+CUI.TEXT_SECTION_A = LOOK.TEXT_SECTION_A
+CUI.ROW_BG_ODD = LOOK.ROW_BG_ODD
+CUI.ROW_BG_EVEN = LOOK.ROW_BG_EVEN
+CUI.BORDER_R = LOOK.BORDER_R
+CUI.BORDER_G = LOOK.BORDER_G
+CUI.BORDER_B = LOOK.BORDER_B
+CUI.CONTENT_PAD = CONTENT_PAD
 -- Slider
-CludesUI.SL_TRACK_R = STYLE.SL_TRACK_R
-CludesUI.SL_TRACK_G = STYLE.SL_TRACK_G
-CludesUI.SL_TRACK_B = STYLE.SL_TRACK_B
-CludesUI.SL_TRACK_A = STYLE.SL_TRACK_A
-CludesUI.SL_FILL_A = STYLE.SL_FILL_A
-CludesUI.SL_INPUT_R = STYLE.SL_INPUT_R
-CludesUI.SL_INPUT_G = STYLE.SL_INPUT_G
-CludesUI.SL_INPUT_B = STYLE.SL_INPUT_B
-CludesUI.SL_INPUT_A = STYLE.SL_INPUT_A
-CludesUI.SL_INPUT_BRD_A = STYLE.SL_INPUT_BRD_A
-CludesUI.MW_INPUT_ALPHA_BOOST = STYLE.MW_INPUT_ALPHA_BOOST
-CludesUI.MW_TRACK_ALPHA_BOOST = STYLE.MW_TRACK_ALPHA_BOOST
+CUI.SL_TRACK_R = LOOK.SL_TRACK_R
+CUI.SL_TRACK_G = LOOK.SL_TRACK_G
+CUI.SL_TRACK_B = LOOK.SL_TRACK_B
+CUI.SL_TRACK_A = LOOK.SL_TRACK_A
+CUI.SL_FILL_A = LOOK.SL_FILL_A
+CUI.SL_INPUT_R = LOOK.SL_INPUT_R
+CUI.SL_INPUT_G = LOOK.SL_INPUT_G
+CUI.SL_INPUT_B = LOOK.SL_INPUT_B
+CUI.SL_INPUT_A = LOOK.SL_INPUT_A
+CUI.SL_INPUT_BRD_A = LOOK.SL_INPUT_BRD_A
+CUI.MW_INPUT_ALPHA_BOOST = LOOK.MW_INPUT_ALPHA_BOOST
+CUI.MW_TRACK_ALPHA_BOOST = LOOK.MW_TRACK_ALPHA_BOOST
 -- Toggle
-CludesUI.TG_OFF_R = STYLE.TG_OFF_R
-CludesUI.TG_OFF_G = STYLE.TG_OFF_G
-CludesUI.TG_OFF_B = STYLE.TG_OFF_B
-CludesUI.TG_OFF_A = STYLE.TG_OFF_A
-CludesUI.TG_ON_A = STYLE.TG_ON_A
-CludesUI.TG_KNOB_OFF_R = STYLE.TG_KNOB_OFF_R
-CludesUI.TG_KNOB_OFF_G = STYLE.TG_KNOB_OFF_G
-CludesUI.TG_KNOB_OFF_B = STYLE.TG_KNOB_OFF_B
-CludesUI.TG_KNOB_OFF_A = STYLE.TG_KNOB_OFF_A
-CludesUI.TG_KNOB_ON_R = STYLE.TG_KNOB_ON_R
-CludesUI.TG_KNOB_ON_G = STYLE.TG_KNOB_ON_G
-CludesUI.TG_KNOB_ON_B = STYLE.TG_KNOB_ON_B
-CludesUI.TG_KNOB_ON_A = STYLE.TG_KNOB_ON_A
+CUI.TG_OFF_R = LOOK.TG_OFF_R
+CUI.TG_OFF_G = LOOK.TG_OFF_G
+CUI.TG_OFF_B = LOOK.TG_OFF_B
+CUI.TG_OFF_A = LOOK.TG_OFF_A
+CUI.TG_ON_A = LOOK.TG_ON_A
+CUI.TG_KNOB_OFF_R = LOOK.TG_KNOB_OFF_R
+CUI.TG_KNOB_OFF_G = LOOK.TG_KNOB_OFF_G
+CUI.TG_KNOB_OFF_B = LOOK.TG_KNOB_OFF_B
+CUI.TG_KNOB_OFF_A = LOOK.TG_KNOB_OFF_A
+CUI.TG_KNOB_ON_R = LOOK.TG_KNOB_ON_R
+CUI.TG_KNOB_ON_G = LOOK.TG_KNOB_ON_G
+CUI.TG_KNOB_ON_B = LOOK.TG_KNOB_ON_B
+CUI.TG_KNOB_ON_A = LOOK.TG_KNOB_ON_A
 -- Checkbox
-CludesUI.CB_BOX_R = STYLE.CB_BOX_R
-CludesUI.CB_BOX_G = STYLE.CB_BOX_G
-CludesUI.CB_BOX_B = STYLE.CB_BOX_B
-CludesUI.CB_BRD_A = STYLE.CB_BRD_A
-CludesUI.CB_ACT_BRD_A = STYLE.CB_ACT_BRD_A
+CUI.CB_BOX_R = LOOK.CB_BOX_R
+CUI.CB_BOX_G = LOOK.CB_BOX_G
+CUI.CB_BOX_B = LOOK.CB_BOX_B
+CUI.CB_BRD_A = LOOK.CB_BRD_A
+CUI.CB_ACT_BRD_A = LOOK.CB_ACT_BRD_A
 -- Button
-CludesUI.BTN_BG_R = STYLE.BTN_BG_R
-CludesUI.BTN_BG_G = STYLE.BTN_BG_G
-CludesUI.BTN_BG_B = STYLE.BTN_BG_B
-CludesUI.BTN_BG_A = STYLE.BTN_BG_A
-CludesUI.BTN_BG_HA = STYLE.BTN_BG_HA
-CludesUI.BTN_BRD_A = STYLE.BTN_BRD_A
-CludesUI.BTN_BRD_HA = STYLE.BTN_BRD_HA
-CludesUI.BTN_TXT_A = STYLE.BTN_TXT_A
-CludesUI.BTN_TXT_HA = STYLE.BTN_TXT_HA
+CUI.BTN_BG_R = LOOK.BTN_BG_R
+CUI.BTN_BG_G = LOOK.BTN_BG_G
+CUI.BTN_BG_B = LOOK.BTN_BG_B
+CUI.BTN_BG_A = LOOK.BTN_BG_A
+CUI.BTN_BG_HA = LOOK.BTN_BG_HA
+CUI.BTN_BRD_A = LOOK.BTN_BRD_A
+CUI.BTN_BRD_HA = LOOK.BTN_BRD_HA
+CUI.BTN_TXT_A = LOOK.BTN_TXT_A
+CUI.BTN_TXT_HA = LOOK.BTN_TXT_HA
 -- Dropdown
-CludesUI.DD_BG_R = STYLE.DD_BG_R
-CludesUI.DD_BG_G = STYLE.DD_BG_G
-CludesUI.DD_BG_B = STYLE.DD_BG_B
-CludesUI.DD_BG_A = STYLE.DD_BG_A
-CludesUI.DD_BG_HA = STYLE.DD_BG_HA
-CludesUI.DD_BRD_A = STYLE.DD_BRD_A
-CludesUI.DD_BRD_HA = STYLE.DD_BRD_HA
-CludesUI.DD_TXT_A = STYLE.DD_TXT_A
-CludesUI.DD_TXT_HA = STYLE.DD_TXT_HA
-CludesUI.DD_ITEM_HL_A = STYLE.DD_ITEM_HL_A
-CludesUI.DD_ITEM_SEL_A = STYLE.DD_ITEM_SEL_A
+CUI.DD_BG_R = LOOK.DD_BG_R
+CUI.DD_BG_G = LOOK.DD_BG_G
+CUI.DD_BG_B = LOOK.DD_BG_B
+CUI.DD_BG_A = LOOK.DD_BG_A
+CUI.DD_BG_HA = LOOK.DD_BG_HA
+CUI.DD_BRD_A = LOOK.DD_BRD_A
+CUI.DD_BRD_HA = LOOK.DD_BRD_HA
+CUI.DD_TXT_A = LOOK.DD_TXT_A
+CUI.DD_TXT_HA = LOOK.DD_TXT_HA
+CUI.DD_ITEM_HL_A = LOOK.DD_ITEM_HL_A
+CUI.DD_ITEM_SEL_A = LOOK.DD_ITEM_SEL_A
 -- Blizzard reskin colors (tooltips, context menus, popups)
-CludesUI.RESKIN = {
+CUI.RESKIN = {
     BG_R = 0.067,
     BG_G = 0.067,
     BG_B = 0.067,
@@ -2270,7 +2270,7 @@ CludesUI.RESKIN = {
 }
 
 -- LFG queue accept countdown defaults (shared by the skin and its options)
-CludesUI.QUEUE_TIMER = {
+CUI.QUEUE_TIMER = {
     TEXT_R = 1,
     TEXT_G = 0.831,
     TEXT_B = 0, -- #ffd400
@@ -2282,10 +2282,10 @@ CludesUI.QUEUE_TIMER = {
 -- Unified tooltip background for BOTH the Blizzard tooltip reskin and CUI widget tooltips.
 -- Customizable via Blizz UI Enhanced > Blizzard Tooltip (tooltipBgColor/tooltipBgOpacity in
 -- CludesUIDB); unset = RESKIN palette. Returns r,g,b,a (0 is valid: Lua 0 is truthy, so `or` fallback fires on nil only).
-function CludesUI.GetTooltipBg()
+function CUI.GetTooltipBg()
     local saved = CludesUIDB
     local color = saved and saved.tooltipBgColor
-    local R = CludesUI.RESKIN
+    local R = CUI.RESKIN
     local red = (color and color.r) or R.BG_R
     local green = (color and color.g) or R.BG_G
     local blue = (color and color.b) or R.BG_B
@@ -2294,25 +2294,25 @@ function CludesUI.GetTooltipBg()
 end
 -- Tooltip border for the Blizzard tooltip reskin (Blizz UI Enhanced > Blizzard Tooltip >
 -- Border); unset = white @ BRD_ALPHA, 1px. Returns r,g,b,a,size (0 is valid).
-function CludesUI.GetTooltipBorder()
+function CUI.GetTooltipBorder()
     local saved = CludesUIDB
     local color = saved and saved.tooltipBorderColor
     local red = (color and color.r) or 1
     local green = (color and color.g) or 1
     local blue = (color and color.b) or 1
-    local a = (saved and saved.tooltipBorderOpacity) or CludesUI.RESKIN.BRD_ALPHA
+    local a = (saved and saved.tooltipBorderOpacity) or CUI.RESKIN.BRD_ALPHA
     local px = (saved and saved.tooltipBorderSize) or 1
     return red, green, blue, a, px
 end
 -- Layout
-CludesUI.DUAL_ITEM_W = STYLE.DUAL_ITEM_W
-CludesUI.DUAL_GAP = STYLE.DUAL_GAP
-CludesUI.TRIPLE_ITEM_W = STYLE.TRIPLE_ITEM_W
-CludesUI.TRIPLE_GAP = STYLE.TRIPLE_GAP
+CUI.DUAL_ITEM_W = LOOK.DUAL_ITEM_W
+CUI.DUAL_GAP = LOOK.DUAL_GAP
+CUI.TRIPLE_ITEM_W = LOOK.TRIPLE_ITEM_W
+CUI.TRIPLE_GAP = LOOK.TRIPLE_GAP
 
 -- Table constants
-CludesUI.CLASS_COLOR_MAP = CLASS_COLOR_MAP
-CludesUI.CLASS_ART_MAP = CLASS_ART_MAP
+CUI.CLASS_COLOR_MAP = CLASS_COLOR_MAP
+CUI.CLASS_ART_MAP = CLASS_ART_MAP
 
 -- Upgrade track identification (locale-agnostic). Deliberately NOT feature-gated: the QoL
 -- upgrade calculator needs it with skin/bag modules disabled. Tiny table, built once.
@@ -2383,11 +2383,11 @@ do
         ["\231\165\158\232\169\177"] = "Myth",
     }
 
-    CludesUI.UPGRADE_TRACK_KEYS = KEYS
+    CUI.UPGRADE_TRACK_KEYS = KEYS
 
     -- Returns trackKey (canonical English) | nil, currentLevel, maxLevel; nil trackKey means
     -- a no-track item (crafted, older) or an untranslated trackString.
-    function CludesUI.GetUpgradeTrackKey(itemLinkStr)
+    function CUI.GetUpgradeTrackKey(itemLinkStr)
         if not itemLinkStr or not (C_Item and C_Item.GetItemUpgradeInfo) then
             return nil
         end
@@ -2423,8 +2423,8 @@ do
         local VE = { r = 0.12, g = 1.00, b = 0.00 }
         local GR = { r = 0.62, g = 0.62, b = 0.62 }
 
-        CludesUI._TRACK_WHITE = W
-        CludesUI._TRACK_RANK = { [GR] = 1, [W] = 2, [VE] = 3, [CH] = 4, [HE] = 5, [MY] = 6 }
+        CUI._TRACK_WHITE = W
+        CUI._TRACK_RANK = { [GR] = 1, [W] = 2, [VE] = 3, [CH] = 4, [HE] = 5, [MY] = 6 }
 
         -- Canonical track key -> hue (localized translation lives ONLY in UPGRADE_TRACK_KEYS).
         local map = {
@@ -2436,8 +2436,8 @@ do
             Myth = MY,
         }
 
-        function CludesUI.GetUpgradeTrack(itemLinkStr)
-            local entryKey, cur, maxL = CludesUI.GetUpgradeTrackKey(itemLinkStr)
+        function CUI.GetUpgradeTrack(itemLinkStr)
+            local entryKey, cur, maxL = CUI.GetUpgradeTrackKey(itemLinkStr)
             local textValue = (cur and maxL and maxL > 0) and (cur .. "/" .. maxL) or ""
             return textValue, map[entryKey or ""] or W
         end
@@ -2474,7 +2474,7 @@ do
         -- per-instance, so the memo is bounded and wiped like Bags' sort cache;
         -- `false` records a miss so the parse never repeats for one link.
         local craftedCache, craftedCacheN = {}, 0
-        function CludesUI.GetCraftedTrackColor(itemLinkStr)
+        function CUI.GetCraftedTrackColor(itemLinkStr)
             if type(itemLinkStr) ~= "string" then
                 return nil
             end
@@ -2495,7 +2495,7 @@ do
         -- Item-level text color: custom override > upgrade-track hue > crafted-crest hue >
         -- item rarity > white. Shared by character sheet, inspect sheet, equipment flyout and
         -- merchant. upgradeText/upgradeColor: a GetUpgradeTrack result the caller already has.
-        function CludesUI.GetItemLevelColor(itemLinkStr, itemQuality, upgradeText, upgradeColor)
+        function CUI.GetItemLevelColor(itemLinkStr, itemQuality, upgradeText, upgradeColor)
             if
                 CludesUIDB
                 and CludesUIDB.charSheetItemLevelUseColor
@@ -2504,12 +2504,12 @@ do
                 return CludesUIDB.charSheetItemLevelColor
             end
             if upgradeText == nil then
-                upgradeText, upgradeColor = CludesUI.GetUpgradeTrack(itemLinkStr)
+                upgradeText, upgradeColor = CUI.GetUpgradeTrack(itemLinkStr)
             end
             if upgradeText and upgradeText ~= "" and upgradeColor then
                 return upgradeColor
             end
-            local crafted = CludesUI.GetCraftedTrackColor(itemLinkStr)
+            local crafted = CUI.GetCraftedTrackColor(itemLinkStr)
             if crafted then
                 return crafted
             end
@@ -2625,7 +2625,7 @@ do
     end
 
     local secCache, terCache, cacheN = {}, {}, 0
-    function CludesUI.GetItemStatLetters(itemLinkStr)
+    function CUI.GetItemStatLetters(itemLinkStr)
         if type(itemLinkStr) ~= "string" then
             return "", "", false
         end
@@ -2669,7 +2669,7 @@ do
     local function StatLetterPair(link, withTertiary)
         local secondary, tertiary, loading = "", "", false
         if link then
-            secondary, tertiary, loading = CludesUI.GetItemStatLetters(link)
+            secondary, tertiary, loading = CUI.GetItemStatLetters(link)
         end
         if not withTertiary then
             tertiary = ""
@@ -2683,7 +2683,7 @@ do
     -- Paints an item's letters into `main`, with its tertiaries in `small`,
     -- the smaller label the caller hung off main's right; the pair is centred
     -- along `anchor`'s bottom edge. Returns GetItemStatLetters' pending flag.
-    function CludesUI.PaintStatLetters(main, small, link, withTertiary, anchor)
+    function CUI.PaintStatLetters(main, small, link, withTertiary, anchor)
         local secondary, tertiary, loading = StatLetterPair(link, withTertiary)
         main:SetText(secondary)
         small:SetText(tertiary)
@@ -2705,7 +2705,7 @@ do
     -- Paints an item's letters as two rows the caller placed: the secondaries
     -- in `main`, the tertiaries in `small`, each at most two letters. Returns
     -- GetItemStatLetters' pending flag.
-    function CludesUI.PaintStatLetterRows(main, small, link, withTertiary)
+    function CUI.PaintStatLetterRows(main, small, link, withTertiary)
         local secondary, tertiary, loading = StatLetterPair(link, withTertiary)
         main:SetText(TwoLetters(secondary))
         small:SetText(TwoLetters(tertiary))
@@ -2714,7 +2714,7 @@ do
 end
 
 -- File-level PanelPP reference for panel layout code below
-local PanelPP = CludesUI.PanelPP
+local PanelPP = CUI.PanelPP
 
 -- Critical Strike and Haste as Blizzard's character pane shows them. WoW Forever
 -- keeps melee, ranged and spell crit and haste apart and shows the highest with
@@ -2756,7 +2756,7 @@ do
         return "melee"
     end
 
-    function CludesUI.ForeverCritChance()
+    function CUI.ForeverCritChance()
         local spell, rangedPick, meleePick = GetSpellCritChance(), GetRangedCritChance(), GetCritChance()
         local choice
         if issecretvalue(spell) or issecretvalue(rangedPick) or issecretvalue(meleePick) then
@@ -2774,7 +2774,7 @@ do
         return meleePick, CR_CRIT_MELEE
     end
 
-    function CludesUI.ForeverHaste()
+    function CUI.ForeverHaste()
         local spell, meleePick = UnitSpellHaste("player"), GetMeleeHaste()
         local rangedBase, quiver = GetRangedHaste()
         local rangedPick, choice
@@ -2804,9 +2804,9 @@ do
 
     -- Crit for the running client: the Forever pick there, the retail rule here.
     -- Returns percent, rating index.
-    function CludesUI.PlayerCritChance()
-        if CludesUI.IS_FOREVER then
-            return CludesUI.ForeverCritChance()
+    function CUI.PlayerCritChance()
+        if CUI.IS_FOREVER then
+            return CUI.ForeverCritChance()
         end
         local rangedPick, meleePick = GetRangedCritChance(), GetCritChance()
         local spell, school = GetSpellCritChance(2), 2
@@ -2853,7 +2853,7 @@ end
 -- player test secret where unit comparisons are restricted: a secret role
 -- returns nil plus true, so every caller can compare what it gets (the role
 -- icon paints a secret one through Blizzard's own painter).
-function CludesUI.UnitEffectiveRole(unitToken)
+function CUI.UnitEffectiveRole(unitToken)
     local isPlayer = UnitIsUnit(unitToken, "player")
     if not issecretvalue(isPlayer) and isPlayer then
         local specInfo = GetSpecialization and GetSpecialization()
@@ -2874,7 +2874,7 @@ end
 -- Dire Bear Form or Defensive Stance, by shapeshift form ID). Callers on the
 -- Forever client add this to the role, but only while nobody in the group has
 -- the tank role assigned (CludesUI.GroupHasTankRole): then the role decides.
-function CludesUI.ForeverTankForm()
+function CUI.ForeverTankForm()
     local formIndex = GetShapeshiftFormID()
     return formIndex == 5 or formIndex == 8 or formIndex == 18
 end
@@ -2890,7 +2890,7 @@ do
     for i = 1, 4 do
         partyTok[i] = "party" .. i
     end
-    function CludesUI.GroupHasTankRole()
+    function CUI.GroupHasTankRole()
         local unsure = false
         local roleName = UnitGroupRolesAssigned("player")
         if issecretvalue(roleName) then
@@ -2924,7 +2924,7 @@ end
 
 -- Tip of the Spear stacks (Survival Hunter). Buff 260286 is WHITELISTED, safe to read
 -- in combat. Max 3 stacks.
-function CludesUI.GetTipOfTheSpear()
+function CUI.GetTipOfTheSpear()
     local buff = C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID(260286)
     return (buff and buff.applications or 0), 3
 end
@@ -2935,21 +2935,21 @@ end
 -- Cached spec ID: GetSoulFragments is polled EVERY FRAME and GetSpecialization +
 -- GetSpecializationInfo allocate fresh strings per call (~1.9 kb garbage/call, the
 -- dominant memory churn). Spec changes only on swap: cache it, refresh on spec events.
-CludesUI._RefreshSpecID = function()
+CUI._RefreshSpecID = function()
     local specInfo = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
-    CludesUI._specID = (specInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo)) or 0
+    CUI._specID = (specInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo)) or 0
 end
-CludesUI._specWatcher = CludesUI._specWatcher or CreateFrame("Frame")
-CludesUI._specWatcher:RegisterEvent("PLAYER_LOGIN")
-CludesUI._specWatcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-CludesUI._specWatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
-CludesUI._specWatcher:SetScript("OnEvent", CludesUI._RefreshSpecID)
+CUI._specWatcher = CUI._specWatcher or CreateFrame("Frame")
+CUI._specWatcher:RegisterEvent("PLAYER_LOGIN")
+CUI._specWatcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+CUI._specWatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
+CUI._specWatcher:SetScript("OnEvent", CUI._RefreshSpecID)
 
-function CludesUI.GetSoulFragments()
-    local specId = CludesUI._specID
+function CUI.GetSoulFragments()
+    local specId = CUI._specID
     if not specId then -- pre-login / not resolved yet: resolve once
-        CludesUI._RefreshSpecID()
-        specId = CludesUI._specID
+        CUI._RefreshSpecID()
+        specId = CUI._specID
     end
     if specId == 581 then -- Vengeance
         local cur = C_Spell and C_Spell.GetSpellCastCount and C_Spell.GetSpellCastCount(228477) or 0
@@ -2979,7 +2979,7 @@ end
 
 -- Enhancement Shaman Maelstrom Weapon stacks (current, max). Buff 344179 is WHITELISTED,
 -- safe to read in combat. Base max 5 (10 with Raging Maelstrom talent 384143).
-function CludesUI.GetMaelstromWeapon()
+function CUI.GetMaelstromWeapon()
     local buff = C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID(344179)
     local max = 5
     if C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(384143) then
@@ -2988,7 +2988,7 @@ function CludesUI.GetMaelstromWeapon()
     return (buff and buff.applications or 0), max
 end
 
-CludesUI.RESOURCE_BAR_ANCHOR_KEYS = {
+CUI.RESOURCE_BAR_ANCHOR_KEYS = {
     none = true,
     mouse = true,
     partyframe = true,
@@ -3027,13 +3027,13 @@ do
 
     -- Invalidate both caches. Called by CDM and ResourceBars on GROUP_ROSTER_UPDATE
     -- and PLAYER_SPECIALIZATION_CHANGED so the next lookup rescans.
-    function CludesUI.InvalidateFrameCache()
+    function CUI.InvalidateFrameCache()
         _cachedPartyFrame = nil
         _cachedPlayerFrame = nil
         _cachedRosterToken = -1
     end
 
-    function CludesUI.FindPlayerPartyFrame()
+    function CUI.FindPlayerPartyFrame()
         if _cachedPartyFrame and CacheValid() and _cachedPartyFrame:IsVisible() then
             return _cachedPartyFrame
         end
@@ -3069,7 +3069,7 @@ do
         return nil
     end
 
-    function CludesUI.FindPlayerUnitFrame()
+    function CUI.FindPlayerUnitFrame()
         if _cachedPlayerFrame and CacheValid() and _cachedPlayerFrame:IsVisible() then
             local u = _cachedPlayerFrame.GetAttribute and _cachedPlayerFrame:GetAttribute("unit")
             if not u or UnitIsUnit(u, "player") then
@@ -3120,14 +3120,14 @@ end
 
 -- Tip of the Spear / Whirlwind Stacks: tracked manually above via UNIT_SPELLCAST_SUCCEEDED.
 
-CludesUI.THEME_PRESETS = THEME_PRESETS
-CludesUI.THEME_ORDER = THEME_ORDER
+CUI.THEME_PRESETS = THEME_PRESETS
+CUI.THEME_ORDER = THEME_ORDER
 
 -- Path strings Keep the locale glyph-font fallback: plain EXPRESSWAY here would drop it
 -- and render CJK/Cyrillic clients as boxes for every later consumer.
-CludesUI.EXPRESSWAY = LOCALE_FONT_FALLBACK or EXPRESSWAY
-CludesUI.MEDIA_PATH = MEDIA_PATH
-CludesUI.ICONS_PATH = ICONS_PATH
+CUI.EXPRESSWAY = LOCALE_FONT_FALLBACK or EXPRESSWAY
+CUI.MEDIA_PATH = MEDIA_PATH
+CUI.ICONS_PATH = ICONS_PATH
 
 -------------------------------------------------------------------------------
 --  Portal flyout hearthstone row: shared resolution logic.
@@ -3196,7 +3196,7 @@ do
     -- Dev mode counts as protected: /cuidev forces the addon*RestrictionsForced
     -- CVars, which create the same restricted/secret-value environment anywhere.
     local function InProtectedInstance()
-        if CludesUI.IsDevModeActive and CludesUI.IsDevModeActive() then
+        if CUI.IsDevModeActive and CUI.IsDevModeActive() then
             return true
         end
         local _, instanceType = IsInInstance()
@@ -3216,7 +3216,7 @@ do
         end
         return false
     end
-    CludesUI.InProtectedInstance = InProtectedInstance
+    CUI.InProtectedInstance = InProtectedInstance
 
     -- Check if a toy/item hearthstone is on cooldown.
     -- Skips in M+/raid combat to avoid secret value errors.
@@ -3245,7 +3245,7 @@ do
         end
         return race == "Draenei" or race == "LightforgedDraenei"
     end
-    CludesUI.CanUseHearthToy = CanUseHearthToy
+    CUI.CanUseHearthToy = CanUseHearthToy
 
     -- Resolve slot 1: For Shamans with Astral Recall known:
     --   In M+/raid combat -> always Astral Recall (no CD checks, no secret values)
@@ -3253,7 +3253,7 @@ do
     --   Otherwise -> random owned toy (variety)
     -- For non-Shamans: random owned toy HS, fallback to item 6948
     -- noAstralRecall: resolve as a non-Shaman (Quickdraw's Random Hearthstone).
-    function CludesUI.ResolveHearthSlot(noAstralRecall)
+    function CUI.ResolveHearthSlot(noAstralRecall)
         local _, classTok = UnitClass("player")
         local isShaman = not noAstralRecall and classTok == "SHAMAN" and IsPlayerSpell(SHAMAN_ASTRAL_RECALL)
 
@@ -3296,20 +3296,20 @@ do
     end
 
     -- Resolve slot 2: Dalaran HS 253629 > fallback 140192
-    function CludesUI.ResolveDalaranSlot()
+    function CUI.ResolveDalaranSlot()
         local hasPrimary = PlayerHasToy and PlayerHasToy(DALARAN_HS)
         local ident = hasPrimary and DALARAN_HS or DALARAN_HS_FALLBACK
         return "item", ident, ToyIcon(ident)
     end
 
     -- Resolve slot 3: Housing dashboard (click handler, not a spell)
-    function CludesUI.ResolveHousingSlot()
+    function CUI.ResolveHousingSlot()
         return "housing", 0, HOUSING_ICON
     end
 end
 
 -- Safe scroll range helper (avoids tainted secret number values)
-function CludesUI.SafeScrollRange(scrollFrame)
+function CUI.SafeScrollRange(scrollFrame)
     local success, val = pcall(scrollFrame.GetVerticalScrollRange, scrollFrame)
     if success and val then
         local secondOk, n = pcall(tonumber, val)
@@ -3335,7 +3335,7 @@ end
 -- While a controller is in use the bar also carries step arrows and a page strip.
 -- On a page-pool host (CludesUI_FramePool.lua) its parts are pooled with the
 -- scroll frame, so a call on a reset scroll frame dresses the same bar again.
-function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
+function CUI.AttachSmoothScrollbar(scrollFrame, options)
     options = options or {}
     local step, childFrame, onScroll = options.step or 45, options.child, options.onScroll
     local Pool = POOL
@@ -3343,7 +3343,7 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
         if childFrame then
             return math.max(0, childFrame:GetHeight() - scrollFrame:GetHeight())
         end
-        return CludesUI.SafeScrollRange(scrollFrame)
+        return CUI.SafeScrollRange(scrollFrame)
     end
     local SyncThumb = function() end
     local rail, knob
@@ -3373,7 +3373,7 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
         knob:SetScript("OnDragStop", function() end)
         SolidTex(knob, "ARTWORK", 1, 1, 1, options.thumbAlpha or 0.27):SetAllPoints()
         -- Controller cursor: a drag-only control, never a stop.
-        CludesUI.PadHint(knob, "nodeignore")
+        CUI.PadHint(knob, "nodeignore")
         SyncThumb = function()
             local scrollMax = MaxScroll()
             if scrollMax <= 0 then
@@ -3435,12 +3435,12 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
     scrollFrame:EnableMouseWheel(true)
     local panelWheel, passWheel = options.panelWheel, options.passWheel
     scrollFrame:SetScript("OnMouseWheel", function(self, delta)
-        if panelWheel and CludesUI._ShiftWheelScale(delta) then
+        if panelWheel and CUI._ShiftWheelScale(delta) then
             return
         end
         local scrollMax = MaxScroll()
         if scrollMax <= 0 then
-            local page = passWheel and CludesUI._scrollFrame
+            local page = passWheel and CUI._scrollFrame
             local func = page and page:GetScript("OnMouseWheel")
             if func then
                 func(page, delta)
@@ -3469,7 +3469,7 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
 
     -- Controller cursor: it scrolls the frame itself to reach a control, so the
     -- thumb follows (the lerp and a thumb drag already paint their own frames).
-    if CludesUI.PadCP() then
+    if CUI.PadCP() then
         scrollFrame:HookScript("OnVerticalScroll", function()
             if not smoothing and not knob:GetScript("OnUpdate") then
                 SyncThumb()
@@ -3514,7 +3514,7 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
         end)
     end
     rail:HookScript("OnShow", function()
-        if not CludesUI.PadInUse() then
+        if not CUI.PadInUse() then
             if padSequence then
                 padSequence:Hide()
             end
@@ -3539,7 +3539,7 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
                 PadScrollBy((curY / knob:GetEffectiveScale() > ty) and -amount or amount)
             end)
             -- The controller cursor cannot aim a page click: its stops are the arrows.
-            CludesUI.PadHint(strip, "nodeignore")
+            CUI.PadHint(strip, "nodeignore")
             PadArrow("TOP", "cui-arrow-up3.png", -step)
             PadArrow("BOTTOM", "cui-arrow-down3.png", step)
             -- The thumb stays grabbable over the arrows; at either end it only
@@ -3588,28 +3588,28 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
 end
 
 -- Utility functions
-CludesUI.SolidTex = SolidTex
-CludesUI.MakeFont = MakeFont
-CludesUI.MakeBorder = MakeBorder
-CludesUI.DisablePixelSnap = DisablePixelSnap
-CludesUI.RowBg = RowBg
-CludesUI.ResetRowCounters = ResetRowCounters
-CludesUI.lerp = lerp
-CludesUI.MakeDropdownArrow = MakeDropdownArrow
-CludesUI.RegAccent = RegAccent
+CUI.SolidTex = SolidTex
+CUI.MakeFont = MakeFont
+CUI.MakeBorder = MakeBorder
+CUI.DisablePixelSnap = DisablePixelSnap
+CUI.RowBg = RowBg
+CUI.ResetRowCounters = ResetRowCounters
+CUI.lerp = lerp
+CUI.MakeDropdownArrow = MakeDropdownArrow
+CUI.RegAccent = RegAccent
 
 -- Internal references (needed by Widget Factory accent system)
-CludesUI.DEFAULT_ACCENT_R = DEFAULT_ACCENT_R
-CludesUI.DEFAULT_ACCENT_G = DEFAULT_ACCENT_G
-CludesUI.DEFAULT_ACCENT_B = DEFAULT_ACCENT_B
-CludesUI._ResolveFactionTheme = ResolveFactionTheme
-CludesUI._playerClass = playerClass
-CludesUI._accentElements = _accentElements
-CludesUI._widgetRefreshList = _widgetRefreshList
-CludesUI._rowCounters = rowCounters
-CludesUI._STYLE = STYLE
-CludesUI._THEME_BG_FILES = THEME_BG_FILES
-CludesUI._IS_STANDALONE = IS_STANDALONE
+CUI.DEFAULT_ACCENT_R = DEFAULT_ACCENT_R
+CUI.DEFAULT_ACCENT_G = DEFAULT_ACCENT_G
+CUI.DEFAULT_ACCENT_B = DEFAULT_ACCENT_B
+CUI._ResolveFactionTheme = ResolveFactionTheme
+CUI._playerClass = playerClass
+CUI._accentElements = _accentElements
+CUI._widgetRefreshList = _widgetRefreshList
+CUI._rowCounters = rowCounters
+CUI._STYLE = LOOK
+CUI._THEME_BG_FILES = THEME_BG_FILES
+CUI._IS_STANDALONE = IS_STANDALONE
 
 -------------------------------------------------------------------------------
 --  MakeUnlockElement  --  shared factory for unlock mode element tables.
@@ -3678,7 +3678,7 @@ CludesUI._IS_STANDALONE = IS_STANDALONE
 --  This table is a WHITELIST: a field left out here never reaches the unlock
 --  module, silently.
 -------------------------------------------------------------------------------
-function CludesUI.MakeUnlockElement(options)
+function CUI.MakeUnlockElement(options)
     return {
         key = options.key,
         label = options.label,
@@ -3747,11 +3747,11 @@ end
 --  Lazy-load stub: ResolveThemeColor -- minimal version for PLAYER_LOGIN, before the
 --  Widgets file initializes and replaces it with the full (animated) version.
 -------------------------------------------------------------------------------
-if not CludesUI.ResolveThemeColor then
-    CludesUI.ResolveThemeColor = function(skinName)
+if not CUI.ResolveThemeColor then
+    CUI.ResolveThemeColor = function(skinName)
         skinName = ResolveFactionTheme(skinName)
         if skinName == "Class Colored" then
-            local clr = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
+            local clr = (CUI.GetRawClassColor and CUI.GetRawClassColor(playerClass))
                 or CLASS_COLOR_MAP[playerClass]
             if clr then
                 return clr.r, clr.g, clr.b
@@ -3776,9 +3776,9 @@ end
 --  Load-order stub: GetActiveTheme -- the real one lives in CludesUI_UICore.lua
 --  (loads right after this file); covers callers in the rest of THIS file's scope. Identical body, harmlessly replaced.
 -------------------------------------------------------------------------------
-if not CludesUI.GetActiveTheme then
-    CludesUI.GetActiveTheme = function()
-        return CludesUIDB and CludesUIDB.activeTheme or CludesUI.DEFAULT_THEME
+if not CUI.GetActiveTheme then
+    CUI.GetActiveTheme = function()
+        return CludesUIDB and CludesUIDB.activeTheme or CUI.DEFAULT_THEME
     end
 end
 
@@ -3787,16 +3787,16 @@ end
 --  GetActiveProfileData helpers) lives in CludesUI_UICore.lua, which loads right after
 --  this file; mirrors ResolveProfileAccent's resolution order so the accent matches.
 -------------------------------------------------------------------------------
-if not CludesUI.ResolveActiveAccent then
-    CludesUI.ResolveActiveAccent = function()
-        local skinName = (CludesUIDB and CludesUIDB.activeTheme) or CludesUI.DEFAULT_THEME
-        local themeR, themeG, themeB = CludesUI.ResolveThemeColor(skinName)
+if not CUI.ResolveActiveAccent then
+    CUI.ResolveActiveAccent = function()
+        local skinName = (CludesUIDB and CludesUIDB.activeTheme) or CUI.DEFAULT_THEME
+        local themeR, themeG, themeB = CUI.ResolveThemeColor(skinName)
         local saved = CludesUIDB
         local p = saved and saved.profiles and saved.profiles[saved.activeProfile or "Default"]
         local accent = p and p.cuiAccent
         -- 1) per-profile cuiAccent
         if accent and accent.useClass then
-            local color = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
+            local color = (CUI.GetRawClassColor and CUI.GetRawClassColor(playerClass))
                 or CLASS_COLOR_MAP[playerClass]
             if color then
                 return color.r, color.g, color.b
@@ -3808,7 +3808,7 @@ if not CludesUI.ResolveActiveAccent then
         end
         -- 2) frozen global root (only when no explicit per-profile cuiAccent)
         if (not accent) and saved and saved.useClassAccentColor then
-            local color = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
+            local color = (CUI.GetRawClassColor and CUI.GetRawClassColor(playerClass))
                 or CLASS_COLOR_MAP[playerClass]
             if color then
                 return color.r, color.g, color.b
@@ -3832,7 +3832,7 @@ end
 --   texTable  - the addon's local texture lookup (e.g. TBB_TEXTURES)
 --   key       - the saved texture key ("sm:Some Pack" or "beautiful")
 --   fallback  - path to use if nothing resolves (optional)
-function CludesUI.ResolveTexturePath(texTable, entryKey, fallbackValue)
+function CUI.ResolveTexturePath(texTable, entryKey, fallbackValue)
     if not entryKey then
         return fallbackValue
     end
@@ -3878,19 +3878,19 @@ end
 -------------------------------------------------------------------------------
 -- Consumers keyed by their `textures` table identity (dedups repeat calls).
 -- On CludesUI (not new file-scope locals): this file is at the local/upvalue cap.
-CludesUI._smTexConsumers = CludesUI._smTexConsumers or {}
+CUI._smTexConsumers = CUI._smTexConsumers or {}
 
-function CludesUI.AppendSharedMediaTextures(nameList, sequence, castBarNames, textures)
+function CUI.AppendSharedMediaTextures(nameList, sequence, castBarNames, textures)
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
     if not LSM then
         return
     end
 
     -- Icon textures some SM packs wrongly register as statusbar (cached once).
-    local blockedSet = CludesUI._smTexBlacklist
+    local blockedSet = CUI._smTexBlacklist
     if not blockedSet then
         blockedSet = { play_icon = true, stop_icon = true, user_icon = true, users_icon = true }
-        CludesUI._smTexBlacklist = blockedSet
+        CUI._smTexBlacklist = blockedSet
     end
 
     -- Append one SM texture (by LSM name) into a consumer's tables if absent; the "---"
@@ -3923,7 +3923,7 @@ function CludesUI.AppendSharedMediaTextures(nameList, sequence, castBarNames, te
     end
 
     -- Register this consumer (dedup by textures-table identity); sepAdded stays false so the first SM key adds exactly one "---" (the dedup guard prevents a second).
-    local consumers = CludesUI._smTexConsumers[textures]
+    local consumers = CUI._smTexConsumers[textures]
     if not consumers then
         -- The consumer's own display-name -> file pairs at registration (its
         -- module-side list is complete by then; SM keys are not in it yet),
@@ -3947,7 +3947,7 @@ function CludesUI.AppendSharedMediaTextures(nameList, sequence, castBarNames, te
             textures = textures,
             nativeNames = native,
         }
-        CludesUI._smTexConsumers[textures] = consumers
+        CUI._smTexConsumers[textures] = consumers
     end
 
     -- Sync all currently-registered SM textures (sorted alphabetically; late ones arriving via the callback append after, in registration order).
@@ -3969,10 +3969,10 @@ function CludesUI.AppendSharedMediaTextures(nameList, sequence, castBarNames, te
     end
 
     -- Install the late-registration callback once, with a DEDICATED owner: same owner + event would replace the font LibSharedMedia_Registered callback in CallbackHandler.
-    if not CludesUI._smTexCallbackInstalled then
-        CludesUI._smTexCallbackInstalled = true
-        CludesUI._smTexCBOwner = CludesUI._smTexCBOwner or {}
-        LSM.RegisterCallback(CludesUI._smTexCBOwner, "LibSharedMedia_Registered", function(_, mediatype, entryKey)
+    if not CUI._smTexCallbackInstalled then
+        CUI._smTexCallbackInstalled = true
+        CUI._smTexCBOwner = CUI._smTexCBOwner or {}
+        LSM.RegisterCallback(CUI._smTexCBOwner, "LibSharedMedia_Registered", function(_, mediatype, entryKey)
             if mediatype ~= "statusbar" then
                 return
             end
@@ -3980,7 +3980,7 @@ function CludesUI.AppendSharedMediaTextures(nameList, sequence, castBarNames, te
             if not filePath then
                 return
             end
-            for _, cc in pairs(CludesUI._smTexConsumers) do
+            for _, cc in pairs(CUI._smTexConsumers) do
                 AppendOne(cc, entryKey, filePath)
             end
         end)
@@ -3995,7 +3995,7 @@ end
 --    order   - ordered array of keys (receives "---" + SM keys appended)
 --  Safe to call repeatedly; duplicate keys are skipped via the paths guard.
 -------------------------------------------------------------------------------
-function CludesUI.AppendSharedMediaSounds(paths, nameList, sequence)
+function CUI.AppendSharedMediaSounds(paths, nameList, sequence)
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
     if not LSM then
         return
@@ -4034,7 +4034,7 @@ end
 --    opts    - optional { keyByName = true } -- use display name as key
 --  Safe to call multiple times; duplicate keys are skipped.
 -------------------------------------------------------------------------------
-function CludesUI.AppendSharedMediaFonts(values, sequence, options)
+function CUI.AppendSharedMediaFonts(values, sequence, options)
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
     if not LSM then
         return
@@ -4045,11 +4045,11 @@ function CludesUI.AppendSharedMediaFonts(values, sequence, options)
     end
 
     -- Build the SM font path lookup so ResolveFontName can find SM fonts
-    if not CludesUI._smFontPaths then
-        CludesUI._smFontPaths = {}
+    if not CUI._smFontPaths then
+        CUI._smFontPaths = {}
     end
     for label, filePath in pairs(mediaFonts) do
-        CludesUI._smFontPaths[label] = filePath
+        CUI._smFontPaths[label] = filePath
     end
 
     local keyByName = options and options.keyByName
@@ -4076,7 +4076,7 @@ end
 -- Append only EXTERNAL SharedMedia fonts (not bundled with CludesUI) to a dropdown
 -- values/order pair, for glyph-restricted locales where bundled Latin fonts cannot render the
 -- script: only user-installed SM fonts are offered, alongside System Default (bundled names are skipped -- LSM-registered too, but they would just show boxes).
-function CludesUI.AppendExternalSharedMediaFonts(values, sequence)
+function CUI.AppendExternalSharedMediaFonts(values, sequence)
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
     if not LSM then
         return
@@ -4085,13 +4085,13 @@ function CludesUI.AppendExternalSharedMediaFonts(values, sequence)
     if not mediaFonts then
         return
     end
-    if not CludesUI._smFontPaths then
-        CludesUI._smFontPaths = {}
+    if not CUI._smFontPaths then
+        CUI._smFontPaths = {}
     end
     local ordered = {}
     for label, filePath in pairs(mediaFonts) do
-        CludesUI._smFontPaths[label] = filePath
-        if not CludesUI.FONT_FILES[label] and not CludesUI.FONT_BLIZZARD[label] and not values[label] then
+        CUI._smFontPaths[label] = filePath
+        if not CUI.FONT_FILES[label] and not CUI.FONT_BLIZZARD[label] and not values[label] then
             ordered[#ordered + 1] = label
         end
     end
@@ -4113,20 +4113,20 @@ end
 --  LoadOnDemand CludesUIOptions addon: nothing of it is even PARSED until
 --  EnsureLoaded loads the addon on first panel open.
 -------------------------------------------------------------------------------
-CludesUI._deferredInits = {}
-CludesUI._deferredLoaded = false
+CUI._deferredInits = {}
+CUI._deferredLoaded = false
 
 -- Module-namespace registry: every child addon publishes its private ns here at
 -- load. The LOD options files (which get CludesUIOptions' own useless vararg
 -- ns) resolve their module's real ns from this table, and early-return when the
 -- module is absent/disabled -- reproducing the old "disabled child = no options
 -- page" behavior exactly.
-CludesUI._ModuleNS = {}
+CUI._ModuleNS = {}
 if IS_STANDALONE then
     -- Every core file has loaded by the first module publish: remove the
     -- hand-off slot before the shared table is published (see the top).
     local sharedMedia = select(2, ...)
-    setmetatable(CludesUI._ModuleNS, {
+    setmetatable(CUI._ModuleNS, {
         __newindex = function(t, key, v)
             sharedMedia.__cuiCoreNS = nil
             setmetatable(t, nil)
@@ -4140,9 +4140,9 @@ end
 -- at PLAYER_LOGIN / CDM setup WITHOUT loading the options addon, or the
 -- LoadOnDemand split's login win evaporates -- so it lives in its own slot, not
 -- _deferredInits. One-shot; EnsureLoaded also drains it (panel paths need it too).
-CludesUI._unlockCoreInit = nil
+CUI._unlockCoreInit = nil
 
-function CludesUI:EnsureUnlockCore()
+function CUI:EnsureUnlockCore()
     local func = self._unlockCoreInit
     if func then
         self._unlockCoreInit = nil
@@ -4152,7 +4152,7 @@ end
 
 -- Loads the LoadOnDemand options surface. False (with a user-facing message)
 -- only when the CludesUIOptions addon is missing or disabled in the AddOn List.
-function CludesUI.EnsureOptionsLoaded()
+function CUI.EnsureOptionsLoaded()
     -- Standalone builds bundle the options files FLAT into the one addon --
     -- they are resident from startup, and the LoadOnDemand addon named below
     -- does not exist there under any name (the rename would point this at a
@@ -4169,7 +4169,7 @@ function CludesUI.EnsureOptionsLoaded()
     -- suite's module pages while they load (see RegisterModule).
     local success, reason = CUI_NS.RunCoreRegistration(C_AddOns.LoadAddOn, "CludesUIOptions")
     if not success then
-        CludesUI.PrintError(
+        CUI.PrintError(
             "Options could not load ("
                 .. tostring(reason)
                 .. '). Enable the "CludesUI Options" addon in the AddOn List.'
@@ -4222,7 +4222,7 @@ do
                 if InCombatLockdown() then
                     return
                 end
-                if not CludesUI.EnsureOptionsLoaded() then
+                if not CUI.EnsureOptionsLoaded() then
                     return
                 end
                 local real = SlashCmdList[entryKey]
@@ -4235,7 +4235,7 @@ do
     end
 end
 
-function CludesUI:EnsureLoaded()
+function CUI:EnsureLoaded()
     if self._deferredLoaded then
         return
     end
@@ -4245,7 +4245,7 @@ function CludesUI:EnsureLoaded()
     -- Load the options addon: its files append their deferred inits, which the
     -- loop below then runs. On failure keep _deferredLoaded false so a later
     -- open retries after the user re-enables the addon.
-    if not CludesUI.EnsureOptionsLoaded() then
+    if not CUI.EnsureOptionsLoaded() then
         return
     end
     self._deferredLoaded = true
@@ -4269,13 +4269,13 @@ end
 -------------------------------------------------------------------------------
 --  Slash commands
 -------------------------------------------------------------------------------
-CludesUI.VERSION = "1.1.3"
+CUI.VERSION = "1.1.3"
 
 -- Register this addon's version into a shared global table (taint-free at load time)
 if not _G._CUI_AddonVersions then
     _G._CUI_AddonVersions = {}
 end
-_G._CUI_AddonVersions[CUI_HOST_ADDON] = CludesUI.VERSION
+_G._CUI_AddonVersions[CUI_HOST_ADDON] = CUI.VERSION
 
 -- Version-increase detection: stamp the account's last-seen version at login
 -- and raise the Patch Notes reminder dot when it changed. The dot clears
@@ -4290,12 +4290,12 @@ do
             CludesUIDB = {}
         end
         local prev = CludesUIDB.lastLoginVersion
-        if prev and prev ~= CludesUI.VERSION then
+        if prev and prev ~= CUI.VERSION then
             CludesUIDB.patchDotPending = true
         end
-        CludesUIDB.lastLoginVersion = CludesUI.VERSION
-        if CludesUI._UpdatePatchDot then
-            CludesUI._UpdatePatchDot()
+        CludesUIDB.lastLoginVersion = CUI.VERSION
+        if CUI._UpdatePatchDot then
+            CUI._UpdatePatchDot()
         end
     end)
 end
@@ -4340,7 +4340,7 @@ do
             local message = "The following CludesUI addons are out of date. "
                 .. "Please update so all addons are the same version:\n\n"
                 .. table.concat(outdated, ", ")
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = "Out of Date",
                 message = message,
                 confirmText = "OK",
@@ -4357,7 +4357,7 @@ end
 -- Conflict check is wrapped in a function so the first-install popup (CludesUI_FirstInstall.lua)
 -- can defer it until after the user picks their initial addon list. The inline scheduler at the
 -- bottom of this block only runs it automatically if the first-install popup has already been shown in a prior session.
-CludesUI._RunConflictCheck = function()
+CUI._RunConflictCheck = function()
     if _G._CUI_ConflictCheckRan then
         return
     end
@@ -4388,7 +4388,7 @@ CludesUI._RunConflictCheck = function()
             return _G._CUMT_IsTimerEnabled and _G._CUMT_IsTimerEnabled()
         end
         local function MPlusTimerMsg(labelText)
-            return CludesUI.Lf(
+            return CUI.Lf(
                 "%1$s conflicts with CludesUI's Mythic+ Timer. Turn off Enable Mythic+ Timer on the Mythic+ Timer tab of Mythic+ Tools, or disable %1$s.",
                 labelText
             )
@@ -4544,11 +4544,11 @@ CludesUI._RunConflictCheck = function()
                 moduleCheck = function()
                     return leatrixOn ~= nil
                 end,
-                message = CludesUI.L(
+                message = CUI.L(
                     "Leatrix Plus has chat and minimap features that conflict with CludesUI. Disable any chat or minimap related options within Leatrix Plus to stay compatible."
                 )
                     .. "\n"
-                    .. CludesUI.L("Leatrix Plus options that are on:")
+                    .. CUI.L("Leatrix Plus options that are on:")
                     .. " "
                     .. (leatrixOn or ""),
             },
@@ -4803,8 +4803,8 @@ CludesUI._RunConflictCheck = function()
                     .. ". Running both at the same time may cause errors or unexpected behavior."
                     .. "\n\nPlease disable one of them."
                 )
-            if CludesUI.ShowConfirmPopup then
-                CludesUI:ShowConfirmPopup({
+            if CUI.ShowConfirmPopup then
+                CUI:ShowConfirmPopup({
                     title = "Incompatible Addon Detected",
                     message = message,
                     confirmText = "Okay",
@@ -4819,7 +4819,7 @@ CludesUI._RunConflictCheck = function()
                     modal = true,
                 })
             else
-                CludesUI.PrintError(message:gsub("\n", " "))
+                CUI.PrintError(message:gsub("\n", " "))
                 NextConflict()
             end
         end
@@ -4833,10 +4833,10 @@ C_Timer.After(2, function()
     if CludesUIDB and CludesUIDB.firstInstallPopupShown then
         -- Defer while the style choice popup is still pending/open; it runs the
         -- conflict check itself when dismissed.
-        if CludesUI._styleChoicePending then
+        if CUI._styleChoicePending then
             return
         end
-        CludesUI._RunConflictCheck()
+        CUI._RunConflictCheck()
     end
 end)
 
@@ -4848,7 +4848,7 @@ SLASH_CUIPERF1 = "/cuiperf"
 SlashCmdList.CUIPERF = function()
     local P, M = C_AddOnProfiler, Enum and Enum.AddOnProfilerMetric
     if not (P and P.GetAddOnMetric and M) or (P.IsEnabled and not P.IsEnabled()) then
-        CludesUI.PrintError("The addon profiler is not available on this client.")
+        CUI.PrintError("The addon profiler is not available on this client.")
         return
     end
     local rowList, totalRecent = {}, 0
@@ -4869,7 +4869,7 @@ SlashCmdList.CUIPERF = function()
         return posX.recent > posY.recent
     end)
     local fps = GetFramerate() or 0
-    CludesUI.Print(
+    CUI.Print(
         ("CPU per frame, %d addons, %.3f ms recent total (a frame at %d fps is %.1f ms):"):format(
             #rowList,
             totalRecent,
@@ -4905,10 +4905,10 @@ SLASH_CUIOPTIONS3 = "/cludesui"
 SlashCmdList.CUIOPTIONS = function()
     C_Timer.After(0, function()
         if InCombatLockdown() then
-            CludesUI.PrintError("Cannot open options during combat.")
+            CUI.PrintError("Cannot open options during combat.")
             return
         end
-        CludesUI:Toggle()
+        CUI:Toggle()
     end)
 end
 
@@ -4917,10 +4917,10 @@ SLASH_CUIQUICK1 = "/ce"
 SlashCmdList.CUIQUICK = function()
     C_Timer.After(0, function()
         if InCombatLockdown() then
-            CludesUI.PrintError("Cannot open options during combat.")
+            CUI.PrintError("Cannot open options during combat.")
             return
         end
-        CludesUI:Toggle()
+        CUI:Toggle()
     end)
 end
 
@@ -4929,14 +4929,14 @@ SLASH_CUIUNLOCK1 = "/unlock"
 SlashCmdList.CUIUNLOCK = function()
     C_Timer.After(0, function()
         if InCombatLockdown() then
-            CludesUI.PrintError("Cannot open options during combat.")
+            CUI.PrintError("Cannot open options during combat.")
             return
         end
-        CludesUI:EnsureUnlockCore()
-        if CludesUI._openUnlockMode then
-            CludesUI._openUnlockMode()
+        CUI:EnsureUnlockCore()
+        if CUI._openUnlockMode then
+            CUI._openUnlockMode()
         else
-            CludesUI.PrintError("Layout Mode is not available.")
+            CUI.PrintError("Layout Mode is not available.")
         end
     end)
 end
@@ -4956,7 +4956,7 @@ SlashCmdList.CUIRESETHINT = function()
             CludesUIDB.inlineCogTipSeen = nil
             CludesUIDB.cogSeen = nil
         end
-        CludesUI.Print(CludesUI.L("|cff00ff00[CludesUI]|r All hints reset. /reload to see them again."))
+        CUI.Print(CUI.L("|cff00ff00[CludesUI]|r All hints reset. /reload to see them again."))
     end)
 end
 
@@ -4968,8 +4968,8 @@ SlashCmdList.CUIRESETSCALE = function()
             CludesUIDB.ppUIScale = nil
             CludesUIDB.ppUIScaleAuto = nil
         end
-        CludesUI.Print(
-            CludesUI.L(
+        CUI.Print(
+            CUI.L(
                 "|cff00ff00[CludesUI]|r UI scale reset. /reload to re-snapshot from your Blizzard scale."
             )
         )
@@ -4989,12 +4989,12 @@ SlashCmdList.CUIDEV = function()
     local current = GetCVar(cvars[1])
     local newVal = (current == "1") and "0" or "1"
     for _, cv in ipairs(cvars) do
-        CludesUI.SetCVar(cv, newVal)
+        CUI.SetCVar(cv, newVal)
     end
     local status = newVal == "1" and "ON" or "OFF"
-    CludesUI.Print("|cff00ff00[CludesUI]|r Dev mode: all addon restriction CVars " .. status .. ".")
-    if CludesUI.UpdateDevModeIndicator then
-        CludesUI.UpdateDevModeIndicator()
+    CUI.Print("|cff00ff00[CludesUI]|r Dev mode: all addon restriction CVars " .. status .. ".")
+    if CUI.UpdateDevModeIndicator then
+        CUI.UpdateDevModeIndicator()
     end
 end
 
@@ -5010,7 +5010,7 @@ end
 --  tooltip (a string, or a function returning one or nil) shows beside it; the
 --  caller turns the mouse off (EnableMouse) while a click would do nothing.
 -------------------------------------------------------------------------------
-function CludesUI.BuildStatusBadge(hostFrame, textValue, label, options)
+function CUI.BuildStatusBadge(hostFrame, textValue, label, options)
     local accentColor = CLUDES_GREEN
     local dotted = not (options and options.dot == false)
     local onClick = options and options.onClick
@@ -5030,7 +5030,7 @@ function CludesUI.BuildStatusBadge(hostFrame, textValue, label, options)
     Pix.CreateBorder(frame, accentColor.r, accentColor.g, accentColor.b, 0.9, 1, "OVERLAY", 7)
 
     local labelText = frame:CreateFontString(nil, "OVERLAY")
-    labelText:SetFont(CludesUI.EXPRESSWAY, 11, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE")
+    labelText:SetFont(CUI.EXPRESSWAY, 11, (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE")
     labelText:SetText(textValue)
     labelText:SetTextColor(accentColor.r, accentColor.g, accentColor.b, 1)
 
@@ -5072,16 +5072,16 @@ function CludesUI.BuildStatusBadge(hostFrame, textValue, label, options)
                 tipText = tipText()
             end
             if tipText then
-                CludesUI.ShowWidgetTooltip(self, tipText)
+                CUI.ShowWidgetTooltip(self, tipText)
             end
         end)
         frame:SetScript("OnLeave", function()
             wash:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.06)
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end)
         frame:SetScript("OnClick", function(self)
             wash:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.06)
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
             onClick(self)
         end)
     end
@@ -5096,21 +5096,21 @@ end
 do
     local DEV_CVAR = "addonChallengeModeRestrictionsForced"
 
-    function CludesUI.IsDevModeActive()
+    function CUI.IsDevModeActive()
         return GetCVar(DEV_CVAR) == "1"
     end
 
     local badgeTex
 
-    function CludesUI.UpdateDevModeIndicator()
-        if not CludesUI.IsDevModeActive() then
+    function CUI.UpdateDevModeIndicator()
+        if not CUI.IsDevModeActive() then
             if badgeTex then
                 badgeTex:Hide()
             end
             return
         end
         if not badgeTex then
-            badgeTex = CludesUI.BuildStatusBadge(UIParent, "DEV MODE ACTIVE", "CludesUIDevModeBadge")
+            badgeTex = CUI.BuildStatusBadge(UIParent, "DEV MODE ACTIVE", "CludesUIDevModeBadge")
             badgeTex:SetFrameStrata("HIGH")
             badgeTex:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 16, -41)
         end
@@ -5123,7 +5123,7 @@ do
     eventFrame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
         C_Timer.After(2, function()
-            CludesUI.UpdateDevModeIndicator()
+            CUI.UpdateDevModeIndicator()
         end)
     end)
 end
@@ -5153,7 +5153,7 @@ do
         return saved
     end
 
-    function CludesUI.CreateMinimapButton()
+    function CUI.CreateMinimapButton()
         if LDBIcon then
             return LDBIcon:GetMinimapButton(NAME)
         end
@@ -5172,36 +5172,36 @@ do
                     return
                 end
                 if btnFrame == "LeftButton" then
-                    CludesUI:Toggle()
+                    CUI:Toggle()
                 elseif btnFrame == "RightButton" then
-                    CludesUI:EnsureUnlockCore()
-                    if CludesUI._openUnlockMode then
-                        CludesUI._openUnlockMode()
+                    CUI:EnsureUnlockCore()
+                    if CUI._openUnlockMode then
+                        CUI._openUnlockMode()
                     end
                 elseif btnFrame == "MiddleButton" then
                     CludesUIDB.showMinimapButton = false
-                    CludesUI.HideMinimapButton()
+                    CUI.HideMinimapButton()
                     -- an open page re-reads its rows (a closed panel catches up when it next shows)
-                    local refreshList = CludesUI._widgetRefreshList
+                    local refreshList = CUI._widgetRefreshList
                     if refreshList and #refreshList > 0 then
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end
                 end
             end,
             OnTooltipShow = function(tt)
                 tt:AddLine("|cff4cc9f0CludesUI|r")
-                tt:AddLine(CludesUI.L("|cff4cc9f0Left-click:|r |cffE0E0E0Toggle CludesUI|r"))
-                tt:AddLine(CludesUI.L("|cff4cc9f0Right-click:|r |cffE0E0E0Enter Layout Mode|r"))
-                tt:AddLine(CludesUI.L("|cff4cc9f0Middle-click:|r |cffE0E0E0Hide Minimap Button|r"))
+                tt:AddLine(CUI.L("|cff4cc9f0Left-click:|r |cffE0E0E0Toggle CludesUI|r"))
+                tt:AddLine(CUI.L("|cff4cc9f0Right-click:|r |cffE0E0E0Enter Layout Mode|r"))
+                tt:AddLine(CUI.L("|cff4cc9f0Middle-click:|r |cffE0E0E0Hide Minimap Button|r"))
             end,
         })
         LDBIcon:Register(NAME, launcher, IconDB())
         return LDBIcon:GetMinimapButton(NAME)
     end
 
-    function CludesUI.ShowMinimapButton()
+    function CUI.ShowMinimapButton()
         if not LDBIcon then
-            CludesUI.CreateMinimapButton()
+            CUI.CreateMinimapButton()
         end
         if LDBIcon then
             IconDB()
@@ -5209,7 +5209,7 @@ do
         end
     end
 
-    function CludesUI.HideMinimapButton()
+    function CUI.HideMinimapButton()
         if LDBIcon then
             IconDB()
             LDBIcon:Hide(NAME)
@@ -5220,7 +5220,7 @@ end
 -- Spell ID on Tooltip (Blizzard Skins+ > Tooltips & Menus, Global Settings >
 -- Developer): on unless turned off. Accounts from before that default keep it
 -- off through the spellid_default_on_v1 migration (CludesUI_Migration.lua).
-function CludesUI.SpellIDOn()
+function CUI.SpellIDOn()
     local saved = CludesUIDB
     return saved ~= nil and saved.showSpellID ~= false
 end
@@ -5233,9 +5233,9 @@ initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 initFrame:SetScript("OnEvent", function(self, evt)
     if evt == "PLAYER_REGEN_DISABLED" then
-        if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then
-            CludesUI:Hide()
-            CludesUI.PrintError("Options closed -- entering combat.")
+        if CUI._mainFrame and CUI._mainFrame:IsShown() then
+            CUI:Hide()
+            CUI.PrintError("Options closed -- entering combat.")
         end
         return
     end
@@ -5245,11 +5245,11 @@ initFrame:SetScript("OnEvent", function(self, evt)
 
     -- Apply the global font to Blizzard's default game text (opt-in, reload-gated).
     -- Done here at login, out of combat, so it runs once before the UI renders.
-    CludesUI.ApplyGlobalFontToGameText()
+    CUI.ApplyGlobalFontToGameText()
     -- Always-on failsafe: swap the shared font objects behind Chat, the Quest Tracker, and
     -- Blizzard-UI-Enhanced tooltips to each module's font, so the sub-elements our per-frame
     -- styling misses pick up the right face. Runs after the global pass so the per-module face wins in those three areas.
-    CludesUI.ApplyModuleFontFailsafe()
+    CUI.ApplyModuleFontFailsafe()
 
     ---------------------------------------------------------------------------
     --  Escape proxy: single UISpecialFrames entry for all CUI frames.
@@ -5277,7 +5277,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
         local closeList = {} -- reused by the controller close-all pass
         local closing = false
         local NO_OPTS = {}
-        local PadNative, PadInUse = CludesUI.PadNative, CludesUI.PadInUse
+        local PadNative, PadInUse = CUI.PadNative, CUI.PadInUse
         local proxy = CreateFrame("Frame", "CludesUI_EscapeProxy", UIParent)
         proxy:Hide()
         tinsert(UISpecialFrames, "CludesUI_EscapeProxy")
@@ -5441,17 +5441,17 @@ initFrame:SetScript("OnEvent", function(self, evt)
             end
         end
 
-        function CludesUI.RegisterEscapeClose(widget, options)
+        function CUI.RegisterEscapeClose(widget, options)
             if escOpts[widget] then
                 return
             end
             options = options or NO_OPTS
             escOpts[widget] = options
             if not options.notOwned then
-                CludesUI.RegisterPadFrame(widget)
+                CUI.RegisterPadFrame(widget)
             end
             if options.cursor then
-                widget:HookScript("OnShow", CludesUI.RaiseGamePadCursor)
+                widget:HookScript("OnShow", CUI.RaiseGamePadCursor)
             end
             if options.padOnly then
                 widget:HookScript("OnShow", PadOnlyShown)
@@ -5470,7 +5470,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
         -- out again to the state of a new frame, which drops the hooks above: the
         -- registration goes with them, so the code that dresses the frame again
         -- registers it again, exactly as it registered the new frame.
-        function CludesUI._ForgetEscapeClose(widget)
+        function CUI._ForgetEscapeClose(widget)
             if not escOpts[widget] then
                 return
             end
@@ -5499,7 +5499,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
             if not WeeklyRewardsFrame then
                 return false
             end
-            CludesUI.RegisterEscapeClose(WeeklyRewardsFrame, { notOwned = true })
+            CUI.RegisterEscapeClose(WeeklyRewardsFrame, { notOwned = true })
             SyncProxy()
             return true
         end
@@ -5516,10 +5516,10 @@ initFrame:SetScript("OnEvent", function(self, evt)
     end
 
     -- Create native minimap button
-    CludesUI.CreateMinimapButton()
+    CUI.CreateMinimapButton()
 
     -- Add CludesUI + Unlock Mode buttons to the Game Menu (pause menu); both share a single Layout hook to avoid double-push conflicts.
-    if GameMenuFrame and not CludesUI._GetFFD(GameMenuFrame).cuiBtn then
+    if GameMenuFrame and not CUI._GetFFD(GameMenuFrame).cuiBtn then
         -- Game menu frame+button skinning lives in CludesUIBlizzardSkin (CUI_BlizzardSkin_Dialogs.lua) so it only
         -- applies when that addon is enabled; detect whether the skin is active so CUI's own buttons match the skinned menu style.
         local _blizzSkinLoaded = C_AddOns
@@ -5533,37 +5533,37 @@ initFrame:SetScript("OnEvent", function(self, evt)
         button:SetSize(200, 35)
         button:SetScript("OnClick", function()
             if InCombatLockdown() then
-                CludesUI.PrintError("Cannot open options during combat.")
+                CUI.PrintError("Cannot open options during combat.")
                 return
             end
             HideUIPanel(GameMenuFrame)
-            CludesUI:Toggle()
+            CUI:Toggle()
             -- Controller cursor: the pause menu turned the gamepad pointer off as it
             -- hid; unfolding the mini window fires no OnShow, so raise it here too.
-            if CludesUI.PadNative() and CludesUI:IsShown() then
-                CludesUI.RaiseGamePadCursor()
+            if CUI.PadNative() and CUI:IsShown() then
+                CUI.RaiseGamePadCursor()
             end
         end)
-        CludesUI._GetFFD(GameMenuFrame).cuiBtn = button
+        CUI._GetFFD(GameMenuFrame).cuiBtn = button
 
         local unlockButton =
             CreateFrame("Button", "CludesUI_UnlockMenuButton", GameMenuFrame, "MainMenuFrameButtonTemplate")
         unlockButton:SetSize(200, 35)
         unlockButton:SetScript("OnClick", function()
             if InCombatLockdown() then
-                CludesUI.PrintError("Cannot toggle Layout Mode during combat.")
+                CUI.PrintError("Cannot toggle Layout Mode during combat.")
                 return
             end
             HideUIPanel(GameMenuFrame)
-            if CludesUI.ToggleUnlockMode then
-                CludesUI:ToggleUnlockMode()
+            if CUI.ToggleUnlockMode then
+                CUI:ToggleUnlockMode()
             end
             -- Controller cursor: the pause menu turned the gamepad pointer off as it hid.
-            if CludesUI.PadNative() and CludesUI._unlockActive then
-                CludesUI.RaiseGamePadCursor()
+            if CUI.PadNative() and CUI._unlockActive then
+                CUI.RaiseGamePadCursor()
             end
         end)
-        CludesUI._GetFFD(GameMenuFrame).unlockBtn = unlockButton
+        CUI._GetFFD(GameMenuFrame).unlockBtn = unlockButton
 
         -- Skin our custom buttons the same way as pooled Blizzard buttons
         if _reskinMenu then
@@ -5603,27 +5603,27 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 local color = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                     or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
                 cBg:SetColorTexture(color.r, color.g, color.b, color.a == nil and 0.8 or color.a)
-                CludesUI._GetFFD(customButton).gameMenuInset = insetPx
-                CludesUI._GetFFD(customButton).gameMenuButtonBg = cBg
-                if CludesUI._applyBlizzardConfiguredBorder then
-                    CludesUI._applyBlizzardConfiguredBorder(insetPx, "popupMenuButton", 1)
+                CUI._GetFFD(customButton).gameMenuInset = insetPx
+                CUI._GetFFD(customButton).gameMenuButtonBg = cBg
+                if CUI._applyBlizzardConfiguredBorder then
+                    CUI._applyBlizzardConfiguredBorder(insetPx, "popupMenuButton", 1)
                 end
                 local highlight = customButton:CreateTexture(nil, "HIGHLIGHT")
                 highlight:SetAllPoints(insetPx)
                 highlight:SetColorTexture(1, 1, 1, 0.1)
                 local cfs = customButton:GetFontString()
                 if cfs then
-                    local cuiFont = CludesUI.GetFontPath() or nil
+                    local cuiFont = CUI.GetFontPath() or nil
                     local _, px, flags = cfs:GetFont()
                     cfs:SetFont(cuiFont or "Fonts\\FRIZQT__.TTF", (px or 14) - 2, flags or "")
                     -- Native mode keeps the branded inline-code labels set by
                     -- the Layout hook; only explicit modes flat-recolor.
                     if
-                        CludesUI._getPopupMenuElementMode
-                        and CludesUI._getPopupMenuElementMode() ~= "native"
-                        and CludesUI._getPopupMenuButtonTextColor
+                        CUI._getPopupMenuElementMode
+                        and CUI._getPopupMenuElementMode() ~= "native"
+                        and CUI._getPopupMenuButtonTextColor
                     then
-                        local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+                        local red, green, blue = CUI._getPopupMenuButtonTextColor()
                         cfs:SetTextColor(red, green, blue, 1)
                     end
                 end
@@ -5644,8 +5644,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 if headerText then
                     local headerText = headerText.Text
                     if headerText and headerText.SetTextColor then
-                        if CludesUI._getPopupMenuButtonTextColor then
-                            local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+                        if CUI._getPopupMenuButtonTextColor then
+                            local red, green, blue = CUI._getPopupMenuButtonTextColor()
                             headerText:SetTextColor(red, green, blue, 1)
                         end
                     end
@@ -5691,17 +5691,17 @@ initFrame:SetScript("OnEvent", function(self, evt)
             -- Position our buttons in a chain below the anchor
             local extraHeight = 0
             local lastBtn = anchorButton
-            local cuiFont = CludesUI.GetFontPath() or "Fonts\\FRIZQT__.TTF"
+            local cuiFont = CUI.GetFontPath() or "Fonts\\FRIZQT__.TTF"
             local btnFontSize = 13
             -- Branded two-tone labels are the default (native mode, or when BlizzardSkin is not
             -- loaded) -- applied via inline color codes in SetText, which works with the
             -- pause-menu reskin off too. Only an explicitly chosen Element & Text Color mode switches to a plain label + whole-string recolor (inline codes would override SetTextColor otherwise).
-            local elemMode = CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode()
+            local elemMode = CUI._getPopupMenuElementMode and CUI._getPopupMenuElementMode()
                 or "native"
             local brandHex
             if elemMode == "native" then
-                local ACC = CludesUI.CLUDES_GREEN or { r = 0.27, g = 0.86, b = 0.49 }
-                brandHex = CludesUI.HexColor(ACC.r, ACC.g, ACC.b)
+                local ACC = CUI.CLUDES_GREEN or { r = 0.27, g = 0.86, b = 0.49 }
+                brandHex = CUI.HexColor(ACC.r, ACC.g, ACC.b)
             end
 
             if showCUI then
@@ -5715,8 +5715,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
                     local fontStr = button:GetFontString()
                     if fontStr then
                         fontStr:SetFont(cuiFont, btnFontSize, "")
-                        if not brandHex and CludesUI._getPopupMenuButtonTextColor then
-                            local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+                        if not brandHex and CUI._getPopupMenuButtonTextColor then
+                            local red, green, blue = CUI._getPopupMenuButtonTextColor()
                             fontStr:SetTextColor(red, green, blue, 1)
                         end
                     end
@@ -5737,8 +5737,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
                     local fs2 = unlockButton:GetFontString()
                     if fs2 then
                         fs2:SetFont(cuiFont, btnFontSize, "")
-                        if not brandHex and CludesUI._getPopupMenuButtonTextColor then
-                            local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+                        if not brandHex and CUI._getPopupMenuButtonTextColor then
+                            local red, green, blue = CUI._getPopupMenuButtonTextColor()
                             fs2:SetTextColor(red, green, blue, 1)
                         end
                     end
@@ -5772,16 +5772,16 @@ initFrame:SetScript("OnEvent", function(self, evt)
 
     -- Apply theme settings from SavedVariables
     if CludesUIDB then
-        local skinName = CludesUIDB.activeTheme or CludesUI.DEFAULT_THEME
+        local skinName = CludesUIDB.activeTheme or CUI.DEFAULT_THEME
         CLUDES_GREEN._themeEnabled = true
-        local themeR, themeG, themeB = CludesUI.ResolveThemeColor(skinName)
+        local themeR, themeG, themeB = CUI.ResolveThemeColor(skinName)
         -- Apply theme color to the window background only. The CUI Options Theme
         -- is a SEPARATE, global control from the UI accent color (per-profile).
-        if CludesUI._applyBgTint then
-            CludesUI._applyBgTint(themeR, themeG, themeB)
+        if CUI._applyBgTint then
+            CUI._applyBgTint(themeR, themeG, themeB)
         end
         -- Art left out of the file-load preload is preloaded for its own player only.
-        CludesUI._PreloadLazyThemeBG(skinName)
+        CUI._PreloadLazyThemeBG(skinName)
         -- UI accent: authoritative login resolution for the active profile
         -- (per-profile cuiAccent -> frozen global root -> theme color). When a
         -- profile has no per-profile accent this reproduces the legacy behavior
@@ -5791,9 +5791,9 @@ initFrame:SetScript("OnEvent", function(self, evt)
         -- fields directly: Lite is TOC-ordered ahead of this file, so its
         -- PLAYER_LOGIN fires first and every module's OnEnable has already
         -- painted against the parse-time fallback. Notifying repaints them.
-        local accentR, accentG, accentB = CludesUI.ResolveActiveAccent()
-        if CludesUI.ApplyAccentColorLive then
-            CludesUI.ApplyAccentColorLive(accentR, accentG, accentB)
+        local accentR, accentG, accentB = CUI.ResolveActiveAccent()
+        if CUI.ApplyAccentColorLive then
+            CUI.ApplyAccentColorLive(accentR, accentG, accentB)
         else
             CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b = accentR, accentG, accentB
         end
@@ -5867,10 +5867,10 @@ initFrame:SetScript("OnEvent", function(self, evt)
         -- engine-side tooltipShowAuraSpellIDs CVar (68824+) formats the ID itself and works under
         -- full secrecy, including the forbidden container tooltips. The CVar is session-only, so
         -- it re-asserts every login and on toggle edits. Modifier-gated configs skip it: the engine renders always-on, which would override the user's hold-a-modifier preference (their combat aura IDs stay unavailable -- inherent trade).
-        function CludesUI.SyncAuraSpellIDCVar()
+        function CUI.SyncAuraSpellIDCVar()
             local saved = CludesUIDB
-            local enabled = CludesUI.SpellIDOn() and (saved.spellIDModifier or "none") == "none"
-            pcall(CludesUI.SetCVar, "tooltipShowAuraSpellIDs", enabled and "1" or "0")
+            local enabled = CUI.SpellIDOn() and (saved.spellIDModifier or "none") == "none"
+            pcall(CUI.SetCVar, "tooltipShowAuraSpellIDs", enabled and "1" or "0")
         end
         do
             -- PLAYER_ENTERING_WORLD, not PLAYER_LOGIN: the engine settles its
@@ -5888,7 +5888,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
             -- the flag is set on SHOW, so nothing re-fires on later zones.
             local perfPromptShown = false
             cvarBoot:SetScript("OnEvent", function()
-                CludesUI.SyncAuraSpellIDCVar()
+                CUI.SyncAuraSpellIDCVar()
                 if perfPromptShown or not IsInInstance() then
                     return
                 end
@@ -5900,21 +5900,21 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 perfPromptShown = true
                 local which
                 if taintOn and profOn then
-                    which = CludesUI.L("The taintLog and scriptProfile CVars are enabled.")
+                    which = CUI.L("The taintLog and scriptProfile CVars are enabled.")
                 elseif taintOn then
-                    which = CludesUI.L("The taintLog CVar is enabled.")
+                    which = CUI.L("The taintLog CVar is enabled.")
                 else
-                    which = CludesUI.L("The scriptProfile CVar is enabled.")
+                    which = CUI.L("The scriptProfile CVar is enabled.")
                 end
-                CludesUI:ShowConfirmPopup({
-                    title = CludesUI.L("Performance Reminder"),
+                CUI:ShowConfirmPopup({
+                    title = CUI.L("Performance Reminder"),
                     message = which
                         .. " "
-                        .. CludesUI.L(
+                        .. CUI.L(
                             "It reduces performance and should be off unless you are capturing a bug report."
                         ),
-                    confirmText = CludesUI.L("Disable and Reload"),
-                    cancelText = CludesUI.L("Ignore"),
+                    confirmText = CUI.L("Disable and Reload"),
+                    cancelText = CUI.L("Ignore"),
                     reload = true,
                     onConfirm = function()
                         -- The player's own fix, which Uninstall CUI must not
@@ -5927,7 +5927,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
         end
 
         local function SpellIDTooltipHook(tipText, info)
-            if not CludesUI.SpellIDOn() then
+            if not CUI.SpellIDOn() then
                 return
             end
             if not IsSpellIDModifierHeld() then
@@ -5969,7 +5969,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
         end
 
         local function ItemIDTooltipHook(tipText, info)
-            if not CludesUI.SpellIDOn() then
+            if not CUI.SpellIDOn() then
                 return
             end
             if not IsSpellIDModifierHeld() then
@@ -6052,7 +6052,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
         -- them (GetSpell() also returns nil on a macro tooltip). The spell #showtooltip resolved
         -- to (honoring conditionals) is exposed as the FIRST tooltip line's tooltipID, read from the tooltip data.
         local function MacroSpellIDTooltipHook(tipText, _data)
-            if not CludesUI.SpellIDOn() then
+            if not CUI.SpellIDOn() then
                 return
             end
             if not IsSpellIDModifierHeld() then
@@ -6118,7 +6118,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 return
             end
             local relevant = (
-                CludesUI.SpellIDOn() and KeyMatchesModifier(entryKey, saved.spellIDModifier or "none")
+                CUI.SpellIDOn() and KeyMatchesModifier(entryKey, saved.spellIDModifier or "none")
             )
                 or (saved.showItemMaxStacks and KeyMatchesModifier(entryKey, saved.itemStackModifier or "none"))
             if not relevant then
@@ -6139,7 +6139,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
     button:SetText("Open CludesUI")
     button:SetScript("OnClick", function()
         if InCombatLockdown() then
-            CludesUI.PrintError("Cannot open options during combat.")
+            CUI.PrintError("Cannot open options during combat.")
             return
         end
         -- Close Blizzard settings first, then open ours on next frame to avoid taint
@@ -6147,8 +6147,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
             HideUIPanel(SettingsPanel)
         end
         C_Timer.After(0, function()
-            if CludesUI then
-                CludesUI:Show()
+            if CUI then
+                CUI:Show()
             end
         end)
     end)
@@ -6201,7 +6201,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 description = conf.desc,
                 pages = conf.pages,
                 buildPage = function(pageName, hostFrame, yOffset)
-                    local W = CludesUI.Widgets
+                    local W = CUI.Widgets
                     local posY = yOffset
                     local _, hgt
 
@@ -6393,7 +6393,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
                     }
                     dS[k] = { size = 36, font = 14, opacity = 80, spacing = 4, scale = 100, thickness = 2 }
                     dD[k] = { effect = "pulse", position = "center", style = "modern" }
-                    CludesUI:SelectPage(CludesUI:GetActivePage())
+                    CUI:SelectPage(CUI:GetActivePage())
                 end,
             }, false)
         end

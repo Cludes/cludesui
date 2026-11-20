@@ -34,10 +34,10 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- hide (alpha 0 above the threshold) if the empty format is ever rejected.
 
 local _, mod = ...
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 -- Born in this module's main chunk, so the aura containers it builds bill this
 -- module (AuraKit's shared build scheduler).
-local AKWorker = CludesUI.AuraKit.NewBuildWorker()
+local AKWorker = CUI.AuraKit.NewBuildWorker()
 
 -- Arcane Surge splits cast id from aura id, exactly like Ebon Might (395152 ->
 -- 395296, which CUI_ResourceBars_EbonMight121 tracks by the AURA id). The suite
@@ -51,11 +51,11 @@ local SURGE_AURA_ID = 365362 -- Arcane Surge, the buff it applies
 local SOUL_AURA_ID = 451038 -- Arcane Soul (fixed 4s, granted when Surge ends)
 local ARCANE_SPEC_ID = 62
 local SUNFURY_TREE_ID = 39 -- C_ClassTalents.GetActiveHeroTalentSpec()
-local GCD_SPELL_ID = CludesUI.GCD_SPELL
+local GCD_SPELL_ID = CUI.GCD_SPELL
 local STYLE_KEY = "erb:arcsoul121"
 local UNLOCK_KEY = "CUI_ArcaneSoul"
 -- WoW Forever has no Arcane spec or Sunfury: the helper stays off there.
-local FOREVER = CludesUI.IS_FOREVER == true
+local FOREVER = CUI.IS_FOREVER == true
 
 local DEFAULT_POS = { point = "CENTER", relPoint = "CENTER", x = 0, y = -150 }
 
@@ -158,29 +158,29 @@ end
 local function GetASFont()
     local profile = P()
     local cacheKey = (profile and profile.font) or "__global"
-    if cacheKey ~= "__global" and CludesUI and CludesUI.ResolveFontName then
-        local filePath = CludesUI.ResolveFontName(cacheKey)
+    if cacheKey ~= "__global" and CUI and CUI.ResolveFontName then
+        local filePath = CUI.ResolveFontName(cacheKey)
         if filePath then
             return filePath
         end
     end
-    return (CludesUI.GetFontPath("resourceBars")) or STANDARD_TEXT_FONT
+    return (CUI.GetFontPath("resourceBars")) or STANDARD_TEXT_FONT
 end
 
 local function GetASOutline()
     local profile = P()
     local modeName = (profile and profile.outlineMode) or "__global"
     if modeName == "outline" then
-        return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+        return (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     end
     if modeName == "thick" then
-        return (CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG"
+        return (CUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG"
     end
     if modeName == "none" then
         return ""
     end
-    return (CludesUI.GetFontOutlineFlag("resourceBars"))
-        or (CludesUI.SlugFlag("OUTLINE, SLUG"))
+    return (CUI.GetFontOutlineFlag("resourceBars"))
+        or (CUI.SlugFlag("OUTLINE, SLUG"))
         or "OUTLINE, SLUG"
 end
 
@@ -193,7 +193,7 @@ local function ApplyFsLook(phaseNum, fontStr)
         return
     end
     local flags = GetASOutline()
-    CludesUI.PrimeFontShadow(fontStr, flags == "")
+    CUI.PrimeFontShadow(fontStr, flags == "")
     fontStr:SetFont(GetASFont(), TextSize(), flags)
     local red, green, blue
     if phaseNum == "soul" then
@@ -352,8 +352,8 @@ local function SurgeFormatter(modeName, thresholdVal, gcdInfo)
 
     local Up = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Up
     local Down = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Down
-    local soulInCount = CludesUI.L("Soul in %d")
-    local soulInTenths = CludesUI.L("Soul in %.1f")
+    local soulInCount = CUI.L("Soul in %d")
+    local soulInTenths = CUI.L("Soul in %.1f")
     local tries
     if modeName == "gcd" then
         tries = {
@@ -418,7 +418,7 @@ local function SoulFormatter(modeName, gcdInfo)
     local Down = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Down
     local frame
     if modeName == "gcd" then
-        local lastText = CludesUI.L("LAST")
+        local lastText = CUI.L("LAST")
         frame = NewFormatter(GcdBandPoints("%d", gcdInfo, SOUL_BAND_MAX_S, lastText))
         if not frame then
             -- Divisor fallback. If the literal-only "LAST" band is what was
@@ -544,7 +544,7 @@ local function StampFor(phaseNum, modeName, thresholdVal, gcdInfo)
 end
 
 local function BindPhase(phaseNum, force)
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     local state = SoulState.ph[phaseNum]
     if not (AK and state.btn and state.fs) then
         return
@@ -591,7 +591,7 @@ local SURGE_INCLUDE = { [SURGE_AURA_ID] = true, [SURGE_CAST_ID] = true }
 local SOUL_INCLUDE = { [SOUL_AURA_ID] = true }
 
 local function BuildPhase(phaseNum, include)
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     local state = SoulState.ph[phaseNum]
     if state.container then
         return
@@ -657,7 +657,7 @@ local function PlaceProxy()
     -- Anchored to another element: the unlock anchor system owns placement;
     -- re-applying the stored absolute here would slam the frame back to a
     -- stale spot on every apply (same guard as the GCD / totem bars).
-    local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(UNLOCK_KEY)
+    local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(UNLOCK_KEY)
     if anchored and SoulState.proxy:GetLeft() then
         return
     end
@@ -666,7 +666,7 @@ local function PlaceProxy()
     local place = (profile and profile.unlockPos) or DEFAULT_POS
     local point = place.point or "CENTER"
     local px, py = place.x or 0, place.y or 0
-    local PPa = CludesUI and CludesUI.PP
+    local PPa = CUI and CUI.PP
     if PPa then
         local effScale = SoulState.proxy:GetEffectiveScale()
         -- CENTER anchor with stored CENTER offsets: SnapCenterForDim gives
@@ -711,7 +711,7 @@ local function ApplySettings()
 end
 
 local function Build()
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if SoulState.built or not AK then
         return
     end
@@ -741,7 +741,7 @@ local function EnsureBuilt()
     if SoulState.built or SoulState.queued or SoulState.buildErr then
         return
     end
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if not (AK and AK.QueueBuildJob) then
         return
     end
@@ -773,14 +773,14 @@ local function StyleSample(fontStr)
     local stamp = font .. "|" .. size .. "|" .. flags .. "|" .. modeName
     local changed = fontStr._asStamp ~= stamp
     if changed then
-        CludesUI.PrimeFontShadow(fontStr, flags == "")
+        CUI.PrimeFontShadow(fontStr, flags == "")
         fontStr:SetFont(font, size, flags)
         fontStr._asStamp = stamp
     end
     fontStr:SetTextColor(PreColor())
     fontStr:SetText(
-        modeName == "gcd" and string.format(CludesUI.L("Soul in %d"), 3)
-            or string.format(CludesUI.L("Soul in %.1f"), 3.2)
+        modeName == "gcd" and string.format(CUI.L("Soul in %d"), 3)
+            or string.format(CUI.L("Soul in %.1f"), 3.2)
     )
     return size, changed
 end
@@ -846,9 +846,9 @@ local function DemoText(fontStr, t, gcdInfo)
         -- The hide rule owns thr itself: the first visible value is below it.
         local leftX = math.min(thresholdVal - t, thresholdVal - 0.01)
         if PhaseMode("surge") == "gcd" then
-            fontStr:SetFormattedText(CludesUI.L("Soul in %d"), DemoGcdCount(leftX, gcdInfo))
+            fontStr:SetFormattedText(CUI.L("Soul in %d"), DemoGcdCount(leftX, gcdInfo))
         else
-            fontStr:SetFormattedText(CludesUI.L("Soul in %.1f"), math.floor(leftX * 10) / 10)
+            fontStr:SetFormattedText(CUI.L("Soul in %.1f"), math.floor(leftX * 10) / 10)
         end
         red, green, blue = PreColor()
     else
@@ -859,7 +859,7 @@ local function DemoText(fontStr, t, gcdInfo)
         else
             local num = DemoGcdCount(leftX, gcdInfo)
             if num == 1 then
-                fontStr:SetText(CludesUI.L("LAST"))
+                fontStr:SetText(CUI.L("LAST"))
                 red, green, blue = LastColor()
             else
                 fontStr:SetFormattedText("%d", num)
@@ -963,7 +963,7 @@ end
 -- to decide, and unlock mode is the one caller that overrides it (the mover has
 -- to be grabbable for any Mage).
 local function MoverShowOK()
-    return (CludesUI and CludesUI._unlockActive) or GateOK()
+    return (CUI and CUI._unlockActive) or GateOK()
 end
 
 -- placeOnly: size and position the proxy but keep it, and with it any engine
@@ -977,7 +977,7 @@ local function StartTracking(placeOnly)
         ApplyLook()
     end
     -- Placement belongs to the mover while unlock mode is open (see ApplyPosition).
-    if not (CludesUI and CludesUI._unlockActive) then
+    if not (CUI and CUI._unlockActive) then
         PlaceProxy()
     end
     if placeOnly then
@@ -1115,7 +1115,7 @@ function mod.AS_Apply()
         return
     end
     EnsureGateEvents()
-    if CludesUI and CludesUI._unlockActive then
+    if CUI and CUI._unlockActive then
         StartTracking()
         ShowPreview()
         return
@@ -1166,9 +1166,9 @@ function mod.AS_MakeUnlockElement(MK)
         return nil
     end
 
-    if not SoulState.unlockHooked and CludesUI and CludesUI.RegisterUnlockModeListener then
+    if not SoulState.unlockHooked and CUI and CUI.RegisterUnlockModeListener then
         SoulState.unlockHooked = true
-        CludesUI:RegisterUnlockModeListener(UNLOCK_KEY, function(isActive)
+        CUI:RegisterUnlockModeListener(UNLOCK_KEY, function(isActive)
             if isActive then
                 if OnForClass() then
                     StartTracking()
@@ -1197,7 +1197,7 @@ function mod.AS_MakeUnlockElement(MK)
             if not OnForClass() then
                 return nil
             end
-            if CludesUI._unlockActive then
+            if CUI._unlockActive then
                 StartTracking()
                 ShowPreview()
             else
@@ -1223,7 +1223,7 @@ function mod.AS_MakeUnlockElement(MK)
                 return
             end
             profile.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
-            if not CludesUI._unlockActive then
+            if not CUI._unlockActive then
                 PlaceProxy()
             end
         end,
@@ -1265,7 +1265,7 @@ function mod.AS_MakeUnlockElement(MK)
                 StartTracking()
             end
             PlaceProxy()
-            if CludesUI._unlockActive then
+            if CUI._unlockActive then
                 ShowPreview()
             end
         end,

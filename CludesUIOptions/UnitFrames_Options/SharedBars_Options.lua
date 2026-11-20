@@ -45,11 +45,11 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
             UpdatePreview()
         end
     end
-    local SVal = context.SVal
+    local ReadSetting = context.SVal
     -- A row getter over SVal: the key's value, or the default given.
     local function SValRow(settingKey, default)
         return function()
-            return SVal(settingKey, default)
+            return ReadSetting(settingKey, default)
         end
     end
     local _, height
@@ -66,7 +66,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
     local ufhDis, ufhTip, ufhRaw = CludesUI.MatchGuard(optionState.selectedUnit, "Height")
     local ufwDis, ufwTip, ufwRaw = CludesUI.MatchGuard(optionState.selectedUnit, "Width")
     -- Vertical Fill wants tall, narrow bars: the Vertical Fill toggle rebuilds the page.
-    local vertFill = SVal("healthVerticalFill", false) == true
+    local vertFill = ReadSetting("healthVerticalFill", false) == true
     sharedSizeRow, height = W:DualRow(
         hostFrame,
         cursorY,
@@ -111,7 +111,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 step = 5,
                 tooltip = "Scales the whole frame. Blizzard Style frames are the stock size, so this stands in for Bar Width and Health Bar Height.",
                 getValue = function()
-                    return math.floor(SVal("blizzScale", 1) * 100 + 0.5)
+                    return math.floor(ReadSetting("blizzScale", 1) * 100 + 0.5)
                 end,
                 setValue = function(val)
                     SSet("blizzScale", val / 100)
@@ -193,7 +193,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 tooltip = "Gradient End Color",
                 hasAlpha = false,
                 disabled = function()
-                    return not SVal("gradientEnabled", false)
+                    return not ReadSetting("gradientEnabled", false)
                 end,
                 disabledTooltip = function()
                     return "Gradient"
@@ -220,7 +220,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 -- healthClassColored are left exactly as the user had them and come
                 -- back untouched the moment Dynamic Color goes to Off.
                 disabled = function()
-                    return SVal("healthColorMode", "none") ~= "none"
+                    return ReadSetting("healthColorMode", "none") ~= "none"
                 end,
                 disabledTooltip = "Dynamic Color is on -- the fill color comes from the unit's health",
                 rawTooltip = true,
@@ -237,7 +237,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     UpdatePreview()
                 end,
                 onClick = function(self)
-                    if SVal("healthClassColored", true) then
+                    if ReadSetting("healthClassColored", true) then
                         -- Seed the custom fill on first use: without a stored
                         -- customFillColor the runtime falls back to oUF's class/reaction
                         -- color (bar looks unchanged until dragged); never overwrites an existing custom color.
@@ -255,7 +255,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     end
                 end,
                 refreshAlpha = function()
-                    return SVal("healthClassColored", true) and 0.3 or 1
+                    return ReadSetting("healthClassColored", true) and 0.3 or 1
                 end,
             },
             {
@@ -266,7 +266,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 -- uses the class color, but as the 100% stop of the curve, not as
                 -- this flat choice.
                 disabled = function()
-                    return SVal("healthColorMode", "none") ~= "none"
+                    return ReadSetting("healthColorMode", "none") ~= "none"
                 end,
                 disabledTooltip = "Dynamic Color is on -- the fill color comes from the unit's health",
                 rawTooltip = true,
@@ -285,7 +285,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    return SVal("healthClassColored", true) and 1 or 0.3
+                    return ReadSetting("healthClassColored", true) and 1 or 0.3
                 end,
             },
         },
@@ -589,7 +589,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
         -- than rebuilding the page, so without this the swatches keep showing
         -- the previous unit's colors.
         local function UpdateDynSwatchVis()
-            local mode = SVal("healthColorMode", "none")
+            local mode = ReadSetting("healthColorMode", "none")
             local isDynamic = mode == "customDynamic"
             local isReactive = mode == "classReactive"
             for idx, sw in ipairs(dynSwatches) do
@@ -665,7 +665,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(hostFrame._ufLevelRow._leftRegion, {
                 disabled = function()
-                    return not SVal("blizzShowLevel", true)
+                    return not ReadSetting("blizzShowLevel", true)
                 end,
                 disabledTooltip = "This option requires Show Level.",
                 title = "Level Text Settings",
@@ -678,7 +678,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                         max = 100,
                         step = 1,
                         get = function()
-                            return SVal("blizzLevelSize", SVal("leftTextSize", SDB().textSize or 12))
+                            return ReadSetting("blizzLevelSize", ReadSetting("leftTextSize", SDB().textSize or 12))
                         end,
                         set = SSetRowThen("blizzLevelSize"),
                     },
@@ -840,11 +840,11 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 local leftRegion = region
                 CludesUI.BuildInlineCog(leftRegion, {
                     disabled = function()
-                        return SVal("leftTextContent", "name") == "none"
+                        return ReadSetting("leftTextContent", "name") == "none"
                     end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Left Text Settings",
-                    rows = mod.UF_CoreTextRows("leftText", "name", SVal, SSet, {
+                    rows = mod.UF_CoreTextRows("leftText", "name", ReadSetting, SSet, {
                         {
                             type = "slider",
                             label = "Size",
@@ -852,7 +852,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             max = 100,
                             step = 1,
                             get = function()
-                                return SVal("leftTextSize", SDB().textSize or 12)
+                                return ReadSetting("leftTextSize", SDB().textSize or 12)
                             end,
                             set = SSetRowThen("leftTextSize"),
                         },
@@ -887,7 +887,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             type = "multiswatch",
                             label = "Indicator Color",
                             disabled = function()
-                                local c = SVal("leftTextContent", "name")
+                                local c = ReadSetting("leftTextContent", "name")
                                 return c ~= "nametotarget" and c ~= "targetname"
                             end,
                             disabledTooltip = "This option only applies when Name > Target or Target is selected.",
@@ -896,7 +896,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     tooltip = "Custom Colored",
                                     hasAlpha = false,
                                     getValue = function()
-                                        local color = SVal("leftTextTargetSepColor", nil)
+                                        local color = ReadSetting("leftTextTargetSepColor", nil)
                                         if type(color) == "table" then
                                             return color.r or 1, color.g or 1, color.b or 1
                                         end
@@ -907,7 +907,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         UpdatePreview()
                                     end,
                                     onClick = function(self)
-                                        if SVal("leftTextTargetSepClassColor", false) then
+                                        if ReadSetting("leftTextTargetSepClassColor", false) then
                                             SSet("leftTextTargetSepClassColor", false)
                                             UpdatePreview()
                                             return
@@ -917,7 +917,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         end
                                     end,
                                     refreshAlpha = function()
-                                        return SVal("leftTextTargetSepClassColor", false) and 0.3 or 1
+                                        return ReadSetting("leftTextTargetSepClassColor", false) and 0.3 or 1
                                     end,
                                 },
                                 {
@@ -930,7 +930,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         UpdatePreview()
                                     end,
                                     refreshAlpha = function()
-                                        return SVal("leftTextTargetSepClassColor", false) and 1 or 0.3
+                                        return ReadSetting("leftTextTargetSepClassColor", false) and 1 or 0.3
                                     end,
                                 },
                             },
@@ -949,7 +949,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 UpdatePreview()
                             end,
                             disabled = function()
-                                return SVal("leftTextContent", "name") ~= "nametotarget"
+                                return ReadSetting("leftTextContent", "name") ~= "nametotarget"
                             end,
                             disabledTooltip = "This option only applies when Name > Target is selected.",
                         },
@@ -966,7 +966,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 UpdatePreview()
                             end,
                             disabled = function()
-                                return SVal("leftTextContent", "name") ~= "targetname"
+                                return ReadSetting("leftTextContent", "name") ~= "targetname"
                             end,
                             disabledTooltip = "This option only applies when Target is selected.",
                         },
@@ -996,7 +996,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 )
                 Pix.Point(leftClassSwatch, "RIGHT", ltAnchor, "LEFT", -8, 0)
                 leftClassSwatch:SetScript("OnClick", function()
-                    if SVal("leftTextContent", "name") == "none" then
+                    if ReadSetting("leftTextContent", "name") == "none" then
                         return
                     end
                     -- Attribution read before the write: a setter that rebuilds the page
@@ -1012,7 +1012,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 CludesUI.HoverTip(leftClassSwatch, "Class Colored")
                 -- Custom Colored swatch (left of the class swatch): opens the color picker.
                 local ltSwGet = function()
-                    return SVal("leftTextColorR", 1), SVal("leftTextColorG", 1), SVal("leftTextColorB", 1)
+                    return ReadSetting("leftTextColorR", 1), ReadSetting("leftTextColorG", 1), ReadSetting("leftTextColorB", 1)
                 end
                 local ltSwSet = function(red, green, blue)
                     SSet("leftTextColorR", red)
@@ -1026,10 +1026,10 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 leftRegion._lastInline = ltSwatch
                 local ltOrigClick = ltSwatch:GetScript("OnClick")
                 ltSwatch:SetScript("OnClick", function(self, ...)
-                    if SVal("leftTextContent", "name") == "none" then
+                    if ReadSetting("leftTextContent", "name") == "none" then
                         return
                     end
-                    if SVal("leftTextClassColor", false) then
+                    if ReadSetting("leftTextClassColor", false) then
                         local snapshot = CludesUI._SOAttribution(self)
                         SSet("leftTextClassColor", false)
                         CludesUI._NotifySettingWrite(self, snapshot)
@@ -1043,8 +1043,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 end)
                 CludesUI.HoverTip(ltSwatch, "Custom Colored")
                 local function UpdateLtSwatches()
-                    local noneMode = SVal("leftTextContent", "name") == "none"
-                    local classMode = SVal("leftTextClassColor", false)
+                    local noneMode = ReadSetting("leftTextContent", "name") == "none"
+                    local classMode = ReadSetting("leftTextClassColor", false)
                     ltSwatch:SetAlpha((classMode or noneMode) and 0.3 or 1)
                     leftClassSwatch:SetAlpha((classMode and not noneMode) and 1 or 0.3)
                 end
@@ -1190,11 +1190,11 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 local rightRegion = region
                 CludesUI.BuildInlineCog(rightRegion, {
                     disabled = function()
-                        return SVal("rightTextContent", "both") == "none"
+                        return ReadSetting("rightTextContent", "both") == "none"
                     end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Right Text Settings",
-                    rows = mod.UF_CoreTextRows("rightText", "both", SVal, SSet, {
+                    rows = mod.UF_CoreTextRows("rightText", "both", ReadSetting, SSet, {
                         {
                             type = "slider",
                             label = "Size",
@@ -1202,7 +1202,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             max = 100,
                             step = 1,
                             get = function()
-                                return SVal("rightTextSize", SDB().textSize or 12)
+                                return ReadSetting("rightTextSize", SDB().textSize or 12)
                             end,
                             set = SSetRowThen("rightTextSize"),
                         },
@@ -1237,7 +1237,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             type = "multiswatch",
                             label = "Indicator Color",
                             disabled = function()
-                                local c = SVal("rightTextContent", "both")
+                                local c = ReadSetting("rightTextContent", "both")
                                 return c ~= "nametotarget" and c ~= "targetname"
                             end,
                             disabledTooltip = "This option only applies when Name > Target or Target is selected.",
@@ -1246,7 +1246,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     tooltip = "Custom Colored",
                                     hasAlpha = false,
                                     getValue = function()
-                                        local color = SVal("rightTextTargetSepColor", nil)
+                                        local color = ReadSetting("rightTextTargetSepColor", nil)
                                         if type(color) == "table" then
                                             return color.r or 1, color.g or 1, color.b or 1
                                         end
@@ -1257,7 +1257,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         UpdatePreview()
                                     end,
                                     onClick = function(self)
-                                        if SVal("rightTextTargetSepClassColor", false) then
+                                        if ReadSetting("rightTextTargetSepClassColor", false) then
                                             SSet("rightTextTargetSepClassColor", false)
                                             UpdatePreview()
                                             return
@@ -1267,7 +1267,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         end
                                     end,
                                     refreshAlpha = function()
-                                        return SVal("rightTextTargetSepClassColor", false) and 0.3 or 1
+                                        return ReadSetting("rightTextTargetSepClassColor", false) and 0.3 or 1
                                     end,
                                 },
                                 {
@@ -1280,7 +1280,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         UpdatePreview()
                                     end,
                                     refreshAlpha = function()
-                                        return SVal("rightTextTargetSepClassColor", false) and 1 or 0.3
+                                        return ReadSetting("rightTextTargetSepClassColor", false) and 1 or 0.3
                                     end,
                                 },
                             },
@@ -1299,7 +1299,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 UpdatePreview()
                             end,
                             disabled = function()
-                                return SVal("rightTextContent", "both") ~= "nametotarget"
+                                return ReadSetting("rightTextContent", "both") ~= "nametotarget"
                             end,
                             disabledTooltip = "This option only applies when Name > Target is selected.",
                         },
@@ -1316,7 +1316,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 UpdatePreview()
                             end,
                             disabled = function()
-                                return SVal("rightTextContent", "both") ~= "targetname"
+                                return ReadSetting("rightTextContent", "both") ~= "targetname"
                             end,
                             disabledTooltip = "This option only applies when Target is selected.",
                         },
@@ -1345,7 +1345,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 )
                 Pix.Point(rightClassSwatch, "RIGHT", rtAnchor, "LEFT", -8, 0)
                 rightClassSwatch:SetScript("OnClick", function()
-                    if SVal("rightTextContent", "both") == "none" then
+                    if ReadSetting("rightTextContent", "both") == "none" then
                         return
                     end
                     -- Attribution read before the write (see the Left Text swatch).
@@ -1359,7 +1359,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 end)
                 CludesUI.HoverTip(rightClassSwatch, "Class Colored")
                 local rtSwGet = function()
-                    return SVal("rightTextColorR", 1), SVal("rightTextColorG", 1), SVal("rightTextColorB", 1)
+                    return ReadSetting("rightTextColorR", 1), ReadSetting("rightTextColorG", 1), ReadSetting("rightTextColorB", 1)
                 end
                 local rtSwSet = function(red, green, blue)
                     SSet("rightTextColorR", red)
@@ -1379,10 +1379,10 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 rightRegion._lastInline = rtSwatch
                 local rtOrigClick = rtSwatch:GetScript("OnClick")
                 rtSwatch:SetScript("OnClick", function(self, ...)
-                    if SVal("rightTextContent", "both") == "none" then
+                    if ReadSetting("rightTextContent", "both") == "none" then
                         return
                     end
-                    if SVal("rightTextClassColor", false) then
+                    if ReadSetting("rightTextClassColor", false) then
                         local snapshot = CludesUI._SOAttribution(self)
                         SSet("rightTextClassColor", false)
                         CludesUI._NotifySettingWrite(self, snapshot)
@@ -1396,8 +1396,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 end)
                 CludesUI.HoverTip(rtSwatch, "Custom Colored")
                 local function UpdateRtSwatches()
-                    local noneMode = SVal("rightTextContent", "both") == "none"
-                    local classMode = SVal("rightTextClassColor", false)
+                    local noneMode = ReadSetting("rightTextContent", "both") == "none"
+                    local classMode = ReadSetting("rightTextClassColor", false)
                     rtSwatch:SetAlpha((classMode or noneMode) and 0.3 or 1)
                     rightClassSwatch:SetAlpha((classMode and not noneMode) and 1 or 0.3)
                 end
@@ -1536,11 +1536,11 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 local ctrRgn = region
                 CludesUI.BuildInlineCog(ctrRgn, {
                     disabled = function()
-                        return SVal("centerTextContent", "none") == "none"
+                        return ReadSetting("centerTextContent", "none") == "none"
                     end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Center Text Settings",
-                    rows = mod.UF_CoreTextRows("centerText", "none", SVal, SSet, {
+                    rows = mod.UF_CoreTextRows("centerText", "none", ReadSetting, SSet, {
                         {
                             type = "slider",
                             label = "Size",
@@ -1548,7 +1548,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             max = 100,
                             step = 1,
                             get = function()
-                                return SVal("centerTextSize", SDB().textSize or 12)
+                                return ReadSetting("centerTextSize", SDB().textSize or 12)
                             end,
                             set = SSetRowThen("centerTextSize"),
                         },
@@ -1583,7 +1583,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             type = "multiswatch",
                             label = "Indicator Color",
                             disabled = function()
-                                local c = SVal("centerTextContent", "none")
+                                local c = ReadSetting("centerTextContent", "none")
                                 return c ~= "nametotarget" and c ~= "targetname"
                             end,
                             disabledTooltip = "This option only applies when Name > Target or Target is selected.",
@@ -1592,7 +1592,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     tooltip = "Custom Colored",
                                     hasAlpha = false,
                                     getValue = function()
-                                        local color = SVal("centerTextTargetSepColor", nil)
+                                        local color = ReadSetting("centerTextTargetSepColor", nil)
                                         if type(color) == "table" then
                                             return color.r or 1, color.g or 1, color.b or 1
                                         end
@@ -1603,7 +1603,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         UpdatePreview()
                                     end,
                                     onClick = function(self)
-                                        if SVal("centerTextTargetSepClassColor", false) then
+                                        if ReadSetting("centerTextTargetSepClassColor", false) then
                                             SSet("centerTextTargetSepClassColor", false)
                                             UpdatePreview()
                                             return
@@ -1613,7 +1613,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         end
                                     end,
                                     refreshAlpha = function()
-                                        return SVal("centerTextTargetSepClassColor", false) and 0.3 or 1
+                                        return ReadSetting("centerTextTargetSepClassColor", false) and 0.3 or 1
                                     end,
                                 },
                                 {
@@ -1626,7 +1626,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         UpdatePreview()
                                     end,
                                     refreshAlpha = function()
-                                        return SVal("centerTextTargetSepClassColor", false) and 1 or 0.3
+                                        return ReadSetting("centerTextTargetSepClassColor", false) and 1 or 0.3
                                     end,
                                 },
                             },
@@ -1645,7 +1645,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 UpdatePreview()
                             end,
                             disabled = function()
-                                return SVal("centerTextContent", "none") ~= "nametotarget"
+                                return ReadSetting("centerTextContent", "none") ~= "nametotarget"
                             end,
                             disabledTooltip = "This option only applies when Name > Target is selected.",
                         },
@@ -1662,7 +1662,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 UpdatePreview()
                             end,
                             disabled = function()
-                                return SVal("centerTextContent", "none") ~= "targetname"
+                                return ReadSetting("centerTextContent", "none") ~= "targetname"
                             end,
                             disabledTooltip = "This option only applies when Target is selected.",
                         },
@@ -1691,7 +1691,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 )
                 Pix.Point(ctClassSwatch, "RIGHT", ctAnchor, "LEFT", -8, 0)
                 ctClassSwatch:SetScript("OnClick", function()
-                    if SVal("centerTextContent", "none") == "none" then
+                    if ReadSetting("centerTextContent", "none") == "none" then
                         return
                     end
                     SSet("centerTextClassColor", true)
@@ -1700,9 +1700,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 end)
                 CludesUI.HoverTip(ctClassSwatch, "Class Colored")
                 local ctSwGet = function()
-                    return SVal("centerTextColorR", 1),
-                        SVal("centerTextColorG", 1),
-                        SVal("centerTextColorB", 1)
+                    return ReadSetting("centerTextColorR", 1),
+                        ReadSetting("centerTextColorG", 1),
+                        ReadSetting("centerTextColorB", 1)
                 end
                 local ctSwSet = function(red, green, blue)
                     SSet("centerTextColorR", red)
@@ -1716,10 +1716,10 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 ctrRgn._lastInline = ctSwatch
                 local ctOrigClick = ctSwatch:GetScript("OnClick")
                 ctSwatch:SetScript("OnClick", function(self, ...)
-                    if SVal("centerTextContent", "none") == "none" then
+                    if ReadSetting("centerTextContent", "none") == "none" then
                         return
                     end
-                    if SVal("centerTextClassColor", false) then
+                    if ReadSetting("centerTextClassColor", false) then
                         SSet("centerTextClassColor", false)
                         UpdatePreview()
                         CludesUI:RefreshPage()
@@ -1731,8 +1731,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 end)
                 CludesUI.HoverTip(ctSwatch, "Custom Colored")
                 local function UpdateCtSwatches()
-                    local noneMode = SVal("centerTextContent", "none") == "none"
-                    local classMode = SVal("centerTextClassColor", false)
+                    local noneMode = ReadSetting("centerTextContent", "none") == "none"
+                    local classMode = ReadSetting("centerTextClassColor", false)
                     ctSwatch:SetAlpha((classMode or noneMode) and 0.3 or 1)
                     ctClassSwatch:SetAlpha((classMode and not noneMode) and 1 or 0.3)
                 end
@@ -1864,11 +1864,11 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 local etrRgn = region
                 CludesUI.BuildInlineCog(etrRgn, {
                     disabled = function()
-                        return SVal("extraTextContent", "none") == "none"
+                        return ReadSetting("extraTextContent", "none") == "none"
                     end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Extra Text Settings",
-                    rows = mod.UF_CoreTextRows("extraText", "none", SVal, SSet, {
+                    rows = mod.UF_CoreTextRows("extraText", "none", ReadSetting, SSet, {
                         {
                             type = "dropdown",
                             label = "Alignment",
@@ -1888,7 +1888,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             max = 100,
                             step = 1,
                             get = function()
-                                return SVal("extraTextSize", SDB().textSize or 12)
+                                return ReadSetting("extraTextSize", SDB().textSize or 12)
                             end,
                             set = SSetRowThen("extraTextSize"),
                         },
@@ -1923,7 +1923,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             type = "multiswatch",
                             label = "Indicator Color",
                             disabled = function()
-                                local c = SVal("extraTextContent", "none")
+                                local c = ReadSetting("extraTextContent", "none")
                                 return c ~= "nametotarget" and c ~= "targetname"
                             end,
                             disabledTooltip = "This option only applies when Name > Target or Target is selected.",
@@ -1932,7 +1932,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     tooltip = "Custom Colored",
                                     hasAlpha = false,
                                     getValue = function()
-                                        local color = SVal("extraTextTargetSepColor", nil)
+                                        local color = ReadSetting("extraTextTargetSepColor", nil)
                                         if type(color) == "table" then
                                             return color.r or 1, color.g or 1, color.b or 1
                                         end
@@ -1943,7 +1943,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         UpdatePreview()
                                     end,
                                     onClick = function(self)
-                                        if SVal("extraTextTargetSepClassColor", false) then
+                                        if ReadSetting("extraTextTargetSepClassColor", false) then
                                             SSet("extraTextTargetSepClassColor", false)
                                             UpdatePreview()
                                             return
@@ -1953,7 +1953,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         end
                                     end,
                                     refreshAlpha = function()
-                                        return SVal("extraTextTargetSepClassColor", false) and 0.3 or 1
+                                        return ReadSetting("extraTextTargetSepClassColor", false) and 0.3 or 1
                                     end,
                                 },
                                 {
@@ -1966,7 +1966,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         UpdatePreview()
                                     end,
                                     refreshAlpha = function()
-                                        return SVal("extraTextTargetSepClassColor", false) and 1 or 0.3
+                                        return ReadSetting("extraTextTargetSepClassColor", false) and 1 or 0.3
                                     end,
                                 },
                             },
@@ -1985,7 +1985,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 UpdatePreview()
                             end,
                             disabled = function()
-                                return SVal("extraTextContent", "none") ~= "nametotarget"
+                                return ReadSetting("extraTextContent", "none") ~= "nametotarget"
                             end,
                             disabledTooltip = "This option only applies when Name > Target is selected.",
                         },
@@ -2002,7 +2002,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 UpdatePreview()
                             end,
                             disabled = function()
-                                return SVal("extraTextContent", "none") ~= "targetname"
+                                return ReadSetting("extraTextContent", "none") ~= "targetname"
                             end,
                             disabledTooltip = "This option only applies when Target is selected.",
                         },
@@ -2031,7 +2031,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 )
                 Pix.Point(etClassSwatch, "RIGHT", etAnchor, "LEFT", -8, 0)
                 etClassSwatch:SetScript("OnClick", function()
-                    if SVal("extraTextContent", "none") == "none" then
+                    if ReadSetting("extraTextContent", "none") == "none" then
                         return
                     end
                     SSet("extraTextClassColor", true)
@@ -2040,7 +2040,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 end)
                 CludesUI.HoverTip(etClassSwatch, "Class Colored")
                 local etSwGet = function()
-                    return SVal("extraTextColorR", 1), SVal("extraTextColorG", 1), SVal("extraTextColorB", 1)
+                    return ReadSetting("extraTextColorR", 1), ReadSetting("extraTextColorG", 1), ReadSetting("extraTextColorB", 1)
                 end
                 local etSwSet = function(red, green, blue)
                     SSet("extraTextColorR", red)
@@ -2054,10 +2054,10 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 etrRgn._lastInline = etSwatch
                 local etOrigClick = etSwatch:GetScript("OnClick")
                 etSwatch:SetScript("OnClick", function(self, ...)
-                    if SVal("extraTextContent", "none") == "none" then
+                    if ReadSetting("extraTextContent", "none") == "none" then
                         return
                     end
-                    if SVal("extraTextClassColor", false) then
+                    if ReadSetting("extraTextClassColor", false) then
                         SSet("extraTextClassColor", false)
                         UpdatePreview()
                         CludesUI:RefreshPage()
@@ -2069,8 +2069,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 end)
                 CludesUI.HoverTip(etSwatch, "Custom Colored")
                 local function UpdateEtSwatches()
-                    local noneMode = SVal("extraTextContent", "none") == "none"
-                    local classMode = SVal("extraTextClassColor", false)
+                    local noneMode = ReadSetting("extraTextContent", "none") == "none"
+                    local classMode = ReadSetting("extraTextClassColor", false)
                     etSwatch:SetAlpha((classMode or noneMode) and 0.3 or 1)
                     etClassSwatch:SetAlpha((classMode and not noneMode) and 1 or 0.3)
                 end
@@ -2119,7 +2119,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             UpdatePreview()
         end
     end
-    local SSetSupported, SVal, SValSupported = context.SSetSupported, context.SVal, context.SValSupported
+    local SSetSupported, ReadSetting, SValSupported = context.SSetSupported, context.SVal, context.SValSupported
     -- A row getter over SValSupported: the key's value, or the default given.
     local function SValSupportedRow(settingKey, default)
         return function()
@@ -2129,7 +2129,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
     -- A row getter over SVal: the key's value, or the default given.
     local function SValRow(settingKey, default)
         return function()
-            return SVal(settingKey, default)
+            return ReadSetting(settingKey, default)
         end
     end
     local _, height
@@ -2222,7 +2222,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             values = ppPosValues,
             order = ppPosOrder,
             getValue = function()
-                return blizzPower and "below" or SVal("powerPosition", "below")
+                return blizzPower and "below" or ReadSetting("powerPosition", "below")
             end,
             setValue = function(val)
                 SSet("powerPosition", val)
@@ -2244,7 +2244,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 if blizzPower then
                     return true
                 end
-                local place = SVal("powerPosition", "below")
+                local place = ReadSetting("powerPosition", "below")
                 return place ~= "detached_top" and place ~= "detached_bottom"
             end,
             disabledTooltip = blizzPower and CludesUI.BlizzStyle.Label("unitframes")
@@ -2355,7 +2355,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
     local function SetPowerTextFormat(val)
         SSet("powerTextFormat", val)
         -- Auto-set position to center if user picks a format while position is "none"
-        if val ~= "none" and SVal("powerPercentText", "none") == "none" then
+        if val ~= "none" and ReadSetting("powerPercentText", "none") == "none" then
             SSet("powerPercentText", "center")
         end
         -- If format is "none", clear position too
@@ -2369,7 +2369,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
         mod.UFO_RefreshMenus(sharedPowerRow2 and sharedPowerRow2._leftRegion)
     end
     local ppTextFmtValues = mod.UFO_CustomTextValues(ppFmtValues, function()
-        return SVal("powerTextFormat", "perpp")
+        return ReadSetting("powerTextFormat", "perpp")
     end, function()
         mod.UFO_EditCustomText("powerText", SDB(), optionState.selectedUnit, function()
             SetPowerTextFormat("custom")
@@ -2381,7 +2381,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
         values = ppTextFmtValues,
         order = ppTextFmtOrder,
         getValue = function()
-            return CludesUI.PowerTextFormat(SVal("powerTextFormat", "perpp"))
+            return CludesUI.PowerTextFormat(ReadSetting("powerTextFormat", "perpp"))
         end,
         setValue = SetPowerTextFormat,
     }, {
@@ -2399,7 +2399,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             sharedPowerRow2._leftRegion,
             "Power Text",
             "powerText",
-            SVal("powerTextFormat", "perpp"),
+            ReadSetting("powerTextFormat", "perpp"),
             SDB,
             function()
                 ReloadAndUpdate()
@@ -2412,7 +2412,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
         local fmtRgn = sharedPowerRow2._leftRegion
         CludesUI.BuildInlineCog(
             fmtRgn,
-            mod.UFO_PowerTextCog(SVal, SSet, { none = true, curpp = true, curmaxpp = true }, function(val)
+            mod.UFO_PowerTextCog(ReadSetting, SSet, { none = true, curpp = true, curmaxpp = true }, function(val)
                 SSet("powerShowPercent", val)
                 UpdatePreview()
             end)
@@ -2447,7 +2447,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 tooltip = "Gradient End Color",
                 hasAlpha = false,
                 disabled = function()
-                    return not SVal("powerGradientEnabled", false)
+                    return not ReadSetting("powerGradientEnabled", false)
                 end,
                 disabledTooltip = function()
                     return "Gradient"
@@ -2481,7 +2481,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     UpdatePreview()
                 end,
                 onClick = function(self)
-                    local val = SVal("powerPercentPowerColor", true)
+                    local val = ReadSetting("powerPercentPowerColor", true)
                     if val then
                         SSet("powerPercentPowerColor", false)
                         UpdatePreview()
@@ -2493,7 +2493,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     end
                 end,
                 refreshAlpha = function()
-                    return SVal("powerPercentPowerColor", true) and 0.3 or 1
+                    return ReadSetting("powerPercentPowerColor", true) and 0.3 or 1
                 end,
             },
             {
@@ -2512,7 +2512,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    return (SVal("powerPercentPowerColor", true) and not SVal("powerClassColored", false))
+                    return (ReadSetting("powerPercentPowerColor", true) and not ReadSetting("powerClassColored", false))
                             and 1
                         or 0.3
                 end,
@@ -2533,7 +2533,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    return (SVal("powerPercentPowerColor", true) and SVal("powerClassColored", false)) and 1
+                    return (ReadSetting("powerPercentPowerColor", true) and ReadSetting("powerClassColored", false)) and 1
                         or 0.3
                 end,
             },
@@ -2775,7 +2775,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     UpdatePreview()
                 end,
                 onClick = function(self)
-                    local val = SVal("powerPercentTextPowerColor", false)
+                    local val = ReadSetting("powerPercentTextPowerColor", false)
                     if val then
                         SSet("powerPercentTextPowerColor", false)
                         UpdatePreview()
@@ -2787,7 +2787,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     end
                 end,
                 refreshAlpha = function()
-                    return SVal("powerPercentTextPowerColor", false) and 0.3 or 1
+                    return ReadSetting("powerPercentTextPowerColor", false) and 0.3 or 1
                 end,
             },
             {
@@ -2806,7 +2806,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    return SVal("powerPercentTextPowerColor", false) and 1 or 0.3
+                    return ReadSetting("powerPercentTextPowerColor", false) and 1 or 0.3
                 end,
             },
         },
@@ -2846,7 +2846,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
         }
         CludesUI.BuildInlineCog(ppRgn, {
             disabled = function()
-                return SVal("powerPercentText", "none") == "none"
+                return ReadSetting("powerPercentText", "none") == "none"
             end,
             disabledTooltip = "This option requires a text position other than none.",
             title = "Text Position",
@@ -2889,7 +2889,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             type = "dropdown",
             text = "Border Style",
             disabled = function()
-                local place = SVal("powerPosition", "below")
+                local place = ReadSetting("powerPosition", "below")
                 return place ~= "detached_top" and place ~= "detached_bottom"
             end,
             disabledTooltip = function()
@@ -2936,7 +2936,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             CludesUI.BorderPxSliderCfg({
                 text = "Border Size",
                 disabled = function()
-                    local place = SVal("powerPosition", "below")
+                    local place = ReadSetting("powerPosition", "below")
                     return place == "none"
                 end,
                 disabledTooltip = function()
@@ -2945,7 +2945,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 rawTooltip = true,
                 trackWidth = 120,
                 getStep = function()
-                    return SVal("powerBorderSize", 0)
+                    return ReadSetting("powerBorderSize", 0)
                 end,
                 setStep = function(step)
                     SDB().powerBorderSize = step
@@ -2953,7 +2953,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 getTex = function()
                     -- The style the bar is painted with (ns.UpdatePowerBorder): an
                     -- attached bar is forced Solid whatever the dropdown holds.
-                    local place = SVal("powerPosition", "below")
+                    local place = ReadSetting("powerPosition", "below")
                     if place == "above" or place == "below" then
                         return "solid"
                     end
@@ -2974,23 +2974,23 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
     -- Only a detached bar can be textured (an attached bar is painted Solid),
     -- so the row exists only while the painted style is textured.
     do
-        local pbPos = SVal("powerPosition", "below")
+        local pbPos = ReadSetting("powerPosition", "below")
         local pbTex = SGet("powerBorderStyle") or "solid"
         if (pbPos == "detached_top" or pbPos == "detached_bottom") and pbTex ~= "solid" and pbTex ~= "" then
             local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                 addonKey = "unitframes",
                 getTex = function()
-                    local place = SVal("powerPosition", "below")
+                    local place = ReadSetting("powerPosition", "below")
                     if place == "above" or place == "below" then
                         return "solid"
                     end
                     return SGet("powerBorderStyle") or "solid"
                 end,
                 getStep = function()
-                    return SVal("powerBorderSize", 0)
+                    return ReadSetting("powerBorderSize", 0)
                 end,
                 getSizeKey = function()
-                    return SVal("powerBorderSize", 0)
+                    return ReadSetting("powerBorderSize", 0)
                 end,
                 getPx = function()
                     return SGet("powerBorderSizePx")
@@ -3036,7 +3036,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                             return val
                         end
                         local texture = SGet("powerBorderStyle") or "solid"
-                        local sz = SVal("powerBorderSize", 0)
+                        local sz = ReadSetting("powerBorderSize", 0)
                         local _, _, dsx = CludesUI.GetBorderDefaults("unitframes", texture, sz)
                         return dsx
                     end,
@@ -3057,7 +3057,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                             return val
                         end
                         local texture = SGet("powerBorderStyle") or "solid"
-                        local sz = SVal("powerBorderSize", 0)
+                        local sz = ReadSetting("powerBorderSize", 0)
                         local _, _, _, dsy = CludesUI.GetBorderDefaults("unitframes", texture, sz)
                         return dsy
                     end,
@@ -3078,7 +3078,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             },
         })
         local function UpdatePBCogVis()
-            local place = SVal("powerPosition", "below")
+            local place = ReadSetting("powerPosition", "below")
             local isDet = (place == "detached_top" or place == "detached_bottom")
             local texture = SGet("powerBorderStyle") or "solid"
             if not isDet or texture == "solid" then
@@ -3100,7 +3100,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             sharedPowerBorderRow:GetFrameLevel() + 3,
             function()
                 local color = SGet("powerBorderColor") or { r = 0, g = 0, b = 0 }
-                return color.r, color.g, color.b, SVal("powerBorderAlpha", 1)
+                return color.r, color.g, color.b, ReadSetting("powerBorderAlpha", 1)
             end,
             function(red, green, blue, a)
                 UNIT_DB_MAP[optionState.selectedUnit]().powerBorderColor = { r = red, g = green, b = blue }
@@ -3130,7 +3130,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             text = "Spell Cost Prediction",
             tooltip = "While you cast, shows on the bar the mana the spell will cost.",
             getValue = function()
-                return SVal("powerCostPrediction", false) == true
+                return ReadSetting("powerCostPrediction", false) == true
             end,
             setValue = function(val)
                 SSet("powerCostPrediction", val)
@@ -3141,7 +3141,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             type = "colorpicker",
             text = "Spell Cost Color",
             disabled = function()
-                return SVal("powerCostPrediction", false) ~= true
+                return ReadSetting("powerCostPrediction", false) ~= true
             end,
             disabledTooltip = "Spell Cost Prediction",
             getValue = function()
@@ -3175,10 +3175,10 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             values = { off = "Off", fsr = "5-Second Rule", ticks = "Regen Ticks" },
             order = { "off", "fsr", "ticks" },
             getValue = function()
-                if SVal("manaRegenSpark", false) ~= true then
+                if ReadSetting("manaRegenSpark", false) ~= true then
                     return "off"
                 end
-                return SVal("manaRegenSparkMode", "fsr") == "ticks" and "ticks" or "fsr"
+                return ReadSetting("manaRegenSparkMode", "fsr") == "ticks" and "ticks" or "fsr"
             end,
             setValue = function(val)
                 if val ~= "off" then
@@ -3212,7 +3212,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     -- The Form rows below exist only with Mana + Form Power: the page
                     -- rebuilds when that choice comes or goes.
                     setValue = CludesUI.DependentSetValue(function()
-                        return SVal("foreverFormBar", false) == true
+                        return ReadSetting("foreverFormBar", false) == true
                     end, function(val)
                         local playerDB = UNIT_DB_MAP["player"]()
                         if val ~= "default" then
@@ -3234,7 +3234,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             -- The Form Power bar's own settings re-apply only that bar
             -- (CUI_UnitFrames_ForeverFormBar.lua), not the whole frame.
             local function NoFormBar()
-                return not SVal("foreverFormBar", false)
+                return not ReadSetting("foreverFormBar", false)
             end
             local function SetForm(settingKey, val)
                 SDB()[settingKey] = val
@@ -3242,9 +3242,9 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             end
             -- A Form Power Text setting; unset follows the power bar's.
             local function FormVal(settingKey, base, def)
-                local val = SVal(settingKey, nil)
+                local val = ReadSetting(settingKey, nil)
                 if val == nil then
-                    val = SVal(base, def)
+                    val = ReadSetting(base, def)
                 end
                 return val
             end
@@ -3350,9 +3350,9 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     -- Text colour: custom, or the form power's colour. Neither set
                     -- follows the power bar's Text Color.
                     local function FormPowerColored()
-                        local pc = SVal("foreverFormTextPowerColor", nil)
-                        if pc == nil and SVal("foreverFormTextColor", nil) == nil then
-                            pc = SVal("powerPercentTextPowerColor", false)
+                        local pc = ReadSetting("foreverFormTextPowerColor", nil)
+                        if pc == nil and ReadSetting("foreverFormTextColor", nil) == nil then
+                            pc = ReadSetting("powerPercentTextPowerColor", false)
                         end
                         return pc and true or false
                     end
@@ -3361,8 +3361,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                             tooltip = "Custom Text Color",
                             hasAlpha = false,
                             getValue = function()
-                                local color = SVal("foreverFormTextColor", nil)
-                                if color == nil and SVal("foreverFormTextPowerColor", nil) == nil then
+                                local color = ReadSetting("foreverFormTextColor", nil)
+                                if color == nil and ReadSetting("foreverFormTextPowerColor", nil) == nil then
                                     color = SGet("powerTextColor")
                                 end
                                 if color then

@@ -520,10 +520,10 @@ do
                                 if not regionData.line then
                                     local line = region:GetParent():CreateTexture(nil, "OVERLAY")
                                     line:SetColorTexture(1, 1, 1, 0.25)
-                                    local PPx = CludesUI and CludesUI.PanelPP
-                                    if PPx and PPx.DisablePixelSnap then
-                                        PPx.DisablePixelSnap(line)
-                                        line:SetHeight(PPx.mult or 1)
+                                    local PanelPx = CludesUI and CludesUI.PanelPP
+                                    if PanelPx and PanelPx.DisablePixelSnap then
+                                        PanelPx.DisablePixelSnap(line)
+                                        line:SetHeight(PanelPx.mult or 1)
                                     else
                                         line:SetHeight(1)
                                     end
@@ -12273,10 +12273,10 @@ do
             frameData.zoneLines = true
             local pixel = 1
             do
-                local PPx = CludesUI.PP
+                local PanelPx = CludesUI.PP
                 local es = win:GetEffectiveScale()
-                if PPx and PPx.perfect and es and es > 0 then
-                    pixel = PPx.perfect / es
+                if PanelPx and PanelPx.perfect and es and es > 0 then
+                    pixel = PanelPx.perfect / es
                 end
             end
             local owner = CreateFrame("Frame", nil, win)
@@ -13918,10 +13918,10 @@ do
             frameData.zoneLines = true
             local pixel = 1
             do
-                local PPx = CludesUI.PP
+                local PanelPx = CludesUI.PP
                 local es = win:GetEffectiveScale()
-                if PPx and PPx.perfect and es and es > 0 then
-                    pixel = PPx.perfect / es
+                if PanelPx and PanelPx.perfect and es and es > 0 then
+                    pixel = PanelPx.perfect / es
                 end
             end
             frameData.zonePx = pixel
@@ -15382,9 +15382,9 @@ do
             -- position rasterizes exactly N columns, flush with the shell's
             -- snapped fill: no seam, no drift. Re-solved every pass so scale
             -- changes and frame moves re-align it; falls back to plain corner anchors when the frame has no rect yet.
-            local PPx = CludesUI and CludesUI.PP
+            local PanelPx = CludesUI and CludesUI.PP
             local esc = t.GetEffectiveScale and t:GetEffectiveScale()
-            local onePx = (PPx and PPx.perfect and esc and esc > 0) and (PPx.perfect / esc) or 1
+            local onePx = (PanelPx and PanelPx.perfect and esc and esc > 0) and (PanelPx.perfect / esc) or 1
             local function snap(v)
                 return math.floor(v / onePx + 0.5 + 0.001) * onePx
             end
@@ -15839,7 +15839,7 @@ end
 --  note at the top of the file on the 200-local limit).
 -------------------------------------------------------------------------------
 do
-    local LP = {
+    local LfgPacks = {
         FLAT = "Interface\\Buttons\\WHITE8X8",
 
         -- Plate / border art that lives one level down from a frame's own regions,
@@ -15875,7 +15875,7 @@ do
     -- plus WSkin.AtlasBorder, the same soft-edged frame the Loot Rolls window and
     -- loot toasts carry. Only the 25px title bar is skipped (none of these frames
     -- has a title). Idempotent: Shell re-runs its region fade every call but builds textures once, so re-calling doubles as repaint catch-up.
-    function LP.Shell(winKey, widget)
+    function LfgPacks.Shell(winKey, widget)
         Skin.Shell(winKey, widget, { noTopBar = true })
     end
 
@@ -15883,7 +15883,7 @@ do
     -- load-bearing: several of these names are a Texture on one template and a
     -- FRAME on another ("Border" is a NineSlice on portrait windows), and
     -- SetAlpha(0) on a frame takes its whole subtree (on the invite dialog that blanks the role icon and the buttons).
-    function LP.FadeKeys(widget, keyList)
+    function LfgPacks.FadeKeys(widget, keyList)
         if not widget then
             return
         end
@@ -15905,7 +15905,7 @@ do
     -- Re-font a frame's own FontString regions, leaving their COLOR alone: item
     -- names and roll results are quality/state colored by Blizzard, never
     -- overwritten. `skip` is a stack COUNT -- an outlined number font drawn over an icon, unreadable in the panel face.
-    function LP.FontRegions(widget, skip)
+    function LfgPacks.FontRegions(widget, skip)
         if not widget or not widget.GetRegions then
             return
         end
@@ -15918,17 +15918,17 @@ do
         end
     end
 
-    function LP.ApplyVertexFill(texture)
+    function LfgPacks.ApplyVertexFill(texture)
         if not texture or not texture.SetVertexColor then
             return
         end
-        LP.vertexFills[texture] = true
+        LfgPacks.vertexFills[texture] = true
         local red, green, blue, a = Skin.BarFillColor()
         texture:SetVertexColor(red, green, blue, a)
     end
     Skin.OnLooksChanged(function()
         local red, green, blue, a = Skin.BarFillColor()
-        for texture in pairs(LP.vertexFills) do
+        for texture in pairs(LfgPacks.vertexFills) do
             if texture.SetVertexColor then
                 texture:SetVertexColor(red, green, blue, a)
             end
@@ -15938,7 +15938,7 @@ do
     -- Run fn(frame) as soon as a named Blizzard frame exists: immediately if it
     -- already does, otherwise on the ADDON_LOADED that creates it. Which dialogs
     -- are base UI vs load-on-demand has moved between expansions, so none is assumed present at login.
-    function LP.WhenFrameExists(label, func)
+    function LfgPacks.WhenFrameExists(label, func)
         if _G[label] then
             func(_G[label])
             return
@@ -15955,12 +15955,12 @@ do
     end
 
     -- Any StatusBar -> flat fill in the user's bar-fill color over a near-black trough. Re-asserted every pass since Blizzard re-applies the bar's own art on reuse.
-    function LP.Bar(barFrame)
+    function LfgPacks.Bar(barFrame)
         if not barFrame or barFrame:IsForbidden() or not barFrame.SetStatusBarTexture then
             return
         end
         local skinData = FrameDataOf(barFrame)
-        barFrame:SetStatusBarTexture(LP.FLAT)
+        barFrame:SetStatusBarTexture(LfgPacks.FLAT)
         local fillTex = barFrame.GetStatusBarTexture and barFrame:GetStatusBarTexture()
         if fillTex and fillTex ~= skinData.fill then
             skinData.fill = fillTex
@@ -15985,19 +15985,19 @@ do
     --  column spot); writing its layout flags from here taints the managed-layout
     --  pass.
     -------------------------------------------------------------------------------
-    function LP.SkinRollFrame(win)
+    function LfgPacks.SkinRollFrame(win)
         if not win or win:IsForbidden() then
             return
         end
-        LP.Shell("lootroll", win)
-        LP.FadeKeys(win, LP.ART_KEYS)
+        LfgPacks.Shell("lootroll", win)
+        LfgPacks.FadeKeys(win, LfgPacks.ART_KEYS)
 
         -- Item icon: squared + a 1px RARITY-colored frame.
         -- Roll BUTTONS (dice/coin/transmog/pass) KEEP Blizzard's glyphs: they are the popup's identity and no house equivalent reads as fast.
         local owner = win.IconFrame or win.Item
         local glyphTex = (owner and (owner.Icon or owner.icon)) or win.Icon
         if owner then
-            LP.FadeKeys(owner, LP.ICON_ART_KEYS)
+            LfgPacks.FadeKeys(owner, LfgPacks.ICON_ART_KEYS)
             local nt = owner.GetNormalTexture and owner:GetNormalTexture()
             if nt and nt.SetAlpha then
                 nt:SetAlpha(0)
@@ -16044,13 +16044,13 @@ do
         local level = win:GetFrameLevel() + 1
         local timer = win.Timer or win.Bar or win.StatusBar
         if timer and not timer:IsForbidden() then
-            LP.Bar(timer)
+            LfgPacks.Bar(timer)
             timer:SetFrameLevel(level)
         end
         local prompt = win.PromptFrame
         local ptimer = prompt and prompt.Timer
         if ptimer and not ptimer:IsForbidden() then
-            LP.Bar(ptimer)
+            LfgPacks.Bar(ptimer)
             ptimer:SetFrameLevel(level)
         end
 
@@ -16060,26 +16060,26 @@ do
         end
     end
 
-    function LP.SkinAllRolls()
+    function LfgPacks.SkinAllRolls()
         local c = _G.GroupLootContainer
         local maxN = (c and c.maxIndex) or 4
         if type(maxN) ~= "number" or maxN < 4 then
             maxN = 4
         end
         for idx = 1, maxN do
-            LP.SkinRollFrame(_G["GroupLootFrame" .. idx])
+            LfgPacks.SkinRollFrame(_G["GroupLootFrame" .. idx])
         end
         if c and type(c.rollFrames) == "table" then
             for _, rf in pairs(c.rollFrames) do
-                LP.SkinRollFrame(rf)
+                LfgPacks.SkinRollFrame(rf)
             end
         end
     end
 
-    function LP.ApplyLootRoll()
+    function LfgPacks.ApplyLootRoll()
         -- Every hook lands on the NEXT frame, never inside Blizzard's own call:
         -- GroupLootContainer_Update runs as part of the managed-layout pass, and creating textures from inside it puts our code in that stack.
-        local resweep = Skin.Debounce(LP.SkinAllRolls)
+        local resweep = Skin.Debounce(LfgPacks.SkinAllRolls)
 
         if type(_G.GroupLootContainer_AddFrame) == "function" then
             hooksecurefunc("GroupLootContainer_AddFrame", resweep)
@@ -16096,12 +16096,12 @@ do
         eventFrame:RegisterEvent("START_LOOT_ROLL")
         eventFrame:SetScript("OnEvent", resweep)
 
-        LP.SkinAllRolls()
+        LfgPacks.SkinAllRolls()
     end
 
     Skin.RegisterWindow({
         key = "lootroll",
-        apply = LP.ApplyLootRoll,
+        apply = LfgPacks.ApplyLootRoll,
     })
 
     -------------------------------------------------------------------------------
@@ -16116,7 +16116,7 @@ do
     --
     --  ENUMERATIVE on purpose: no CommonChrome, no ControlsIn/ButtonsIn sweeps -- those walk the whole tree, and the tree here is pooled loot rows.
     -------------------------------------------------------------------------------
-    function LP.SkinHistoryRow(row)
+    function LfgPacks.SkinHistoryRow(row)
         if not row or row:IsForbidden() then
             return
         end
@@ -16142,11 +16142,11 @@ do
             washTex:SetAllPoints(row.BackgroundArtFrame)
             FrameDataOf(row.BackgroundArtFrame).bg = washTex
         end
-        LP.FadeKeys(row, LP.ROW_ART_KEYS)
+        LfgPacks.FadeKeys(row, LfgPacks.ROW_ART_KEYS)
 
         local entry = row.Item
         if entry then
-            LP.FadeKeys(entry, LP.ICON_ART_KEYS)
+            LfgPacks.FadeKeys(entry, LfgPacks.ICON_ART_KEYS)
             local nt = entry.GetNormalTexture and entry:GetNormalTexture()
             if nt and nt.SetAlpha then
                 nt:SetAlpha(0)
@@ -16159,7 +16159,7 @@ do
 
         -- Item name and winner line: face only. Colors stay Blizzard's (quality on the name, green on "won/passed" state).
         local countFS = row.Count or row.count or (entry and (entry.Count or entry.count))
-        LP.FontRegions(row, countFS)
+        LfgPacks.FontRegions(row, countFS)
         for _, keyName in ipairs({ "Text", "PlayerName", "Name", "RollResult" }) do
             local fontStr = row[keyName]
             if fontStr and fontStr ~= countFS and fontStr.GetFont then
@@ -16168,23 +16168,23 @@ do
         end
     end
 
-    function LP.SkinHistoryRows(win)
+    function LfgPacks.SkinHistoryRows(win)
         local tabBox = win.ScrollBox
         if not (tabBox and tabBox.ForEachFrame) then
             return
         end
-        pcall(tabBox.ForEachFrame, tabBox, LP.SkinHistoryRow)
+        pcall(tabBox.ForEachFrame, tabBox, LfgPacks.SkinHistoryRow)
         local buttonData = FrameDataOf(tabBox)
         if tabBox.Update and not buttonData.rowHook then
             buttonData.rowHook = true
             hooksecurefunc(tabBox, "Update", function(button)
-                pcall(button.ForEachFrame, button, LP.SkinHistoryRow)
+                pcall(button.ForEachFrame, button, LfgPacks.SkinHistoryRow)
             end)
         end
     end
 
     -- The resize grab at the window's foot: Blizzard's gold grip flattened to three house rules.
-    function LP.SkinResizeGrip(rb)
+    function LfgPacks.SkinResizeGrip(rb)
         if not rb or rb:IsForbidden() then
             return
         end
@@ -16223,15 +16223,15 @@ do
         -- window moves), spacing ENTIRELY in physical pixels (1px lines, 3px gap,
         -- 4px pitch) so the glyph renders identically at every UI scale.
         local lines = {}
-        local PPx = CludesUI and CludesUI.PP
+        local PanelPx = CludesUI and CludesUI.PP
         local esc = rb.GetEffectiveScale and rb:GetEffectiveScale()
-        local onePx = (PPx and PPx.perfect and esc and esc > 0) and (PPx.perfect / esc) or 1
+        local onePx = (PanelPx and PanelPx.perfect and esc and esc > 0) and (PanelPx.perfect / esc) or 1
         local pitch = onePx * 4
         local wid = 18
         for idx = 1, 3 do
             local line = SolidTex(rb, "OVERLAY", 1, 1, 1, 1)
-            if PPx and PPx.DisablePixelSnap then
-                PPx.DisablePixelSnap(line)
+            if PanelPx and PanelPx.DisablePixelSnap then
+                PanelPx.DisablePixelSnap(line)
             end
             line:SetAlpha(0.3)
             line:SetSize(wid, onePx)
@@ -16251,7 +16251,7 @@ do
         end)
     end
 
-    function LP.ApplyHistory()
+    function LfgPacks.ApplyHistory()
         local win = _G.GroupLootHistoryFrame
         if not win or win:IsForbidden() then
             return
@@ -16261,7 +16261,7 @@ do
 
         local skinData = FrameDataOf(win)
         if skinData.histSkinned then
-            LP.SkinHistoryRows(win)
+            LfgPacks.SkinHistoryRows(win)
             return
         end
         skinData.histSkinned = true
@@ -16269,7 +16269,7 @@ do
         if win.NineSlice then
             Skin.FadeNineSlice(win.NineSlice)
         end
-        LP.FadeKeys(win, { "Bg", "Background", "Border" })
+        LfgPacks.FadeKeys(win, { "Bg", "Background", "Border" })
         Skin.FadeKeyedArt(win)
 
         local close = win.ClosePanelButton
@@ -16331,8 +16331,8 @@ do
             end
             if fillTex then
                 titleData.fill = fillTex
-                fillTex:SetTexture(LP.FLAT)
-                LP.ApplyVertexFill(fillTex)
+                fillTex:SetTexture(LfgPacks.FLAT)
+                LfgPacks.ApplyVertexFill(fillTex)
             end
         end
 
@@ -16347,19 +16347,19 @@ do
             end
         end
 
-        LP.SkinResizeGrip(win.ResizeButton)
-        LP.SkinHistoryRows(win)
+        LfgPacks.SkinResizeGrip(win.ResizeButton)
+        LfgPacks.SkinHistoryRows(win)
     end
 
     Skin.RegisterWindow({
         key = "loothistory",
         apply = function()
-            LP.WhenFrameExists("GroupLootHistoryFrame", function(win)
-                Skin.HookShow(win, LP.ApplyHistory)
+            LfgPacks.WhenFrameExists("GroupLootHistoryFrame", function(win)
+                Skin.HookShow(win, LfgPacks.ApplyHistory)
                 -- Should never be up at login, but if it is, skinning now is the
                 -- same post-hoc moment the OnShow path gives.
                 if win:IsShown() then
-                    LP.ApplyHistory()
+                    LfgPacks.ApplyHistory()
                 end
             end)
         end,
@@ -16373,7 +16373,7 @@ do
     -- word length, so the global font swap decides who is hit. Pinning the label to
     -- the button gives it 118px instead of 47: centered text looks identical and
     -- can no longer wrap. One-shot per label.
-    function LP.PinButtonLabel(button)
+    function LfgPacks.PinButtonLabel(button)
         if not button or (button.IsForbidden and button:IsForbidden()) then
             return
         end
@@ -16407,7 +16407,7 @@ do
     --  shell's backdrop (-8/-7/-6). WSkin.Shell's region fade clears it: this
     --  OnShow hook installs later so it runs second, and the older skin is one-shot.
     -------------------------------------------------------------------------------
-    function LP.SkinInvite(found, roleChecks)
+    function LfgPacks.SkinInvite(found, roleChecks)
         if not found or found:IsForbidden() then
             return
         end
@@ -16447,31 +16447,31 @@ do
             end
         end
 
-        LP.Shell("groupinvite", found)
+        LfgPacks.Shell("groupinvite", found)
 
         if found.NineSlice then
             Skin.FadeNineSlice(found.NineSlice)
         end
-        LP.FadeKeys(found, { "Bg", "BG", "Background", "Border" })
+        LfgPacks.FadeKeys(found, { "Bg", "BG", "Background", "Border" })
         Skin.FadeKeyedArt(found)
 
-        for _, keyName in ipairs(LP.INVITE_BTN_KEYS) do
+        for _, keyName in ipairs(LfgPacks.INVITE_BTN_KEYS) do
             local button = found[keyName]
             if button then
                 Skin.Button(button)
                 Skin.StateButtonLabel(button)
-                LP.PinButtonLabel(button)
+                LfgPacks.PinButtonLabel(button)
             end
         end
         -- Templates naming their buttons globally rather than off the frame (LFGInvitePopupAcceptButton / ...DeclineButton).
         local n = found.GetName and found:GetName()
         if n then
-            for _, keyName in ipairs(LP.INVITE_BTN_KEYS) do
+            for _, keyName in ipairs(LfgPacks.INVITE_BTN_KEYS) do
                 local button = _G[n .. keyName]
                 if button then
                     Skin.Button(button)
                     Skin.StateButtonLabel(button)
-                    LP.PinButtonLabel(button)
+                    LfgPacks.PinButtonLabel(button)
                 end
             end
         end
@@ -16496,16 +16496,16 @@ do
         if n and _G[n .. "Text"] then
             Skin.FontFamily(_G[n .. "Text"])
         end
-        LP.FontRegions(found)
+        LfgPacks.FontRegions(found)
     end
 
     Skin.RegisterWindow({
         key = "groupinvite",
         apply = function()
             local function Wire(label, roleChecks)
-                LP.WhenFrameExists(label, function(found)
+                LfgPacks.WhenFrameExists(label, function(found)
                     local function applyFn()
-                        LP.SkinInvite(found, roleChecks)
+                        LfgPacks.SkinInvite(found, roleChecks)
                     end
                     Skin.HookShow(found, applyFn)
                     if found:IsShown() then
@@ -16543,11 +16543,11 @@ do
     --  Both frames are skinned from their own OnShow, never from the login pass:
     --  a skin must never be what triggers a frame's first layout.
     -------------------------------------------------------------------------------
-    LP.RC_PAD = 24 -- side padding kept clear of the message
-    LP.RC_MAX_GROW = 2 -- hard ceiling: never wider than twice Blizzard's own width
-    LP.RC_TEXT_Y = -30 -- message top offset (Blizzard's -37; see FitReadyCheck)
-    LP.RC_BTN_GAP = 12 -- gap between Ready and Not Ready
-    LP.RC_BTN_Y = 16 -- button row off the panel bottom (Blizzard's own value)
+    LfgPacks.RC_PAD = 24 -- side padding kept clear of the message
+    LfgPacks.RC_MAX_GROW = 2 -- hard ceiling: never wider than twice Blizzard's own width
+    LfgPacks.RC_TEXT_Y = -30 -- message top offset (Blizzard's -37; see FitReadyCheck)
+    LfgPacks.RC_BTN_GAP = 12 -- gap between Ready and Not Ready
+    LfgPacks.RC_BTN_Y = 16 -- button row off the panel bottom (Blizzard's own value)
 
     -- Capture a region's offset from the frame's TOP anchor (center-x delta, top
     -- delta, half width) so it can be re-anchored later without guessing Blizzard's
@@ -16555,7 +16555,7 @@ do
     -- from stored numbers alone, with no second measuring pass.
     -- Returns nil while the layout has no usable geometry yet -- the caller then
     -- skips this pass and captures on the next show, rather than freezing garbage.
-    function LP.CaptureTopOffset(regionFrame, found)
+    function LfgPacks.CaptureTopOffset(regionFrame, found)
         local rl, rr, rt = regionFrame:GetLeft(), regionFrame:GetRight(), regionFrame:GetTop()
         local fl, fRight, ft = found:GetLeft(), found:GetRight(), found:GetTop()
         if not (rl and rr and rt and fl and fRight and ft) then
@@ -16582,7 +16582,7 @@ do
     --     bearing (centering the message runs it under the artwork), with it hidden
     --     it is a lopsided hole on the left. So all three keep Blizzard's own offset
     --     while the glyph is up and go dead center once it is gone.
-    function LP.FitReadyCheck()
+    function LfgPacks.FitReadyCheck()
         local found = _G.ReadyCheckFrame
         if not found or found:IsForbidden() then
             return
@@ -16602,7 +16602,7 @@ do
         end
 
         if not skinData.rcTextDX then
-            local dx, dy = LP.CaptureTopOffset(fontStr, found)
+            local dx, dy = LfgPacks.CaptureTopOffset(fontStr, found)
             if not dy then
                 return
             end
@@ -16612,7 +16612,7 @@ do
         -- ready yet would otherwise never be captured once the message succeeded.
         -- A true offset of 0 still guards correctly -- 0 is truthy in Lua.
         if skinData.rcTitle and not skinData.rcTitleDX then
-            skinData.rcTitleDX, skinData.rcTitleDY = LP.CaptureTopOffset(skinData.rcTitle, found)
+            skinData.rcTitleDX, skinData.rcTitleDY = LfgPacks.CaptureTopOffset(skinData.rcTitle, found)
         end
         local need = fontStr.GetStringWidth and fontStr:GetStringWidth()
         if not need or issecretvalue(need) then
@@ -16624,8 +16624,8 @@ do
         -- right to clear a glyph that is no longer drawn, and left alone that reads
         -- as a lopsided hole down the left side of the panel. No inset is reserved
         -- in the wrap box either -- the full width is usable now.
-        local pad = LP.RC_PAD * 2
-        local want = math.max(skinData.rcBaseW, math.min(need + pad, skinData.rcBaseW * LP.RC_MAX_GROW))
+        local pad = LfgPacks.RC_PAD * 2
+        local want = math.max(skinData.rcBaseW, math.min(need + pad, skinData.rcBaseW * LfgPacks.RC_MAX_GROW))
         -- A protected frame anchored to the popup makes it protected too, and in
         -- combat its SetWidth is then blocked: it keeps the width it has, and the
         -- message wraps inside that.
@@ -16646,7 +16646,7 @@ do
         -- ready check." wraps to TWO lines and the second one runs into the button
         -- row. The message moves UP rather than the buttons moving down -- the
         -- buttons sit RC_BTN_Y off the bottom edge and have no room to give.
-        fontStr:SetPoint("TOP", found, "TOP", 0, LP.RC_TEXT_Y)
+        fontStr:SetPoint("TOP", found, "TOP", 0, LfgPacks.RC_TEXT_Y)
 
         if skinData.rcTitle and skinData.rcTitleDY then
             skinData.rcTitle:ClearAllPoints()
@@ -16662,15 +16662,15 @@ do
         -- row, and it tracks the SetWidth above for free.
         local yes, no = skinData.rcBtns and skinData.rcBtns[1], skinData.rcBtns and skinData.rcBtns[2]
         if yes and no then
-            local half = LP.RC_BTN_GAP / 2
+            local half = LfgPacks.RC_BTN_GAP / 2
             yes:ClearAllPoints()
-            yes:SetPoint("BOTTOMRIGHT", found, "BOTTOM", -half, LP.RC_BTN_Y)
+            yes:SetPoint("BOTTOMRIGHT", found, "BOTTOM", -half, LfgPacks.RC_BTN_Y)
             no:ClearAllPoints()
-            no:SetPoint("BOTTOMLEFT", found, "BOTTOM", half, LP.RC_BTN_Y)
+            no:SetPoint("BOTTOMLEFT", found, "BOTTOM", half, LfgPacks.RC_BTN_Y)
         end
     end
 
-    function LP.SkinReadyCheck(found)
+    function LfgPacks.SkinReadyCheck(found)
         if not found or found:IsForbidden() then
             return
         end
@@ -16688,13 +16688,13 @@ do
         -- as the fallback for a template that ever drops the child and puts the art
         -- back on the outer frame.
         if not _G.ReadyCheckListenerFrame then
-            LP.Shell("readycheck", found)
+            LfgPacks.Shell("readycheck", found)
         end
 
         if found.NineSlice then
             Skin.FadeNineSlice(found.NineSlice)
         end
-        LP.FadeKeys(found, LP.ART_KEYS)
+        LfgPacks.FadeKeys(found, LfgPacks.ART_KEYS)
         Skin.FadeKeyedArt(found)
 
         -- Yes/No are UIPanelButtons named off the frame on some templates and
@@ -16719,7 +16719,7 @@ do
         if n and _G[n .. "Text"] then
             Skin.FontFamily(_G[n .. "Text"])
         end
-        LP.FontRegions(found)
+        LfgPacks.FontRegions(found)
 
         -- Message + title for the geometry pass below. Resolved here, where the
         -- frame is in hand, and parked on FFD so the pass itself needs no lookups.
@@ -16746,21 +16746,21 @@ do
             skinData.rcTextHooked = true
             for _, setter in ipairs({ "SetText", "SetFormattedText" }) do
                 if skinData.rcText[setter] then
-                    hooksecurefunc(skinData.rcText, setter, LP.FitReadyCheck)
+                    hooksecurefunc(skinData.rcText, setter, LfgPacks.FitReadyCheck)
                 end
             end
         end
 
         -- Last, and after the re-font: the message is measured here, so it has to
         -- be carrying its final face and size.
-        LP.FitReadyCheck()
+        LfgPacks.FitReadyCheck()
     end
 
     -- The prompt's BODY, despite the name -- see the block comment above. This is
     -- the frame that actually carries the popup's art, so it is the one that gets
     -- the shell. It is shown to everyone EXCEPT the initiator, which is precisely
     -- what keeps the skin off the initiator's screen.
-    function LP.SkinReadyCheckList(found)
+    function LfgPacks.SkinReadyCheckList(found)
         if not found or found:IsForbidden() then
             return
         end
@@ -16772,7 +16772,7 @@ do
         if found.NineSlice then
             Skin.FadeNineSlice(found.NineSlice)
         end
-        LP.FadeKeys(found, LP.ART_KEYS)
+        LfgPacks.FadeKeys(found, LfgPacks.ART_KEYS)
         Skin.FadeKeyedArt(found)
 
         -- Header art lives on the title container, one level down from the frame's
@@ -16782,7 +16782,7 @@ do
         if tc then
             Skin.FadeRegions(tc)
             Skin.Register(tc, true)
-            LP.FontRegions(tc)
+            LfgPacks.FontRegions(tc)
         end
 
         -- Portrait REMOVED, and with no option to bring it back. Blizzard's corner
@@ -16811,18 +16811,18 @@ do
         if body then
             Skin.FontFamily(body)
         end
-        LP.FontRegions(found)
+        LfgPacks.FontRegions(found)
 
         -- The geometry pass keys off ReadyCheckFrame, and its capture needs the
         -- message laid out -- which it now is, on the frame that actually owns it.
-        LP.FitReadyCheck()
+        LfgPacks.FitReadyCheck()
     end
 
     Skin.RegisterWindow({
         key = "readycheck",
         apply = function()
             local function Wire(label, func)
-                LP.WhenFrameExists(label, function(found)
+                LfgPacks.WhenFrameExists(label, function(found)
                     local function applyFn()
                         func(found)
                     end
@@ -16834,8 +16834,8 @@ do
                     end
                 end)
             end
-            Wire("ReadyCheckFrame", LP.SkinReadyCheck)
-            Wire("ReadyCheckListenerFrame", LP.SkinReadyCheckList)
+            Wire("ReadyCheckFrame", LfgPacks.SkinReadyCheck)
+            Wire("ReadyCheckListenerFrame", LfgPacks.SkinReadyCheckList)
         end,
     })
 
@@ -16847,7 +16847,7 @@ do
     --  Battle.net whisper, whose target is a SECRET string, so nothing here writes a
     --  Lua field onto the frame.
     -------------------------------------------------------------------------------
-    function LP.SkinBNetToast(win)
+    function LfgPacks.SkinBNetToast(win)
         if not win or win:IsForbidden() then
             return
         end
@@ -16912,15 +16912,15 @@ do
     Skin.RegisterWindow({
         key = "bnettoast",
         apply = function()
-            LP.WhenFrameExists("BNToastFrame", function(win)
+            LfgPacks.WhenFrameExists("BNToastFrame", function(win)
                 local pass = Skin.Debounce(function()
-                    LP.SkinBNetToast(win)
+                    LfgPacks.SkinBNetToast(win)
                 end)
                 -- Blizzard repaints nothing on the frame between toasts, but the
                 -- pass is idempotent and one debounced call per toast is cheap
                 -- insurance against a future template change.
                 Skin.HookShow(win, pass)
-                LP.SkinBNetToast(win)
+                LfgPacks.SkinBNetToast(win)
             end)
         end,
     })

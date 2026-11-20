@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  subpage). It registers nothing: the Global Settings module
 --  (CUI__General_Options.lua) dispatches its builder.
 -------------------------------------------------------------------------------
-local PP = CludesUI.PanelPP
+local PanelPx = CludesUI.PanelPP
 
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
@@ -447,7 +447,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- line left of the arrow; hover paints it with the dropdown colours.
     local function MakeDropdown(parentFrame, w, ddH, getLabel)
         local button = CreateFrame("Button", nil, parentFrame)
-        PP.Size(button, w, ddH)
+        PanelPx.Size(button, w, ddH)
         button:SetFrameLevel(parentFrame:GetFrameLevel() + 2)
         local bg = button:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
@@ -460,7 +460,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         caption:SetWordWrap(false)
         caption:SetMaxLines(1)
         caption:SetPoint("LEFT", button, "LEFT", 12, 0)
-        local arrow = CludesUI.MakeDropdownArrow(button, 12, PP)
+        local arrow = CludesUI.MakeDropdownArrow(button, 12, PanelPx)
         caption:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
         caption:SetText(getLabel())
         -- RD_DD_COLOURS: background, hover background, border, hover border,
@@ -673,8 +673,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     local function SubpageHeader(page, pad, top, title)
         local BACK_W, BACK_H = 80, 32
         local backBtn = CreateFrame("Button", nil, page)
-        PP.Size(backBtn, BACK_W, BACK_H)
-        PP.Point(backBtn, "TOPLEFT", page, "TOPLEFT", pad, top)
+        PanelPx.Size(backBtn, BACK_W, BACK_H)
+        PanelPx.Point(backBtn, "TOPLEFT", page, "TOPLEFT", pad, top)
         backBtn:SetFrameLevel(page:GetFrameLevel() + 2)
         local backBg = backBtn:CreateTexture(nil, "BACKGROUND")
         backBg:SetAllPoints()
@@ -682,13 +682,13 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         local backBrd = CludesUI.MakeRoundedBorder(backBtn, 1, 1, 1, 0.12, backBg)
         local backIcon = backBtn:CreateTexture(nil, "ARTWORK")
         backIcon:SetSize(14, 14)
-        PP.Point(backIcon, "LEFT", backBtn, "LEFT", 10, 0)
+        PanelPx.Point(backIcon, "LEFT", backBtn, "LEFT", 10, 0)
         backIcon:SetTexture(MEDIA .. "icons\\cui-arrow-left.png")
         backIcon:SetVertexColor(EG.r, EG.g, EG.b)
         backIcon:SetAlpha(0.6)
         Unsnapped(backIcon)
         local backLbl = CludesUI.MakeFont(backBtn, 12, nil, 1, 1, 1, 0.55)
-        PP.Point(backLbl, "LEFT", backIcon, "RIGHT", 6, 0)
+        PanelPx.Point(backLbl, "LEFT", backIcon, "RIGHT", 6, 0)
         backLbl:SetText(CludesUI.L("Back"))
         local function Paint(hot)
             if hot then
@@ -711,7 +711,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             mainPage:Show()
         end)
         local titleFs = CludesUI.MakeFont(page, 16, nil, 1, 1, 1, 0.95)
-        PP.Point(titleFs, "TOP", page, "TOP", 0, top - BACK_H / 2 + 8)
+        PanelPx.Point(titleFs, "TOP", page, "TOP", 0, top - BACK_H / 2 + 8)
         titleFs:SetText(title)
         titleFs:SetJustifyH("CENTER")
         return BACK_H
@@ -733,29 +733,29 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         local card = CreateFrame("Frame", nil, host)
         card:SetFrameLevel(host:GetFrameLevel())
-        PP.Size(card, fullWidth, HDR_H + COL_HDR_H + scrollH + 8 + cfg.footerH)
-        PP.Point(card, "TOPLEFT", host, "TOPLEFT", pad, y)
+        PanelPx.Size(card, fullWidth, HDR_H + COL_HDR_H + scrollH + 8 + cfg.footerH)
+        PanelPx.Point(card, "TOPLEFT", host, "TOPLEFT", pad, y)
         card:EnableMouse(false)
         CludesUI.MakeRoundedCard(card, 0.10, 0.50)
 
         local hdrFrame = CreateFrame("Frame", nil, host)
-        PP.Size(hdrFrame, fullWidth, HDR_H)
-        PP.Point(hdrFrame, "TOPLEFT", host, "TOPLEFT", pad, y)
+        PanelPx.Size(hdrFrame, fullWidth, HDR_H)
+        PanelPx.Point(hdrFrame, "TOPLEFT", host, "TOPLEFT", pad, y)
         local hdrTitle = CludesUI.MakeFont(hdrFrame, 14, nil, 1, 1, 1, 0.9)
-        PP.Point(hdrTitle, "TOPLEFT", hdrFrame, "TOPLEFT", SIDE_PAD, -20)
+        PanelPx.Point(hdrTitle, "TOPLEFT", hdrFrame, "TOPLEFT", SIDE_PAD, -20)
         hdrTitle:SetText(CludesUI.L(cfg.title))
         hdrTitle:SetJustifyH("LEFT")
         local hdrDesc = CludesUI.MakeFont(hdrFrame, 11, nil, 1, 1, 1, 0.35)
-        PP.Point(hdrDesc, "TOPLEFT", hdrTitle, "BOTTOMLEFT", 0, -9)
-        PP.Point(hdrDesc, "RIGHT", hdrFrame, "RIGHT", -(160 + SIDE_PAD), 0)
+        PanelPx.Point(hdrDesc, "TOPLEFT", hdrTitle, "BOTTOMLEFT", 0, -9)
+        PanelPx.Point(hdrDesc, "RIGHT", hdrFrame, "RIGHT", -(160 + SIDE_PAD), 0)
         hdrDesc:SetText(CludesUI.L(cfg.desc))
         hdrDesc:SetJustifyH("LEFT")
         hdrDesc:SetWordWrap(true)
         local hdrDiv = hdrFrame:CreateTexture(nil, "ARTWORK")
         hdrDiv:SetColorTexture(1, 1, 1, 0.10)
         hdrDiv:SetHeight(1)
-        PP.Point(hdrDiv, "BOTTOMLEFT", hdrFrame, "BOTTOMLEFT", SIDE_PAD, 0)
-        PP.Point(hdrDiv, "BOTTOMRIGHT", hdrFrame, "BOTTOMRIGHT", -SIDE_PAD, 0)
+        PanelPx.Point(hdrDiv, "BOTTOMLEFT", hdrFrame, "BOTTOMLEFT", SIDE_PAD, 0)
+        PanelPx.Point(hdrDiv, "BOTTOMRIGHT", hdrFrame, "BOTTOMRIGHT", -SIDE_PAD, 0)
         Unsnapped(hdrDiv)
 
         -- Select All (accent while everything pickable is in) | Deselect All.
@@ -811,11 +811,11 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         local linkDiv = hdrFrame:CreateTexture(nil, "OVERLAY", nil, 7)
         linkDiv:SetColorTexture(1, 1, 1, 0.15)
         Unsnapped(linkDiv)
-        PP.Point(linkDiv, "LEFT", selAllBtn, "RIGHT", LINK_GAP / 2, 0)
+        PanelPx.Point(linkDiv, "LEFT", selAllBtn, "RIGHT", LINK_GAP / 2, 0)
         linkDiv:SetWidth(1)
         linkDiv:SetHeight(10)
         local deselBtn, deselLbl = Link("Deselect All")
-        PP.Point(deselBtn, "LEFT", selAllBtn, "RIGHT", LINK_GAP, 0)
+        PanelPx.Point(deselBtn, "LEFT", selAllBtn, "RIGHT", LINK_GAP, 0)
         deselBtn:SetScript("OnEnter", function()
             deselLbl:SetTextColor(1, 1, 1, 0.80)
         end)
@@ -832,15 +832,15 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         -- Column titles over the name, the Include box and the status.
         local colHdrFrame = CreateFrame("Frame", nil, host)
-        PP.Size(colHdrFrame, fullWidth, COL_HDR_H)
-        PP.Point(colHdrFrame, "TOPLEFT", host, "TOPLEFT", pad, y)
+        PanelPx.Size(colHdrFrame, fullWidth, COL_HDR_H)
+        PanelPx.Point(colHdrFrame, "TOPLEFT", host, "TOPLEFT", pad, y)
         for _, col in ipairs({
             { "Addon", "LEFT", "LEFT", SIDE_PAD },
             { "Status", "RIGHT", "RIGHT", -SIDE_PAD },
             { "Include", "CENTER", "RIGHT", INCLUDE_CENTER_X },
         }) do
             local fs = CludesUI.MakeFont(colHdrFrame, 11, nil, 1, 1, 1, 0.40)
-            PP.Point(fs, col[2], colHdrFrame, col[3], col[4], 0)
+            PanelPx.Point(fs, col[2], colHdrFrame, col[3], col[4], 0)
             fs:SetText(CludesUI.L(col[1]))
             fs:SetJustifyH(col[2])
         end
@@ -848,8 +848,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         -- The rows, clipped to SCROLL_MAX_H and wheel-scrolled a row at a time.
         local scrollClip = CreateFrame("Frame", nil, host)
-        PP.Size(scrollClip, fullWidth, scrollH)
-        PP.Point(scrollClip, "TOPLEFT", host, "TOPLEFT", pad, y)
+        PanelPx.Size(scrollClip, fullWidth, scrollH)
+        PanelPx.Point(scrollClip, "TOPLEFT", host, "TOPLEFT", pad, y)
         scrollClip:SetClipsChildren(true)
         local scroller = CreateFrame("ScrollFrame", nil, scrollClip)
         scroller:SetAllPoints()
@@ -878,13 +878,13 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- A section footer under a module list: its frame and top rule.
     local function FooterBar(host, pad, top, fullWidth, height)
         local footer = CreateFrame("Frame", nil, host)
-        PP.Size(footer, fullWidth, height)
-        PP.Point(footer, "TOPLEFT", host, "TOPLEFT", pad, top)
+        PanelPx.Size(footer, fullWidth, height)
+        PanelPx.Point(footer, "TOPLEFT", host, "TOPLEFT", pad, top)
         local rule = footer:CreateTexture(nil, "ARTWORK")
         rule:SetColorTexture(1, 1, 1, 0.10)
         rule:SetHeight(1)
-        PP.Point(rule, "TOPLEFT", footer, "TOPLEFT", SIDE_PAD, 0)
-        PP.Point(rule, "TOPRIGHT", footer, "TOPRIGHT", -SIDE_PAD, 0)
+        PanelPx.Point(rule, "TOPLEFT", footer, "TOPLEFT", SIDE_PAD, 0)
+        PanelPx.Point(rule, "TOPRIGHT", footer, "TOPRIGHT", -SIDE_PAD, 0)
         Unsnapped(rule)
         return footer
     end
@@ -893,7 +893,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- caller adds MakeAccentFade for the hover). Returns button, label, border.
     local function AccentButton(host, w, h, text, fontSize)
         local button = CreateFrame("Button", nil, host)
-        PP.Size(button, w, h)
+        PanelPx.Size(button, w, h)
         button:SetFrameLevel(host:GetFrameLevel() + 2)
         local DB = CludesUI.DARK_BG
         local bg = CludesUI.SolidTex(button, "BACKGROUND", DB.r, DB.g, DB.b, 0.92)
@@ -915,9 +915,9 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         local dropdownBtn, ddLabelFS = MakeDropdown(footer, 190, h, function()
             return ""
         end)
-        PP.Point(dropdownBtn, "RIGHT", nextTo, "LEFT", -12, 0)
+        PanelPx.Point(dropdownBtn, "RIGHT", nextTo, "LEFT", -12, 0)
         local incLbl = CludesUI.MakeFont(footer, 12, nil, 1, 1, 1, 0.6)
-        PP.Point(incLbl, "RIGHT", dropdownBtn, "LEFT", -8, 0)
+        PanelPx.Point(incLbl, "RIGHT", dropdownBtn, "LEFT", -8, 0)
         incLbl:SetText(CludesUI.L("Include:"))
 
         local function On(def)
@@ -1064,9 +1064,9 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         if scaleWarnText then
             local warnFs = CludesUI.MakeFont(importView, 13, nil, 0.9, 0.2, 0.2, 0.85)
-            PP.Point(warnFs, "TOP", importView, "TOP", 0, itemY)
-            PP.Point(warnFs, "LEFT", importView, "LEFT", PAD, 0)
-            PP.Point(warnFs, "RIGHT", importView, "RIGHT", -PAD, 0)
+            PanelPx.Point(warnFs, "TOP", importView, "TOP", 0, itemY)
+            PanelPx.Point(warnFs, "LEFT", importView, "LEFT", PAD, 0)
+            PanelPx.Point(warnFs, "RIGHT", importView, "RIGHT", -PAD, 0)
             warnFs:SetText(scaleWarnText)
             warnFs:SetJustifyH("CENTER")
             warnFs:SetWordWrap(true)
@@ -1078,15 +1078,15 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             local INPUT_H = 30
             local INPUT_W = 300
             local nameLabel = CludesUI.MakeFont(importView, 12, nil, 1, 1, 1, 0.45)
-            PP.Point(nameLabel, "TOPLEFT", importView, "TOPLEFT", PAD, itemY)
+            PanelPx.Point(nameLabel, "TOPLEFT", importView, "TOPLEFT", PAD, itemY)
             nameLabel:SetText(CludesUI.L("Profile Name"))
             nameLabel:SetJustifyH("LEFT")
 
             itemY = itemY - 22
 
             local inputFrame = CreateFrame("Frame", nil, importView)
-            PP.Size(inputFrame, INPUT_W, INPUT_H)
-            PP.Point(inputFrame, "TOPLEFT", importView, "TOPLEFT", PAD, itemY)
+            PanelPx.Size(inputFrame, INPUT_W, INPUT_H)
+            PanelPx.Point(inputFrame, "TOPLEFT", importView, "TOPLEFT", PAD, itemY)
             local iBg = inputFrame:CreateTexture(nil, "BACKGROUND")
             iBg:SetAllPoints()
             iBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
@@ -1294,9 +1294,9 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         importCountFs = CludesUI.MakeFont(footerFrame, 12, nil, 1, 1, 1, 0.40)
         -- With Auto Assign present the footer has two rows, so the count sits on the upper one; otherwise it stays vertically centered.
         if nFooterStack > 0 then
-            PP.Point(importCountFs, "TOPLEFT", footerFrame, "TOPLEFT", SIDE_PAD, -16)
+            PanelPx.Point(importCountFs, "TOPLEFT", footerFrame, "TOPLEFT", SIDE_PAD, -16)
         else
-            PP.Point(importCountFs, "LEFT", footerFrame, "LEFT", SIDE_PAD, 0)
+            PanelPx.Point(importCountFs, "LEFT", footerFrame, "LEFT", SIDE_PAD, 0)
         end
         importCountFs:SetJustifyH("LEFT")
         RefreshImportCount()
@@ -1309,7 +1309,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         if hasSpecAssign then
             local aaBtn = CreateFrame("Button", nil, footerFrame)
             aaBtn:SetSize(180, 24)
-            PP.Point(aaBtn, "TOPLEFT", importCountFs, "BOTTOMLEFT", 0, -8)
+            PanelPx.Point(aaBtn, "TOPLEFT", importCountFs, "BOTTOMLEFT", 0, -8)
             local boxFrame, mark = CheckBox(aaBtn)
             boxFrame:SetPoint("LEFT", aaBtn, "LEFT", 0, 0)
             local caption = CludesUI.MakeFont(aaBtn, 12, nil, 1, 1, 1, 0.6)
@@ -1338,7 +1338,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         local IMP_BTN_H = 30
         local importBtn, impLbl, impBrd = AccentButton(footerFrame, 180, IMP_BTN_H, "Import Selected Addons")
-        PP.Point(importBtn, "RIGHT", footerFrame, "RIGHT", -SIDE_PAD, 0)
+        PanelPx.Point(importBtn, "RIGHT", footerFrame, "RIGHT", -SIDE_PAD, 0)
 
         -- Include: the same four extras as the export footer. Those the string
         -- has no data for stay dimmed; Window Skins asks before turning on.
@@ -1640,7 +1640,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         -- Red error message shown directly below the button when no name is entered
         local nameErrorFs = CludesUI.MakeFont(footerFrame, 11, nil, 0.9, 0.2, 0.2)
         nameErrorFs:SetJustifyH("RIGHT")
-        PP.Point(nameErrorFs, "TOPRIGHT", importBtn, "BOTTOMRIGHT", 0, -14)
+        PanelPx.Point(nameErrorFs, "TOPRIGHT", importBtn, "BOTTOMRIGHT", 0, -14)
         nameErrorFs:SetText(CludesUI.L("*Please enter a profile name"))
         nameErrorFs:Hide()
         importView._nameError = nameErrorFs
@@ -1671,8 +1671,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         -- Big paste panel
         local PANEL_H = 200
         local panelFrame = CreateFrame("Frame", nil, pastePage)
-        PP.Size(panelFrame, fullWidth, PANEL_H)
-        PP.Point(panelFrame, "TOPLEFT", pastePage, "TOPLEFT", PAD, py)
+        PanelPx.Size(panelFrame, fullWidth, PANEL_H)
+        PanelPx.Point(panelFrame, "TOPLEFT", pastePage, "TOPLEFT", PAD, py)
         local panelBg = panelFrame:CreateTexture(nil, "BACKGROUND")
         panelBg:SetAllPoints()
         panelBg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
@@ -1738,7 +1738,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         -- Continue button (Done-style)
         local contBtn, contLbl, contBrd = AccentButton(pastePage, 160, 34, "Continue", 13)
-        PP.Point(contBtn, "TOPRIGHT", pastePage, "TOPRIGHT", -PAD, py)
+        PanelPx.Point(contBtn, "TOPRIGHT", pastePage, "TOPRIGHT", -PAD, py)
 
         local contReset = MakeAccentFade(contBtn, contLbl, contBrd)
         local decodeRun
@@ -1878,8 +1878,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         local BTN_W = math.floor((innerW - DD_W - GAP * 2) / 2)
 
         local lineFrame = CreateFrame("Frame", nil, parent)
-        PP.Size(lineFrame, fullWidth, ROW_H)
-        PP.Point(lineFrame, "TOPLEFT", parent, "TOPLEFT", CludesUI.CONTENT_PAD, y)
+        PanelPx.Size(lineFrame, fullWidth, ROW_H)
+        PanelPx.Point(lineFrame, "TOPLEFT", parent, "TOPLEFT", CludesUI.CONTENT_PAD, y)
 
         -- Background panel
         local rowBrd = CludesUI.MakeRoundedCard(lineFrame, 0.10, 0.50)
@@ -1887,7 +1887,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         -- "Active Profile" label
         local profLabel = CludesUI.MakeFont(lineFrame, 12, nil, EG.r, EG.g, EG.b, 0.7)
-        PP.Point(profLabel, "TOPLEFT", lineFrame, "TOPLEFT", PAD_X, -PAD_Y)
+        PanelPx.Point(profLabel, "TOPLEFT", lineFrame, "TOPLEFT", PAD_X, -PAD_Y)
         profLabel:SetText(CludesUI.L("Active Profile"))
         profLabel:SetJustifyH("LEFT")
 
@@ -1897,7 +1897,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         end)
         CludesUI._profileDDBtn = dropdownBtn
         ddLabel = ddLabelFS
-        PP.Point(dropdownBtn, "TOPLEFT", profLabel, "BOTTOMLEFT", 0, -6)
+        PanelPx.Point(dropdownBtn, "TOPLEFT", profLabel, "BOTTOMLEFT", 0, -6)
 
         -- Profile dropdown menu with inline rename/delete/keybind
         local dropMenu = MakeDropdownMenu(dropdownBtn, DD_W)
@@ -2162,15 +2162,15 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         -- The other two columns: a caption, then a plain button under it.
         local function Caption(text, anchor, x)
             local fs = CludesUI.MakeFont(lineFrame, 12, nil, 1, 1, 1, 0.45)
-            PP.Point(fs, "LEFT", anchor, "LEFT", x, 0)
+            PanelPx.Point(fs, "LEFT", anchor, "LEFT", x, 0)
             fs:SetText(text)
             fs:SetJustifyH("LEFT")
             return fs
         end
         local function ColumnButton(caption, text, onClick)
             local button = CreateFrame("Button", nil, lineFrame)
-            PP.Size(button, BTN_W, CTRL_H)
-            PP.Point(button, "TOPLEFT", caption, "BOTTOMLEFT", 0, -6)
+            PanelPx.Size(button, BTN_W, CTRL_H)
+            PanelPx.Point(button, "TOPLEFT", caption, "BOTTOMLEFT", 0, -6)
             button:SetFrameLevel(lineFrame:GetFrameLevel() + 2)
             CludesUI.MakeStyledButton(button, text, 11, PROF_BTN_COLOURS, onClick)
             return button
@@ -2394,13 +2394,13 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         footerCountFs = CludesUI.MakeFont(footerFrame, 12, nil, 1, 1, 1, 0.40)
         -- Selection count, top-left of the footer. The Include dropdown and Export Profile button sit right-aligned on the same row.
-        PP.Point(footerCountFs, "TOPLEFT", footerFrame, "TOPLEFT", SIDE_PAD, -16)
+        PanelPx.Point(footerCountFs, "TOPLEFT", footerFrame, "TOPLEFT", SIDE_PAD, -16)
         footerCountFs:SetJustifyH("LEFT")
         RefreshFooterCount()
 
         local EXPORT_BTN_H = 30
         local exportSelBtn, eaLbl, eaBrd = AccentButton(footerFrame, 180, EXPORT_BTN_H, "Export Profile")
-        PP.Point(exportSelBtn, "RIGHT", footerFrame, "RIGHT", -SIDE_PAD, 0)
+        PanelPx.Point(exportSelBtn, "RIGHT", footerFrame, "RIGHT", -SIDE_PAD, 0)
 
         -- Include: Overrides is AUTO until toggled (on while every loaded module
         -- is checked, off for a subset), so the menu and summary recompute it

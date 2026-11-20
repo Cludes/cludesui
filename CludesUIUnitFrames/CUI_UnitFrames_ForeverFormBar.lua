@@ -48,15 +48,15 @@ local evf = CreateFrame("Frame")
 -- pt / token (the form's power type as last read), text ("cur" / "pct" /
 -- "both" while the text shows, else nil) with its format strings fmtPct and
 -- fmtBoth (built per apply, so a paint builds no string).
-local S = { on = false, live = false, shown = false }
+local FormState = { on = false, live = false, shown = false }
 
 local Secret = CUI.IsSecret
 
 -- The bar while it shows, else nil: the bottom-anchored player auras reserve
 -- the space it takes under the frame (CUI_UnitFrames_AuraContainers.lua).
 function mod.UF_ForeverFormBarShown()
-    if S.shown then
-        return S.bar
+    if FormState.shown then
+        return FormState.bar
     end
 end
 
@@ -81,22 +81,22 @@ local function FormVal(cfg, key, base, def)
 end
 
 local function Paint()
-    local barFrame, pt = S.bar, S.pt
+    local barFrame, pt = FormState.bar, FormState.pt
     if not (barFrame and pt) then
         return
     end
     barFrame:SetMinMaxValues(0, UnitPowerMax("player", pt))
     barFrame:SetValue(UnitPower("player", pt))
-    local mode = S.text
+    local mode = FormState.text
     if mode == "cur" then
         barFrame.text:SetFormattedText("%d", UnitPower("player", pt))
     elseif mode == "pct" then
-        barFrame.text:SetFormattedText(S.fmtPct, UnitPowerPercent("player", pt, true, CurveConstants.ScaleTo100))
+        barFrame.text:SetFormattedText(FormState.fmtPct, UnitPowerPercent("player", pt, true, CurveConstants.ScaleTo100))
     elseif mode == "curmax" then
         barFrame.text:SetFormattedText("%d / %d", UnitPower("player", pt), UnitPowerMax("player", pt))
     elseif mode == "both" then
         barFrame.text:SetFormattedText(
-            S.fmtBoth,
+            FormState.fmtBoth,
             UnitPower("player", pt),
             UnitPowerPercent("player", pt, true, CurveConstants.ScaleTo100)
         )
@@ -105,8 +105,8 @@ end
 
 -- The form power's colour at Power Bar Opacity, and the power bar's background.
 local function Color()
-    local s, barFrame = S.settings, S.bar
-    local details = S.token and CUI.GetPowerColor(S.token)
+    local s, barFrame = FormState.settings, FormState.bar
+    local details = FormState.token and CUI.GetPowerColor(FormState.token)
     local red, green, blue = 1, 1, 1
     if details then
         red, green, blue = details.r, details.g, details.b
@@ -143,10 +143,10 @@ local function Color()
 end
 
 local function SetLive(enabled)
-    if S.live == enabled then
+    if FormState.live == enabled then
         return
     end
-    S.live = enabled
+    FormState.live = enabled
     if enabled then
         evf:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
         evf:RegisterUnitEvent("UNIT_MAXPOWER", "player")
@@ -160,27 +160,27 @@ end
 -- read keeps the last verdict. laidOut: the bar was just laid out, so a
 -- shown bar may have moved.
 local function Sync(laidOut)
-    local barFrame = S.bar
+    local barFrame = FormState.bar
     if not barFrame then
         return
     end
     local pt, token = UnitPowerType("player")
     if Secret(pt) or Secret(token) then
-        if laidOut and S.shown then
+        if laidOut and FormState.shown then
             Reanchor()
         end
         return
     end
-    local show = S.on and pt ~= MANA
+    local show = FormState.on and pt ~= MANA
     if show then
-        S.pt, S.token = pt, token
+        FormState.pt, FormState.token = pt, token
         Color()
         Paint()
     end
     SetLive(show)
     barFrame:SetShown(show)
-    if show ~= S.shown or (show and laidOut) then
-        S.shown = show
+    if show ~= FormState.shown or (show and laidOut) then
+        FormState.shown = show
         Reanchor()
     end
 end
@@ -188,7 +188,7 @@ end
 evf:SetScript("OnEvent", function(_, evt, _, token)
     if evt == "UNIT_DISPLAYPOWER" then
         Sync()
-    elseif evt == "UNIT_MAXPOWER" or Secret(token) or token == S.token then
+    elseif evt == "UNIT_MAXPOWER" or Secret(token) or token == FormState.token then
         Paint()
     end
 end)
@@ -211,27 +211,27 @@ local function Build(widget)
     barFrame.text = tf:CreateFontString(nil, "OVERLAY")
     barFrame.text:SetWordWrap(false)
     barFrame:Hide()
-    S.bar = barFrame
+    FormState.bar = barFrame
 end
 
 -- The Form Power Text settings (format, position, size, offsets, percent
 -- sign); each unset one follows the power bar's. Smart shows the value (form
 -- power is never mana).
 local function StyleText(s)
-    local fontStr = S.bar.text
+    local fontStr = FormState.bar.text
     local place = FormVal(s, "foreverFormTextPos", "powerPercentText", "none")
     local fmt = FormVal(s, "foreverFormTextFormat", "powerTextFormat", "perpp")
     if place == "none" or fmt == "none" then
-        S.text = nil
+        FormState.text = nil
         fontStr:Hide()
         return
     end
-    S.text = (fmt == "curpp" or fmt == "smart") and "cur"
+    FormState.text = (fmt == "curpp" or fmt == "smart") and "cur"
         or (fmt == "curmaxpp" and "curmax")
         or (fmt == "both" and "both")
         or "pct"
     local sign = (FormVal(s, "foreverFormShowPercent", "powerShowPercent", true) ~= false) and "%%" or ""
-    S.fmtPct, S.fmtBoth = "%d" .. sign, "%d | %d" .. sign
+    FormState.fmtPct, FormState.fmtBoth = "%d" .. sign, "%d | %d" .. sign
     CUI.ApplyModuleFont(
         fontStr,
         nil,
@@ -243,13 +243,13 @@ local function StyleText(s)
     fontStr:ClearAllPoints()
     if place == "left" then
         fontStr:SetJustifyH("LEFT")
-        fontStr:SetPoint("LEFT", S.bar, "LEFT", 2 + ox, oy)
+        fontStr:SetPoint("LEFT", FormState.bar, "LEFT", 2 + ox, oy)
     elseif place == "right" then
         fontStr:SetJustifyH("RIGHT")
-        fontStr:SetPoint("RIGHT", S.bar, "RIGHT", -2 + ox, oy)
+        fontStr:SetPoint("RIGHT", FormState.bar, "RIGHT", -2 + ox, oy)
     else
         fontStr:SetJustifyH("CENTER")
-        fontStr:SetPoint("CENTER", S.bar, "CENTER", ox, oy)
+        fontStr:SetPoint("CENTER", FormState.bar, "CENTER", ox, oy)
     end
     fontStr:Show()
 end
@@ -260,7 +260,7 @@ end
 local FOREVER_RIM_DROP = 3
 
 local function Layout(widget, power, cfg)
-    local barFrame, Pix = S.bar, CUI.PP
+    local barFrame, Pix = FormState.bar, CUI.PP
     local place = mod.UF_PowerPos(cfg)
     local detached = (place == "detached_top" or place == "detached_bottom")
     -- A stock look draws an attached power bar inside its frame art.
@@ -310,24 +310,24 @@ end
 -- frame: the player frame; power: its power bar; s: the player settings.
 function mod.UF_ForeverFormBar(widget, power, cfg)
     local shade = cfg and cfg.powerTypeOverride
-    S.on = (power and shade and shade.foreverDruid and cfg.foreverFormBar and mod.UF_PowerBarDraws(cfg)) and true
+    FormState.on = (power and shade and shade.foreverDruid and cfg.foreverFormBar and mod.UF_PowerBarDraws(cfg)) and true
         or false
-    if not S.on then
+    if not FormState.on then
         evf:UnregisterAllEvents()
-        S.live = false
-        if S.bar then
-            S.bar:Hide()
+        FormState.live = false
+        if FormState.bar then
+            FormState.bar:Hide()
         end
-        if S.shown then
-            S.shown = false
+        if FormState.shown then
+            FormState.shown = false
             Reanchor()
         end
         return
     end
-    if not S.bar then
+    if not FormState.bar then
         Build(widget)
     end
-    local barFrame = S.bar
+    local barFrame = FormState.bar
     if barFrame:GetParent() ~= widget then
         barFrame:SetParent(widget)
     end
@@ -336,7 +336,7 @@ function mod.UF_ForeverFormBar(widget, power, cfg)
     barFrame:SetFrameLevel(power:GetFrameLevel() + 1)
     barFrame.border:SetFrameLevel(barFrame:GetFrameLevel() + 5)
     barFrame.textFrame:SetFrameLevel(barFrame:GetFrameLevel() + 6)
-    S.settings, S.frame, S.power = cfg, widget, power
+    FormState.settings, FormState.frame, FormState.power = cfg, widget, power
     Layout(widget, power, cfg)
     StyleText(cfg)
     evf:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
@@ -346,10 +346,10 @@ end
 -- The form bar's own options re-apply only this bar: a full frame reload per
 -- slider step visibly rebuilds the player frame.
 function mod.UF_ForeverFormBarRelayout()
-    if not (S.on and S.bar) then
+    if not (FormState.on and FormState.bar) then
         return
     end
-    Layout(S.frame, S.power, S.settings)
-    StyleText(S.settings)
+    Layout(FormState.frame, FormState.power, FormState.settings)
+    StyleText(FormState.settings)
     Sync(true)
 end

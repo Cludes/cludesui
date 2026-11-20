@@ -920,13 +920,13 @@ end
 --- conditional's value would otherwise be banked over at logout). Read-only.
 function CludesUI.SpecOverrides_IsCaptured(moduleFolder, ...)
     local fieldKey = moduleFolder .. FS .. table.concat({ ... }, PS)
-    local C = CludesUI._CondOv
+    local CondOv = CludesUI._CondOv
     for pass = 1, 2 do
         local storage
         if pass == 1 then
             storage = GetStore()
-        elseif C and C.GetStore then
-            storage = C.GetStore()
+        elseif CondOv and CondOv.GetStore then
+            storage = CondOv.GetStore()
         end
         if storage then
             for _, entry in ipairs(storage) do
@@ -959,14 +959,14 @@ function CludesUI.SpecOverrides_CapturedBy(moduleFolder, keyList)
     for idx = 1, #keyList do
         wanted[moduleFolder .. FS .. keyList[idx]] = true
     end
-    local C = CludesUI._CondOv
+    local CondOv = CludesUI._CondOv
     local result, seen = {}, { spec = {}, cond = {} }
     for pass = 1, 2 do
         local storage, kind
         if pass == 1 then
             storage, kind = GetStore(), "spec"
-        elseif C and C.GetStore then
-            storage, kind = C.GetStore(), "cond"
+        elseif CondOv and CondOv.GetStore then
+            storage, kind = CondOv.GetStore(), "cond"
         end
         if storage then
             local seenKind = seen[kind]
@@ -1005,8 +1005,8 @@ function CludesUI.SpecOverrides_ViewActive()
     if _editGroup then
         return false
     end
-    local C = CludesUI._CondOv
-    if C and C._edit then
+    local CondOv = CludesUI._CondOv
+    if CondOv and CondOv._edit then
         return false
     end
     return _defaultView and true or false
@@ -1027,10 +1027,10 @@ function CludesUI.SpecOverrides_EditSessionUnlockLayer()
         end
         return nil
     end
-    local C = CludesUI._CondOv
-    local e = C and C._edit
+    local CondOv = CludesUI._CondOv
+    local e = CondOv and CondOv._edit
     if e and e.id then
-        local condStore = C.GetUnlockStore and C.GetUnlockStore()
+        local condStore = CondOv.GetUnlockStore and CondOv.GetUnlockStore()
         local layer = condStore and condStore.layouts and condStore.layouts[e.id]
         if layer then
             return layer, cfg and cfg.baselineLayout or nil
@@ -1046,8 +1046,8 @@ function CludesUI.SpecOverrides_EditSessionName()
     if _editGroup then
         return _editGroup.name or _editGroup.label
     end
-    local C = CludesUI._CondOv
-    local e = C and C._edit
+    local CondOv = CludesUI._CondOv
+    local e = CondOv and CondOv._edit
     if e and e.id and CludesUI.Conditions_GroupById then
         local condGroup = CludesUI.Conditions_GroupById(e.id)
         return condGroup and (condGroup.name or condGroup.label)
@@ -1061,8 +1061,8 @@ function CludesUI.SpecOverrides_EditSessionInfo()
     if _editGroup then
         return "spec", _editGroup.id
     end
-    local C = CludesUI._CondOv
-    local e = C and C._edit
+    local CondOv = CludesUI._CondOv
+    local e = CondOv and CondOv._edit
     if e and e.id then
         return "cond", e.id
     end
@@ -1124,9 +1124,9 @@ function CludesUI.SpecOverrides_PeekEffectiveValues(moduleFolder)
             end
         end
     end
-    local C = CludesUI._CondOv
-    if C and C.GetStore then
-        local cstore = C.GetStore()
+    local CondOv = CludesUI._CondOv
+    if CondOv and CondOv.GetStore then
+        local cstore = CondOv.GetStore()
         if cstore and #cstore > 0 then
             local groupId = CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil
             for _, record in ipairs(cstore) do
@@ -1209,10 +1209,10 @@ function CludesUI.SpecOverrides_EffectiveUnlockLayer()
     if wanted and cfg.layouts and cfg.layouts[wanted] then
         return cfg.layouts[wanted], cfg.baselineLayout
     end
-    local C = CludesUI._CondOv
-    local cond = C and C.ResolveGid and C.ResolveGid() or nil
+    local CondOv = CludesUI._CondOv
+    local cond = CondOv and CondOv.ResolveGid and CondOv.ResolveGid() or nil
     if cond then
-        local condStore = C.GetUnlockStore and C.GetUnlockStore()
+        local condStore = CondOv.GetUnlockStore and CondOv.GetUnlockStore()
         local layer = condStore and condStore.layouts and condStore.layouts[cond]
         if layer then
             return layer, cfg.baselineLayout

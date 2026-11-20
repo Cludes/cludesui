@@ -8,7 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  shared helpers (Swiftmend, level colors, faction art, split-module guard
 --  tables). Loads right after CludesUI_VisibilityRules.lua.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 local _, CUI_NS = ...
 CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
 
@@ -18,7 +18,7 @@ CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table
 --  its own, so two files never share fields on one frame. The core's pair is
 --  stored on CludesUI to avoid the 200-local cap in CludesUI.lua.
 -------------------------------------------------------------------------------
-function CludesUI.NewFrameData()
+function CUI.NewFrameData()
     local FFD = setmetatable({}, { __mode = "k" })
     return FFD,
         function(widget)
@@ -30,8 +30,8 @@ function CludesUI.NewFrameData()
             return d
         end
 end
-if not CludesUI._FFD then
-    CludesUI._FFD, CludesUI._GetFFD = CludesUI.NewFrameData()
+if not CUI._FFD then
+    CUI._FFD, CUI._GetFFD = CUI.NewFrameData()
 end
 
 -- Stock styles, enable-time catch-up seeds: a profile already on a stock
@@ -41,7 +41,7 @@ end
 -- restores them. `keys` = the module's slot keys (dotted paths one level
 -- deep into `p`, as the Style page's SLOT_KEYS). Callers bank only while
 -- none of the module's seed stamps is set; an existing slot is never touched.
-function CludesUI.BankEuiStyleSlot(profile, keyList)
+function CUI.BankEuiStyleSlot(profile, keyList)
     if type(profile) ~= "table" then
         return
     end
@@ -78,12 +78,12 @@ end
 --  or after the child -- and the API stays callable (a silent no-op) when the child addon is
 --  disabled. Developer guide: SKINNING_API.md. Stored on CludesUI to avoid the 200-local cap in CludesUI.lua.
 -------------------------------------------------------------------------------
-CludesUI._skinRegistry = CludesUI._skinRegistry or {}
-function CludesUI.RegisterSkin(label, applyFn)
+CUI._skinRegistry = CUI._skinRegistry or {}
+function CUI.RegisterSkin(label, applyFn)
     if type(label) ~= "string" or label == "" or type(applyFn) ~= "function" then
         return
     end
-    local reg = CludesUI._skinRegistry
+    local reg = CUI._skinRegistry
     for idx = 1, #reg do
         if reg[idx].name == label then
             return
@@ -91,8 +91,8 @@ function CludesUI.RegisterSkin(label, applyFn)
     end
     local record = { name = label, apply = applyFn }
     reg[#reg + 1] = record
-    if CludesUI._DispatchSkinRegistration then
-        CludesUI._DispatchSkinRegistration(record)
+    if CUI._DispatchSkinRegistration then
+        CUI._DispatchSkinRegistration(record)
     end
     return true
 end
@@ -103,19 +103,19 @@ end
 --  instead of :Hide() so the frame stays in the layout engine with valid bounds.
 --  Sub-widgets (icons, text, glows) inside these frames still use :Hide()/:Show().
 -------------------------------------------------------------------------------
-function CludesUI.SetElementVisibility(widget, visible)
+function CUI.SetElementVisibility(widget, visible)
     if not widget then
         return
     end
     if visible then
-        widget:SetAlpha(CludesUI._GetFFD(widget).restoreAlpha or 1)
-        widget:EnableMouse(CludesUI._GetFFD(widget).restoreMouse or false)
+        widget:SetAlpha(CUI._GetFFD(widget).restoreAlpha or 1)
+        widget:EnableMouse(CUI._GetFFD(widget).restoreMouse or false)
     else
         local alpha = widget:GetAlpha()
         if not issecretvalue(alpha) and alpha > 0 then
-            CludesUI._GetFFD(widget).restoreAlpha = alpha
+            CUI._GetFFD(widget).restoreAlpha = alpha
         end
-        CludesUI._GetFFD(widget).restoreMouse = widget:IsMouseEnabled()
+        CUI._GetFFD(widget).restoreMouse = widget:IsMouseEnabled()
         widget:SetAlpha(0)
         widget:EnableMouse(false)
     end
@@ -130,7 +130,7 @@ end
 --  GetAlpha can read secret on some widgets in lockdown; a secret skips the
 --  compare and re-asserts.
 -------------------------------------------------------------------------------
-function CludesUI.SetEditModeChildInert(frame, inert)
+function CUI.SetEditModeChildInert(frame, inert)
     if not frame then
         return
     end
@@ -157,12 +157,12 @@ end
 --  mark Edit Mode's anchor sweep and the frame's snap state as written by us.
 --  These call the saved C methods instead; any other frame uses its own.
 -------------------------------------------------------------------------------
-function CludesUI.ClearFramePoints(widget)
+function CUI.ClearFramePoints(widget)
     local clear = widget.ClearAllPointsBase or widget.ClearAllPoints
     clear(widget)
 end
 
-function CludesUI.SetFramePoint(widget, anchorPoint, relativeTo, relativePoint, x, y)
+function CUI.SetFramePoint(widget, anchorPoint, relativeTo, relativePoint, x, y)
     local setPoint = widget.SetPointBase or widget.SetPoint
     setPoint(widget, anchorPoint, relativeTo, relativePoint, x, y)
 end
@@ -173,7 +173,7 @@ end
 -- keepPosition: an Edit Mode system's offsets are rescaled as the override
 -- does it, so the system keeps its spot (Edit Mode's save reads a moved
 -- system's anchor back from its geometry times its scale).
-function CludesUI.SetFrameScale(widget, scale, keepPosition)
+function CUI.SetFrameScale(widget, scale, keepPosition)
     local setScale = widget.SetScaleBase
     if not setScale then
         widget:SetScale(scale)
@@ -200,7 +200,7 @@ function CludesUI.SetFrameScale(widget, scale, keepPosition)
                 or issecretvalue(y)
             )
         then
-            CludesUI.SetFramePoint(widget, point, relTo, relPoint, x * k, y * k)
+            CUI.SetFramePoint(widget, point, relTo, relPoint, x * k, y * k)
         end
     end
 end
@@ -215,7 +215,7 @@ end
 -- no such override (a plain Show undoes this), except on Blizzard's action
 -- bars, whose overrides keep their own shown state, which this leaves as it
 -- was.
-function CludesUI.HideFrame(widget)
+function CUI.HideFrame(widget)
     local hide = widget.HideBase or widget.Hide
     hide(widget)
 end
@@ -288,8 +288,8 @@ do
     end
 
     local function PlacerSet(widget, anchorPoint, relativeTo, relativePoint, x, y)
-        CludesUI.ClearFramePoints(widget)
-        CludesUI.SetFramePoint(widget, anchorPoint, relativeTo, relativePoint, x, y)
+        CUI.ClearFramePoints(widget)
+        CUI.SetFramePoint(widget, anchorPoint, relativeTo, relativePoint, x, y)
     end
 
     -- False when SetPoint refused the anchor (an anchor loop): the frame was
@@ -309,7 +309,7 @@ do
     -- combat queue, however many states wait).
     local function PlacerOwe(placerState)
         placerState.owed = true
-        CludesUI.CombatQueue.Defer("FramePlacerRetry", PlacerRetry)
+        CUI.CombatQueue.Defer("FramePlacerRetry", PlacerRetry)
     end
 
     local function PlacerResolve(widget, placerState)
@@ -486,7 +486,7 @@ do
         return placerState
     end
 
-    function CludesUI.SetFramePlacer(widget, ownerFrame, func)
+    function CUI.SetFramePlacer(widget, ownerFrame, func)
         local rank = PLACER_RANKS[ownerFrame]
         if
             not rank
@@ -534,7 +534,7 @@ do
         return true
     end
 
-    function CludesUI.RequestFramePlacement(widget)
+    function CUI.RequestFramePlacement(widget)
         local placerState = placerStates[widget]
         if placerState and placerState.count > 0 then
             PlacerMark(placerState)
@@ -550,8 +550,8 @@ end
 --  replaced it with. CUI hides Blizzard's bar by re-parenting it (see SetPlayerCastBarSuppressed),
 --  so it never needs the event state changed: wrap anything that flips it in Capture/Restore and only ever undo CUI's own writes.
 -------------------------------------------------------------------------------
-function CludesUI._BlizzCastBars()
-    local barList = CludesUI._blizzCastBarList
+function CUI._BlizzCastBars()
+    local barList = CUI._blizzCastBarList
     if barList then
         return barList
     end
@@ -563,7 +563,7 @@ function CludesUI._BlizzCastBars()
     if PetCastingBarFrame then
         barList[#barList + 1] = { frame = PetCastingBarFrame, unit = "pet" }
     end
-    CludesUI._blizzCastBarList = barList
+    CUI._blizzCastBarList = barList
 
     for idx = 1, #barList do
         local barFrame = barList[idx]
@@ -571,7 +571,7 @@ function CludesUI._BlizzCastBars()
         -- addon claiming the frame: CUI drops its claim and records the claim as foreign.
         -- "Foreign" is tracked separately from "not ours" because those are very different states -- see RestoreBlizzCastBarEvents.
         hooksecurefunc(barFrame.frame, "UnregisterAllEvents", function()
-            if not CludesUI._blizzCastBarSnapshot then
+            if not CUI._blizzCastBarSnapshot then
                 barFrame.owned = false
                 barFrame.foreign = true
             end
@@ -580,23 +580,23 @@ function CludesUI._BlizzCastBars()
     return barList
 end
 
-function CludesUI.CaptureBlizzCastBarEvents()
-    local barList = CludesUI._BlizzCastBars()
+function CUI.CaptureBlizzCastBarEvents()
+    local barList = CUI._BlizzCastBars()
     local snapshot = {}
     for idx = 1, #barList do
         snapshot[idx] = barList[idx].frame:IsEventRegistered("UNIT_SPELLCAST_START") and true or false
     end
-    CludesUI._blizzCastBarSnapshot = snapshot
+    CUI._blizzCastBarSnapshot = snapshot
 end
 
-function CludesUI.RestoreBlizzCastBarEvents()
-    local snapshot = CludesUI._blizzCastBarSnapshot
+function CUI.RestoreBlizzCastBarEvents()
+    local snapshot = CUI._blizzCastBarSnapshot
     if not snapshot then
         return
     end
-    CludesUI._blizzCastBarSnapshot = nil
+    CUI._blizzCastBarSnapshot = nil
 
-    local barList = CludesUI._blizzCastBarList
+    local barList = CUI._blizzCastBarList
     for idx = 1, #barList do
         local barFrame = barList[idx]
         local live = barFrame.frame:IsEventRegistered("UNIT_SPELLCAST_START") and true or false
@@ -652,8 +652,8 @@ local BLIZZ_CAST_EVENTS = {
 -- Give Blizzard's cast bars their event wiring back, unless another addon has claimed them.
 -- Covers the pet bar too: oUF silences both and only re-arms them from its Castbar element's
 -- Disable, so any release path that does not run that (the element was never enabled to begin with) leaves both dead.
-function CludesUI.RearmBlizzCastBars()
-    local barList = CludesUI._blizzCastBarList
+function CUI.RearmBlizzCastBars()
+    local barList = CUI._blizzCastBarList
     if not barList then
         return
     end
@@ -679,7 +679,7 @@ end
 -- before any addon's PLAYER_LOGIN handler, so this closes the window to everything except
 -- file-scope silences in addons that load before CUI. Guarded on BOTH frames: the list is cached on first build, so building it while either frame is missing would drop that bar for the whole session.
 if PlayerCastingBarFrame and PetCastingBarFrame then
-    CludesUI._BlizzCastBars()
+    CUI._BlizzCastBars()
 end
 
 -------------------------------------------------------------------------------
@@ -687,15 +687,15 @@ end
 --  Blizzard's player cast bar while they render their own. Centralized here so modules cooperate
 --  with each other and leave third-party visibility control alone once no CUI module is actively using a replacement bar.
 -------------------------------------------------------------------------------
-function CludesUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
+function CUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
     if not ownerFrame or ownerFrame == "" then
         return
     end
 
-    local owners = CludesUI._playerCastBarSuppressors
+    local owners = CUI._playerCastBarSuppressors
     if not owners then
         owners = {}
-        CludesUI._playerCastBarSuppressors = owners
+        CUI._playerCastBarSuppressors = owners
     end
 
     if suppressed then
@@ -710,19 +710,19 @@ function CludesUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
     end
 
     local shouldSuppress = next(owners) ~= nil
-    local hiddenHost = CludesUI._playerCastBarHiddenParent
+    local hiddenHost = CUI._playerCastBarHiddenParent
 
     if shouldSuppress then
         if not hiddenHost then
             hiddenHost = CreateFrame("Frame")
             hiddenHost:Hide()
-            CludesUI._playerCastBarHiddenParent = hiddenHost
+            CUI._playerCastBarHiddenParent = hiddenHost
         end
 
         if stockBar:GetParent() ~= hiddenHost then
-            CludesUI._GetFFD(stockBar).origParent = stockBar:GetParent()
+            CUI._GetFFD(stockBar).origParent = stockBar:GetParent()
         end
-        CludesUI._GetFFD(stockBar).castBarSuppressed = true
+        CUI._GetFFD(stockBar).castBarSuppressed = true
 
         -- Skip the re-parent while Edit Mode is open: SetParent fires Blizzard's synchronous
         -- layout handlers in this execution, and the UnitFrames Edit-Mode-close hook re-applies this state afterwards.
@@ -741,19 +741,19 @@ function CludesUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
         -- combat it waits for PLAYER_REGEN_ENABLED instead of being dropped: leaving the
         -- managed layout must not run from addon code in combat, and a dropped re-park
         -- left Blizzard's bar on screen for the rest of the session.
-        if not CludesUI._GetFFD(stockBar).setParentHooked then
-            CludesUI._GetFFD(stockBar).setParentHooked = true
+        if not CUI._GetFFD(stockBar).setParentHooked then
+            CUI._GetFFD(stockBar).setParentHooked = true
             local repark = CreateFrame("Frame")
             repark:Hide()
             local function Repark()
                 -- Never re-parent while Edit Mode is open: SetParent fires Blizzard's
                 -- synchronous layout handlers under addon taint and poisons the manager's state for its next pass (the Edit Mode close hook in UnitFrames re-applies suppression).
                 if
-                    CludesUI._GetFFD(stockBar).castBarSuppressed
+                    CUI._GetFFD(stockBar).castBarSuppressed
                     and not (EditModeManagerFrame and EditModeManagerFrame:IsShown())
-                    and stockBar:GetParent() ~= CludesUI._playerCastBarHiddenParent
+                    and stockBar:GetParent() ~= CUI._playerCastBarHiddenParent
                 then
-                    stockBar:SetParent(CludesUI._playerCastBarHiddenParent)
+                    stockBar:SetParent(CUI._playerCastBarHiddenParent)
                 end
             end
             repark:SetScript("OnUpdate", function(self)
@@ -770,8 +770,8 @@ function CludesUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
             end)
             hooksecurefunc(stockBar, "SetParent", function(self, newParent)
                 if
-                    CludesUI._GetFFD(self).castBarSuppressed
-                    and newParent ~= CludesUI._playerCastBarHiddenParent
+                    CUI._GetFFD(self).castBarSuppressed
+                    and newParent ~= CUI._playerCastBarHiddenParent
                 then
                     repark:Show()
                 end
@@ -780,22 +780,22 @@ function CludesUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
 
         local picked = stockBar.Selection
         if picked then
-            if not CludesUI._GetFFD(picked).suppressed then
-                CludesUI._GetFFD(picked).restoreAlpha = picked:GetAlpha()
-                CludesUI._GetFFD(picked).restoreMouse = picked:IsMouseEnabled()
+            if not CUI._GetFFD(picked).suppressed then
+                CUI._GetFFD(picked).restoreAlpha = picked:GetAlpha()
+                CUI._GetFFD(picked).restoreMouse = picked:IsMouseEnabled()
             end
-            CludesUI._GetFFD(picked).suppressed = true
+            CUI._GetFFD(picked).suppressed = true
             picked:SetAlpha(0)
             picked:EnableMouse(false)
 
-            if not CludesUI._GetFFD(picked).showHooked then
-                CludesUI._GetFFD(picked).showHooked = true
+            if not CUI._GetFFD(picked).showHooked then
+                CUI._GetFFD(picked).showHooked = true
                 hooksecurefunc(picked, "Show", function(self)
                     -- Deferred: Show fires inside Edit Mode's secure ShowSystemSelections pass; write nothing there.
                     C_Timer.After(0, function()
                         if
                             PlayerCastingBarFrame
-                            and CludesUI._GetFFD(PlayerCastingBarFrame).castBarSuppressed
+                            and CUI._GetFFD(PlayerCastingBarFrame).castBarSuppressed
                         then
                             self:SetAlpha(0)
                             self:EnableMouse(false)
@@ -808,14 +808,14 @@ function CludesUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
         return
     end
 
-    CludesUI._GetFFD(stockBar).castBarSuppressed = false
+    CUI._GetFFD(stockBar).castBarSuppressed = false
 
     -- Hand the bar back to the parent CUI took it from -- but never to one that is itself hidden.
     -- Blizzard parents this bar under PlayerFrame, and Edit Mode re-parents it into a layout frame
     -- that gets hidden on exit, while CUI hides PlayerFrame whenever it renders its own player
     -- frame. Restoring there leaves Blizzard's cast bar fully armed but permanently invisible,
     -- which reads exactly like the suppression never lifted. UIParent is where Edit Mode positions the bar from anyway, and SetParent keeps the existing anchors, so the bar still lands where the user had it.
-    local origParent = CludesUI._GetFFD(stockBar).origParent
+    local origParent = CUI._GetFFD(stockBar).origParent
     local currentParent = stockBar:GetParent()
     local restoreHost = origParent
     if not restoreHost or not restoreHost.IsVisible or not restoreHost:IsVisible() then
@@ -845,17 +845,17 @@ function CludesUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
     end
 
     local picked = stockBar.Selection
-    if picked and CludesUI._GetFFD(picked).suppressed then
-        CludesUI._GetFFD(picked).suppressed = false
-        picked:SetAlpha(CludesUI._GetFFD(picked).restoreAlpha or 1)
-        picked:EnableMouse(CludesUI._GetFFD(picked).restoreMouse or false)
+    if picked and CUI._GetFFD(picked).suppressed then
+        CUI._GetFFD(picked).suppressed = false
+        picked:SetAlpha(CUI._GetFFD(picked).restoreAlpha or 1)
+        picked:EnableMouse(CUI._GetFFD(picked).restoreMouse or false)
     end
 
     -- Let Blizzard rebuild its normal event wiring without forcing visibility back on, so profile
     -- switches and UnitFrames/oUF teardown stay compatible with Blizzard's own cast bar logic.
     -- Only when CUI silenced the frame in the first place: a standalone cast bar addon silences
     -- the same frame, and re-registering its events is what pops Blizzard's cast bar back on screen next to theirs once CUI's own cast bar is switched off.
-    CludesUI.RearmBlizzCastBars()
+    CUI.RearmBlizzCastBars()
 end
 
 -------------------------------------------------------------------------------
@@ -867,7 +867,7 @@ do
     local function isEnabled()
         return not CludesUIDB or CludesUIDB.brightenSwiftmend ~= false
     end
-    function CludesUI._HookSwiftmendIcon(texture)
+    function CUI._HookSwiftmendIcon(texture)
         if not texture or hooked[texture] then
             -- Already hooked; just force bright if re-enabling
             if texture and hooked[texture] and isEnabled() then
@@ -889,8 +889,8 @@ do
             texture:SetVertexColor(1, 1, 1)
         end
     end
-    CludesUI._SWIFTMEND_SPELL = 18562
-    CludesUI._SWIFTMEND_ICON = 134914
+    CUI._SWIFTMEND_SPELL = 18562
+    CUI._SWIFTMEND_ICON = 134914
 end
 
 -------------------------------------------------------------------------------
@@ -898,7 +898,7 @@ end
 --  rule: "??" (level <= 0) red, a unit you cannot attack gold, otherwise the
 --  color for its level against yours.
 -------------------------------------------------------------------------------
-function CludesUI.GetLevelDifficultyColor(lvl, attackable)
+function CUI.GetLevelDifficultyColor(lvl, attackable)
     if lvl <= 0 then
         return 1, 0.1, 0.1
     end
@@ -913,7 +913,7 @@ function CludesUI.GetLevelDifficultyColor(lvl, attackable)
     if issecretvalue and issecretvalue(mine) then
         return nil
     end
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         -- WoW Forever's own nameplate rule (the vanilla one): grey past the
         -- trivial range, green 3+ below, yellow within 2, orange 3-4 above, red 5+.
         local diff = lvl - mine
@@ -942,21 +942,21 @@ function CludesUI.GetLevelDifficultyColor(lvl, attackable)
 end
 -- For a unit; nil when the level or attackability cannot be read (secret).
 -- includeFriendly: friendly units get their difficulty color too, not gold.
-function CludesUI.GetLevelColor(unitToken, lvl, includeFriendly)
+function CUI.GetLevelColor(unitToken, lvl, includeFriendly)
     local sv = issecretvalue
     if lvl == nil or (sv and sv(lvl)) then
         return nil
     end
     if includeFriendly then
-        return CludesUI.GetLevelDifficultyColor(lvl, true)
+        return CUI.GetLevelDifficultyColor(lvl, true)
     end
     local attackable = UnitCanAttack("player", unitToken)
     if sv and sv(attackable) then
         return nil
     end
-    return CludesUI.GetLevelDifficultyColor(lvl, attackable)
+    return CUI.GetLevelDifficultyColor(lvl, attackable)
 end
-function CludesUI.ColorText(textValue, red, green, blue)
+function CUI.ColorText(textValue, red, green, blue)
     if not red then
         return textValue
     end
@@ -976,7 +976,7 @@ end
 --  top-left 42 of 64 pixels).
 --  Unknown styles fall back to "pvp", the default.
 -------------------------------------------------------------------------------
-CludesUI.FACTION_ART = {
+CUI.FACTION_ART = {
     pvp = { atlas = "UI-HUD-UnitFrame-Player-PVP-%sIcon" },
     honor = { atlas = "honorsystem-portrait-%s", lower = true, badge = true },
     poi = { atlas = "poi-%s", lower = true },
@@ -985,8 +985,8 @@ CludesUI.FACTION_ART = {
     honoricon = { file = "Interface\\Icons\\PVPCurrency-Honor-%s" },
     friends = { file = "Interface\\FriendsFrame\\PlusManz-%s" },
 }
-CludesUI.FACTION_ART_ORDER = { "pvp", "honor", "poi", "classic", "banner", "honoricon", "friends" }
-CludesUI.FACTION_ART_LABELS = {
+CUI.FACTION_ART_ORDER = { "pvp", "honor", "poi", "classic", "banner", "honoricon", "friends" }
+CUI.FACTION_ART_LABELS = {
     pvp = "PvP Emblem",
     honor = "Honor Portrait",
     poi = "Map Flag",
@@ -999,8 +999,8 @@ CludesUI.FACTION_ART_LABELS = {
 -- Returns that badge's file id, or nil. Callers pass it to SetFactionArt and memoize it.
 local HONOR_BADGE_RATIO = 30 / 50
 local honorBadgeFiles = {}
-function CludesUI.FactionBadgeFor(style, unitToken)
-    local artTex = CludesUI.FACTION_ART[style]
+function CUI.FactionBadgeFor(style, unitToken)
+    local artTex = CUI.FACTION_ART[style]
     if not (artTex and artTex.badge and unitToken) then
         return nil
     end
@@ -1078,9 +1078,9 @@ local function SetBadge(texture, filePath)
     end
 end
 
-function CludesUI.SetFactionArt(texture, style, faction, badgeFile)
+function CUI.SetFactionArt(texture, style, faction, badgeFile)
     SetBadge(texture, badgeFile)
-    local artTex = CludesUI.FACTION_ART[style] or CludesUI.FACTION_ART.pvp
+    local artTex = CUI.FACTION_ART[style] or CUI.FACTION_ART.pvp
     -- The resolved atlas or file name is built once per style and faction and kept
     -- on the style's entry (art.Horde / art.Alliance).
     local label = artTex[faction]
@@ -1118,10 +1118,10 @@ end
 local issecretvalue = issecretvalue or function()
     return false
 end
-function CludesUI.IsSecret(val)
+function CUI.IsSecret(val)
     return val ~= nil and issecretvalue(val)
 end
-function CludesUI.PlainString(val)
+function CUI.PlainString(val)
     -- The secrecy test comes first: comparing a secret string raises.
     if type(val) == "string" and not issecretvalue(val) and val ~= "" then
         return val
@@ -1137,16 +1137,16 @@ end
 --  and every format list leaves it out. Stored values moved once
 --  (forever_power_text_value_v1, CludesUI_Migration.lua).
 -------------------------------------------------------------------------------
-function CludesUI.PowerTextFormat(fmt)
-    if fmt == "smart" and CludesUI.IS_FOREVER then
+function CUI.PowerTextFormat(fmt)
+    if fmt == "smart" and CUI.IS_FOREVER then
         return "curpp"
     end
     return fmt
 end
 -- A format dropdown's order list for this client: the same table, or on WoW
 -- Forever a copy without "smart".
-function CludesUI.PowerTextFormatOrder(sequence)
-    if not CludesUI.IS_FOREVER then
+function CUI.PowerTextFormatOrder(sequence)
+    if not CUI.IS_FOREVER then
         return sequence
     end
     local result = {}
@@ -1208,7 +1208,7 @@ do
         return mod[field]
     end
     CUI_NS.NewInternals = NewInternals
-    CludesUI.NewInternals = NewInternals
+    CUI.NewInternals = NewInternals
 end
 
 -------------------------------------------------------------------------------
@@ -1261,7 +1261,7 @@ do
             return
         end
         if InCombatLockdown() then
-            CludesUI.CombatQueue.Defer(ownerFrame, function()
+            CUI.CombatQueue.Defer(ownerFrame, function()
                 Sync(ownerFrame, conf)
             end)
             return
@@ -1287,7 +1287,7 @@ do
             button:SetAttribute("*type1", "target")
             button:SetAttribute("toggleForVehicle", true)
             button:RegisterForClicks("AnyUp")
-            CludesUI.AttachSecureUnitMenu(button)
+            CUI.AttachSecureUnitMenu(button)
             button._cuiPtCfg = conf
             button:HookScript("OnEnter", OverlayEnter)
             button:HookScript("OnLeave", OverlayLeave)
@@ -1339,7 +1339,7 @@ do
         button:Show()
         return true
     end
-    CludesUI.SyncPortraitClick = Sync
+    CUI.SyncPortraitClick = Sync
 end
 
 -- 3D models ignore parent alpha, UIParent's too: UIScaledAlpha applies a UIParent
@@ -1361,7 +1361,7 @@ do
             listeners[idx]()
         end
     end
-    function CludesUI.UIScaledAlpha(a)
+    function CUI.UIScaledAlpha(a)
         local ui = UIParent:GetAlpha()
         if issecretvalue(ui) or ui >= 1 then
             return a
@@ -1371,7 +1371,7 @@ do
         end
         return a * ui
     end
-    function CludesUI.OnUIAlphaChanged(func)
+    function CUI.OnUIAlphaChanged(func)
         if not listeners then
             listeners = {}
             hooksecurefunc(UIParent, "SetAlpha", Notify)
@@ -1396,7 +1396,7 @@ end
 do
     local floor, format = math.floor, string.format
 
-    function CludesUI.SetCraftBatch(f, enabled, spellId, castID, castDur)
+    function CUI.SetCraftBatch(f, enabled, spellId, castID, castDur)
         local getLeft = C_TradeSkillUI and C_TradeSkillUI.GetRemainingRecasts
         if not (enabled and getLeft) then
             f._craftExtra, f._craftLeft = nil, nil
@@ -1425,7 +1425,7 @@ do
     end
 
     -- Whole batch left (or elapsed / total), repainted once per second.
-    function CludesUI.SetCraftTimerText(f, fontStr, remaining, totalMode)
+    function CUI.SetCraftTimerText(f, fontStr, remaining, totalMode)
         local leftX = (remaining > 0 and remaining or 0) + f._craftExtra
         local secs = floor(totalMode and (f._craftTotal - leftX) or leftX)
         if secs < 0 then
@@ -1445,7 +1445,7 @@ end
 --  cast bars show the plain "Opening". A secret or non-string name is returned
 --  as it is.
 -------------------------------------------------------------------------------
-function CludesUI.CleanCastName(label)
+function CUI.CleanCastName(label)
     if issecretvalue(label) or type(label) ~= "string" then
         return label
     end
@@ -1473,7 +1473,7 @@ do
     -- whether the family carries a shadow; any other string its own GetFont.
     local function FontOf(fontStr)
         local fo = fontStr:GetFontObject()
-        local set = CludesUI._fontFamilySet
+        local set = CUI._fontFamilySet
         if fo and set and set[fo] and fo.GetFontObjectForAlphabet then
             local roman = fo:GetFontObjectForAlphabet("roman")
             local face, size, flags
@@ -1517,7 +1517,7 @@ do
         if not font then
             return 0
         end
-        local fam = isFam and CludesUI.GetFontFamily(font, size or current, flags, shadow)
+        local fam = isFam and CUI.GetFontFamily(font, size or current, flags, shadow)
         local m = MeasureString(fam)
         if fam then
             m:SetFontObject(fam)
@@ -1527,9 +1527,9 @@ do
         m:SetText(str)
         return m:GetUnboundedStringWidth() or 0
     end
-    CludesUI.MeasureCastText = Measure
+    CUI.MeasureCastText = Measure
 
-    function CludesUI.FitCastName(fontStr, str, baseSize)
+    function CUI.FitCastName(fontStr, str, baseSize)
         local font, current, flags, isFam, shadow = FontOf(fontStr)
         if not font then
             return
@@ -1548,7 +1548,7 @@ do
         end
         if current ~= size then
             if isFam then
-                CludesUI.SetFontFamily(fontStr, font, size, flags, shadow)
+                CUI.SetFontFamily(fontStr, font, size, flags, shadow)
             else
                 fontStr:SetFont(font, size, flags)
             end
@@ -1563,7 +1563,7 @@ end
 --  the FlipBook. `duration` is one loop in seconds (Blizzard: 1.5). Build once
 --  per frame of ours: it sets the frame's OnShow and OnHide scripts.
 -------------------------------------------------------------------------------
-function CludesUI.AddRestFlipbook(widget, texture, duration)
+function CUI.AddRestFlipbook(widget, texture, duration)
     texture:SetAtlas("UI-HUD-UnitFrame-Player-Rest-Flipbook")
     local anim = widget:CreateAnimationGroup()
     anim:SetLooping("REPEAT")
@@ -1605,7 +1605,7 @@ do
     -- The active config ID and tree ID, and the trees in their order, each
     -- { groupID, name, nodes = { nodeID, ... } } with its visible talents
     -- (name: the game's own). The list is nil while there is no tree.
-    function CludesUI.ForeverTalentTrees()
+    function CUI.ForeverTalentTrees()
         local configId = C_ClassTalents.GetActiveConfigID()
         local config = configId and C_Traits.GetConfigInfo(configId)
         local treeID = config and config.treeIDs[1]
@@ -1696,7 +1696,7 @@ do
 
     -- Each talent's column and row (from 0) in its tree, from the node
     -- positions: cells[nodeID] = { col, row, info } and the row count.
-    function CludesUI.TalentTreeGrid(configId, nodes)
+    function CUI.TalentTreeGrid(configId, nodes)
         local xs, ys, infos = {}, {}, {}
         for idx, nodeId in ipairs(nodes) do
             local details = C_Traits.GetNodeInfo(configId, nodeId)
@@ -1734,7 +1734,7 @@ do
     -- reports a rank but no entry), false when not taken or not in the tree.
     local nodeState, nodeConfig = {}, nil
 
-    function CludesUI.TalentCondInvalidate()
+    function CUI.TalentCondInvalidate()
         wipe(nodeState)
         nodeConfig = nil
     end
@@ -1778,7 +1778,7 @@ do
     end
 
     -- True when the node (or, for a choice node, that side of it) is taken now.
-    function CludesUI.TalentCondIsTaken(nodeId, entryID)
+    function CUI.TalentCondIsTaken(nodeId, entryID)
         return IsTaken(nodeId, entryID, C_ClassTalents.GetActiveConfigID())
     end
 
@@ -1786,7 +1786,7 @@ do
     -- holds). A node that is not in the active tree reads as not taken.
     -- configID: the config a caller already read for a whole pass (false =
     -- none); nil reads the active one.
-    function CludesUI.TalentConditionsHold(conds, configId)
+    function CUI.TalentConditionsHold(conds, configId)
         if type(conds) ~= "table" then
             return true
         end

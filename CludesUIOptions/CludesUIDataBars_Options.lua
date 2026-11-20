@@ -59,7 +59,7 @@ CludesUI.AtOptionsLogin(function()
     -- hidden, screen-clamped panel over the options window, in the
     -- dropdown's background and border.
     local function MenuShell(width)
-        local DDS = CludesUI.DD_STYLE
+        local DropStyle = CludesUI.DD_STYLE
         local menu = CreateFrame("Frame", nil, UIParent)
         menu:SetFrameStrata("FULLSCREEN_DIALOG")
         menu:SetFrameLevel(300)
@@ -70,8 +70,8 @@ CludesUI.AtOptionsLogin(function()
         menu:Hide()
         local backdrop = menu:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
-        backdrop:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
-        CludesUI.MakeRoundedBorder(menu, 1, 1, 1, DDS.BRD_A, backdrop, nil, true)
+        backdrop:SetColorTexture(DropStyle.BG_R, DropStyle.BG_G, DropStyle.BG_B, DropStyle.BG_HA)
+        CludesUI.MakeRoundedBorder(menu, 1, 1, 1, DropStyle.BRD_A, backdrop, nil, true)
         return menu
     end
 
@@ -502,7 +502,7 @@ CludesUI.AtOptionsLogin(function()
         if not PAD then
             PAD = 10
         end
-        local DDS = CludesUI.DD_STYLE
+        local DropStyle = CludesUI.DD_STYLE
         local EGc = CludesUI.CLUDES_GREEN
         local tDimR = CludesUI.TEXT_DIM_R
         if tDimR == nil then
@@ -539,9 +539,9 @@ CludesUI.AtOptionsLogin(function()
         dropdownBtn:SetFrameLevel(heading:GetFrameLevel() + 5)
         local ddBg = dropdownBtn:CreateTexture(nil, "BACKGROUND")
         ddBg:SetAllPoints()
-        ddBg:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_A)
-        local ddBrd = CludesUI.MakeRoundedBorder(dropdownBtn, 1, 1, 1, DDS.BRD_A, ddBg)
-        local dropCaption = CludesUI.MakeFont(dropdownBtn, 13, nil, 1, 1, 1, DDS.TXT_A)
+        ddBg:SetColorTexture(DropStyle.BG_R, DropStyle.BG_G, DropStyle.BG_B, DropStyle.BG_A)
+        local ddBrd = CludesUI.MakeRoundedBorder(dropdownBtn, 1, 1, 1, DropStyle.BRD_A, ddBg)
+        local dropCaption = CludesUI.MakeFont(dropdownBtn, 13, nil, 1, 1, 1, DropStyle.TXT_A)
         dropCaption:SetJustifyH("LEFT")
         dropCaption:SetWordWrap(false)
         dropCaption:SetMaxLines(1)
@@ -564,8 +564,8 @@ CludesUI.AtOptionsLogin(function()
         local function BuildBarMenu()
             local ITEM_H = 26
             local ICON_SZ = 14
-            local hlA = DDS.ITEM_HL_A
-            local selA = DDS.ITEM_SEL_A
+            local hlA = DropStyle.ITEM_HL_A
+            local selA = DropStyle.ITEM_SEL_A
             local dropMenu = _edbMenus.bar
             if dropMenu then
                 if dropMenu:IsShown() then
@@ -761,21 +761,21 @@ CludesUI.AtOptionsLogin(function()
         -- so a hover and a leave land back on the resting look.
         dropdownBtn:SetScript("OnEnter", function()
             dropCaption:SetTextColor(1, 1, 1, 1)
-            local brdHA = DDS.BRD_HA
+            local brdHA = DropStyle.BRD_HA
             if brdHA == nil then
                 brdHA = 0.30
             end
             ddBrd:SetColor(1, 1, 1, brdHA)
-            ddBg:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
+            ddBg:SetColorTexture(DropStyle.BG_R, DropStyle.BG_G, DropStyle.BG_B, DropStyle.BG_HA)
         end)
         dropdownBtn:SetScript("OnLeave", function()
             local ddMenu = _edbMenus.bar
             if ddMenu and ddMenu:IsShown() then
                 return
             end
-            dropCaption:SetTextColor(1, 1, 1, DDS.TXT_A)
-            ddBrd:SetColor(1, 1, 1, DDS.BRD_A)
-            ddBg:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_A)
+            dropCaption:SetTextColor(1, 1, 1, DropStyle.TXT_A)
+            ddBrd:SetColor(1, 1, 1, DropStyle.BRD_A)
+            ddBg:SetColorTexture(DropStyle.BG_R, DropStyle.BG_G, DropStyle.BG_B, DropStyle.BG_A)
         end)
         dropdownBtn:SetScript("OnClick", function()
             local ddMenu = _edbMenus.bar
@@ -1509,7 +1509,7 @@ CludesUI.AtOptionsLogin(function()
                 return
             end
             local ITEM_H = 24
-            local hlA = DDS.ITEM_HL_A
+            local hlA = DropStyle.ITEM_HL_A
             if not dropMenu then
                 dropMenu = MenuShell(190)
                 dropMenu._rows = {}

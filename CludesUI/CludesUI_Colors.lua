@@ -6,9 +6,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Class, power and resource colour defaults, the custom-colour cache and
 --  getters, Dark Mode palette and toggles. Loads right after CludesUI_Popups.lua.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 
-local CLASS_COLOR_MAP = CludesUI.CLASS_COLOR_MAP
+local CLASS_COLOR_MAP = CUI.CLASS_COLOR_MAP
 
 -------------------------------------------------------------------------------
 --  Global Color System -- central source of truth for class, power, and resource colors;
@@ -16,7 +16,7 @@ local CLASS_COLOR_MAP = CludesUI.CLASS_COLOR_MAP
 -------------------------------------------------------------------------------
 
 -- Default power colors (from WoW's PowerBarColor)
-CludesUI.DEFAULT_POWER_COLORS = {
+CUI.DEFAULT_POWER_COLORS = {
     -- Standard power types
     MANA = { r = 0.000, g = 0.550, b = 1.000 },
     RAGE = { r = 0.900, g = 0.150, b = 0.150 },
@@ -32,7 +32,7 @@ CludesUI.DEFAULT_POWER_COLORS = {
 }
 
 -- Default resource colors (class-specific resource pips)
-CludesUI.DEFAULT_RESOURCE_COLORS = {
+CUI.DEFAULT_RESOURCE_COLORS = {
     ROGUE = { r = 1.00, g = 0.96, b = 0.41 },
     DRUID = { r = 1.00, g = 0.49, b = 0.04 },
     PALADIN = { r = 0.96, g = 0.55, b = 0.73 },
@@ -45,7 +45,7 @@ CludesUI.DEFAULT_RESOURCE_COLORS = {
 }
 
 -- Default class-resource colors keyed by the RESOURCE, not the class (classes with multiple resources get distinct colors); customized via customColors.classResource.
-CludesUI.DEFAULT_CLASS_RESOURCE_COLORS = {
+CUI.DEFAULT_CLASS_RESOURCE_COLORS = {
     ComboPoints = { r = 1.0, g = 0.9608, b = 0.4118 },
     Runes = { r = 0.0, g = 0.8196, b = 1.0 },
     SoulShards = { r = 0.5059, g = 0.3412, b = 0.8431 },
@@ -62,18 +62,18 @@ CludesUI.DEFAULT_CLASS_RESOURCE_COLORS = {
 }
 
 -- Get a class-resource color (custom override or default), keyed by resource.
-function CludesUI.GetClassResourceColor(key)
+function CUI.GetClassResourceColor(key)
     if not key then
         return nil
     end
-    if CludesUI._colorCacheDirty then
-        CludesUI._RebuildColorCache()
+    if CUI._colorCacheDirty then
+        CUI._RebuildColorCache()
     end
-    return CludesUI._colorCache.classResource[key]
+    return CUI._colorCache.classResource[key]
 end
 
 -- Class -> primary power type name mapping
-CludesUI.CLASS_POWER_MAP = {
+CUI.CLASS_POWER_MAP = {
     WARRIOR = "RAGE",
     PALADIN = "MANA",
     HUNTER = "FOCUS",
@@ -90,7 +90,7 @@ CludesUI.CLASS_POWER_MAP = {
 }
 
 -- Canonical 13-class token sequence (role order) for class pickers/grids, read-only; sites needing a DIFFERENT order (e.g. alphabetical) keep local lists.
-CludesUI.CLASS_TOKEN_ORDER = {
+CUI.CLASS_TOKEN_ORDER = {
     "WARRIOR",
     "PALADIN",
     "HUNTER",
@@ -107,7 +107,7 @@ CludesUI.CLASS_TOKEN_ORDER = {
 }
 
 -- Class -> resource type mapping (nil = no class resource)
-CludesUI.CLASS_RESOURCE_MAP = {
+CUI.CLASS_RESOURCE_MAP = {
     ROGUE = "ComboPoints",
     DRUID = "ComboPoints",
     PALADIN = "HolyPower",
@@ -120,7 +120,7 @@ CludesUI.CLASS_RESOURCE_MAP = {
 }
 
 -- Darken a color by a fraction (for default gradient secondary)
-function CludesUI.DarkenColor(red, green, blue, frac)
+function CUI.DarkenColor(red, green, blue, frac)
     frac = frac or 0.10
     return red * (1 - frac), green * (1 - frac), blue * (1 - frac)
 end
@@ -138,16 +138,16 @@ end
 -- from before the split resolves exactly as it did, nothing migrated.
 -- Nothing is wiped/restored on a profile switch (the getter just resolves different
 -- tables), so a spec-switch colour wipe cannot happen. Missing tables -> defaults.
-CludesUI.COLOR_SECTIONS = { "class", "power", "classResource" }
-CludesUI._COLOR_SECTION_OF =
+CUI.COLOR_SECTIONS = { "class", "power", "classResource" }
+CUI._COLOR_SECTION_OF =
     { class = "class", power = "power", classResource = "classResource", resource = "classResource" }
 -- The palette GetCustomColorsDB hands out: its four category fields are the LIVE
 -- tables of each section's source profile, so in-place writes (db.class[token] = c)
 -- land where the section resolves and a DeepCopy of it is the effective palette.
 -- One reused table, refreshed every call; callers never keep it.
-CludesUI._ccComposite = {}
+CUI._ccComposite = {}
 
-function CludesUI.ColorSectionApplyAll(section)
+function CUI.ColorSectionApplyAll(section)
     local saved = CludesUIDB
     local own = saved and saved.colorsSectionApplyAll and saved.colorsSectionApplyAll[section]
     if own ~= nil then
@@ -160,12 +160,12 @@ end
 -- (a profile removed by a path that missed the DeleteProfile/RenameProfile cleanup,
 -- or a DB saved before that cleanup existed) are dropped, so the section falls back
 -- to the shared pointer, then the first profile, instead of the legacy table.
-function CludesUI.ColorSectionPullFrom(section)
+function CUI.ColorSectionPullFrom(section)
     local saved = CludesUIDB
-    if not (saved and CludesUI.GetProfilesDB) then
+    if not (saved and CUI.GetProfilesDB) then
         return nil
     end
-    local pdb = CludesUI.GetProfilesDB()
+    local pdb = CUI.GetProfilesDB()
     local profiles = pdb.profiles
     local tbl = saved.colorsSectionPullFrom
     local own = tbl and tbl[section]
@@ -181,7 +181,7 @@ function CludesUI.ColorSectionPullFrom(section)
     return own or shared or (pdb.profileOrder and pdb.profileOrder[1])
 end
 
-function CludesUI.SetColorSectionApplyAll(section, enabled)
+function CUI.SetColorSectionApplyAll(section, enabled)
     if not CludesUIDB then
         return
     end
@@ -189,7 +189,7 @@ function CludesUI.SetColorSectionApplyAll(section, enabled)
     CludesUIDB.colorsSectionApplyAll[section] = enabled and true or false
 end
 
-function CludesUI.SetColorSectionPullFrom(section, name)
+function CUI.SetColorSectionPullFrom(section, name)
     if not CludesUIDB then
         return
     end
@@ -199,9 +199,9 @@ end
 
 -- True while any section reads the active profile's own colours (a profile switch
 -- then changes what renders).
-function CludesUI.AnyColorSectionPerProfile()
-    for _, s in ipairs(CludesUI.COLOR_SECTIONS) do
-        if not CludesUI.ColorSectionApplyAll(s) then
+function CUI.AnyColorSectionPerProfile()
+    for _, s in ipairs(CUI.COLOR_SECTIONS) do
+        if not CUI.ColorSectionApplyAll(s) then
             return true
         end
     end
@@ -211,14 +211,14 @@ end
 -- Point every global-mode section at profile `name` (an import that carries colours
 -- shows them): its own pointer when it has one, else the shared pointer it reads.
 -- Per-profile sections already read the active profile.
-function CludesUI.PointColorSectionsAt(name)
+function CUI.PointColorSectionsAt(name)
     if not CludesUIDB then
         return
     end
     local tbl = CludesUIDB.colorsSectionPullFrom
     local sharedUsed = false
-    for _, s in ipairs(CludesUI.COLOR_SECTIONS) do
-        if CludesUI.ColorSectionApplyAll(s) then
+    for _, s in ipairs(CUI.COLOR_SECTIONS) do
+        if CUI.ColorSectionApplyAll(s) then
             if tbl and tbl[s] ~= nil then
                 tbl[s] = name
             else
@@ -233,7 +233,7 @@ end
 
 -- A deleted profile drops out of every source pointer (nil = the default); returns
 -- true when one pointed at it. A renamed profile is followed (same palette tables).
-function CludesUI.ColorSourcesProfileRemoved(name)
+function CUI.ColorSourcesProfileRemoved(name)
     if not CludesUIDB then
         return false
     end
@@ -253,7 +253,7 @@ function CludesUI.ColorSourcesProfileRemoved(name)
     end
     return hit
 end
-function CludesUI.ColorSourcesProfileRenamed(oldName, newName)
+function CUI.ColorSourcesProfileRenamed(oldName, newName)
     if not CludesUIDB then
         return
     end
@@ -271,30 +271,30 @@ function CludesUI.ColorSourcesProfileRenamed(oldName, newName)
 end
 
 -- The profile whose customColors feed `section` (nil without profiles).
-function CludesUI._ColorSectionProfile(section)
-    if not CludesUI.GetProfilesDB then
+function CUI._ColorSectionProfile(section)
+    if not CUI.GetProfilesDB then
         return nil
     end
-    local pdb = CludesUI.GetProfilesDB()
+    local pdb = CUI.GetProfilesDB()
     local name
-    if CludesUI.ColorSectionApplyAll(section) then
-        name = CludesUI.ColorSectionPullFrom(section)
+    if CUI.ColorSectionApplyAll(section) then
+        name = CUI.ColorSectionPullFrom(section)
     else
         name = pdb.activeProfile or "Default"
     end
     return name and pdb.profiles and pdb.profiles[name]
 end
 
-function CludesUI.GetCustomColorsDB()
+function CUI.GetCustomColorsDB()
     if not CludesUIDB then
         CludesUIDB = {}
     end
     if not CludesUIDB.customColors then
         CludesUIDB.customColors = {}
     end
-    local result = CludesUI._ccComposite
-    for key, section in pairs(CludesUI._COLOR_SECTION_OF) do
-        local prof = CludesUI._ColorSectionProfile(section)
+    local result = CUI._ccComposite
+    for key, section in pairs(CUI._COLOR_SECTION_OF) do
+        local prof = CUI._ColorSectionProfile(section)
         local cc
         if prof then
             prof.customColors = prof.customColors or {}
@@ -315,16 +315,16 @@ end
 -- A section's colour editing locks ONLY in global mode while viewing a profile other
 -- than its source (editing a dormant palette would mislead). Per-profile mode is always
 -- editable; global mode is editable on the source profile. No section = Class.
-function CludesUI.IsColorEditingLocked(section)
+function CUI.IsColorEditingLocked(section)
     section = section or "class"
-    if not (CludesUIDB and CludesUI.GetProfilesDB) then
+    if not (CludesUIDB and CUI.GetProfilesDB) then
         return false
     end
-    if not CludesUI.ColorSectionApplyAll(section) then
+    if not CUI.ColorSectionApplyAll(section) then
         return false
     end
-    local pdb = CludesUI.GetProfilesDB()
-    local source = CludesUI.ColorSectionPullFrom(section)
+    local pdb = CUI.GetProfilesDB()
+    local source = CUI.ColorSectionPullFrom(section)
     return source ~= nil and source ~= (pdb.activeProfile or "Default")
 end
 
@@ -337,7 +337,7 @@ end
 --  of customColors) and ALWAYS the ACTIVE profile's own table -- no "Apply to All
 --  Profiles" redirect. Defaults: #111111 fill @ 90%, #4f4f4f bg @ 100%, zero darken.
 -------------------------------------------------------------------------------
-CludesUI.DEFAULT_DARK_MODE = {
+CUI.DEFAULT_DARK_MODE = {
     fillR = 0x11 / 255,
     fillG = 0x11 / 255,
     fillB = 0x11 / 255,
@@ -354,9 +354,9 @@ CludesUI.DEFAULT_DARK_MODE = {
 
 -- The active profile's dark-mode table (lazily created, may be sparse -- callers
 -- fall back to DEFAULT_DARK_MODE per field). Never returns nil.
-function CludesUI.GetDarkModeDB()
-    if CludesUI.GetProfilesDB then
-        local pdb = CludesUI.GetProfilesDB()
+function CUI.GetDarkModeDB()
+    if CUI.GetProfilesDB then
+        local pdb = CUI.GetProfilesDB()
         if pdb and pdb.profiles then
             local isActive = pdb.profiles[pdb.activeProfile or "Default"]
             if isActive then
@@ -380,34 +380,34 @@ end
 -- toggle (RefreshDarkMode), every profile repoint (RefreshDarkMode in the profile
 -- apply pass) and ApplyColorsToOUF. Lives on the namespace: this file sits at the
 -- 200-local cap.
-CludesUI._dmGen = 0
-CludesUI._dmCache = { gen = -1 }
+CUI._dmGen = 0
+CUI._dmCache = { gen = -1 }
 
-function CludesUI._RebuildDarkModeCache()
-    local c = CludesUI._dmCache
-    local darkDB = CludesUI.GetDarkModeDB()
-    local def = CludesUI.DEFAULT_DARK_MODE
+function CUI._RebuildDarkModeCache()
+    local c = CUI._dmCache
+    local darkDB = CUI.GetDarkModeDB()
+    local def = CUI.DEFAULT_DARK_MODE
     c.fr, c.fg, c.fb, c.fa =
         darkDB.fillR or def.fillR, darkDB.fillG or def.fillG, darkDB.fillB or def.fillB, darkDB.fillA or def.fillA
     c.br, c.bg, c.bb, c.ba = darkDB.bgR or def.bgR, darkDB.bgG or def.bgG, darkDB.bgB or def.bgB, darkDB.bgA or def.bgA
-    c.gen = CludesUI._dmGen
+    c.gen = CUI._dmGen
 end
 
 -- Dark Mode fill colour (r, g, b, a). Opacity is honoured by Unit Frames and
 -- Raid Frames; Resource Bars ignore the alpha and keep their own.
-function CludesUI.GetDarkModeFill()
-    local c = CludesUI._dmCache
-    if c.gen ~= CludesUI._dmGen then
-        CludesUI._RebuildDarkModeCache()
+function CUI.GetDarkModeFill()
+    local c = CUI._dmCache
+    if c.gen ~= CUI._dmGen then
+        CUI._RebuildDarkModeCache()
     end
     return c.fr, c.fg, c.fb, c.fa
 end
 
 -- Dark Mode background colour (r, g, b, a). Same opacity rules as the fill.
-function CludesUI.GetDarkModeBg()
-    local c = CludesUI._dmCache
-    if c.gen ~= CludesUI._dmGen then
-        CludesUI._RebuildDarkModeCache()
+function CUI.GetDarkModeBg()
+    local c = CUI._dmCache
+    if c.gen ~= CUI._dmGen then
+        CUI._RebuildDarkModeCache()
     end
     return c.br, c.bg, c.bb, c.ba
 end
@@ -417,20 +417,20 @@ end
 -- lazily on first read after invalidation, reads are one lookup with zero allocation.
 -- Invalidation inputs: ApplyColorsToOUF (the universal "colours changed" chokepoint -- swatch
 -- edits, resets, mode toggles, profile switches) and RefreshDarkMode. READ-ONLY derived cache: worst failure is a stale colour.
-CludesUI._colorCache =
+CUI._colorCache =
     { class = {}, classRaw = {}, power = {}, classResource = {}, resource = {}, classCustomized = {} }
-CludesUI._colorCacheDirty = true
-CludesUI._COLOR_WHITE = { r = 1, g = 1, b = 1 }
-CludesUI._powerBgDarkenFactor = 1
+CUI._colorCacheDirty = true
+CUI._COLOR_WHITE = { r = 1, g = 1, b = 1 }
+CUI._powerBgDarkenFactor = 1
 
-function CludesUI.InvalidateColorCache()
-    CludesUI._colorCacheDirty = true
+function CUI.InvalidateColorCache()
+    CUI._colorCacheDirty = true
     -- The dark palette cache above shares every invalidation input.
-    CludesUI._dmGen = CludesUI._dmGen + 1
+    CUI._dmGen = CUI._dmGen + 1
 end
 
 -- Fill `out` with {r,g,b} per key: defaults overlaid by custom, blackened by darkenPct (0-100); sub-tables are recreated each rebuild (rare) so hot-path reads never allocate.
-function CludesUI._BuildColorPalette(result, defaultSet, custom, darkenPct)
+function CUI._BuildColorPalette(result, defaultSet, custom, darkenPct)
     wipe(result)
     if defaultSet then
         for key, def in pairs(defaultSet) do
@@ -455,39 +455,39 @@ function CludesUI._BuildColorPalette(result, defaultSet, custom, darkenPct)
     end
 end
 
-function CludesUI._RebuildColorCache()
-    local cc = CludesUI.GetCustomColorsDB()
-    local dm = CludesUI.GetDarkModeDB()
-    local cache = CludesUI._colorCache
-    CludesUI._BuildColorPalette(cache.class, CludesUI.CLASS_COLOR_MAP, cc and cc.class, dm and dm.classDarken)
-    CludesUI._BuildColorPalette(cache.classRaw, CludesUI.CLASS_COLOR_MAP, cc and cc.class, 0)
-    CludesUI._BuildColorPalette(
+function CUI._RebuildColorCache()
+    local cc = CUI.GetCustomColorsDB()
+    local dm = CUI.GetDarkModeDB()
+    local cache = CUI._colorCache
+    CUI._BuildColorPalette(cache.class, CUI.CLASS_COLOR_MAP, cc and cc.class, dm and dm.classDarken)
+    CUI._BuildColorPalette(cache.classRaw, CUI.CLASS_COLOR_MAP, cc and cc.class, 0)
+    CUI._BuildColorPalette(
         cache.power,
-        CludesUI.DEFAULT_POWER_COLORS,
+        CUI.DEFAULT_POWER_COLORS,
         cc and cc.power,
         dm and dm.powerDarken
     )
-    CludesUI._BuildColorPalette(
+    CUI._BuildColorPalette(
         cache.classResource,
-        CludesUI.DEFAULT_CLASS_RESOURCE_COLORS,
+        CUI.DEFAULT_CLASS_RESOURCE_COLORS,
         cc and cc.classResource,
         dm and dm.resourceDarken
     )
-    CludesUI._BuildColorPalette(
+    CUI._BuildColorPalette(
         cache.resource,
-        CludesUI.DEFAULT_RESOURCE_COLORS,
+        CUI.DEFAULT_RESOURCE_COLORS,
         cc and cc.resource,
         dm and dm.resourceDarken
     )
     -- BG Power Color Darken: extra blacken for power-COLORED bar backgrounds, kept as a multiplier (not a palette) so it stacks on whatever power color a consumer resolved.
     local bgd = (dm and dm.powerBgDarken) or 0
-    CludesUI._powerBgDarkenFactor = bgd > 0 and math.max(0, 1 - bgd / 100) or 1
+    CUI._powerBgDarkenFactor = bgd > 0 and math.max(0, 1 - bgd / 100) or 1
     -- Classes whose effective colour no longer matches Blizzard's default (a swatch edit, or any
     -- nonzero class darken). Only these need the restricted-unit recovery below; an untouched
     -- palette leaves the table empty, so that path costs one next() and stops.
     local customized = cache.classCustomized
     wipe(customized)
-    for token, def in pairs(CludesUI.CLASS_COLOR_MAP) do
+    for token, def in pairs(CUI.CLASS_COLOR_MAP) do
         local col = cache.class[token]
         if
             col
@@ -500,25 +500,25 @@ function CludesUI._RebuildColorCache()
             customized[token] = col
         end
     end
-    CludesUI._restrictedCandidatesDirty = true
-    CludesUI._colorCacheDirty = false
+    CUI._restrictedCandidatesDirty = true
+    CUI._colorCacheDirty = false
 end
 
 -- Modules register a callback re-reading the dark palette and repainting their frames; RefreshDarkMode() runs them all and re-pushes class/power colours via ApplyColorsToOUF.
-CludesUI._darkModeRefreshers = CludesUI._darkModeRefreshers or {}
-function CludesUI.RegisterDarkModeRefresh(func)
+CUI._darkModeRefreshers = CUI._darkModeRefreshers or {}
+function CUI.RegisterDarkModeRefresh(func)
     if type(func) == "function" then
-        CludesUI._darkModeRefreshers[#CludesUI._darkModeRefreshers + 1] = func
+        CUI._darkModeRefreshers[#CUI._darkModeRefreshers + 1] = func
     end
 end
-function CludesUI.RefreshDarkMode()
+function CUI.RefreshDarkMode()
     -- Darken amounts feed the colour cache; drop it so refreshers + the OUF push below resolve freshly darkened colours.
-    CludesUI.InvalidateColorCache()
-    for _, func in ipairs(CludesUI._darkModeRefreshers) do
+    CUI.InvalidateColorCache()
+    for _, func in ipairs(CUI._darkModeRefreshers) do
         pcall(func)
     end
-    if CludesUI.ApplyColorsToOUF then
-        CludesUI.ApplyColorsToOUF()
+    if CUI.ApplyColorsToOUF then
+        CUI.ApplyColorsToOUF()
     end
 end
 
@@ -526,22 +526,22 @@ end
 -- darkTheme; RB secondary.darkTheme; RF healthColorMode == "dark"), so each registers a
 -- provider that reads/flips its flag AND repaints its frames. The Colors page's Dark Mode
 -- dropdown is a pure view over them (one row each): no stored key, so it can never desync from the per-module toggles.
-CludesUI._darkModeToggles = CludesUI._darkModeToggles or {}
-function CludesUI.RegisterDarkModeToggle(provider)
+CUI._darkModeToggles = CUI._darkModeToggles or {}
+function CUI.RegisterDarkModeToggle(provider)
     if
         type(provider) == "table"
         and type(provider.isOn) == "function"
         and type(provider.setOn) == "function"
     then
-        CludesUI._darkModeToggles[#CludesUI._darkModeToggles + 1] = provider
+        CUI._darkModeToggles[#CUI._darkModeToggles + 1] = provider
     end
 end
 
 -- True only when every registered module has Dark Mode on (and at least one is registered).
 -- Optional `filter(provider) -> boolean` narrows which providers count, so one checkbox can view a single group and read "on" only when that group is all dark.
-function CludesUI.IsDarkModeAllOn(filter)
+function CUI.IsDarkModeAllOn(filter)
     local matched = false
-    for _, p in ipairs(CludesUI._darkModeToggles) do
+    for _, p in ipairs(CUI._darkModeToggles) do
         if not filter or filter(p) then
             matched = true
             local success, enabled = pcall(p.isOn)
@@ -554,47 +554,47 @@ function CludesUI.IsDarkModeAllOn(filter)
 end
 
 -- Flip every module's Dark Mode to `on`, then refresh the shared palette so palette-listening modules repaint too. `filter` narrows as in IsDarkModeAllOn.
-function CludesUI.SetDarkModeAll(enabled, filter)
+function CUI.SetDarkModeAll(enabled, filter)
     enabled = enabled and true or false
-    for _, p in ipairs(CludesUI._darkModeToggles) do
+    for _, p in ipairs(CUI._darkModeToggles) do
         if not filter or filter(p) then
             pcall(p.setOn, enabled)
         end
     end
-    CludesUI.RefreshDarkMode()
+    CUI.RefreshDarkMode()
     -- Dark Mode feeds the conditional-override "darkmode" condition. Deliberately here, NOT in
     -- RefreshDarkMode: SetDarkModeAll is only called by the Colors page's Dark Mode dropdown
     -- (pure user action), while RefreshDarkMode is also reached from the profile-apply pipeline
     -- where an extra recheck could interleave with the conditions establish choreography (cheap no-op with no darkmode group; self-defers in combat).
-    if CludesUI.Conditions_Recheck then
-        CludesUI.Conditions_Recheck()
+    if CUI.Conditions_Recheck then
+        CUI.Conditions_Recheck()
     end
 end
 
 -- Class color (custom or default) with Class Color Darken baked in by the cache, so every consumer gets the adjusted colour with no per-module logic. Unknown -> white.
-function CludesUI.GetClassColor(classToken)
-    if CludesUI._colorCacheDirty then
-        CludesUI._RebuildColorCache()
+function CUI.GetClassColor(classToken)
+    if CUI._colorCacheDirty then
+        CUI._RebuildColorCache()
     end
-    return CludesUI._colorCache.class[classToken] or CludesUI._COLOR_WHITE
+    return CUI._colorCache.class[classToken] or CUI._COLOR_WHITE
 end
 
 -- Class color (custom or default) WITHOUT Class Color Darken, for accents and cursors
 -- rather than bars. Unknown -> nil.
-function CludesUI.GetRawClassColor(classToken)
-    if CludesUI._colorCacheDirty then
-        CludesUI._RebuildColorCache()
+function CUI.GetRawClassColor(classToken)
+    if CUI._colorCacheDirty then
+        CUI._RebuildColorCache()
     end
-    return CludesUI._colorCache.classRaw[classToken]
+    return CUI._colorCache.classRaw[classToken]
 end
 
 -- Class token from a localized class name (friend list entries carry only that).
 -- Male and female forms both map; built once on first use. Unknown or secret -> nil.
-function CludesUI.ClassTokenFromLocalized(name)
+function CUI.ClassTokenFromLocalized(name)
     if type(name) ~= "string" or issecretvalue(name) then
         return nil
     end
-    local map = CludesUI._classByLocalName
+    local map = CUI._classByLocalName
     if not map then
         map = {}
         if LOCALIZED_CLASS_NAMES_MALE then
@@ -607,7 +607,7 @@ function CludesUI.ClassTokenFromLocalized(name)
                 map[num] = token
             end
         end
-        CludesUI._classByLocalName = map
+        CUI._classByLocalName = map
     end
     return map[name]
 end
@@ -635,14 +635,14 @@ end
 -- Which group members are worth comparing against only changes on a roster or palette edit, so
 -- the list is cached as a flat unit/colour array (no per-call allocation, no per-call UnitClass
 -- or token concat). Only the compares themselves have to run live.
-CludesUI._restrictedCandidates = {}
-CludesUI._restrictedCandidatesDirty = true
+CUI._restrictedCandidates = {}
+CUI._restrictedCandidatesDirty = true
 
 -- Namespaced, not file-locals: this chunk sits at Lua's 200-local ceiling.
-function CludesUI._RebuildRestrictedCandidates()
-    local result = CludesUI._restrictedCandidates
+function CUI._RebuildRestrictedCandidates()
+    local result = CUI._restrictedCandidates
     wipe(result)
-    local customized = CludesUI._colorCache.classCustomized
+    local customized = CUI._colorCache.classCustomized
     if next(customized) then
         local inRaid = IsInRaid()
         local members = GetNumGroupMembers() or 0
@@ -659,38 +659,38 @@ function CludesUI._RebuildRestrictedCandidates()
             end
         end
     end
-    CludesUI._restrictedCandidatesDirty = false
+    CUI._restrictedCandidatesDirty = false
 end
 
 -- Created on the first restricted lookup, so a profile that never needs one never registers it.
-function CludesUI._EnsureRestrictedRosterWatcher()
-    if CludesUI._restrictedRosterWatcher then
+function CUI._EnsureRestrictedRosterWatcher()
+    if CUI._restrictedRosterWatcher then
         return
     end
     local frame = CreateFrame("Frame")
     frame:RegisterEvent("GROUP_ROSTER_UPDATE")
     frame:SetScript("OnEvent", function()
-        CludesUI._restrictedCandidatesDirty = true
+        CUI._restrictedCandidatesDirty = true
     end)
-    CludesUI._restrictedRosterWatcher = frame
+    CUI._restrictedRosterWatcher = frame
 end
 
-function CludesUI.GetClassColorForRestrictedUnit(unitToken, secretClassToken)
-    if CludesUI._colorCacheDirty then
-        CludesUI._RebuildColorCache()
+function CUI.GetClassColorForRestrictedUnit(unitToken, secretClassToken)
+    if CUI._colorCacheDirty then
+        CUI._RebuildColorCache()
     end
-    if not next(CludesUI._colorCache.classCustomized) then
+    if not next(CUI._colorCache.classCustomized) then
         return false
     end
     local pick = C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean
     if not (pick and C_ClassColor and C_ClassColor.GetClassColor) then
         return false
     end
-    CludesUI._EnsureRestrictedRosterWatcher()
-    if CludesUI._restrictedCandidatesDirty then
-        CludesUI._RebuildRestrictedCandidates()
+    CUI._EnsureRestrictedRosterWatcher()
+    if CUI._restrictedCandidatesDirty then
+        CUI._RebuildRestrictedCandidates()
     end
-    local candidates = CludesUI._restrictedCandidates
+    local candidates = CUI._restrictedCandidates
     local total = #candidates
     -- Nobody around wears a customised colour: let the caller take Blizzard's shade unchanged.
     if total == 0 then
@@ -722,42 +722,42 @@ function CludesUI.GetClassColorForRestrictedUnit(unitToken, secretClassToken)
 end
 
 -- Get power color (cached, darken baked in). Returns nil for unknown keys.
-function CludesUI.GetPowerColor(powerKey)
-    if CludesUI._colorCacheDirty then
-        CludesUI._RebuildColorCache()
+function CUI.GetPowerColor(powerKey)
+    if CUI._colorCacheDirty then
+        CUI._RebuildColorCache()
     end
-    return CludesUI._colorCache.power[powerKey]
+    return CUI._colorCache.power[powerKey]
 end
 
 -- Multiplier (0-1) for power-COLORED bar backgrounds (Dark Mode "BG Power Color
 -- Darken"); stacks on the consumer's resolved power color. 1 = identity (slider at 0).
-function CludesUI.GetPowerBgDarkenFactor()
-    if CludesUI._colorCacheDirty then
-        CludesUI._RebuildColorCache()
+function CUI.GetPowerBgDarkenFactor()
+    if CUI._colorCacheDirty then
+        CUI._RebuildColorCache()
     end
-    return CludesUI._powerBgDarkenFactor
+    return CUI._powerBgDarkenFactor
 end
 
 -- Get resource color (cached, darken baked in). Returns nil for unknown keys.
 -- Shares Resource Color Darken with GetClassResourceColor.
-function CludesUI.GetResourceColor(classToken)
-    if CludesUI._colorCacheDirty then
-        CludesUI._RebuildColorCache()
+function CUI.GetResourceColor(classToken)
+    if CUI._colorCacheDirty then
+        CUI._RebuildColorCache()
     end
-    return CludesUI._colorCache.resource[classToken]
+    return CUI._colorCache.resource[classToken]
 end
 
 -- Reset a specific power color
-function CludesUI.ResetPowerColor(powerKey)
-    local saved = CludesUI.GetCustomColorsDB()
+function CUI.ResetPowerColor(powerKey)
+    local saved = CUI.GetCustomColorsDB()
     if saved.power then
         saved.power[powerKey] = nil
     end
-    CludesUI.InvalidateColorCache()
+    CUI.InvalidateColorCache()
 end
 
 -- Power key string -> Enum.PowerType mapping
-CludesUI.POWER_KEY_TO_ENUM = {
+CUI.POWER_KEY_TO_ENUM = {
     MANA = 0,
     RAGE = 1,
     FOCUS = 2,
@@ -772,9 +772,9 @@ CludesUI.POWER_KEY_TO_ENUM = {
 
 -- Integer power-type -> string key (reverse of POWER_KEY_TO_ENUM). UnitPowerType's 1st return
 -- is readable on EVERY unit, so it recovers a color key when the string token (2nd return) is unreadable, as on non-player units (boss/target/focus).
-CludesUI.POWER_ENUM_TO_KEY = {}
-for key, val in pairs(CludesUI.POWER_KEY_TO_ENUM) do
-    CludesUI.POWER_ENUM_TO_KEY[val] = key
+CUI.POWER_ENUM_TO_KEY = {}
+for key, val in pairs(CUI.POWER_KEY_TO_ENUM) do
+    CUI.POWER_ENUM_TO_KEY[val] = key
 end
 
 -- CUI power color (r,g,b or nil) for a unit's CURRENT power. Mirrors oUF's bar ladder so
@@ -784,21 +784,21 @@ end
 --      colliding with a standard slot (cosmic energy -> 3 = Energy); the engine returns
 --      the REAL color in altR/altG/altB (what oUF paints the bar with), so use it.
 --   3) Token unmatched, no alt color, standard integer type -> custom color (safety net).
-function CludesUI.ResolveUnitPowerColor(unitToken)
+function CUI.ResolveUnitPowerColor(unitToken)
     -- Player: the forced display power type (UF Power Type dropdown) wins over
     -- the real one, resolved live so it never lags a setting or spec change.
-    if unitToken == "player" and CludesUI.GetPlayerPowerOverride then
-        local override = CludesUI.GetPlayerPowerOverride()
+    if unitToken == "player" and CUI.GetPlayerPowerOverride then
+        local override = CUI.GetPlayerPowerOverride()
         if override ~= nil then
-            local overrideKey = CludesUI.POWER_ENUM_TO_KEY[override]
-            local overrideInfo = overrideKey and CludesUI.GetPowerColor(overrideKey)
+            local overrideKey = CUI.POWER_ENUM_TO_KEY[override]
+            local overrideInfo = overrideKey and CUI.GetPowerColor(overrideKey)
             if overrideInfo then
                 return overrideInfo.r, overrideInfo.g, overrideInfo.b
             end
         end
     end
     local pType, pToken, altR, altG, altB = UnitPowerType(unitToken)
-    local details = CludesUI.GetPowerColor(pToken)
+    local details = CUI.GetPowerColor(pToken)
     if details then
         return details.r, details.g, details.b
     end
@@ -809,8 +809,8 @@ function CludesUI.ResolveUnitPowerColor(unitToken)
         end
         return altR, altG, altB
     end
-    local key = CludesUI.POWER_ENUM_TO_KEY[pType]
-    details = key and CludesUI.GetPowerColor(key)
+    local key = CUI.POWER_ENUM_TO_KEY[pType]
+    details = key and CUI.GetPowerColor(key)
     if details then
         return details.r, details.g, details.b
     end
@@ -821,18 +821,18 @@ end
 -- palette. ApplyColorsToOUF runs it first; Unit Frames runs it alone at login, before
 -- its frames spawn, where repainting every module would change nothing (each paints
 -- the current palette as it builds).
-function CludesUI.SyncUFColors()
+function CUI.SyncUFColors()
     -- Drop the effective-colour cache; the GetClassColor/GetPowerColor reads below
     -- rebuild it from the palette + darken.
-    CludesUI.InvalidateColorCache()
+    CUI.InvalidateColorCache()
     -- NEVER modify _G.RAID_CLASS_COLORS: taint.
-    local colors = CludesUI._UFColors
+    local colors = CUI._UFColors
     if not colors then
         return
     end
     if colors.class then
         for classToken, _ in pairs(CLASS_COLOR_MAP) do
-            local classColor = CludesUI.GetClassColor(classToken)
+            local classColor = CUI.GetClassColor(classToken)
             local record = colors.class[classToken]
             if record and record.SetRGBA then
                 record:SetRGBA(classColor.r, classColor.g, classColor.b, 1)
@@ -842,8 +842,8 @@ function CludesUI.SyncUFColors()
         end
     end
     if colors.power then
-        for powerKey, enumVal in pairs(CludesUI.POWER_KEY_TO_ENUM) do
-            local pc = CludesUI.GetPowerColor(powerKey)
+        for powerKey, enumVal in pairs(CUI.POWER_KEY_TO_ENUM) do
+            local pc = CUI.GetPowerColor(powerKey)
             local record = colors.power[enumVal]
             if record and record.SetRGBA then
                 record:SetRGBA(pc.r, pc.g, pc.b, 1)
@@ -855,16 +855,16 @@ function CludesUI.SyncUFColors()
 end
 
 -- Apply custom class colors to oUF (call after settings change)
-function CludesUI.ApplyColorsToOUF()
+function CUI.ApplyColorsToOUF()
     -- Universal "colours changed" entry point (swatch edits, resets, global-mode toggle,
     -- Pull Colors From, profile switches).
     -- 1. The unit-frame engine's shared color objects, then a repaint of its frames.
-    CludesUI.SyncUFColors()
-    if CludesUI._UFColors and CludesUI._UFEngineForceAll then
-        CludesUI._UFEngineForceAll("ForceUpdate")
+    CUI.SyncUFColors()
+    if CUI._UFColors and CUI._UFEngineForceAll then
+        CUI._UFEngineForceAll("ForceUpdate")
     end
-    if CludesUI._UFRecolorAllTexts then
-        CludesUI._UFRecolorAllTexts()
+    if CUI._UFRecolorAllTexts then
+        CUI._UFRecolorAllTexts()
     end
     -- 3. Refresh nameplates (enemy + friendly)
     local ns_NP = _G.CludesNameplates_NS
@@ -890,7 +890,7 @@ function CludesUI.ApplyColorsToOUF()
     end
     -- 5. Refresh action bar borders (class-colored borders read RAID_CLASS_COLORS)
     local success, ABAR = pcall(function()
-        return CludesUI.Lite and CludesUI.Lite.GetAddon("CludesUIActionBars", true)
+        return CUI.Lite and CUI.Lite.GetAddon("CludesUIActionBars", true)
     end)
     if success and ABAR and ABAR.ApplyBorders and not InCombatLockdown() then
         ABAR:ApplyBorders()
@@ -899,16 +899,16 @@ function CludesUI.ApplyColorsToOUF()
         end
     end
     -- 6. Refresh damage meters (bars/text class colors)
-    if CludesUI._DM_RefreshColors then
-        CludesUI._DM_RefreshColors()
+    if CUI._DM_RefreshColors then
+        CUI._DM_RefreshColors()
     end
     -- 7. A class-colored accent or cursor follows a class swatch edit; the accent
     -- re-applies only when it changed (that path redraws the options page).
     do
-        local red, green, blue = CludesUI.ResolveActiveAccent()
-        local cr, cg, cb = CludesUI.GetAccentColor()
+        local red, green, blue = CUI.ResolveActiveAccent()
+        local cr, cg, cb = CUI.GetAccentColor()
         if red ~= cr or green ~= cg or blue ~= cb then
-            CludesUI.RefreshAccent()
+            CUI.RefreshAccent()
         end
     end
     if _G._CUCL_Apply then
@@ -930,8 +930,8 @@ end
 --  of Life Secondary Stats block (CludesUIQoL_ForeverStats.lua) and Forever
 --  Essentials' Simplified Stats tooltip lines. Forever only.
 -------------------------------------------------------------------------------
-if CludesUI.IS_FOREVER then
-    CludesUI.FOREVER_STAT_HUES = {
+if CUI.IS_FOREVER then
+    CUI.FOREVER_STAT_HUES = {
         str = "c79c6e",
         agi = "abd473",
         sta = "ef5350",

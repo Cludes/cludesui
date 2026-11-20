@@ -93,11 +93,11 @@ end
 -- re-drives the display. Shared by the Raid Frames Debuff Manager (base grid
 -- and grid tiles) and Player Aura Bars debuff bars.
 function CUI.MaxDurationDropdown(get, set, apply)
-    local L = CUI.L
+    local Loc = CUI.L
     local current = get()
     local values = {
-        unlimited = L("Unlimited"),
-        custom = current and (L("Custom") .. " (" .. tostring(current) .. "s)") or (L("Custom") .. "..."),
+        unlimited = Loc("Unlimited"),
+        custom = current and (Loc("Custom") .. " (" .. tostring(current) .. "s)") or (Loc("Custom") .. "..."),
     }
     return {
         type = "dropdown",
@@ -121,11 +121,11 @@ function CUI.MaxDurationDropdown(get, set, apply)
             end
             local nowTime = get()
             CUI:ShowInputPopup({
-                title = L("Max Duration"),
-                message = L("Enter the maximum debuff duration in seconds:"),
+                title = Loc("Max Duration"),
+                message = Loc("Enter the maximum debuff duration in seconds:"),
                 placeholder = nowTime and tostring(nowTime) or "30",
-                confirmText = L("Apply"),
-                cancelText = L("Cancel"),
+                confirmText = Loc("Apply"),
+                cancelText = Loc("Cancel"),
                 onConfirm = function(textValue)
                     local num = tonumber(textValue or "")
                     if num and num > 0 then
@@ -263,7 +263,7 @@ end
 -- attention now, animated only while the card shows.
 local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
     local Pix = CUI.PanelPP
-    local L = CUI.L
+    local Loc = CUI.L
     local ROW_H, ICON, DIV_GAP, DIV_H = 60, 26, 24, 40
     local TITLE_SZ, DESC_SZ, DESC_GAP = 13, 11, 4
     -- Plain items, and the boxed hero in the equal cards' values (left pad,
@@ -305,13 +305,13 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
         descFs:SetMaxLines(2)
         function cardFrame:SetCardContent(iconPath, cardTitle, cardDesc)
             icon:SetTexture(iconPath)
-            titleFs:SetText(L(cardTitle))
-            descFs:SetText(L(cardDesc))
+            titleFs:SetText(Loc(cardTitle))
+            descFs:SetText(Loc(cardDesc))
         end
         local wid = 0
         local function Measure(t, d)
-            titleFs:SetText(L(t))
-            descFs:SetText(L(d))
+            titleFs:SetText(Loc(t))
+            descFs:SetText(Loc(d))
             wid = math.max(wid, math.ceil(titleFs:GetStringWidth()), math.ceil(descFs:GetStringWidth()))
         end
         if specInfo.sizeAlso then
@@ -422,7 +422,7 @@ end
 
 function CUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
     local Pix = CUI.PanelPP
-    local L = CUI.L
+    local Loc = CUI.L
     local num = #cards
     local fullW = hostFrame:GetWidth() - CUI.CONTENT_PAD * 2
     local totalW = (options and options.width) and math.floor(fullW * options.width) or fullW
@@ -493,8 +493,8 @@ function CUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
 
         function cardFrame:SetCardContent(iconPath, cardTitle, cardDesc)
             icon:SetTexture(iconPath)
-            titleFs:SetText(L(cardTitle))
-            descFs:SetText(L(cardDesc))
+            titleFs:SetText(Loc(cardTitle))
+            descFs:SetText(Loc(cardDesc))
         end
         cardFrame:SetCardContent(specInfo.icon, specInfo.title, specInfo.desc)
 
@@ -603,7 +603,7 @@ local MC_CARD_GAP = 14
 function CUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
     local Pix = CUI.PanelPP
     local ACC = CUI.CLUDES_GREEN
-    local L = CUI.L
+    local Loc = CUI.L
     local enabled = options.enabled
     local expanded = enabled and options.expanded[tile.key]
     local cardTop = cursorY
@@ -627,15 +627,15 @@ function CUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
     if not options.noSearch then
         heading._isSectionHeader = true
         heading._sectionName = searchName
-        local searchNameLoc = L(tile.display) .. " " .. L(sDesc)
+        local searchNameLoc = Loc(tile.display) .. " " .. Loc(sDesc)
         if searchNameLoc ~= searchName then
             heading._sectionNameLoc = searchNameLoc
         end
     end
     if CUI._RegisterSearchEntry and not options.noSearch then
-        local titleLoc = L(tile.display)
+        local titleLoc = Loc(tile.display)
         local descSearch = sDesc
-        local descLoc = L(sDesc)
+        local descLoc = Loc(sDesc)
         if descLoc ~= descSearch then
             descSearch = descSearch .. " " .. descLoc
         end
@@ -659,14 +659,14 @@ function CUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
 
     local title = CUI.MakeFont(heading, 14, nil, 1, 1, 1, 0.9)
     Pix.Point(title, "TOPLEFT", heading, "TOPLEFT", 50, -12)
-    title:SetText(L(tile.display))
+    title:SetText(Loc(tile.display))
 
     local desc = CUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.42)
     Pix.Point(desc, "TOPLEFT", title, "BOTTOMLEFT", 0, -4)
     desc:SetWidth(options.descW)
     desc:SetJustifyH("LEFT")
     desc:SetWordWrap(false)
-    desc:SetText(L(tile.desc or ""))
+    desc:SetText(Loc(tile.desc or ""))
     tile._hdr, tile._descFS = heading, desc
 
     if not enabled then
@@ -729,11 +729,11 @@ function CUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
         local tag = CUI.MakeFont(heading, 11, nil, 1, 1, 1)
         tag:SetAlpha(0.3)
         Pix.Point(tag, "RIGHT", heading, "RIGHT", -16, 0)
-        tag:SetText(L("Module Disabled"))
+        tag:SetText(Loc("Module Disabled"))
         heading:SetScript("OnEnter", function(self)
             CUI.ShowWidgetTooltip(
                 self,
-                CUI.Lf("Enable %1$s to edit these settings.", L(tile.display))
+                CUI.Lf("Enable %1$s to edit these settings.", Loc(tile.display))
             )
         end)
         heading:SetScript("OnLeave", function()
@@ -957,17 +957,17 @@ function CUI.BuildManagerTile(parentFrame, cursorY, options)
         end
         -- Pill and knob on a pixel layer, as the settings toggle draws them.
         local on = options.enabled and true or false
-        local L = CUI.MakePixelLayer(toggleBtn, CUI.TogglePillFit)
-        local toggleBg = L._frame:CreateTexture(nil, "BACKGROUND")
-        toggleBg:SetAllPoints(L._frame)
-        local toggleKnob = L._frame:CreateTexture(nil, "ARTWORK")
-        L.track, L.knob, L.pad = toggleBg, toggleKnob, 2
-        L.apply = function()
-            local pad = L.padPx
+        local Loc = CUI.MakePixelLayer(toggleBtn, CUI.TogglePillFit)
+        local toggleBg = Loc._frame:CreateTexture(nil, "BACKGROUND")
+        toggleBg:SetAllPoints(Loc._frame)
+        local toggleKnob = Loc._frame:CreateTexture(nil, "ARTWORK")
+        Loc.track, Loc.knob, Loc.pad = toggleBg, toggleKnob, 2
+        Loc.apply = function()
+            local pad = Loc.padPx
             toggleKnob:ClearAllPoints()
-            toggleKnob:SetPoint("TOPLEFT", L._frame, "TOPLEFT", on and (L.wp - pad - L.d) or pad, -pad)
+            toggleKnob:SetPoint("TOPLEFT", Loc._frame, "TOPLEFT", on and (Loc.wp - pad - Loc.d) or pad, -pad)
         end
-        L:Fit()
+        Loc:Fit()
         if on then
             local acr, acg, acb = CUI.ResolveActiveAccent()
             toggleBg:SetVertexColor(acr, acg, acb, 1)

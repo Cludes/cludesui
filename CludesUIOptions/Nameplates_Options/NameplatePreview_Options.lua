@@ -376,7 +376,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     healthBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
     UnsnapTex(healthBar:GetStatusBarTexture())
     -- Preview constants packed to reduce upvalue count
-    local PV_CONST = {
+    local PREVIEW = {
         FAKE_MAX_HP = 10000,
         DEBUFF_COUNT = 2,
         BUFF_COUNT = 1,
@@ -402,8 +402,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
         RandomizePreviewValues()
     end
     local previewHpPct = optionState._previewHpPct
-    local previewHpVal = math.floor(PV_CONST.FAKE_MAX_HP * previewHpPct / 100)
-    healthBar:SetMinMaxValues(0, PV_CONST.FAKE_MAX_HP)
+    local previewHpVal = math.floor(PREVIEW.FAKE_MAX_HP * previewHpPct / 100)
+    healthBar:SetMinMaxValues(0, PREVIEW.FAKE_MAX_HP)
     healthBar:SetValue(previewHpVal)
     healthBar:SetFrameLevel(popFrame:GetFrameLevel() + 10)
     healthBar:SetStatusBarColor(0.85, 0.20, 0.20, 1)
@@ -1275,10 +1275,10 @@ local function BuildNameplatePreview(hostFrame, parentW)
         { icon = 136207, text = "8", dur = 12, elapsed = 4, stacks = 3 }, -- SW:P  (12s total, 4s elapsed 8s left, 3 stacks)
         { icon = 135978, text = "14", dur = 18, elapsed = 4, stacks = 0 }, -- VT    (18s total, 4s elapsed 14s left)
     }
-    for i = 1, PV_CONST.DEBUFF_COUNT do
+    for i = 1, PREVIEW.DEBUFF_COUNT do
         local d = CreateFrame("Frame", nil, popFrame)
         d:SetSize(26, 26)
-        d:SetPoint("BOTTOM", nameText, "TOP", (i - (PV_CONST.DEBUFF_COUNT + 1) / 2) * 30, 2)
+        d:SetPoint("BOTTOM", nameText, "TOP", (i - (PREVIEW.DEBUFF_COUNT + 1) / 2) * 30, 2)
         d:SetFrameLevel(healthBar:GetFrameLevel() + 9)
         AddBorder(d)
 
@@ -1322,7 +1322,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         { icon = 136224, text = "12", frac = 0.20 }, -- Enrage
         { icon = 132333, text = "7", frac = 0.45 }, -- Battle Shout
     }
-    for i = 1, PV_CONST.BUFF_COUNT do
+    for i = 1, PREVIEW.BUFF_COUNT do
         local borderFrame = CreateFrame("Frame", nil, popFrame)
         borderFrame:SetSize(24, 24)
         borderFrame:SetFrameLevel(healthBar:GetFrameLevel() + 9)
@@ -1350,7 +1350,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         { icon = 136071, text = "5", frac = 0.55 }, -- Polymorph
         { icon = 118699, text = "3", frac = 0.70 }, -- Fear
     }
-    for i = 1, PV_CONST.CC_COUNT do
+    for i = 1, PREVIEW.CC_COUNT do
         local castFrame = CreateFrame("Frame", nil, popFrame)
         castFrame:SetSize(24, 24)
         castFrame:SetFrameLevel(healthBar:GetFrameLevel() + 9)
@@ -1483,13 +1483,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
             paint(castBits.iconFrame, castOn, 3)
             local auraOn = customOn and DBVal("auraIconCustomBorder") == true
             -- Under the aura text frame (icon level + 2).
-            for i = 1, PV_CONST.DEBUFF_COUNT do
+            for i = 1, PREVIEW.DEBUFF_COUNT do
                 paint(debuffs[i], auraOn and (not ib or ib("debuffs")), 1, debuffs[i].icon)
             end
-            for i = 1, PV_CONST.BUFF_COUNT do
+            for i = 1, PREVIEW.BUFF_COUNT do
                 paint(buffs[i], auraOn and (not ib or ib("buffs")), 1, buffs[i].icon)
             end
-            for i = 1, PV_CONST.CC_COUNT do
+            for i = 1, PREVIEW.CC_COUNT do
                 paint(ccs[i], auraOn and (not ib or ib("ccs")), 1, ccs[i].icon)
             end
         end
@@ -1545,13 +1545,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
         -- Apply current random preview values (regenerated on tab switch only)
         local curHpPct = optionState._previewHpPct or 70
-        local curHpVal = math.floor(PV_CONST.FAKE_MAX_HP * curHpPct / 100)
+        local curHpVal = math.floor(PREVIEW.FAKE_MAX_HP * curHpPct / 100)
         healthBar:SetValue(curHpVal)
         local pctStr = curHpPct .. "%"
         local pctNoSignStr = tostring(curHpPct)
         local hpNumStr = tostring(curHpVal):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
         local hpMaxStr =
-            tostring(PV_CONST.FAKE_MAX_HP):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+            tostring(PREVIEW.FAKE_MAX_HP):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
         -- Synthetic fractional percent so "Show % Decimal" is visible here (the fake preview HP is a whole number).
         local pctStrDec = string.format("%.1f%%", curHpPct + 0.4)
         local pctNoSignStrDec = string.format("%.1f", curHpPct + 0.4)
@@ -1784,13 +1784,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
             end
             local ib = mod.GetIconBorderEnabled
             setEdges(castBits.iconFrame, not ib or ib("cast"))
-            for i = 1, PV_CONST.DEBUFF_COUNT do
+            for i = 1, PREVIEW.DEBUFF_COUNT do
                 setEdges(debuffs[i], not ib or ib("debuffs"))
             end
-            for i = 1, PV_CONST.BUFF_COUNT do
+            for i = 1, PREVIEW.BUFF_COUNT do
                 setEdges(buffs[i], not ib or ib("buffs"))
             end
-            for i = 1, PV_CONST.CC_COUNT do
+            for i = 1, PREVIEW.CC_COUNT do
                 setEdges(ccs[i], not ib or ib("ccs"))
             end
         end
@@ -3207,7 +3207,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             ccYOff = DBVal(ccSlotVal .. "SlotYOffset") or 0
         end
 
-        for i = 1, PV_CONST.DEBUFF_COUNT do
+        for i = 1, PREVIEW.DEBUFF_COUNT do
             if debuffSlotVal == "none" then
                 debuffs[i]:Hide()
             else
@@ -3230,7 +3230,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     debuffs[i],
                     debuffSlotVal,
                     i,
-                    PV_CONST.DEBUFF_COUNT,
+                    PREVIEW.DEBUFF_COUNT,
                     debuffSz,
                     debuffH,
                     debuffSpacing,
@@ -3241,7 +3241,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
 
         -- Buff size + duration text styling + slot position
-        for i = 1, PV_CONST.BUFF_COUNT do
+        for i = 1, PREVIEW.BUFF_COUNT do
             if buffSlotVal == "none" then
                 buffs[i]:Hide()
                 if buffs[i].dispelGlow and buffs[i].dispelGlow.active then
@@ -3266,7 +3266,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     buffs[i],
                     buffSlotVal,
                     i,
-                    PV_CONST.BUFF_COUNT,
+                    PREVIEW.BUFF_COUNT,
                     buffSz,
                     buffH,
                     buffSpacing,
@@ -3285,7 +3285,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
 
         -- CC size + duration text styling + slot position
-        for i = 1, PV_CONST.CC_COUNT do
+        for i = 1, PREVIEW.CC_COUNT do
             if ccSlotVal == "none" then
                 ccs[i]:Hide()
             else
@@ -3295,7 +3295,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 ccs[i].durationText:SetFont(fontFile, ccDurSz, CludesUI.SlugFlag("OUTLINE, SLUG"))
                 ccs[i].durationText:SetTextColor(ccDurC.r, ccDurC.g, ccDurC.b, 1)
                 ApplyTimerPos(ccs[i].durationText, ccs[i], ccTPos, ccDurSz, ccDurX, ccDurY, ccDurC)
-                PlaceInSlot(ccs[i], ccSlotVal, i, PV_CONST.CC_COUNT, ccSz, ccH, ccSpacing, ccXOff, ccYOff)
+                PlaceInSlot(ccs[i], ccSlotVal, i, PREVIEW.CC_COUNT, ccSz, ccH, ccSpacing, ccXOff, ccYOff)
             end
         end
 
@@ -3316,12 +3316,12 @@ local function BuildNameplatePreview(hostFrame, parentW)
             midX.barH, midX.arrowH, midX.debuffY = barH, arrowH, debuffY
             local r = midX.rows.debuffs
             r.list, r.count, r.sz, r.h, r.gap, r.slot =
-                debuffs, PV_CONST.DEBUFF_COUNT, debuffSz, debuffH, debuffGap, debuffSlotVal
+                debuffs, PREVIEW.DEBUFF_COUNT, debuffSz, debuffH, debuffGap, debuffSlotVal
             r = midX.rows.buffs
             r.list, r.count, r.sz, r.h, r.gap, r.slot =
-                buffs, PV_CONST.BUFF_COUNT, buffSz, buffH, buffGap, buffSlotVal
+                buffs, PREVIEW.BUFF_COUNT, buffSz, buffH, buffGap, buffSlotVal
             r = midX.rows.ccs
-            r.list, r.count, r.sz, r.h, r.gap, r.slot = ccs, PV_CONST.CC_COUNT, ccSz, ccH, ccGap, ccSlotVal
+            r.list, r.count, r.sz, r.h, r.gap, r.slot = ccs, PREVIEW.CC_COUNT, ccSz, ccH, ccGap, ccSlotVal
             r = midX.icons.raidmarker
             r.frame, r.slot, r.sz = raidFrame, rmPos, rmSize
             -- The Rare/Quest member counts only while a half is on or the badge rides it (as live).
@@ -3381,15 +3381,15 @@ local function BuildNameplatePreview(hostFrame, parentW)
             end
             addAuraSide(
                 debuffSlotVal,
-                PV_CONST.DEBUFF_COUNT,
+                PREVIEW.DEBUFF_COUNT,
                 debuffSz,
                 debuffH,
                 debuffSpacing,
                 debuffXOff,
                 debuffYOff
             )
-            addAuraSide(buffSlotVal, PV_CONST.BUFF_COUNT, buffSz, buffH, buffSpacing, buffXOff, buffYOff)
-            addAuraSide(ccSlotVal, PV_CONST.CC_COUNT, ccSz, ccH, ccSpacing, ccXOff, ccYOff)
+            addAuraSide(buffSlotVal, PREVIEW.BUFF_COUNT, buffSz, buffH, buffSpacing, buffXOff, buffYOff)
+            addAuraSide(ccSlotVal, PREVIEW.CC_COUNT, ccSz, ccH, ccSpacing, ccXOff, ccYOff)
             -- Side icons (raid marker, classification, Quest Objective Text,
             -- faction), each past its own cast icon push; w: the element's width
             -- (sz, its height, when nil).
@@ -3486,9 +3486,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     )
                 end
             end
-            addAura(debuffSlotVal, PV_CONST.DEBUFF_COUNT, debuffSz, debuffH, debuffSpacing, debuffYOff)
-            addAura(buffSlotVal, PV_CONST.BUFF_COUNT, buffSz, buffH, buffSpacing, buffYOff)
-            addAura(ccSlotVal, PV_CONST.CC_COUNT, ccSz, ccH, ccSpacing, ccYOff)
+            addAura(debuffSlotVal, PREVIEW.DEBUFF_COUNT, debuffSz, debuffH, debuffSpacing, debuffYOff)
+            addAura(buffSlotVal, PREVIEW.BUFF_COUNT, buffSz, buffH, buffSpacing, buffYOff)
+            addAura(ccSlotVal, PREVIEW.CC_COUNT, ccSz, ccH, ccSpacing, ccYOff)
             if showRM then
                 if rmPos == "top" then
                     cornerExtent = math.max(cornerExtent, debuffY + rmSize + rmYOff)
@@ -3955,10 +3955,10 @@ local function BuildNameplatePreview(hostFrame, parentW)
             -- cells. No ring, overlay or mask.
             glowPreview.applyClassic(barH, castH)
             if mod.NP_ApplyClassicIconArt then
-                for i = 1, PV_CONST.DEBUFF_COUNT do
+                for i = 1, PREVIEW.DEBUFF_COUNT do
                     mod.NP_ApplyClassicIconArt(debuffs[i])
                 end
-                for i = 1, PV_CONST.CC_COUNT do
+                for i = 1, PREVIEW.CC_COUNT do
                     mod.NP_ApplyClassicIconArt(ccs[i])
                 end
             end
@@ -3967,13 +3967,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
             -- Aura mocks: the stock rounded mask and ring, as the live cells
             -- (sized above, so the ring geometry reads the frames).
             if mod.NP_ApplyBlizzIconArt then
-                for i = 1, PV_CONST.DEBUFF_COUNT do
+                for i = 1, PREVIEW.DEBUFF_COUNT do
                     mod.NP_ApplyBlizzIconArt(debuffs[i], debuffs[i].icon)
                 end
-                for i = 1, PV_CONST.BUFF_COUNT do
+                for i = 1, PREVIEW.BUFF_COUNT do
                     mod.NP_ApplyBlizzIconArt(buffs[i], buffs[i].icon)
                 end
-                for i = 1, PV_CONST.CC_COUNT do
+                for i = 1, PREVIEW.CC_COUNT do
                     mod.NP_ApplyBlizzIconArt(ccs[i], ccs[i].icon)
                 end
             end

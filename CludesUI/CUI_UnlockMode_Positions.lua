@@ -660,10 +660,10 @@ CUI_NS.unlockParts.Positions = function(LM)
             local scaleRatio = uiScale / childScale
             local bCenterX = (snapX - UIParent:GetWidth() / 2) * scaleRatio
             local bCenterY = (snapY - UIParent:GetHeight() / 2) * scaleRatio
-            local PPa = Pix or (CludesUI and CludesUI.PP)
-            if PPa and PPa.SnapCenterForDim then
-                bCenterX = PPa.SnapCenterForDim(bCenterX, childFrame:GetWidth() or 0, childScale)
-                bCenterY = PPa.SnapCenterForDim(bCenterY, childFrame:GetHeight() or 0, childScale)
+            local PixKit = Pix or (CludesUI and CludesUI.PP)
+            if PixKit and PixKit.SnapCenterForDim then
+                bCenterX = PixKit.SnapCenterForDim(bCenterX, childFrame:GetWidth() or 0, childScale)
+                bCenterY = PixKit.SnapCenterForDim(bCenterY, childFrame:GetHeight() or 0, childScale)
             end
             local okPt, anchorPoint, relTo, relPoint, curX, curY = pcall(childFrame.GetPoint, childFrame, 1)
             -- A child still on a followed edge reads its anchor back secret: never compared.
@@ -680,7 +680,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 okPt = false
             end
             if okPt and anchorPoint == "CENTER" and relPoint == "CENTER" and relTo == UIParent then
-                local onePx = ((PPa and PPa.perfect) or 1) / childScale
+                local onePx = ((PixKit and PixKit.perfect) or 1) / childScale
                 local tol = onePx * 0.5
                 if curX and curY and math.abs(curX - bCenterX) < tol and math.abs(curY - bCenterY) < tol then
                     return true
@@ -1966,18 +1966,18 @@ CUI_NS.unlockParts.Positions = function(LM)
                 -- CENTER on that axis -> parity-aware snap (SnapCenterForDim), since an
                 -- odd-pixel child dimension needs a half-pixel center for both edges to
                 -- land whole (else odd-height/width anchored CDM bars shift half a pixel: cooldown swipes bleeding past borders).
-                local PPa = CludesUI and CludesUI.PP
-                if PPa and PPa.SnapForES then
+                local PixKit = CludesUI and CludesUI.PP
+                if PixKit and PixKit.SnapForES then
                     local childW2 = childFrame:GetWidth() or 0
                     local childH2 = childFrame:GetHeight() or 0
                     if cdmEdgeAnchor == "LEFT" or cdmEdgeAnchor == "RIGHT" then
-                        bEdgeX = PPa.SnapForES(bEdgeX, childScale)
-                        bEdgeY = PPa.SnapCenterForDim and PPa.SnapCenterForDim(bEdgeY, childH2, childScale)
-                            or PPa.SnapForES(bEdgeY, childScale)
+                        bEdgeX = PixKit.SnapForES(bEdgeX, childScale)
+                        bEdgeY = PixKit.SnapCenterForDim and PixKit.SnapCenterForDim(bEdgeY, childH2, childScale)
+                            or PixKit.SnapForES(bEdgeY, childScale)
                     else
-                        bEdgeY = PPa.SnapForES(bEdgeY, childScale)
-                        bEdgeX = PPa.SnapCenterForDim and PPa.SnapCenterForDim(bEdgeX, childW2, childScale)
-                            or PPa.SnapForES(bEdgeX, childScale)
+                        bEdgeY = PixKit.SnapForES(bEdgeY, childScale)
+                        bEdgeX = PixKit.SnapCenterForDim and PixKit.SnapCenterForDim(bEdgeX, childW2, childScale)
+                            or PixKit.SnapForES(bEdgeX, childScale)
                     end
                 end
                 -- Element-contributed offset (RaidFrames' per-tier offset), folded in
@@ -2030,22 +2030,22 @@ CUI_NS.unlockParts.Positions = function(LM)
                 -- provider's static edge is where that point rests with nothing
                 -- stacked) and the engine does the following. The saved position
                 -- stays the resting one.
-                local PPa = CludesUI and CludesUI.PP
+                local PixKit = CludesUI and CludesUI.PP
                 local exFX, exFY = ExtraAnchorOffset(childBarKey)
                 -- Resting centre, snapped and offset exactly like the CENTER branch
                 -- (it is what CommitPositions may read for this element).
                 bCenterX = centerX * scaleRatio
                 bCenterY = centerY * scaleRatio
-                if PPa and PPa.SnapCenterForDim then
-                    bCenterX = PPa.SnapCenterForDim(bCenterX, cW0 or 0, childScale)
-                    bCenterY = PPa.SnapCenterForDim(bCenterY, cH0 or 0, childScale)
+                if PixKit and PixKit.SnapCenterForDim then
+                    bCenterX = PixKit.SnapCenterForDim(bCenterX, cW0 or 0, childScale)
+                    bCenterY = PixKit.SnapCenterForDim(bCenterY, cH0 or 0, childScale)
                 end
                 bCenterX, bCenterY = bCenterX + exFX, bCenterY + exFY
                 local fx = (snapX - targetMidX) * scaleRatio
                 local fy = ((snapY + childH / 2) - targetBottom) * scaleRatio
-                if PPa and PPa.SnapForES then
-                    fx = PPa.SnapForES(fx, childScale)
-                    fy = PPa.SnapForES(fy, childScale)
+                if PixKit and PixKit.SnapForES then
+                    fx = PixKit.SnapForES(fx, childScale)
+                    fy = PixKit.SnapForES(fy, childScale)
                 end
                 fx, fy = fx + exFX, fy + exFY
                 local skip = false
@@ -2086,12 +2086,12 @@ CUI_NS.unlockParts.Positions = function(LM)
                 -- actually SetPoint'd. Snapping AFTER the check meant a bar whose snap
                 -- offset exceeds the 0.5px tolerance never matched (curX snapped, bCenter
                 -- not), so it re-SetPoint the same value every frame while sitting still.
-                local PPa = CludesUI and CludesUI.PP
-                if PPa and PPa.SnapCenterForDim then
+                local PixKit = CludesUI and CludesUI.PP
+                if PixKit and PixKit.SnapCenterForDim then
                     -- The size read above (the stored one when the live rect was
                     -- secret: the bar is still on its followed edge until the SetPoint below).
-                    bCenterX = PPa.SnapCenterForDim(bCenterX, cW0 or 0, childScale)
-                    bCenterY = PPa.SnapCenterForDim(bCenterY, cH0 or 0, childScale)
+                    bCenterX = PixKit.SnapCenterForDim(bCenterX, cW0 or 0, childScale)
+                    bCenterY = PixKit.SnapCenterForDim(bCenterY, cH0 or 0, childScale)
                 end
                 local exCX, exCY = ExtraAnchorOffset(childBarKey)
                 bCenterX, bCenterY = bCenterX + exCX, bCenterY + exCY
@@ -3039,11 +3039,11 @@ CUI_NS.unlockParts.Positions = function(LM)
             -- Same registered extra offset fold as ApplyCenterPosition (pre-snap).
             local ex, ey = ExtraAnchorOffset(barId)
             px, py = px + ex, py + ey
-            local PPa = CludesUI and CludesUI.PP
-            if PPa and PPa.SnapForES then
+            local PixKit = CludesUI and CludesUI.PP
+            if PixKit and PixKit.SnapForES then
                 local es = widget:GetEffectiveScale()
-                px = PPa.SnapForES(px, es)
-                py = PPa.SnapForES(py, es)
+                px = PixKit.SnapForES(px, es)
+                py = PixKit.SnapForES(py, es)
             end
             pcall(function()
                 CludesUI.ClearFramePoints(widget)

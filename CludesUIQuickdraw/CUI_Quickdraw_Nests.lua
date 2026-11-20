@@ -186,64 +186,64 @@ local HALO_DIRS = {
 -- bend. That is all the rounding buys: the icons drawn on those cells can still
 -- run into each other across a turn, and PerimeterNest is where they are sized
 -- down until they do not.
-local function PerimeterSpan(HX, HY, R)
-    local sx, sy = HX * 2 - R * 2, HY * 2 - R * 2
-    local arc = pi * 0.5 * R
+local function PerimeterSpan(HX, HY, Radius)
+    local sx, sy = HX * 2 - Radius * 2, HY * 2 - Radius * 2
+    local arc = pi * 0.5 * Radius
     return sx, sy, arc, 2 * (sx + sy) + 4 * arc
 end
 
 -- Also returns the OUTWARD normal, which is how a nest deep enough to need a
 -- second row finds where to put it: one row further out along the normal keeps
 -- the rows square with each other on a straight edge and fanned around a corner.
-local function PerimeterPoint(t, HX, HY, R)
-    local sx, sy, arc, L = PerimeterSpan(HX, HY, R)
+local function PerimeterPoint(t, HX, HY, Radius)
+    local sx, sy, arc, L = PerimeterSpan(HX, HY, Radius)
     t = t % L
     if t < sx then
-        return -HX + R + t, HY, "X", 1, 0, 1
+        return -HX + Radius + t, HY, "X", 1, 0, 1
     end
     t = t - sx
     if t < arc then
-        local a = t / R
+        local a = t / Radius
         -- Half a turn each: a cell more than halfway round a corner belongs to
         -- the side it is heading onto, so its box lies across the run it is
         -- about to join rather than across the one it has left.
         local ax = (a >= pi * 0.25) and "Y" or "X"
-        return HX - R + R * sin(a), HY - R + R * cos(a), ax, 1, sin(a), cos(a)
+        return HX - Radius + Radius * sin(a), HY - Radius + Radius * cos(a), ax, 1, sin(a), cos(a)
     end
     t = t - arc
     if t < sy then
-        return HX, HY - R - t, "Y", 1, 1, 0
+        return HX, HY - Radius - t, "Y", 1, 1, 0
     end
     t = t - sy
     if t < arc then
-        local a = t / R
+        local a = t / Radius
         local ax, sg = "Y", 1
         if a >= pi * 0.25 then
             ax, sg = "X", -1
         end
-        return HX - R + R * cos(a), -HY + R - R * sin(a), ax, sg, cos(a), -sin(a)
+        return HX - Radius + Radius * cos(a), -HY + Radius - Radius * sin(a), ax, sg, cos(a), -sin(a)
     end
     t = t - arc
     if t < sx then
-        return HX - R - t, -HY, "X", -1, 0, -1
+        return HX - Radius - t, -HY, "X", -1, 0, -1
     end
     t = t - sx
     if t < arc then
-        local a = t / R
+        local a = t / Radius
         local ax = (a >= pi * 0.25) and "Y" or "X"
-        return -HX + R - R * sin(a), -HY + R - R * cos(a), ax, -1, -sin(a), -cos(a)
+        return -HX + Radius - Radius * sin(a), -HY + Radius - Radius * cos(a), ax, -1, -sin(a), -cos(a)
     end
     t = t - arc
     if t < sy then
-        return -HX, -HY + R + t, "Y", -1, -1, 0
+        return -HX, -HY + Radius + t, "Y", -1, -1, 0
     end
     t = t - sy
-    local a = t / R
+    local a = t / Radius
     local ax, sg = "Y", -1
     if a >= pi * 0.25 then
         ax, sg = "X", 1
     end
-    return -HX + R - R * cos(a), HY - R + R * sin(a), ax, sg, -cos(a), sin(a)
+    return -HX + Radius - Radius * cos(a), HY - Radius + Radius * sin(a), ax, sg, -cos(a), sin(a)
 end
 
 -- The parameter that advances a run one child pitch of GROUND from ta, not one
@@ -255,15 +255,15 @@ end
 -- the whole run down with them. The step is measured the way overlap is --
 -- the wider axis of the two -- so the icons it separates clear at full size
 -- however the turn lies between them.
-local function PerimeterStep(ta, HX, HY, R, pitch)
-    local ax, ay = PerimeterPoint(ta, HX, HY, R)
+local function PerimeterStep(ta, HX, HY, Radius, pitch)
+    local ax, ay = PerimeterPoint(ta, HX, HY, Radius)
     local dt = pitch
     -- The point never outruns the parameter, so growing the guess by the
     -- shortfall cannot overshoot, and each round closes most of what is left:
     -- a straight edge is exact on the first try, a turn settles within a
     -- fraction of a pixel well inside the bound.
     for _ = 1, 8 do
-        local bx, by = PerimeterPoint(ta + dt, HX, HY, R)
+        local bx, by = PerimeterPoint(ta + dt, HX, HY, Radius)
         local sep = max(abs(bx - ax), abs(by - ay))
         if sep >= pitch - 0.5 then
             break
@@ -295,11 +295,11 @@ end
 -- axisOnly keeps a degenerate one-row or one-column block breaking out ACROSS
 -- itself and only across itself: the sides in line with it are left out of the
 -- projection altogether rather than merely losing a tie-break.
-local function PerimeterNearest(px, py, HX, HY, R, positive, axisOnly)
-    local sx, sy, arc, L = PerimeterSpan(HX, HY, R)
+local function PerimeterNearest(px, py, HX, HY, Radius, positive, axisOnly)
+    local sx, sy, arc, L = PerimeterSpan(HX, HY, Radius)
     -- Where the corner arcs are centred, and so also the corners of the region
     -- in which some straight side is the nearest part of the path at all.
-    local cx, cy = HX - R, HY - R
+    local cx, cy = HX - Radius, HY - Radius
 
     -- Diagonally past one of those centres no straight side can answer, and the
     -- nearest point is on that corner's own arc, at the angle the offset points
@@ -312,15 +312,15 @@ local function PerimeterNearest(px, py, HX, HY, R, positive, axisOnly)
         -- Each arc measured from its own start, the way PerimeterPoint runs it,
         -- and the argument order per arc is that arc's own sin/cos pair there.
         if px > 0 and py > 0 then
-            return sx + atan2(dx, dy) * R
+            return sx + atan2(dx, dy) * Radius
         end
         if px > 0 then
-            return sx + sy + arc + atan2(-dy, dx) * R
+            return sx + sy + arc + atan2(-dy, dx) * Radius
         end
         if py < 0 then
-            return 2 * sx + sy + 2 * arc + atan2(-dx, -dy) * R
+            return 2 * sx + sy + 2 * arc + atan2(-dx, -dy) * Radius
         end
-        return 2 * sx + 2 * sy + 3 * arc + atan2(dy, -dx) * R
+        return 2 * sx + 2 * sy + 3 * arc + atan2(dy, -dx) * Radius
     end
 
     -- Distance to each side's straight run in path order -- top, right, bottom,
@@ -490,8 +490,8 @@ function PaletteView:PerimeterNest(claims, isShown, m)
     -- so the cells are SPACED by that same measure -- see PerimeterStep --
     -- and a turn costs the run extra path rather than ground.
     local turn = (standoff - m.childPitch * 0.5) * sqrt(2) / (2 * sqrt(2) + 1 - sqrt(2) * pi * 0.25)
-    local R = min(depth * 0.5, min(HX, HY) * 0.5, max(0, turn))
-    local sx, sy, arc, L = PerimeterSpan(HX, HY, R)
+    local Radius = min(depth * 0.5, min(HX, HY) * 0.5, max(0, turn))
+    local sx, sy, arc, L = PerimeterSpan(HX, HY, Radius)
 
     local childPitch, childIcon = m.childPitch, m.childIcon
     -- A strip breaks out ACROSS itself and only across itself: a row of entries
@@ -522,7 +522,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
         -- The nearest point of the lane, from the parent's own CELL rather than
         -- from anywhere on the screen: the push runs long before the open that
         -- will use it, and the two have to agree.
-        claim.t0 = PerimeterNearest(bx, by, HX, HY, R, m.positive, axisOnly)
+        claim.t0 = PerimeterNearest(bx, by, HX, HY, Radius, m.positive, axisOnly)
     end
 
     -- How much of the lane each nest may take: the WHOLE of it. Only one nest is
@@ -550,7 +550,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
         -- enough for it to matter.
         local room, walked = 1, 0
         while room < claim.n do
-            local step = PerimeterStep(claim.t0 + walked, HX, HY, R, childPitch)
+            local step = PerimeterStep(claim.t0 + walked, HX, HY, Radius, childPitch)
             if walked + step > L - childPitch then
                 break
             end
@@ -569,7 +569,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
             for _ = 1, 2 do
                 row = { start }
                 for jr = 2, inRow do
-                    row[jr] = row[jr - 1] + PerimeterStep(row[jr - 1], HX, HY, R, childPitch)
+                    row[jr] = row[jr - 1] + PerimeterStep(row[jr - 1], HX, HY, Radius, childPitch)
                 end
                 start = claim.t0 - (row[inRow] - row[1]) * 0.5
             end
@@ -585,7 +585,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
             local cr = floor((jdx - 1) / cols)
             local cc = (jdx - 1) % cols
             local t = rowTs[cr + 1][cc + 1]
-            local posX, posY, axis, sign, nx, ny = PerimeterPoint(t, HX, HY, R)
+            local posX, posY, axis, sign, nx, ny = PerimeterPoint(t, HX, HY, Radius)
             -- Rows past the first sit one row further out along the outward
             -- normal, which keeps them square on a straight edge and fanned
             -- around a corner.

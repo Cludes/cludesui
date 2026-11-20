@@ -17,7 +17,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --    6. CludesUI_Profiles.lua  -- THIS FILE
 -------------------------------------------------------------------------------
 
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 
 -------------------------------------------------------------------------------
 --  LibDeflate reference (loaded before us via TOC)
@@ -173,7 +173,7 @@ local ADDON_DB_MAP = {
         suffix = "Quickdraw",
     },
 }
-CludesUI._ADDON_DB_MAP = ADDON_DB_MAP
+CUI._ADDON_DB_MAP = ADDON_DB_MAP
 
 -------------------------------------------------------------------------------
 --  Canonical addon keys (suite <-> standalone profile-string interop)
@@ -325,7 +325,7 @@ local AB_BAREWORD = {
 }
 -- WoW Forever never registers the House Favor bar: classify it statically
 -- there so its anchor and size-match links keep travelling in exports.
-if CludesUI.IS_FOREVER == true then
+if CUI.IS_FOREVER == true then
     AB_BAREWORD.FavorBar = true
 end
 local UF_BAREWORD = {
@@ -364,7 +364,7 @@ local function ResolveKeyToFolder(entryKey, providedFolder)
     end
     return nil
 end
-CludesUI.ResolveKeyToFolder = ResolveKeyToFolder
+CUI.ResolveKeyToFolder = ResolveKeyToFolder
 
 -- Set of folders that have NO import/export checkbox (not in ADDON_DB_MAP), so
 -- their anchor/match edges are never exported -- the element keeps its own saved
@@ -386,7 +386,7 @@ do
     -- Stamped on its elements at registration (it has no key prefix of its own).
     NO_CHECKBOX_FOLDER["CludesUIForeverEssentials"] = true
 end
-CludesUI._NoCheckboxFolder = NO_CHECKBOX_FOLDER
+CUI._NoCheckboxFolder = NO_CHECKBOX_FOLDER
 
 -------------------------------------------------------------------------------
 --  Serializer: Lua table <-> string (no AceSerializer dependency)
@@ -538,7 +538,7 @@ function Serializer.SetYieldHook(func)
     deserializeOps = 0
 end
 
-CludesUI._Serializer = Serializer
+CUI._Serializer = Serializer
 
 -------------------------------------------------------------------------------
 --  Deep copy utility
@@ -574,7 +574,7 @@ local function DeepMerge(destination, src)
     end
 end
 
-CludesUI._DeepCopy = CopyDeep
+CUI._DeepCopy = CopyDeep
 
 -------------------------------------------------------------------------------
 --  Selective-layout core helpers (shared by export, import, and the
@@ -587,8 +587,8 @@ CludesUI._DeepCopy = CopyDeep
 -- live registry's elem.folder first, then the static resolver. Also returns a
 -- `stale` set of keys NOT in the live registry (deleted/other-spec bars) so the
 -- caller can prune dead edges. Use at EXPORT time (needs the exporter registry).
-function CludesUI.BuildLayoutKeyToFolder(layout)
-    local registryTbl = CludesUI._unlockRegisteredElements or {}
+function CUI.BuildLayoutKeyToFolder(layout)
+    local registryTbl = CUI._unlockRegisteredElements or {}
     local keyToFolder, stale = {}, {}
     local function addFn(entryKey)
         if type(entryKey) ~= "string" or keyToFolder[entryKey] ~= nil then
@@ -663,12 +663,12 @@ end
 -- that guarantees no retained relationship references an excluded module.
 -- k2f/stale may be passed (e.g. import-side, built from payload meta) or omitted
 -- (export-side, built from the live registry).
-function CludesUI.FilterLayoutToFolders(layout, folderSet, keyToFolder)
+function CUI.FilterLayoutToFolders(layout, folderSet, keyToFolder)
     if type(layout) ~= "table" then
         return layout
     end
     if not keyToFolder then
-        keyToFolder = CludesUI.BuildLayoutKeyToFolder(layout)
+        keyToFolder = CUI.BuildLayoutKeyToFolder(layout)
     end
     -- Classification is by the static resolver (registry-independent) so this can
     -- never over-drop just because the unlock registry isn't fully populated yet.
@@ -691,7 +691,7 @@ function CludesUI.FilterLayoutToFolders(layout, folderSet, keyToFolder)
     -- Screen-edge targets (CUI_UnlockMode) exist on every install and belong to no
     -- module: a link TO one travels with its child's module. Target only -- a screen
     -- edge is never an anchor child or a size-match endpoint.
-    local isEdge = CludesUI.IsScreenEdgeKey
+    local isEdge = CUI.IsScreenEdgeKey
     local output = { anchors = {}, widthMatch = {}, heightMatch = {}, phantomBounds = {} }
     if type(layout.anchors) == "table" then
         for childFrame, details in pairs(layout.anchors) do
@@ -729,9 +729,9 @@ end
 -- folderToMembers[folder] = { set of folders in folder's component }. A folder
 -- with no cross-module edge is absent (treat as a singleton: just itself).
 -- Drives the hard-couple checkbox auto-toggle. k2f/stale may be passed in.
-function CludesUI.BuildModuleComponents(layout, keyToFolder)
+function CUI.BuildModuleComponents(layout, keyToFolder)
     if not keyToFolder then
-        keyToFolder = CludesUI.BuildLayoutKeyToFolder(layout)
+        keyToFolder = CUI.BuildLayoutKeyToFolder(layout)
     end
     local hostFrame = {}
     local function find(posX)
@@ -807,7 +807,7 @@ end
 -- fall back to the static resolver (LOCAL) re-canonicalized via FOLDER_TO_CANON.
 -- This is what keeps a meta-less string from classifying nothing and dropping the
 -- whole layout. Matches selectedImports' CANON keyspace.
-function CludesUI.BuildImportKeyToFolder(layout, metaK2F)
+function CUI.BuildImportKeyToFolder(layout, metaK2F)
     metaK2F = metaK2F or {}
     local keyToFolder = {}
     local function addFn(entryKey)
@@ -858,7 +858,7 @@ end
 -- its child). importedFolders = set of LOCAL folders being imported. For a full
 -- import (every module) this reduces to "replace with imported" (every child is
 -- owned by an imported module). LOCAL keyspace throughout.
-function CludesUI.MergeImportedLayout(baseTbl, incoming, importedFolders)
+function CUI.MergeImportedLayout(baseTbl, incoming, importedFolders)
     baseTbl = (type(baseTbl) == "table") and baseTbl or {}
     incoming = (type(incoming) == "table") and incoming or {}
     importedFolders = importedFolders or {}
@@ -872,7 +872,7 @@ function CludesUI.MergeImportedLayout(baseTbl, incoming, importedFolders)
     --    so the imported module's layout fully replaces the base's for that module.
     --    Classify the BASE children via the live (recipient) registry + static
     --    resolver, since these are the recipient's own profile keys.
-    local baseK2F = CludesUI.BuildLayoutKeyToFolder(baseTbl)
+    local baseK2F = CUI.BuildLayoutKeyToFolder(baseTbl)
     local function childImported(childFrame)
         local f = baseK2F[childFrame]
         return f ~= nil and importedFolders[f] == true
@@ -924,7 +924,7 @@ end
 --   folderSet    : set of LOCAL folders to keep (subset export); nil -> all
 --                  checkbox modules (full export, still drops no-checkbox edges)
 -- Returns (filteredUnlockLayout, meta) where meta.keyToFolder is CANONICAL.
-function CludesUI.BuildExportUnlockLayout(unlockLayout, includeLayout, folderSet)
+function CUI.BuildExportUnlockLayout(unlockLayout, includeLayout, folderSet)
     if not includeLayout or type(unlockLayout) ~= "table" then
         return nil, nil
     end
@@ -934,8 +934,8 @@ function CludesUI.BuildExportUnlockLayout(unlockLayout, includeLayout, folderSet
             folderSet[record.folder] = true
         end
     end
-    local keyToFolder = CludesUI.BuildLayoutKeyToFolder(unlockLayout)
-    local filtered = CludesUI.FilterLayoutToFolders(unlockLayout, folderSet, keyToFolder)
+    local keyToFolder = CUI.BuildLayoutKeyToFolder(unlockLayout)
+    local filtered = CUI.FilterLayoutToFolders(unlockLayout, folderSet, keyToFolder)
     local meta = { keyToFolder = {} }
     local function addMeta(entryKey)
         if type(entryKey) == "string" and meta.keyToFolder[entryKey] == nil then
@@ -991,7 +991,7 @@ local function GetProfilesDB()
     end
     return CludesUIDB
 end
-CludesUI.GetProfilesDB = GetProfilesDB
+CUI.GetProfilesDB = GetProfilesDB
 
 -------------------------------------------------------------------------------
 --  Anchor offset format conversion
@@ -1009,7 +1009,7 @@ local IsAddonLoaded = C_AddOns.IsAddOnLoaded
 --- Resolves through hostAddon for sub-modules (e.g. Dragon Riding lives inside
 --- the BlizzardSkin addon, so its folder is never a loadable addon on its own).
 --- Unknown folders fall back to a direct check so behaviour is unchanged.
-function CludesUI.IsModuleAddonLoaded(moduleFolder)
+function CUI.IsModuleAddonLoaded(moduleFolder)
     return IsAddonLoaded(FOLDER_HOST[moduleFolder] or moduleFolder)
 end
 
@@ -1030,8 +1030,8 @@ local function SnapshotUnlockLayout()
         return nil
     end
     local ba, bwm, bhm, bwx, bhx
-    if CludesUI.SpecOverrides_UnlockBaselineLinks then
-        ba, bwm, bhm, bwx, bhx = CludesUI.SpecOverrides_UnlockBaselineLinks()
+    if CUI.SpecOverrides_UnlockBaselineLinks then
+        ba, bwm, bhm, bwx, bhx = CUI.SpecOverrides_UnlockBaselineLinks()
     end
     local layoutSnap = {
         anchors = CopyDeep(ba or CludesUIDB.unlockAnchors or {}),
@@ -1130,7 +1130,7 @@ local function RepointAllDBs(profName)
     -- members of the module's group; a profile outside the group never pushes into it.
     local sm = CludesUIDB.syncedModules
     if sm then
-        local registryTbl = CludesUI.Lite and CludesUI.Lite._dbRegistry
+        local registryTbl = CUI.Lite and CUI.Lite._dbRegistry
         local outName = registryTbl and registryTbl[1] and registryTbl[1]._profileName or "Default"
         local outProf = CludesUIDB.profiles[outName]
         if outProf and outProf.addons and outName ~= profName then
@@ -1144,8 +1144,8 @@ local function RepointAllDBs(profName)
                     -- Override-owned settings never sync: merge both profiles'
                     -- override-entry paths into the static exclusions
                     -- (fail-open -- a derive error keeps the static set).
-                    local exclusions = CludesUI._syncExclusions and CludesUI._syncExclusions[moduleFolder]
-                    local exFn = CludesUI._SyncExclusionsWithOverrides
+                    local exclusions = CUI._syncExclusions and CUI._syncExclusions[moduleFolder]
+                    local exFn = CUI._SyncExclusionsWithOverrides
                     if exFn then
                         local success, m = pcall(exFn, moduleFolder, exclusions, outProf, profileRec)
                         if success and m then
@@ -1158,18 +1158,18 @@ local function RepointAllDBs(profName)
                     elseif type(destination) == "table" then
                         -- Overlay leaf-by-leaf so excluded keys (including
                         -- nested and wildcard paths) keep the dest's values
-                        CludesUI._SelectiveOverlay(outProf.addons[moduleFolder], destination, exclusions, CopyDeep)
+                        CUI._SelectiveOverlay(outProf.addons[moduleFolder], destination, exclusions, CopyDeep)
                     else
                         -- First sync to this profile: no dest values to preserve
                         profileRec.addons[moduleFolder] =
-                            CludesUI._SelectiveCopy(outProf.addons[moduleFolder], exclusions)
+                            CUI._SelectiveCopy(outProf.addons[moduleFolder], exclusions)
                     end
                 end
             end
         end
     end
 
-    local registryTbl = CludesUI.Lite and CludesUI.Lite._dbRegistry
+    local registryTbl = CUI.Lite and CUI.Lite._dbRegistry
     if not registryTbl then
         return
     end
@@ -1183,7 +1183,7 @@ local function RepointAllDBs(profName)
             saved._profileName = profName
             -- Re-merge defaults so new profile has all keys
             if saved._profileDefaults then
-                CludesUI.Lite.DeepMergeDefaults(saved.profile, saved._profileDefaults)
+                CUI.Lite.DeepMergeDefaults(saved.profile, saved._profileDefaults)
             end
         end
     end
@@ -1213,23 +1213,23 @@ local function RepointAllDBs(profName)
         -- live), so live now holds the baseline: reset the incoming profile's
         -- active-layer pointer to match. SpecOverrides_ApplyUnlock re-applies
         -- the right group layer for the incoming spec right after.
-        if CludesUI.SpecOverrides_UnlockResetActive then
-            CludesUI.SpecOverrides_UnlockResetActive(profileRec)
+        if CUI.SpecOverrides_UnlockResetActive then
+            CUI.SpecOverrides_UnlockResetActive(profileRec)
         end
         -- Buff Manager forks have NO baseline snapshot restore (the RF addon
         -- profile is the live data and travels with the blob), so their
         -- pointer stays consistent -- only orphan pointers are healed.
-        if CludesUI.SpecOverrides_BmResetActive then
-            CludesUI.SpecOverrides_BmResetActive(profileRec)
+        if CUI.SpecOverrides_BmResetActive then
+            CUI.SpecOverrides_BmResetActive(profileRec)
         end
-        if CludesUI.SpecOverrides_DmResetActive then
-            CludesUI.SpecOverrides_DmResetActive(profileRec)
+        if CUI.SpecOverrides_DmResetActive then
+            CUI.SpecOverrides_DmResetActive(profileRec)
         end
         -- Tracking Bar link entries in the snapshot are stale copies of whichever spec
         -- last saved unlock mode -- TBB links are per-spec (CDM-owned buckets).
         -- Re-assert the active spec's own entries over the freshly restored stores.
-        if CludesUI._TBBRestoreUnlockLinks then
-            CludesUI._TBBRestoreUnlockLinks()
+        if CUI._TBBRestoreUnlockLinks then
+            CUI._TBBRestoreUnlockLinks()
         end
     end
     -- (Castbar anchor defaults for brand-new profiles are seeded into the
@@ -1238,7 +1238,7 @@ local function RepointAllDBs(profName)
     -- deliberate un-anchor the next time the profile is applied.)
     -- Restore fonts and custom colors from the profile
     if profileRec.fonts then
-        local fontsDB = CludesUI.GetFontsDB()
+        local fontsDB = CUI.GetFontsDB()
         for key in pairs(fontsDB) do
             fontsDB[key] = nil
         end
@@ -1246,13 +1246,13 @@ local function RepointAllDBs(profName)
             fontsDB[key] = CopyDeep(val)
         end
         if fontsDB.global == nil then
-            fontsDB.global = CludesUI.DEFAULT_FONT_NAME
+            fontsDB.global = CUI.DEFAULT_FONT_NAME
         end
         if fontsDB.outlineMode == nil then
             fontsDB.outlineMode = "shadow"
         end
         -- The fonts DB was just rewritten in place; drop the resolution cache.
-        CludesUI.InvalidateFontCache()
+        CUI.InvalidateFontCache()
     end
     -- Custom colors: a section with "Apply to All Profiles" ON (default) keeps its
     -- shared palette whatever the active profile, so nothing to re-apply on switch.
@@ -1261,28 +1261,28 @@ local function RepointAllDBs(profName)
     -- right tables LIVE (edits write straight to the profiles' own customColors --
     -- never a wipe/restore, which is what once let a combat-end spec switch reset
     -- colours). ApplyColorsToOUF self-guards combat on its action-bar branch.
-    if CludesUIDB and CludesUI.AnyColorSectionPerProfile() and CludesUI.ApplyColorsToOUF then
-        CludesUI.ApplyColorsToOUF()
+    if CludesUIDB and CUI.AnyColorSectionPerProfile() and CUI.ApplyColorsToOUF then
+        CUI.ApplyColorsToOUF()
     end
     -- Dark Mode settings are ALWAYS per-profile, so the active profile's dark
     -- palette + darken amounts change on every repoint. Re-read and repaint.
     -- RefreshDarkMode() also runs ApplyColorsToOUF, so the (possibly different)
     -- darken propagates to class/power colours even in global colour mode.
-    CludesUI.RefreshDarkMode()
+    CUI.RefreshDarkMode()
     -- Number Format is per-profile too: drop the resolved configs and redraw.
-    CludesUI.RefreshNumberFormat()
+    CUI.RefreshNumberFormat()
     -- Sidebar sync icons key off the ACTIVE profile's group membership;
     -- re-evaluate them on every repoint (switch/create/delete/rename/import)
-    if CludesUI._syncRefreshFns then
-        for _, func in pairs(CludesUI._syncRefreshFns) do
+    if CUI._syncRefreshFns then
+        for _, func in pairs(CUI._syncRefreshFns) do
             func()
         end
     end
     -- The account-wide window skins follow the whole-UI look of the profile
     -- now active (Blizz UI Enhanced; nil while that module is disabled).
     -- Skins install at load: the switch sites offer the reload.
-    if CludesUI.ReconcileWindowSkinLook then
-        CludesUI.ReconcileWindowSkinLook()
+    if CUI.ReconcileWindowSkinLook then
+        CUI.ReconcileWindowSkinLook()
     end
 end
 
@@ -1310,7 +1310,7 @@ local function ResolveSpecProfile()
         return nil
     end
 
-    local characterKey = CludesUI.CharKey(" - ", CludesUIDB.lastSpecByChar)
+    local characterKey = CUI.CharKey(" - ", CludesUIDB.lastSpecByChar)
     if not CludesUIDB.lastSpecByChar then
         CludesUIDB.lastSpecByChar = {}
     end
@@ -1336,7 +1336,7 @@ local function ResolveSpecProfile()
 
     -- SpecFor: WoW Forever reports one spec per class; its class counts as
     -- every retail spec (the first assigned one in class order wins).
-    local destProfile = specProfiles[CludesUI.SpecFor(resolvedSpec, CludesUI.SpecHasEntry, specProfiles)]
+    local destProfile = specProfiles[CUI.SpecFor(resolvedSpec, CUI.SpecHasEntry, specProfiles)]
     if not destProfile then
         return nil
     end
@@ -1365,12 +1365,12 @@ end
 --- Called by CludesUI_Lite just before child addon OnEnable calls fire.
 --- Uses ResolveSpecProfile() to determine the correct profile, then
 --- re-points all db.profile references via RepointAllDBs.
-function CludesUI.PreSeedSpecProfile()
+function CUI.PreSeedSpecProfile()
     local destProfile, resolvedSpec = ResolveSpecProfile()
     if not destProfile then
         -- No spec assignment resolved; lock auto-save if spec profiles exist
         if CludesUIDB and CludesUIDB.specProfiles and next(CludesUIDB.specProfiles) then
-            CludesUI._profileSaveLocked = true
+            CUI._profileSaveLocked = true
         end
         return
     end
@@ -1380,15 +1380,15 @@ function CludesUI.PreSeedSpecProfile()
     StampUnlockLayoutIfMissing(CludesUIDB.profiles and CludesUIDB.profiles[destProfile])
     CludesUIDB.activeProfile = destProfile
     RepointAllDBs(destProfile)
-    CludesUI._preSeedComplete = true
+    CUI._preSeedComplete = true
 end
 
 --- Get the live profile table for an addon.
 --- All addons use _dbRegistry (which points into
 --- CludesUIDB.profiles[active].addons[folder]).
 local function GetAddonProfile(record)
-    if CludesUI.Lite and CludesUI.Lite._dbRegistry then
-        for _, saved in ipairs(CludesUI.Lite._dbRegistry) do
+    if CUI.Lite and CUI.Lite._dbRegistry then
+        for _, saved in ipairs(CUI.Lite._dbRegistry) do
             if saved.folder == record.folder then
                 return saved.profile
             end
@@ -1398,14 +1398,14 @@ local function GetAddonProfile(record)
 end
 
 --- Snapshot the current state of all loaded addons into a profile data table
-function CludesUI.SnapshotAllAddons()
+function CUI.SnapshotAllAddons()
     local body = { addons = {} }
     for _, record in ipairs(ADDON_DB_MAP) do
         -- Host-aware: Dragon Riding's folder is not a loadable addon (it lives
         -- inside BlizzardSkin), so a bare IsAddonLoaded(entry.folder) would drop
         -- it from every full-profile export. IsModuleAddonLoaded resolves through
         -- the hostAddon, matching the per-addon export path (ExportProfile).
-        if CludesUI.IsModuleAddonLoaded(record.folder) then
+        if CUI.IsModuleAddonLoaded(record.folder) then
             local activeProfile = GetAddonProfile(record)
             if activeProfile then
                 body.addons[record.folder] = CopyDeep(activeProfile)
@@ -1413,16 +1413,16 @@ function CludesUI.SnapshotAllAddons()
         end
     end
     -- Include global font and color settings
-    body.fonts = CopyDeep(CludesUI.GetFontsDB())
-    local cc = CludesUI.GetCustomColorsDB()
+    body.fonts = CopyDeep(CUI.GetFontsDB())
+    local cc = CUI.GetCustomColorsDB()
     body.customColors = CopyDeep(cc)
     -- Dark Mode palette + darken amounts (always the active profile's own).
-    body.darkMode = CopyDeep(CludesUI.GetDarkModeDB())
-    body.numberFormat = CopyDeep(CludesUI.GetNumberFormatDB())
+    body.darkMode = CopyDeep(CUI.GetDarkModeDB())
+    body.numberFormat = CopyDeep(CUI.GetNumberFormatDB())
     -- Spec Overrides ride with the profile (freshen the current spec's stored
     -- values from live first so exports never lag recent edits).
-    if CludesUI.SpecOverrides_HarvestCurrent then
-        CludesUI.SpecOverrides_HarvestCurrent()
+    if CUI.SpecOverrides_HarvestCurrent then
+        CUI.SpecOverrides_HarvestCurrent()
     end
     do
         local profileTbl = CludesUIDB
@@ -1470,7 +1470,7 @@ function CludesUI.SnapshotAllAddons()
         -- UI accent color (per-profile). Serialize the RESOLVED accent so an
         -- imported profile reproduces the source's visible accent regardless of
         -- whether it came from an explicit per-profile value or the fallback.
-        local u, red, green, blue = CludesUI.ResolveProfileAccent(CludesUI.GetActiveProfileData())
+        local u, red, green, blue = CUI.ResolveProfileAccent(CUI.GetActiveProfileData())
         -- Serialize useClass explicitly (false included) so an imported custom
         -- profile reports the right mode to the swatch on a character whose
         -- global useClassAccentColor is true.
@@ -1482,7 +1482,7 @@ end
 --- Apply imported profile data into the live db.profile tables.
 --- Used by import to write external data into the active profile.
 --- For normal profile switching, use SwitchProfile (which calls RepointAllDBs).
-function CludesUI.ApplyProfileData(profileRec)
+function CUI.ApplyProfileData(profileRec)
     if not profileRec or not profileRec.addons then
         return
     end
@@ -1490,8 +1490,8 @@ function CludesUI.ApplyProfileData(profileRec)
     -- An open unlock session's snapshots and pending edits belong to the
     -- OUTGOING data about to be replaced: discard-close before the wipe
     -- (mirrors SwitchProfile / spec changes / condition flips).
-    if CludesUI._unlockModeSessionActive and CludesUI.ForceCloseUnlockDiscard then
-        CludesUI.ForceCloseUnlockDiscard()
+    if CUI._unlockModeSessionActive and CUI.ForceCloseUnlockDiscard then
+        CUI.ForceCloseUnlockDiscard()
     end
 
     -- Any open editing-as session (spec group / conditional / Default view) must close
@@ -1499,14 +1499,14 @@ function CludesUI.ApplyProfileData(profileRec)
     -- outgoing store, and the post-apply establish (Conditions_MarkStale + Recheck)
     -- refuses to run under a live session, which would strand the incoming profile
     -- un-overlaid ("bricked") until the next zone change.
-    if CludesUI.SpecOverrides_CloseEditSessions then
-        CludesUI.SpecOverrides_CloseEditSessions()
+    if CUI.SpecOverrides_CloseEditSessions then
+        CUI.SpecOverrides_CloseEditSessions()
     end
 
     -- Build a folder -> db lookup from the Lite registry
     local dbByFolder = {}
-    if CludesUI.Lite and CludesUI.Lite._dbRegistry then
-        for _, saved in ipairs(CludesUI.Lite._dbRegistry) do
+    if CUI.Lite and CUI.Lite._dbRegistry then
+        for _, saved in ipairs(CUI.Lite._dbRegistry) do
             if saved.folder then
                 dbByFolder[saved.folder] = saved
             end
@@ -1680,7 +1680,7 @@ function CludesUI.ApplyProfileData(profileRec)
                     end
                 end
                 if saved._profileDefaults then
-                    CludesUI.Lite.DeepMergeDefaults(activeProfile, saved._profileDefaults)
+                    CUI.Lite.DeepMergeDefaults(activeProfile, saved._profileDefaults)
                 end
                 -- Ensure per-unit bg colors are never nil after import
                 if record.folder == "CludesUIUnitFrames" then
@@ -1703,7 +1703,7 @@ function CludesUI.ApplyProfileData(profileRec)
     -- Custom colours are getter-redirected (GetCustomColorsDB) and must NEVER be
     -- wiped/restored here (see the custom-colours global-mode design).
     if profileRec.fonts then
-        local fontsDB = CludesUI.GetFontsDB()
+        local fontsDB = CUI.GetFontsDB()
         for key in pairs(fontsDB) do
             fontsDB[key] = nil
         end
@@ -1711,13 +1711,13 @@ function CludesUI.ApplyProfileData(profileRec)
             fontsDB[key] = CopyDeep(val)
         end
         if fontsDB.global == nil then
-            fontsDB.global = CludesUI.DEFAULT_FONT_NAME
+            fontsDB.global = CUI.DEFAULT_FONT_NAME
         end
         if fontsDB.outlineMode == nil then
             fontsDB.outlineMode = "shadow"
         end
         -- The fonts DB was just rewritten in place; drop the resolution cache.
-        CludesUI.InvalidateFontCache()
+        CUI.InvalidateFontCache()
     end
     -- Custom colors are GLOBAL appearance, not per-profile: never wipe or restore
     -- CludesUIDB.customColors from a profile snapshot. (See the detailed note in the
@@ -1738,8 +1738,8 @@ function CludesUI.ApplyProfileData(profileRec)
             -- whichever spec last saved unlock mode -- TBB links are
             -- per-spec (CDM-owned buckets). Re-assert the active spec's own
             -- entries over the freshly restored stores.
-            if CludesUI._TBBRestoreUnlockLinks then
-                CludesUI._TBBRestoreUnlockLinks()
+            if CUI._TBBRestoreUnlockLinks then
+                CUI._TBBRestoreUnlockLinks()
             end
         end
         -- If profile predates unlockLayout, leave live data untouched
@@ -1749,7 +1749,7 @@ function CludesUI.ApplyProfileData(profileRec)
     -- fonts/colors applied above. activeProfile is already repointed before
     -- ApplyProfileData runs, so this reads the correct profile's cuiAccent and
     -- falls back to the frozen global root when none is set.
-    CludesUI.RefreshAccent()
+    CUI.RefreshAccent()
 end
 
 --- Per-module refresh steps for RefreshAllAddons, in load-bearing order.
@@ -1769,7 +1769,7 @@ local REFRESH_ADDON_STEPS = {
     -- will detect the spec key mismatch and rebuild with the correct spec.
     -- Running it here would race with that rebuild.
     function()
-        if not CludesUI._specProfileSwitching then
+        if not CUI._specProfileSwitching then
             if _G._CUCME_LoadSpecProfile and _G._CUCME_GetCurrentSpecKey then
                 local curKey = _G._CUCME_GetCurrentSpecKey()
                 if curKey then
@@ -1798,19 +1798,19 @@ local REFRESH_ADDON_STEPS = {
         if _G._CUCL_ApplyCastCircle then
             _G._CUCL_ApplyCastCircle()
         end
-        if CludesUI._applyCrosshair then
-            CludesUI._applyCrosshair()
+        if CUI._applyCrosshair then
+            CUI._applyCrosshair()
         end
-        if CludesUI._applySelfCombatText then
-            CludesUI._applySelfCombatText()
+        if CUI._applySelfCombatText then
+            CUI._applySelfCombatText()
         end
-        if CludesUI._applyUpgradeTooltips then
-            CludesUI._applyUpgradeTooltips()
+        if CUI._applyUpgradeTooltips then
+            CUI._applyUpgradeTooltips()
         end
-        if CludesUI._applyFPSDisplay then
-            CludesUI._applyFPSDisplay()
-        elseif CludesUI._applySecondaryStats then
-            CludesUI._applySecondaryStats()
+        if CUI._applyFPSDisplay then
+            CUI._applyFPSDisplay()
+        elseif CUI._applySecondaryStats then
+            CUI._applySecondaryStats()
         end
     end,
     -- QoL Battle Res and Bloodlust (enable state, visibility, position;
@@ -1935,7 +1935,7 @@ local REFRESH_ADDON_STEPS = {
     end,
     -- Global class/power colors (updates oUF, nameplates, raid frames)
     function()
-        CludesUI.ApplyColorsToOUF()
+        CUI.ApplyColorsToOUF()
     end,
     -- Re-register unlock elements for all modules whose bar sets can
     -- differ between profiles. Without this, _applySavedPositions uses
@@ -1981,14 +1981,14 @@ local function RefreshAllAddonsTail()
     -- switches (manual switch from options). This also clears _abAnchorSuppressed
     -- (inside _applySavedPositions), so the suppression window spans every
     -- module step regardless of driver.
-    if not CludesUI._specProfileSwitching then
+    if not CUI._specProfileSwitching then
         C_Timer.After(0, function()
             C_Timer.After(0, function()
-                if CludesUI._applySavedPositions then
-                    CludesUI._applySavedPositions()
+                if CUI._applySavedPositions then
+                    CUI._applySavedPositions()
                 end
-                if CludesUI.ResyncAnchorOffsets then
-                    CludesUI.ResyncAnchorOffsets()
+                if CUI.ResyncAnchorOffsets then
+                    CUI.ResyncAnchorOffsets()
                 end
             end)
         end)
@@ -1999,16 +1999,16 @@ local function RefreshAllAddonsTail()
     -- rebuilds fresh on next view, and rebuild the one on screen now. The profile
     -- DROPDOWN switch already does this inline; routing it through here also
     -- covers profile keybind + spec-driven auto-swaps, which only call us.
-    CludesUI:InvalidatePageCache()
-    if CludesUI:IsShown() and CludesUI.RefreshPage then
-        CludesUI:RefreshPage(true)
+    CUI:InvalidatePageCache()
+    if CUI:IsShown() and CUI.RefreshPage then
+        CUI:RefreshPage(true)
     end
     -- Conditional overrides: a profile apply swaps every store wholesale, so
     -- the engine's applied pointer refers to the OLD profile's groups. Reset
     -- it and re-establish the overlay against the incoming profile.
-    if CludesUI.Conditions_MarkStale then
-        CludesUI.Conditions_MarkStale()
-        CludesUI.Conditions_Recheck()
+    if CUI.Conditions_MarkStale then
+        CUI.Conditions_MarkStale()
+        CUI.Conditions_Recheck()
     end
     -- If CDM is loaded, it calls OnSpecSwitchComplete from ProcessSpecChange
     -- after its SPELLS_CHANGED rebuild finishes. If CDM is NOT loaded,
@@ -2017,7 +2017,7 @@ local function RefreshAllAddonsTail()
         and C_AddOns.IsAddOnLoaded
         and C_AddOns.IsAddOnLoaded("CludesUICooldownManager")
     if not cdmLoaded then
-        CludesUI.OnSpecSwitchComplete()
+        CUI.OnSpecSwitchComplete()
     end
 end
 
@@ -2030,7 +2030,7 @@ end
 --- switches must stay synchronous, because CDM's SPELLS_CHANGED pipeline
 --- calls OnSpecSwitchComplete on its own clock and could otherwise apply
 --- saved positions mid-drain, before some modules have re-applied.
-function CludesUI.RefreshAllAddons(budgeted)
+function CUI.RefreshAllAddons(budgeted)
     -- Spec Overrides: write the current spec's override values into the live
     -- profile FIRST, so every module refresh below picks them up. This makes
     -- profile swaps and imports override-correct without their own pass.
@@ -2039,15 +2039,15 @@ function CludesUI.RefreshAllAddons(budgeted)
     -- overlays may already be live and re-banking would poison defaults.)
     -- The whole preamble stays in the caller's execution in both drivers:
     -- these are cheap flag/value writes that later steps depend on.
-    if CludesUI.SpecOverrides_ApplyValues then
-        CludesUI.SpecOverrides_ApplyValues()
+    if CUI.SpecOverrides_ApplyValues then
+        CUI.SpecOverrides_ApplyValues()
     end
     -- Suppress stale anchor moves on AB bars during the rebuild phase. LayoutBar
     -- positions them from the new profile's barPositions; resize hooks would reposition
     -- them with old-profile offsets (1-frame blink). Separate flag from
     -- _applyingSavedPositions so CDM's early-return in ApplyAnchorPosition (which
     -- checks _applyingSavedPositions) isn't triggered prematurely by the wider window.
-    CludesUI._abAnchorSuppressed = true
+    CUI._abAnchorSuppressed = true
     -- Phase 3: RefreshAllAddons runs on a real profile apply (swap/import) and on
     -- a per-spec-profile spec switch -- both load a NEW cdmBarPositions table with
     -- its own saved edges + follow baselines, so clear the follow-ready flag.
@@ -2055,15 +2055,15 @@ function CludesUI.RefreshAllAddons(budgeted)
     -- (delta 0) until that profile's chain settles and the settle debounce re-arms
     -- follow. A SHARED-profile spec change does NOT call RefreshAllAddons, so the
     -- flag stays set there and the bars track the sliding target smoothly.
-    CludesUI._anchorFollowReady = nil
+    CUI._anchorFollowReady = nil
     -- Re-resolve + apply the UI accent color for the now-active profile BEFORE
     -- child modules refresh, since several re-read GetAccentColor() during their
     -- own apply (chat, cursor, mythic timer, glows, borders). Per-profile accent
     -- falls back to the frozen global root, so swapping profiles never changes
     -- the accent for users who never set a per-profile one.
-    CludesUI.RefreshAccent()
-    if budgeted and CludesUI.RunBudgeted then
-        CludesUI.RunBudgeted(REFRESH_ADDON_STEPS, 8, RefreshAllAddonsTail)
+    CUI.RefreshAccent()
+    if budgeted and CUI.RunBudgeted then
+        CUI.RunBudgeted(REFRESH_ADDON_STEPS, 8, RefreshAllAddonsTail)
     else
         for i = 1, #REFRESH_ADDON_STEPS do
             REFRESH_ADDON_STEPS[i]()
@@ -2076,28 +2076,28 @@ end
 --- switch rebuild is fully settled. Clears the suppression flag and
 --- re-applies width/height matches so all matched frames pick up
 --- the new profile dimensions.
-function CludesUI.OnSpecSwitchComplete()
-    CludesUI._specProfileSwitching = false
+function CUI.OnSpecSwitchComplete()
+    CUI._specProfileSwitching = false
     -- Unlock spec-overrides: perform any deferred generic-element position
     -- writes and the override settle BEFORE the matches/positions/resync
     -- below, so this pass lays out against the final swapped stores.
-    if CludesUI.SpecOverrides_FlushUnlock then
-        CludesUI.SpecOverrides_FlushUnlock()
+    if CUI.SpecOverrides_FlushUnlock then
+        CUI.SpecOverrides_FlushUnlock()
     end
-    if CludesUI.ApplyAllWidthHeightMatches then
-        CludesUI.ApplyAllWidthHeightMatches()
+    if CUI.ApplyAllWidthHeightMatches then
+        CUI.ApplyAllWidthHeightMatches()
     end
-    if CludesUI._applySavedPositions then
-        CludesUI._applySavedPositions()
+    if CUI._applySavedPositions then
+        CUI._applySavedPositions()
     end
-    if CludesUI.ResyncAnchorOffsets then
-        CludesUI.ResyncAnchorOffsets()
+    if CUI.ResyncAnchorOffsets then
+        CUI.ResyncAnchorOffsets()
     end
     -- A conditional establish/flip that found the spec pipeline mid-flight
     -- deferred itself (the transition handler returns false while busy).
     -- The pipeline is settled now -- resolve it. No-op when nothing changed.
-    if CludesUI.Conditions_Recheck then
-        CludesUI.Conditions_Recheck()
+    if CUI.Conditions_Recheck then
+        CUI.Conditions_Recheck()
     end
 end
 
@@ -2127,19 +2127,19 @@ local function EnsureProfileBindBtn(profName)
     local button = CreateFrame("Button", "CludesUIProfileBind_" .. safeName, UIParent)
     button:Hide()
     button:SetScript("OnClick", function()
-        local isActive = CludesUI.GetActiveProfileName()
+        local isActive = CUI.GetActiveProfileName()
         if isActive == profName then
             return
         end
-        local _, profileNames = CludesUI.GetProfileList()
-        local fontWillChange = CludesUI.ProfileChangesFont(profileNames and profileNames[profName])
-        local skinsWillChange = CludesUI.ProfileChangesWindowSkins(profileNames and profileNames[profName])
-        local styleWillChange = CludesUI.ProfileChangesStyle(profileNames and profileNames[profName])
-        CludesUI.SwitchProfile(profName)
+        local _, profileNames = CUI.GetProfileList()
+        local fontWillChange = CUI.ProfileChangesFont(profileNames and profileNames[profName])
+        local skinsWillChange = CUI.ProfileChangesWindowSkins(profileNames and profileNames[profName])
+        local styleWillChange = CUI.ProfileChangesStyle(profileNames and profileNames[profName])
+        CUI.SwitchProfile(profName)
         -- true = budgeted: manual swap site, watchdog-sliced module refresh.
-        CludesUI.RefreshAllAddons(true)
+        CUI.RefreshAllAddons(true)
         if fontWillChange or skinsWillChange or styleWillChange then
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = "Reload Required",
                 message = fontWillChange and "Font changed. A UI reload is needed to apply the new font."
                     or skinsWillChange and "Window skins changed for this profile. A UI reload is needed to apply them."
@@ -2149,14 +2149,14 @@ local function EnsureProfileBindBtn(profName)
                 reload = true,
             })
         else
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end
     end)
     _profileBindBtns[profName] = button
     return button
 end
 
-function CludesUI.SetProfileKeybind(profName, entryKey)
+function CUI.SetProfileKeybind(profName, entryKey)
     local bindings = GetProfileKeybinds()
     -- Clear old binding for this profile
     local oldKey = bindings[profName]
@@ -2172,13 +2172,13 @@ function CludesUI.SetProfileKeybind(profName, entryKey)
     end
 end
 
-function CludesUI.GetProfileKeybind(profName)
+function CUI.GetProfileKeybind(profName)
     local bindings = GetProfileKeybinds()
     return bindings[profName]
 end
 
 --- Called on login to restore all saved profile keybinds
-function CludesUI.RestoreProfileKeybinds()
+function CUI.RestoreProfileKeybinds()
     local bindings = GetProfileKeybinds()
     for profName, entryKey in pairs(bindings) do
         if entryKey then
@@ -2189,7 +2189,7 @@ function CludesUI.RestoreProfileKeybinds()
 end
 
 --- Update keybind references when a profile is renamed
-function CludesUI.OnProfileRenamed(previousName, nextName)
+function CUI.OnProfileRenamed(previousName, nextName)
     local bindings = GetProfileKeybinds()
     local entryKey = bindings[previousName]
     if entryKey then
@@ -2206,7 +2206,7 @@ function CludesUI.OnProfileRenamed(previousName, nextName)
 end
 
 --- Clean up keybind when a profile is deleted
-function CludesUI.OnProfileDeleted(profName)
+function CUI.OnProfileDeleted(profName)
     local bindings = GetProfileKeybinds()
     if bindings[profName] then
         local button = _profileBindBtns[profName]
@@ -2220,14 +2220,14 @@ end
 
 --- Returns true if applying profileData would change the global font or outline mode.
 --- Used to decide whether to show a reload popup after a profile switch.
-function CludesUI.ProfileChangesFont(profileRec)
+function CUI.ProfileChangesFont(profileRec)
     if not profileRec or not profileRec.fonts then
         return false
     end
-    local current = CludesUI.GetFontsDB()
-    local curFont = current.global or CludesUI.DEFAULT_FONT_NAME
+    local current = CUI.GetFontsDB()
+    local curFont = current.global or CUI.DEFAULT_FONT_NAME
     local curOutline = current.outlineMode or "shadow"
-    local newFont = profileRec.fonts.global or CludesUI.DEFAULT_FONT_NAME
+    local newFont = profileRec.fonts.global or CUI.DEFAULT_FONT_NAME
     local newOutline = profileRec.fonts.outlineMode or "shadow"
     -- "none" and "shadow" are both drop-shadow (no outline) -- treat as identical
     if curOutline == "none" then
@@ -2244,11 +2244,11 @@ end
 --- so a crossing needs a UI reload to fully apply -- callers pair this with
 --- the same reload popup as the font check above. Must be called BEFORE
 --- the switch (compares the CURRENT active profile root against the target).
-function CludesUI.ProfileChangesWindowSkins(profileRec)
+function CUI.ProfileChangesWindowSkins(profileRec)
     if type(profileRec) ~= "table" then
         return false
     end
-    local current = CludesUI.GetActiveProfileData()
+    local current = CUI.GetActiveProfileData()
     local a = (current and current.disableWindowSkins) and true or false
     local b = profileRec.disableWindowSkins and true or false
     if a ~= b then
@@ -2257,7 +2257,7 @@ function CludesUI.ProfileChangesWindowSkins(profileRec)
     -- The whole-UI window look (Blizz UI Enhanced; nil while it is disabled):
     -- the switch swaps the account's window skins to the incoming profile's
     -- look, which only installs at the next load.
-    local lookOf = CludesUI.ProfileWindowSkinLook
+    local lookOf = CUI.ProfileWindowSkinLook
     if lookOf then
         local incoming = lookOf(profileRec)
         local slots = CludesUIDB and CludesUIDB.windowSkinStyleSlots
@@ -2424,7 +2424,7 @@ local function StyleKeyOfFlags(profile, f)
         return "classic"
     end
     if profile[f.key] then
-        if f.forever and CludesUI.IS_FOREVER and profile[f.forever] then
+        if f.forever and CUI.IS_FOREVER and profile[f.forever] then
             return "forever"
         end
         return "blizzard"
@@ -2446,7 +2446,7 @@ local function RenderedStyleOf(f, moduleNames)
             current = "cui"
         end
         -- The WoW Forever variant renders under a "blizzard" latch.
-        if current == "blizzard" and f.foreverActive and CludesUI.IS_FOREVER then
+        if current == "blizzard" and f.foreverActive and CUI.IS_FOREVER then
             local ff = moduleNames[f.foreverActive]
             if ff and ff() then
                 current = "forever"
@@ -2461,17 +2461,17 @@ local function RenderedStyleOf(f, moduleNames)
     end
     return nil
 end
-function CludesUI.ProfileChangesStyle(profileRec)
+function CUI.ProfileChangesStyle(profileRec)
     if type(profileRec) ~= "table" or type(profileRec.addons) ~= "table" then
         return false
     end
-    local registryTbl = CludesUI._ModuleNS
+    local registryTbl = CUI._ModuleNS
     if not registryTbl then
         return false
     end
     -- Bags' WoW Forever style: the incoming profile's own Bags pick, else the
     -- look most of its modules use (BagsForeverWanted).
-    local bags = CludesUI.IS_FOREVER and registryTbl.CludesUIBags
+    local bags = CUI.IS_FOREVER and registryTbl.CludesUIBags
     if bags and bags.BagsForeverWanted then
         local incoming = profileRec.addons.CludesUIBags
         local wanted =
@@ -2483,7 +2483,7 @@ function CludesUI.ProfileChangesStyle(profileRec)
     for i = 1, #STYLE_FLAGS do
         local f = STYLE_FLAGS[i]
         local moduleNames = registryTbl[f.folder]
-        if moduleNames and not (f.retailOnly and CludesUI.IS_FOREVER) then
+        if moduleNames and not (f.retailOnly and CUI.IS_FOREVER) then
             local current = RenderedStyleOf(f, moduleNames)
             if current ~= nil then
                 local incoming = profileRec.addons[f.data or f.folder]
@@ -2511,8 +2511,8 @@ end
 --- surface with no variant of its own draws Blizzard Style under either
 --- Blizzard look, so it fits both; with only such surfaces loaded, the
 --- Forever flag the look switch sets beside the Blizzard one tells them apart.
-function CludesUI.RenderedLook()
-    local registryTbl = CludesUI._ModuleNS
+function CUI.RenderedLook()
+    local registryTbl = CUI._ModuleNS
     if not registryTbl then
         return nil
     end
@@ -2520,9 +2520,9 @@ function CludesUI.RenderedLook()
     for i = 1, #STYLE_FLAGS do
         local f = STYLE_FLAGS[i]
         local moduleNames = registryTbl[f.folder]
-        if moduleNames and not (f.retailOnly and CludesUI.IS_FOREVER) then
+        if moduleNames and not (f.retailOnly and CUI.IS_FOREVER) then
             local current = RenderedStyleOf(f, moduleNames)
-            if current == "blizzard" and not f.forever and CludesUI.IS_FOREVER then
+            if current == "blizzard" and not f.forever and CUI.IS_FOREVER then
                 eitherBlizz = f
             elseif current ~= nil then
                 if style == nil then
@@ -2536,7 +2536,7 @@ function CludesUI.RenderedLook()
     if eitherBlizz then
         if style == nil then
             local f = eitherBlizz
-            local p = CludesUI.GetActiveProfileData()
+            local p = CUI.GetActiveProfileData()
             local tbl = p and type(p.addons) == "table" and p.addons[f.data or f.folder] or nil
             if f.sub and type(tbl) == "table" then
                 tbl = tbl[f.sub]
@@ -2560,15 +2560,15 @@ end
 --- RenderedLook reads it); the Classic flag wins. Bags' WoW Forever style
 --- follows it while the profile has no Bags style picked. false off the Forever
 --- client and with no loaded surface. Reads settings only.
-function CludesUI.ForeverLookMajority(addonMap)
-    if not CludesUI.IS_FOREVER then
+function CUI.ForeverLookMajority(addonMap)
+    if not CUI.IS_FOREVER then
         return false
     end
     if addonMap == nil then
-        local p = CludesUI.GetActiveProfileData()
+        local p = CUI.GetActiveProfileData()
         addonMap = p and p.addons
     end
-    local registryTbl = CludesUI._ModuleNS
+    local registryTbl = CUI._ModuleNS
     if type(addonMap) ~= "table" or not registryTbl then
         return false
     end
@@ -2656,8 +2656,8 @@ end
 --- Stamps the client an export string is made on at the payload root:
 --- "forever" on WoW Forever, nothing on retail, so every older string reads
 --- as retail. Transport only: no import ever stores it in a profile.
-function CludesUI.StampPayloadClient(bundle)
-    if CludesUI.IS_FOREVER then
+function CUI.StampPayloadClient(bundle)
+    if CUI.IS_FOREVER then
         bundle.client = "forever"
     end
     return bundle
@@ -2666,21 +2666,21 @@ end
 --- True when a decoded payload was made on the other client (retail vs WoW
 --- Forever). Cooldown Manager spell data from the other client is never
 --- imported: the import runs exactly as for a string that carries none.
-function CludesUI.PayloadFromOtherClient(bundle)
+function CUI.PayloadFromOtherClient(bundle)
     local from = type(bundle) == "table" and bundle.client or nil
-    return (from or "retail") ~= (CludesUI.IS_FOREVER and "forever" or "retail")
+    return (from or "retail") ~= (CUI.IS_FOREVER and "forever" or "retail")
 end
 
 --- The reload prompt text after an import, plus one line when the string
 --- carried the other client's Cooldown Manager spells (not imported).
-function CludesUI.ImportReloadMessage(bundle)
-    local msg = CludesUI.L("Reload to finish importing.")
+function CUI.ImportReloadMessage(bundle)
+    local msg = CUI.L("Reload to finish importing.")
     local body = type(bundle) == "table" and bundle.data
-    local entryKey = CludesUI.IsFullAccountPayload(bundle) and "spellAssignments" or "cdmSpells"
-    if type(body) == "table" and body[entryKey] ~= nil and CludesUI.PayloadFromOtherClient(bundle) then
+    local entryKey = CUI.IsFullAccountPayload(bundle) and "spellAssignments" or "cdmSpells"
+    if type(body) == "table" and body[entryKey] ~= nil and CUI.PayloadFromOtherClient(bundle) then
         msg = msg
             .. "\n\n"
-            .. CludesUI.L("Cooldown Manager spells from the other game client were not imported.")
+            .. CUI.L("Cooldown Manager spells from the other game client were not imported.")
     end
     return msg
 end
@@ -2689,16 +2689,16 @@ end
 --- (read first on Forever, so the layout the exporter sees) carries it under
 --- the class's first retail key, which retail reads and Forever resolves.
 --- Modifies the caller's own snapshot table in place. Retail: no-op.
-function CludesUI.ForeverAliasCDMSpecs(layoutSnap)
-    if not CludesUI.IS_FOREVER or type(layoutSnap) ~= "table" then
+function CUI.ForeverAliasCDMSpecs(layoutSnap)
+    if not CUI.IS_FOREVER or type(layoutSnap) ~= "table" then
         return
     end
-    local classes = CludesUI.ForeverClasses()
+    local classes = CUI.ForeverClasses()
     for c = 1, #classes do
         local nameToken = classes[c]
-        local lk = tostring(CludesUI.FOREVER_CLASS_SPEC[nameToken])
+        local lk = tostring(CUI.FOREVER_CLASS_SPEC[nameToken])
         if layoutSnap[lk] ~= nil then
-            layoutSnap[tostring(CludesUI.ForeverClassSpecIDs(nameToken)[1])] = layoutSnap[lk]
+            layoutSnap[tostring(CUI.ForeverClassSpecIDs(nameToken)[1])] = layoutSnap[lk]
             layoutSnap[lk] = nil
         end
     end
@@ -2710,17 +2710,17 @@ end
 --- resolves to the incoming layout instead of a copy of the active profile's.
 --- Inherited keys after that one, and classes the string does not carry, are
 --- kept. Touches only the new bucket the import is building. Retail: no-op.
-function CludesUI.ForeverDropShadowedLegacy(inherited, incoming)
-    if not CludesUI.IS_FOREVER or type(inherited) ~= "table" or type(incoming) ~= "table" then
+function CUI.ForeverDropShadowedLegacy(inherited, incoming)
+    if not CUI.IS_FOREVER or type(inherited) ~= "table" or type(incoming) ~= "table" then
         return
     end
-    local classes = CludesUI.ForeverClasses()
+    local classes = CUI.ForeverClasses()
     for c = 1, #classes do
         local nameToken = classes[c]
-        local lk = tostring(CludesUI.FOREVER_CLASS_SPEC[nameToken])
+        local lk = tostring(CUI.FOREVER_CLASS_SPEC[nameToken])
         -- A string carrying the Forever key overlays it; nothing shadows it.
         if incoming[lk] == nil then
-            local ids = CludesUI.ForeverClassSpecIDs(nameToken)
+            local ids = CUI.ForeverClassSpecIDs(nameToken)
             local first
             for i = 1, #ids do
                 if incoming[tostring(ids[i])] ~= nil then
@@ -2755,8 +2755,8 @@ local function SnapshotProfileCDMSpells(profName, includedFolders, cdmSpecs)
     -- before the login reseed ran would ship them missing (the importer's
     -- ghost pass then hides them). No-ops when the CDM child is disabled,
     -- when an import's ghosting is pending, or when no live icons exist.
-    if CludesUI.CDMReconcileActiveSpecSpells then
-        CludesUI.CDMReconcileActiveSpecSpells()
+    if CUI.CDMReconcileActiveSpecSpells then
+        CUI.CDMReconcileActiveSpecSpells()
     end
     local spellAssign = CludesUIDB and CludesUIDB.spellAssignments
     local specBucket = spellAssign and spellAssign.profiles and spellAssign.profiles[profName]
@@ -2780,7 +2780,7 @@ local function SnapshotProfileCDMSpells(profName, includedFolders, cdmSpecs)
     if not next(layoutSnap) then
         return nil
     end
-    CludesUI.ForeverAliasCDMSpecs(layoutSnap)
+    CUI.ForeverAliasCDMSpecs(layoutSnap)
     return layoutSnap
 end
 
@@ -3037,7 +3037,7 @@ do
 end
 -- The Window Skins module's reset clears this same list (plus the state
 -- above that it leaves out), so a key added here resets too.
-CludesUI.BLIZZ_SKIN_GLOBAL_KEYS = BLIZZ_SKIN_GLOBAL_KEYS
+CUI.BLIZZ_SKIN_GLOBAL_KEYS = BLIZZ_SKIN_GLOBAL_KEYS
 
 -- Snapshot the bundle for export. nil-valued keys are simply absent from the
 -- snapshot; the import side clears keys absent from the bundle, so the
@@ -3063,7 +3063,7 @@ end
 -- other account data (saved profiles, click casting, the per-character
 -- records). Callers reload right after -- these settings install at load, so
 -- no live re-apply is needed or attempted.
-function CludesUI.ApplyBlizzSkinGlobals(bundle)
+function CUI.ApplyBlizzSkinGlobals(bundle)
     if type(bundle) ~= "table" or not CludesUIDB then
         return
     end
@@ -3072,7 +3072,7 @@ function CludesUI.ApplyBlizzSkinGlobals(bundle)
     end
 end
 
-function CludesUI.ExportProfile(
+function CUI.ExportProfile(
     profName,
     includedFolders,
     includeLayout,
@@ -3121,9 +3121,9 @@ function CludesUI.ExportProfile(
     end
     -- If exporting the active profile, ensure fonts/colors/layout are current
     if profName == (saved.activeProfile or "Default") then
-        profileRec.fonts = CopyDeep(CludesUI.GetFontsDB())
-        profileRec.customColors = CopyDeep(CludesUI.GetCustomColorsDB())
-        profileRec.darkMode = CopyDeep(CludesUI.GetDarkModeDB())
+        profileRec.fonts = CopyDeep(CUI.GetFontsDB())
+        profileRec.customColors = CopyDeep(CUI.GetCustomColorsDB())
+        profileRec.darkMode = CopyDeep(CUI.GetDarkModeDB())
         profileRec.unlockLayout = SnapshotUnlockLayout()
     end
     local exportCopy = CopyDeep(profileRec)
@@ -3143,7 +3143,7 @@ function CludesUI.ExportProfile(
     -- (works for active and non-active profiles; never mutates the stored profile, and
     -- is rename-immune since it is a data-root field, not an addons[] folder key).
     do
-        local u, red, green, blue = CludesUI.ResolveProfileAccent(profileRec)
+        local u, red, green, blue = CUI.ResolveProfileAccent(profileRec)
         -- Serialize useClass explicitly (see SnapshotAllAddons).
         exportCopy.cuiAccent = { useClass = u, custom = (not u) and { r = red, g = green, b = blue } or nil }
     end
@@ -3157,7 +3157,7 @@ function CludesUI.ExportProfile(
     -- When includedFolders is provided, further filter to user's selection
     if exportCopy.addons then
         for moduleFolder in pairs(exportCopy.addons) do
-            if not CludesUI.IsModuleAddonLoaded(moduleFolder) then
+            if not CUI.IsModuleAddonLoaded(moduleFolder) then
                 exportCopy.addons[moduleFolder] = nil
             elseif includedFolders and not includedFolders[moduleFolder] then
                 exportCopy.addons[moduleFolder] = nil
@@ -3210,7 +3210,7 @@ function CludesUI.ExportProfile(
     -- in a string is therefore always deliberate, which is what lets the importer treat
     -- presence as the apply signal (the import dialog's checkbox strips the bundle for
     -- recipient-side opt-out).
-    if includeBlizzSkin and CludesUI.IsModuleAddonLoaded("CludesUIBlizzardSkin") then
+    if includeBlizzSkin and CUI.IsModuleAddonLoaded("CludesUIBlizzardSkin") then
         exportCopy.blizzSkinGlobals = SnapshotBlizzSkinGlobals()
     end
     -- Layout relationships (unlockLayout) are governed by the "Include layout"
@@ -3220,7 +3220,7 @@ function CludesUI.ExportProfile(
     -- keyToFolder meta rides along so the importer can attribute each edge. Full
     -- export (no includedFolders) keeps all checkbox-module relationships.
     local fLayout, layoutMeta =
-        CludesUI.BuildExportUnlockLayout(exportCopy.unlockLayout, includeLayout, includedFolders)
+        CUI.BuildExportUnlockLayout(exportCopy.unlockLayout, includeLayout, includedFolders)
     exportCopy.unlockLayout = fLayout -- nil when includeLayout is off
     exportCopy.unlockLayoutMeta = layoutMeta -- nil when includeLayout is off
     -- Override system (2026-07-20 redesign): ALL-OR-NOTHING under the single
@@ -3271,8 +3271,8 @@ function CludesUI.ExportProfile(
     -- Normalize local db.folder keys -> canonical (suite) keys so the string
     -- imports correctly into any build. No-op in the suite (canon == folder).
     exportCopy.addons = AddonsToCanon(exportCopy.addons)
-    local bundle = { version = CludesUI.LayoutExportVersion(exportCopy), type = "full", data = exportCopy }
-    CludesUI.StampPayloadClient(bundle)
+    local bundle = { version = CUI.LayoutExportVersion(exportCopy), type = "full", data = exportCopy }
+    CUI.StampPayloadClient(bundle)
     local serialized = Serializer.Serialize(bundle)
     if not LibDeflate then
         return nil
@@ -3283,11 +3283,11 @@ function CludesUI.ExportProfile(
 end
 
 -- Public: re-encode a decoded payload back to an import string.
-function CludesUI.EncodePayload(bundle)
+function CUI.EncodePayload(bundle)
     if not bundle then
         return nil
     end
-    if CludesUI.LayoutExportVersion(bundle.data) == 4 then
+    if CUI.LayoutExportVersion(bundle.data) == 4 then
         bundle.version = 4
     end
     local serialized = Serializer.Serialize(bundle)
@@ -3460,7 +3460,7 @@ local FULL_IMPORT_MERGE = {
 }
 
 --- Builds a full-account export string, or nil.
-function CludesUI.ExportFullAccountData()
+function CUI.ExportFullAccountData()
     if not CludesUIDB then
         return nil
     end
@@ -3469,8 +3469,8 @@ function CludesUI.ExportFullAccountData()
     end
     -- Same freshness boundary the profile export uses: bank live override
     -- edits into their stores before snapshotting.
-    if CludesUI.SpecOverrides_HarvestCurrent then
-        CludesUI.SpecOverrides_HarvestCurrent()
+    if CUI.SpecOverrides_HarvestCurrent then
+        CUI.SpecOverrides_HarvestCurrent()
     end
     local saved = GetProfilesDB()
     local activeProfileName = saved.activeProfile or "Default"
@@ -3489,9 +3489,9 @@ function CludesUI.ExportFullAccountData()
         -- Freshen profile-global appearance and the unlock layout from live,
         -- mirroring what ExportProfile does for the active profile -- but on
         -- the COPY. A full export never mutates stored data.
-        duplicate.fonts = CopyDeep(CludesUI.GetFontsDB())
-        duplicate.customColors = CopyDeep(CludesUI.GetCustomColorsDB())
-        duplicate.darkMode = CopyDeep(CludesUI.GetDarkModeDB())
+        duplicate.fonts = CopyDeep(CUI.GetFontsDB())
+        duplicate.customColors = CopyDeep(CUI.GetCustomColorsDB())
+        duplicate.darkMode = CopyDeep(CUI.GetDarkModeDB())
         duplicate.unlockLayout = SnapshotUnlockLayout()
         -- Recipient-local import bookkeeping never rides a string.
         duplicate._importEstablishPending = nil
@@ -3505,13 +3505,13 @@ function CludesUI.ExportFullAccountData()
     output.activeProfile = activeProfileName
     output.profileOrder = { activeProfileName }
     local bundle = {
-        version = CludesUI.LayoutExportVersion(output),
+        version = CUI.LayoutExportVersion(output),
         type = FULL_EXPORT_TYPE,
         fullExport = true, -- the routing stamp the import flow reads
         profileName = activeProfileName,
         data = output,
     }
-    CludesUI.StampPayloadClient(bundle)
+    CUI.StampPayloadClient(bundle)
     local serialized = Serializer.Serialize(bundle)
     local deflated = LibDeflate:CompressDeflate(serialized)
     return EXPORT_PREFIX .. LibDeflate:EncodeForPrint(deflated)
@@ -3519,15 +3519,15 @@ end
 
 --- True for a decoded payload produced by ExportFullAccountData. The import
 --- UI checks this BEFORE handing anything to the normal profile flow.
-function CludesUI.IsFullAccountPayload(bundle)
+function CUI.IsFullAccountPayload(bundle)
     return type(bundle) == "table" and (bundle.fullExport == true or bundle.type == FULL_EXPORT_TYPE)
 end
 
 --- Applies a full-account payload and reloads. Replaces every account-global
 --- key the string carries and installs its profile, then reloads so every
 --- module rebuilds from the new store. Caller owns the confirmation.
-function CludesUI.ImportFullAccountData(bundle)
-    if not CludesUI.IsFullAccountPayload(bundle) then
+function CUI.ImportFullAccountData(bundle)
+    if not CUI.IsFullAccountPayload(bundle) then
         return false
     end
     local body = bundle.data
@@ -3536,14 +3536,14 @@ function CludesUI.ImportFullAccountData(bundle)
     end
     -- The reload is asked for first in the click (RequestReload); the client
     -- reloads only once this function has finished, so everything below lands.
-    CludesUI.RequestReload(CludesUI.L("Profile Imported"), CludesUI.ImportReloadMessage(bundle))
+    CUI.RequestReload(CUI.L("Profile Imported"), CUI.ImportReloadMessage(bundle))
     -- Close any edit session or Default view and bank live edits while the stores
     -- are still the recipient's: a later exit would bank live into the import.
-    if CludesUI.SpecOverrides_CloseEditSessions then
-        CludesUI.SpecOverrides_CloseEditSessions()
+    if CUI.SpecOverrides_CloseEditSessions then
+        CUI.SpecOverrides_CloseEditSessions()
     end
-    if CludesUI.SpecOverrides_HarvestCurrent then
-        CludesUI.SpecOverrides_HarvestCurrent()
+    if CUI.SpecOverrides_HarvestCurrent then
+        CUI.SpecOverrides_HarvestCurrent()
     end
     local activeProfileName = body.activeProfile or bundle.profileName or "Default"
 
@@ -3556,17 +3556,17 @@ function CludesUI.ImportFullAccountData(bundle)
     --    describes the live links), so the next bar build swaps the
     --    recipient's own links in instead of banking the string's into a
     --    spell store.
-    local otherClient = CludesUI.PayloadFromOtherClient(bundle)
+    local otherClient = CUI.PayloadFromOtherClient(bundle)
     -- WoW Forever: the recipient's one-time buff sweep stamp survives the
     -- wholesale _migrations copy below, so that sweep never runs twice
     -- (CludesUI_Migration.lua). FvBW is nil on retail.
-    local fvSweep = CludesUI.FvBW
+    local fvSweep = CUI.FvBW
         and type(CludesUIDB._migrations) == "table"
         and CludesUIDB._migrations.forever_buff_wipe_sweep_v1
     -- Likewise the snapshot switch's one-time legacy check: its mark stays, so
     -- the recipient's own profiles are never re-read as the old layout's. Only
     -- WoW Forever ever writes it.
-    local fvSnapKey = CludesUI._FvSnapFlag
+    local fvSnapKey = CUI._FvSnapFlag
     local fvSnap = fvSnapKey and type(CludesUIDB._migrations) == "table" and CludesUIDB._migrations[fvSnapKey]
     local ownValue = {}
     for key in pairs(FULL_IMPORT_MERGE) do
@@ -3615,7 +3615,7 @@ function CludesUI.ImportFullAccountData(bundle)
     end
     -- WoW Forever: the imported account carries its own look, so an import
     -- also settles the first-install style picker (a carried stamp included).
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         CludesUIDB.styleChoicePending = nil
     end
 
@@ -3632,8 +3632,8 @@ function CludesUI.ImportFullAccountData(bundle)
             StripPrivateAddonData(duplicate.addons)
             -- WoW Forever: the one-time buff clear, before the profile is
             -- installed (CludesUI_Migration.lua).
-            if CludesUI.FvBW then
-                CludesUI.FvBW.ProcessProfile(duplicate, "import")
+            if CUI.FvBW then
+                CUI.FvBW.ProcessProfile(duplicate, "import")
             end
             CludesUIDB.profiles[label] = duplicate
         end
@@ -3668,7 +3668,7 @@ function CludesUI.ImportFullAccountData(bundle)
     --    recipient's current values on the way out. Pointer swap ONLY -- no
     --    defaults merge, no sync handoff, no module refresh: the reload
     --    rebuilds all of that from the imported store.
-    local registryTbl = CludesUI.Lite and CludesUI.Lite._dbRegistry
+    local registryTbl = CUI.Lite and CUI.Lite._dbRegistry
     if registryTbl then
         local pdata = CludesUIDB.profiles[activeProfileName]
         if type(pdata.addons) ~= "table" then
@@ -3695,7 +3695,7 @@ end
 --- Returns: { { key="250", name="Blood", icon=..., hasData=true }, ... }
 --- Includes ALL specs for the player's class, with hasData indicating
 --- whether specProfiles contains data for that spec.
-function CludesUI.GetCDMSpecInfo()
+function CUI.GetCDMSpecInfo()
     local spellAssign = CludesUIDB and CludesUIDB.spellAssignments
     local specProfiles = spellAssign and spellAssign.specProfiles or {}
     local output = {}
@@ -3740,15 +3740,15 @@ end
 --- ticked keeps the keys the picker was opened with, and a newly ticked class
 --- = its resolved key (the player's class: opts.foreverActiveKey). Specs of
 --- classes Forever lacks pass through.
-function CludesUI.ForeverCDMSelection(assignments, options, output)
+function CUI.ForeverCDMSelection(assignments, options, output)
     local spellAssign = CludesUIDB and CludesUIDB.spellAssignments
     local b = spellAssign and spellAssign.profiles and spellAssign.profiles[CludesUIDB.activeProfile or "Default"]
     local specProfiles = (b and b.specProfiles) or {}
     local player = select(2, UnitClass("player"))
     local isOpen = {}
     local function Opened(entryKey)
-        local t = CludesUI.SpecClassOf(tonumber(entryKey))
-        if t and CludesUI.ForeverClassSpecIDs(t) then
+        local t = CUI.SpecClassOf(tonumber(entryKey))
+        if t and CUI.ForeverClassSpecIDs(t) then
             isOpen[t] = isOpen[t] or {}
             isOpen[t][#isOpen[t] + 1] = entryKey
         end
@@ -3765,8 +3765,8 @@ function CludesUI.ForeverCDMSelection(assignments, options, output)
     end
     local done = {}
     for ident in pairs(assignments) do
-        local nameToken = CludesUI.SpecClassOf(ident)
-        local ids = CludesUI.ForeverClassSpecIDs(nameToken)
+        local nameToken = CUI.SpecClassOf(ident)
+        local ids = CUI.ForeverClassSpecIDs(nameToken)
         if not ids then
             output[tostring(ident)] = true
         elseif not done[nameToken] then
@@ -3780,7 +3780,7 @@ function CludesUI.ForeverCDMSelection(assignments, options, output)
                         any = true
                     end
                 end
-                local lk = tostring(CludesUI.FOREVER_CLASS_SPEC[nameToken])
+                local lk = tostring(CUI.FOREVER_CLASS_SPEC[nameToken])
                 if specProfiles[lk] ~= nil then
                     output[lk] = true
                     any = true
@@ -3793,7 +3793,7 @@ function CludesUI.ForeverCDMSelection(assignments, options, output)
             end
             if not any then
                 local k = (nameToken == player) and options.foreverActiveKey
-                    or tostring(CludesUI.ForeverClassSpec(nameToken, CludesUI.SpecHasStringEntry, specProfiles, true))
+                    or tostring(CUI.ForeverClassSpec(nameToken, CUI.SpecHasStringEntry, specProfiles, true))
                 output[k] = true
             end
         end
@@ -3804,7 +3804,7 @@ do
     -- Dummy db/dbKey/presetKey for the assignments table
     local dummyDB = { _cdmPick = { _cdm = {} } }
 
-    function CludesUI:ShowCDMSpecPickerPopup(options)
+    function CUI:ShowCDMSpecPickerPopup(options)
         local specs = options.specs or {}
 
         -- Reset assignments
@@ -3841,13 +3841,13 @@ do
         end
         -- WoW Forever: the grid has one row per class, so a key saved under a
         -- class's Forever spec ID ticks, locks or disables that class's row.
-        if CludesUI.IS_FOREVER then
-            prechecked = CludesUI.ForeverExpandSpecSet(prechecked)
-            lockedOnSpecs = CludesUI.ForeverExpandSpecSet(lockedOnSpecs)
-            disabledSpecs = CludesUI.ForeverExpandSpecSet(disabledSpecs)
+        if CUI.IS_FOREVER then
+            prechecked = CUI.ForeverExpandSpecSet(prechecked)
+            lockedOnSpecs = CUI.ForeverExpandSpecSet(lockedOnSpecs)
+            disabledSpecs = CUI.ForeverExpandSpecSet(disabledSpecs)
         end
 
-        CludesUI:ShowSpecAssignPopup({
+        CUI:ShowSpecAssignPopup({
             db = dummyDB,
             dbKey = "_cdmPick",
             presetKey = "_cdm",
@@ -3866,9 +3866,9 @@ do
                     selected[tostring(specId)] = true
                 end
                 -- WoW Forever: class rows -> the store keys each class uses.
-                if CludesUI.IS_FOREVER then
+                if CUI.IS_FOREVER then
                     wipe(selected)
-                    CludesUI.ForeverCDMSelection(assignments, options, selected)
+                    CUI.ForeverCDMSelection(assignments, options, selected)
                 end
                 options.onConfirm(selected)
             end,
@@ -3877,7 +3877,7 @@ do
     end
 end
 
-function CludesUI.ExportCurrentProfile(includeLayout, includeCDM, cdmSpecs)
+function CUI.ExportCurrentProfile(includeLayout, includeCDM, cdmSpecs)
     if includeLayout == nil then
         includeLayout = true
     end -- default ON
@@ -3887,7 +3887,7 @@ function CludesUI.ExportCurrentProfile(includeLayout, includeCDM, cdmSpecs)
     if includeCDM == nil then
         includeCDM = true
     end
-    local profileRec = CludesUI.SnapshotAllAddons()
+    local profileRec = CUI.SnapshotAllAddons()
     -- Legacy account-wide spell store never travels (the per-profile snapshot below
     -- carries CDM content instead).
     profileRec.spellAssignments = nil
@@ -3913,7 +3913,7 @@ function CludesUI.ExportCurrentProfile(includeLayout, includeCDM, cdmSpecs)
     -- Layout: honor the "Include layout" toggle, and even on a full export drop the
     -- no-checkbox-module (Dragon Riding) + stale (deleted-bar) edges. folderSet=nil
     -- keeps all checkbox modules. Attach the canonical keyToFolder meta.
-    local fLayout, layoutMeta = CludesUI.BuildExportUnlockLayout(profileRec.unlockLayout, includeLayout, nil)
+    local fLayout, layoutMeta = CUI.BuildExportUnlockLayout(profileRec.unlockLayout, includeLayout, nil)
     profileRec.unlockLayout = fLayout
     profileRec.unlockLayoutMeta = layoutMeta
     local sw, sh = GetPhysicalScreenSize()
@@ -3927,12 +3927,12 @@ function CludesUI.ExportCurrentProfile(includeLayout, includeCDM, cdmSpecs)
     -- Normalize local db.folder keys -> canonical (suite) keys (no-op in suite).
     profileRec.addons = AddonsToCanon(profileRec.addons)
     local bundle = {
-        version = CludesUI.LayoutExportVersion(profileRec),
+        version = CUI.LayoutExportVersion(profileRec),
         type = "full",
         data = profileRec,
         meta = meta,
     }
-    CludesUI.StampPayloadClient(bundle)
+    CUI.StampPayloadClient(bundle)
     local serialized = Serializer.Serialize(bundle)
     if not LibDeflate then
         return nil
@@ -3942,7 +3942,7 @@ function CludesUI.ExportCurrentProfile(includeLayout, includeCDM, cdmSpecs)
     return EXPORT_PREFIX .. packed
 end
 
-function CludesUI.DecodeImportString(importText)
+function CUI.DecodeImportString(importText)
     if not importText or #importText < 5 then
         return nil, "Invalid string"
     end
@@ -4027,7 +4027,7 @@ do
         end
     end
 
-    function CludesUI.DecodeImportStringAsync(importText, onDone, onProgress)
+    function CUI.DecodeImportStringAsync(importText, onDone, onProgress)
         -- Cheap validations first (same messages as DecodeImportString).
         if not importText or #importText < 5 then
             onDone(nil, "Invalid string")
@@ -4293,7 +4293,7 @@ local function FixupImportedClassColors()
     local _, class = UnitClass("player")
     -- CLASS_COLORS and POWER_COLORS are local to ResourceBars, so we
     -- use the same lookup the addon uses at init time.
-    local classColors = CludesUI.CLASS_COLOR_MAP
+    local classColors = CUI.CLASS_COLOR_MAP
     local cc = classColors and classColors[class]
 
     -- Health bar: reset to importer's class color
@@ -4343,7 +4343,7 @@ local function BuildImportedCDMSpellBucket(profName, activeProfileName, incoming
     end
     -- WoW Forever: a class the string carries resolves to the incoming layout,
     -- not to an inherited copy under a key the class would read first.
-    CludesUI.ForeverDropShadowedLegacy(specBucket.specProfiles, incomingSpecs)
+    CUI.ForeverDropShadowedLegacy(specBucket.specProfiles, incomingSpecs)
     -- Import-authoritative ghosting is computed against the player's LIVE Blizzard CDM
     -- tracked set (viewer pools + category API). That set is only guaranteed settled
     -- after a reload, and the ghost pass is a ONE-SHOT that stamps _barFilterModelV6
@@ -4353,8 +4353,8 @@ local function BuildImportedCDMSpellBucket(profName, activeProfileName, incoming
     -- flow never noticed because its caller ReloadUI()s in the same frame ImportProfile
     -- returns, which kills the queued reanchor that would have run the pass; a caller
     -- that defers its reload (installer wizards) gets the pass mid-session instead.
-    if CludesUI then
-        CludesUI._cdmImportGhostDeferred = true
+    if CUI then
+        CUI._cdmImportGhostDeferred = true
     end
     for specKey, specProfile in pairs(CopyDeep(incomingSpecs)) do
         specBucket.specProfiles[specKey] = specProfile
@@ -4369,19 +4369,19 @@ local function BuildImportedCDMSpellBucket(profName, activeProfileName, incoming
             -- spellSettings; transform NOW so the live session reads the
             -- new shape (the registered migration also covers it on the
             -- next reload -- both idempotent, flag lives in the bucket).
-            CludesUI.MigrateCdmSpellSettingsShape(specProfile, importedBarsCfg)
+            CUI.MigrateCdmSpellSettingsShape(specProfile, importedBarsCfg)
             -- Hosted-buff settings moved family stores (CD -> BUFF);
             -- relocate old-format imports the same way (idempotent).
-            CludesUI.MigrateCdmHostedBuffSettings(specProfile)
+            CUI.MigrateCdmHostedBuffSettings(specProfile)
             -- Collided-buff cooldownID claims moved from the
             -- assignedBuffCdIDs side-table to cd-claim markers inside
             -- assignedSpells; convert old-format imports too (idempotent),
             -- or their claims sit unread and the slots silently unclaim.
-            CludesUI.MigrateCdmBuffCdClaims(specProfile)
+            CUI.MigrateCdmBuffCdClaims(specProfile)
             -- Strings exported before _buffDisplayOrderUserModified existed carry a
             -- drag-arranged buffDisplayOrder without the flag; stamp it or the first
             -- live reconcile resyncs the imported order to Blizzard order (idempotent).
-            CludesUI.MigrateCdmBuffOrderUserFlag(specProfile)
+            CUI.MigrateCdmBuffOrderUserFlag(specProfile)
         end
     end
 end
@@ -4419,17 +4419,17 @@ end
 
 --- Import a profile string. Returns: success, errorMsg
 --- The caller must provide a name for the new profile.
-function CludesUI.ImportProfile(importText, profName)
+function CUI.ImportProfile(importText, profName)
     -- A concurrent silent import (e.g. the Wago path) invalidates any pending
     -- INTERACTIVE import session: its selection UI is stale against the
     -- profile data this call is about to change. The interactive flow's own
     -- commit sets `committing` around this call, so it never cancels itself.
     do
-        local cfg = CludesUI._apiImportSession
+        local cfg = CUI._apiImportSession
         if cfg and cfg.state ~= "done" and not cfg.committing then
-            CludesUI._FinishApiImportSession(false)
-            if CludesUI._ProfilesResetToMain then
-                pcall(CludesUI._ProfilesResetToMain)
+            CUI._FinishApiImportSession(false)
+            if CUI._ProfilesResetToMain then
+                pcall(CUI._ProfilesResetToMain)
             end
         end
     end
@@ -4440,7 +4440,7 @@ function CludesUI.ImportProfile(importText, profName)
     if type(importText) == "table" then
         bundle = importText
     else
-        bundle, err = CludesUI.DecodeImportString(importText)
+        bundle, err = CUI.DecodeImportString(importText)
     end
     if not bundle then
         return false, err
@@ -4479,16 +4479,16 @@ function CludesUI.ImportProfile(importText, profName)
         -- current-spec values with live edits before current/merged are built
         -- (as SwitchProfile does), so an import over the active profile's own
         -- name never banks live state into the imported stores.
-        if CludesUI.SpecOverrides_CloseEditSessions then
-            CludesUI.SpecOverrides_CloseEditSessions()
+        if CUI.SpecOverrides_CloseEditSessions then
+            CUI.SpecOverrides_CloseEditSessions()
         end
-        if CludesUI.SpecOverrides_HarvestCurrent then
-            CludesUI.SpecOverrides_HarvestCurrent()
+        if CUI.SpecOverrides_HarvestCurrent then
+            CUI.SpecOverrides_HarvestCurrent()
         end
         -- WoW Forever: the one-time buff clear runs on the payload itself, before
         -- the merge copy and the raw re-apply below (CludesUI_Migration.lua).
-        if CludesUI.FvBW then
-            CludesUI.FvBW.ProcessProfile(bundle.data, "import")
+        if CUI.FvBW then
+            CUI.FvBW.ProcessProfile(bundle.data, "import")
         end
         -- Merge import: start from the current profile and overlay imported
         -- addon data on top. This preserves settings for addons not present
@@ -4539,7 +4539,7 @@ function CludesUI.ImportProfile(importText, profName)
         -- layouts. Writes the account-wide keys now; the caller's imminent reload
         -- applies them (these skins install at load).
         if type(bundle.data.blizzSkinGlobals) == "table" then
-            CludesUI.ApplyBlizzSkinGlobals(bundle.data.blizzSkinGlobals)
+            CUI.ApplyBlizzSkinGlobals(bundle.data.blizzSkinGlobals)
         end
 
         -- Base: deep-copy current active profile, then overlay imported addons
@@ -4681,7 +4681,7 @@ function CludesUI.ImportProfile(importText, profName)
                     end
                 end
                 combined.unlockLayout =
-                    CludesUI.MergeImportedLayout(baseLayout, incoming.unlockLayout, importedFolders)
+                    CUI.MergeImportedLayout(baseLayout, incoming.unlockLayout, importedFolders)
             end
         end
         -- BASELINE-LINKS == PROFILE-LINKS contract (imported-profile DM
@@ -4719,7 +4719,7 @@ function CludesUI.ImportProfile(importText, profName)
 
         -- Snap all positions to the physical pixel grid (imported profiles
         -- may come from a different version without pixel snapping)
-        CludesUI.SnapProfilePositions(combined)
+        CUI.SnapProfilePositions(combined)
         saved.profiles[profName] = combined
         -- Add to order if not present
         local found = false
@@ -4751,7 +4751,7 @@ function CludesUI.ImportProfile(importText, profName)
             -- another client's are ignored, exactly as if the string carried
             -- none (inherit-only: no overlay, no ghosting, no re-keying).
             local incomingSpells = bundle.data.cdmSpells
-            if CludesUI.PayloadFromOtherClient(bundle) then
+            if CUI.PayloadFromOtherClient(bundle) then
                 incomingSpells = nil
             end
             BuildImportedCDMSpellBucket(
@@ -4766,13 +4766,13 @@ function CludesUI.ImportProfile(importText, profName)
         -- stamps the same way the login migration does (the old keys are
         -- consumed, so this is idempotent). Runs outside the cdmSpells guard:
         -- even a string without a spell store must have its bar keys retired.
-        if CludesUI.MigrateCdmThresholdText then
+        if CUI.MigrateCdmThresholdText then
             local importedCdm = combined.addons and combined.addons["CludesUICooldownManager"]
             if type(importedCdm) == "table" then
                 local sa2 = CludesUIDB and CludesUIDB.spellAssignments
                 local bucket2 = sa2 and sa2.profiles and sa2.profiles[profName]
                 local sp2 = type(bucket2) == "table" and bucket2.specProfiles or nil
-                CludesUI.MigrateCdmThresholdText(importedCdm, sp2)
+                CUI.MigrateCdmThresholdText(importedCdm, sp2)
             end
         end
         -- Remove the new profile from all sync targets so the pre-logout
@@ -4804,12 +4804,12 @@ function CludesUI.ImportProfile(importText, profName)
         -- off this profile, so save it but don't activate. If the current spec is
         -- unassigned -- or was just auto-assigned to THIS profile -- activate.
         local assignedNow = curSpecID
-            and saved.specProfiles[CludesUI.SpecFor(curSpecID, CludesUI.SpecHasEntry, saved.specProfiles)]
+            and saved.specProfiles[CUI.SpecFor(curSpecID, CUI.SpecHasEntry, saved.specProfiles)]
         if assignedNow and assignedNow ~= profName then
             -- Stored but not activated: migrate legacy Resource Bars Advanced
             -- data now (the runner's flag was inherited from the base profile,
             -- so it would never run for this import otherwise).
-            CludesUI.MigrateRBAdvancedProfile(saved.profiles[profName])
+            CUI.MigrateRBAdvancedProfile(saved.profiles[profName])
             -- Import window guard, spec_locked flavor: the merged profile was built on
             -- the dirty active profile all the same, so its first ACTIVATION (e.g. a
             -- later login preseeding onto an auto-assigned spec) hits the same
@@ -4861,7 +4861,7 @@ function CludesUI.ImportProfile(importText, profName)
         -- below) from closing the window early. Cleared unconditionally at the first
         -- apply of any later session; value harvests are never suppressed.
         saved.profiles[profName]._importEstablishPending = true
-        CludesUI._importGuardArmedNow = true
+        CUI._importGuardArmedNow = true
         -- Custom colours resolve live via GetCustomColorsDB. A GLOBAL-mode colour
         -- section takes its palette from its Pull Colors From (or the first profile); a
         -- recipient who pinned a specific source would store the imported palette but
@@ -4870,7 +4870,7 @@ function CludesUI.ImportProfile(importText, profName)
         -- Getter-redirect only -- never wipes or restores a live colour table (that is
         -- banned). Per-profile sections read the active (now imported) profile already.
         if incoming.customColors and CludesUIDB then
-            CludesUI.PointColorSectionsAt(profName)
+            CUI.PointColorSectionsAt(profName)
         end
         -- Apply imported data into the live db.profile tables. We MUST pass
         -- payload.data here (a SEPARATE table) and NOT merged: RepointAllDBs already
@@ -4882,12 +4882,12 @@ function CludesUI.ImportProfile(importText, profName)
         -- filtered import wipes the live anchors of non-imported modules (e.g.
         -- ActionBars self-anchors). Override it before applying.
         bundle.data.unlockLayout = combined.unlockLayout
-        CludesUI.ApplyProfileData(bundle.data)
+        CUI.ApplyProfileData(bundle.data)
         FixupImportedClassColors()
         -- Resource Bars: migrate legacy Advanced/per-spec-enable data carried
         -- by old export strings (ApplyProfileData refilled the live RB table
         -- from the raw payload, so this must run after it). Idempotent.
-        CludesUI.MigrateRBAdvancedProfile(saved.profiles[profName])
+        CUI.MigrateRBAdvancedProfile(saved.profiles[profName])
         -- NO default re-bank here. The imported entries carry the EXPORTER's recorded
         -- values.default, consistent with the imported addon blobs by construction
         -- (MergeImportedStores partitions per folder). The old
@@ -4898,8 +4898,8 @@ function CludesUI.ImportProfile(importText, profName)
         -- values into every unassigned spec on the recipient. Spec Overrides: apply the
         -- imported profile's stored values for the current spec on top of the
         -- just-applied addon data.
-        if CludesUI.SpecOverrides_Apply then
-            CludesUI.SpecOverrides_Apply(curSpecID)
+        if CUI.SpecOverrides_Apply then
+            CUI.SpecOverrides_Apply(curSpecID)
         end
         -- First-install captures: an imported profile is a chosen layout. Stamp the
         -- one-shot capture flags (central-store root keys; the capture handlers
@@ -4930,10 +4930,10 @@ function CludesUI.ImportProfile(importText, profName)
         -- window now instead of at the next login's data-detection pass, so first-run
         -- popups and capture paths stay quiet from here on.
         saved.firstInstallPopupShown = true
-        CludesUI._firstInstallPending = nil
+        CUI._firstInstallPending = nil
         -- WoW Forever: the imported profile carries its own look, so an
         -- import also settles the first-install style picker.
-        if CludesUI.IS_FOREVER then
+        if CUI.IS_FOREVER then
             saved.styleChoicePending = nil
         end
         -- Don't ReloadUI() here: the caller (options panel import flow)
@@ -4948,15 +4948,15 @@ end
 -------------------------------------------------------------------------------
 --  Profile management
 -------------------------------------------------------------------------------
-function CludesUI.SaveCurrentAsProfile(label)
+function CUI.SaveCurrentAsProfile(label)
     local saved = GetProfilesDB()
     local current = saved.activeProfile or "Default"
     -- Freshen the override stores from live before snapshotting (same as the
     -- export path): the whole-profile DeepCopy below carries every override
     -- store with it, and without this bank the current spec's most recent
     -- override edits could lag one harvest boundary behind.
-    if CludesUI.SpecOverrides_HarvestCurrent then
-        CludesUI.SpecOverrides_HarvestCurrent()
+    if CUI.SpecOverrides_HarvestCurrent then
+        CUI.SpecOverrides_HarvestCurrent()
     end
     local src = saved.profiles[current]
 
@@ -4972,9 +4972,9 @@ function CludesUI.SaveCurrentAsProfile(label)
     -- Never inherit the import-window guard flag (see ImportProfile).
     duplicate._importEstablishPending = nil
     -- Ensure fonts/colors/unlock layout are current
-    duplicate.fonts = CopyDeep(CludesUI.GetFontsDB())
-    duplicate.customColors = CopyDeep(CludesUI.GetCustomColorsDB())
-    duplicate.darkMode = CopyDeep(CludesUI.GetDarkModeDB())
+    duplicate.fonts = CopyDeep(CUI.GetFontsDB())
+    duplicate.customColors = CopyDeep(CUI.GetCustomColorsDB())
+    duplicate.darkMode = CopyDeep(CUI.GetDarkModeDB())
     duplicate.unlockLayout = SnapshotUnlockLayout()
     saved.profiles[label] = duplicate
 
@@ -5024,10 +5024,10 @@ function CludesUI.SaveCurrentAsProfile(label)
 
     -- Switch to the new profile using the standard path so the outgoing
     -- profile's state is properly saved before repointing.
-    CludesUI.SwitchProfile(label)
+    CUI.SwitchProfile(label)
 end
 
-function CludesUI.DeleteProfile(label)
+function CUI.DeleteProfile(label)
     local saved = GetProfilesDB()
     saved.profiles[label] = nil
     for i, num in ipairs(saved.profileOrder) do
@@ -5062,11 +5062,11 @@ function CludesUI.DeleteProfile(label)
     -- (the stale name showed in Pull Colors From, the shared palette silently fell
     -- back, and colour editing locked because the user could never be "on" the
     -- deleted source). nil = default (first profile), per section too.
-    if CludesUI.ColorSourcesProfileRemoved(label) then
-        CludesUI.ApplyColorsToOUF()
+    if CUI.ColorSourcesProfileRemoved(label) then
+        CUI.ApplyColorsToOUF()
     end
     -- Clean up keybind
-    CludesUI.OnProfileDeleted(label)
+    CUI.OnProfileDeleted(label)
     -- If deleted profile was active, fall back to Default. A freshly
     -- auto-created Default gets the current baseline links STAMPED (the
     -- deleted profile is gone -- inheriting unrecorded would resurrect the
@@ -5077,14 +5077,14 @@ function CludesUI.DeleteProfile(label)
         RepointAllDBs("Default")
     end
     -- Refresh all sync buttons (hide them if down to 1 profile)
-    if CludesUI._syncRefreshFns then
-        for _, func in pairs(CludesUI._syncRefreshFns) do
+    if CUI._syncRefreshFns then
+        for _, func in pairs(CUI._syncRefreshFns) do
             func()
         end
     end
 end
 
-function CludesUI.RenameProfile(previousName, nextName)
+function CUI.RenameProfile(previousName, nextName)
     local saved = GetProfilesDB()
     if not saved.profiles[previousName] then
         return
@@ -5123,7 +5123,7 @@ function CludesUI.RenameProfile(previousName, nextName)
     end
     -- Keep every colour source following the renamed profile (same palette
     -- tables, so no colour refresh is needed).
-    CludesUI.ColorSourcesProfileRenamed(previousName, nextName)
+    CUI.ColorSourcesProfileRenamed(previousName, nextName)
     if saved.activeProfile == previousName then
         -- Rename repoints the SAME profile table: unlockLayout rides it, so
         -- the stamp is a no-op unless the table never had one.
@@ -5132,10 +5132,10 @@ function CludesUI.RenameProfile(previousName, nextName)
         RepointAllDBs(nextName)
     end
     -- Update keybind reference
-    CludesUI.OnProfileRenamed(previousName, nextName)
+    CUI.OnProfileRenamed(previousName, nextName)
 end
 
-function CludesUI.SwitchProfile(label)
+function CUI.SwitchProfile(label)
     local saved = GetProfilesDB()
     if not saved.profiles[label] then
         return
@@ -5145,22 +5145,22 @@ function CludesUI.SwitchProfile(label)
     -- and condition flips): its movers, snapshots, and pending edits all belong to the
     -- OUTGOING profile's stores -- committing or harvesting them after the swap would
     -- write them into the WRONG profile's layers and snapshots. Discard-close first.
-    if CludesUI._unlockModeSessionActive and CludesUI.ForceCloseUnlockDiscard then
-        CludesUI.ForceCloseUnlockDiscard()
+    if CUI._unlockModeSessionActive and CUI.ForceCloseUnlockDiscard then
+        CUI.ForceCloseUnlockDiscard()
     end
 
     -- Close any editing-as session against the OUTGOING profile first (the
     -- exits bank their edits), so the harvest below runs unguarded and the
     -- post-switch establish never finds a live session.
-    if CludesUI.SpecOverrides_CloseEditSessions then
-        CludesUI.SpecOverrides_CloseEditSessions()
+    if CUI.SpecOverrides_CloseEditSessions then
+        CUI.SpecOverrides_CloseEditSessions()
     end
 
     -- Spec Overrides: sync the current spec's stored values with any live
     -- edits before leaving the outgoing profile (suppressed while a spec
     -- transition is mid-flight -- the spec handler already harvested).
-    if CludesUI.SpecOverrides_HarvestCurrent then
-        CludesUI.SpecOverrides_HarvestCurrent()
+    if CUI.SpecOverrides_HarvestCurrent then
+        CUI.SpecOverrides_HarvestCurrent()
     end
 
     -- Save current fonts into the outgoing profile before switching. Custom
@@ -5169,7 +5169,7 @@ function CludesUI.SwitchProfile(label)
     -- snapshot and reset the user's custom power / class-resource colors.
     local outbound = saved.profiles[saved.activeProfile or "Default"]
     if outbound then
-        outbound.fonts = CopyDeep(CludesUI.GetFontsDB())
+        outbound.fonts = CopyDeep(CUI.GetFontsDB())
         -- Save unlock layout into outgoing profile (baseline-sourced while
         -- a group layer is live -- see SnapshotUnlockLayout).
         outbound.unlockLayout = SnapshotUnlockLayout()
@@ -5178,7 +5178,7 @@ function CludesUI.SwitchProfile(label)
     -- If settings were changed this session and any synced modules have
     -- targets, a live re-point won't fully apply cached addon state.
     -- Prompt the user to reload so every addon starts clean.
-    if CludesUI._settingsChanged and label ~= (saved.activeProfile or "Default") then
+    if CUI._settingsChanged and label ~= (saved.activeProfile or "Default") then
         local sm = CludesUIDB.syncedModules
         if sm then
             -- Mirror group: only flush groups the OUTGOING profile belongs
@@ -5195,7 +5195,7 @@ function CludesUI.SwitchProfile(label)
                 -- Flush sync so the other group members have the latest data
                 for moduleFolder, syncTargets in pairs(sm) do
                     if type(syncTargets) == "table" and syncTargets[outName] then
-                        CludesUI.SyncModuleToProfiles(moduleFolder, syncTargets)
+                        CUI.SyncModuleToProfiles(moduleFolder, syncTargets)
                     end
                 end
                 -- Switch the active profile immediately (persisted on logout)
@@ -5203,7 +5203,7 @@ function CludesUI.SwitchProfile(label)
                 saved.activeProfile = label
                 RepointAllDBs(label)
                 -- Prompt for reload
-                CludesUI:ShowConfirmPopup({
+                CUI:ShowConfirmPopup({
                     title = "Reload Recommended",
                     message = "You changed settings while profile sync is active. Please reload your UI for sync changes to take effect.",
                     confirmText = "Reload Now",
@@ -5220,19 +5220,19 @@ function CludesUI.SwitchProfile(label)
     RepointAllDBs(label)
 end
 
-function CludesUI.GetActiveProfileName()
+function CUI.GetActiveProfileName()
     local saved = GetProfilesDB()
     return saved.activeProfile or "Default"
 end
 
-function CludesUI.GetProfileList()
+function CUI.GetProfileList()
     local saved = GetProfilesDB()
     return saved.profileOrder, saved.profiles
 end
 
-function CludesUI.GetSpecProfile(specId)
+function CUI.GetSpecProfile(specId)
     local saved = GetProfilesDB()
-    return saved.specProfiles[CludesUI.SpecFor(specId, CludesUI.SpecHasEntry, saved.specProfiles)]
+    return saved.specProfiles[CUI.SpecFor(specId, CUI.SpecHasEntry, saved.specProfiles)]
 end
 
 -------------------------------------------------------------------------------
@@ -5241,7 +5241,7 @@ end
 --  so there is nothing to snapshot. Kept as a stub so existing call sites
 --  (keybind buttons, options panel hooks) do not error.
 -------------------------------------------------------------------------------
-function CludesUI.AutoSaveActiveProfile()
+function CUI.AutoSaveActiveProfile()
     -- Intentionally empty: single-storage means data is always in sync.
 end
 
@@ -5274,8 +5274,8 @@ do
                 -- transition (harvest old spec, apply below).
                 local overrideTransition = pendingOldSpec ~= nil
                     and pendingOldSpec ~= lastSpecId
-                if overrideTransition and CludesUI.SpecOverrides_OnSpecChanged then
-                    CludesUI.SpecOverrides_OnSpecChanged(pendingOldSpec, lastSpecId)
+                if overrideTransition and CUI.SpecOverrides_OnSpecChanged then
+                    CUI.SpecOverrides_OnSpecChanged(pendingOldSpec, lastSpecId)
                 end
                 pendingOldSpec = nil
                 -- Re-resolve after combat ends (spec may have changed again)
@@ -5283,16 +5283,16 @@ do
                 if destProfile then
                     local current = CludesUIDB and CludesUIDB.activeProfile or "Default"
                     if current ~= destProfile then
-                        local fontWillChange = CludesUI.ProfileChangesFont(CludesUIDB.profiles[destProfile])
+                        local fontWillChange = CUI.ProfileChangesFont(CludesUIDB.profiles[destProfile])
                         local skinsWillChange =
-                            CludesUI.ProfileChangesWindowSkins(CludesUIDB.profiles[destProfile])
+                            CUI.ProfileChangesWindowSkins(CludesUIDB.profiles[destProfile])
                         local styleWillChange =
-                            CludesUI.ProfileChangesStyle(CludesUIDB.profiles[destProfile])
+                            CUI.ProfileChangesStyle(CludesUIDB.profiles[destProfile])
                         -- _specProfileSwitching disabled (see doSwitch comment)
-                        CludesUI.SwitchProfile(destProfile)
-                        CludesUI.RefreshAllAddons()
+                        CUI.SwitchProfile(destProfile)
+                        CUI.RefreshAllAddons()
                         if fontWillChange or skinsWillChange or styleWillChange then
-                            CludesUI:ShowConfirmPopup({
+                            CUI:ShowConfirmPopup({
                                 title = "Reload Required",
                                 message = fontWillChange
                                         and "Font changed. A UI reload is needed to apply the new font."
@@ -5308,8 +5308,8 @@ do
                 -- Spec Overrides: apply the (possibly re-resolved) current
                 -- spec's stored values. No-op when a profile switch above
                 -- already applied them.
-                if overrideTransition and CludesUI.SpecOverrides_Apply then
-                    CludesUI.SpecOverrides_Apply(lastSpecId)
+                if overrideTransition and CUI.SpecOverrides_Apply then
+                    CUI.SpecOverrides_Apply(lastSpecId)
                 end
             end
             return
@@ -5346,7 +5346,7 @@ do
                         specRetry = nil
                         -- Record the spec so future events use the fast path
                         lastSpecId = spellRef
-                        local ck = CludesUI.CharKey(" - ")
+                        local ck = CUI.CharKey(" - ")
                         lastKnownCharKey = ck
                         if not CludesUIDB then
                             CludesUIDB = {}
@@ -5355,21 +5355,21 @@ do
                             CludesUIDB.lastSpecByChar = {}
                         end
                         CludesUIDB.lastSpecByChar[ck] = spellRef
-                        CludesUI._profileSaveLocked = false
+                        CUI._profileSaveLocked = false
                         -- Resolve via the unified function
                         local target = ResolveSpecProfile()
                         if target then
                             local current = (CludesUIDB and CludesUIDB.activeProfile) or "Default"
                             if current ~= target then
-                                local fontChange = CludesUI.ProfileChangesFont(CludesUIDB.profiles[target])
+                                local fontChange = CUI.ProfileChangesFont(CludesUIDB.profiles[target])
                                 local skinsChange =
-                                    CludesUI.ProfileChangesWindowSkins(CludesUIDB.profiles[target])
-                                local styleChange = CludesUI.ProfileChangesStyle(CludesUIDB.profiles[target])
+                                    CUI.ProfileChangesWindowSkins(CludesUIDB.profiles[target])
+                                local styleChange = CUI.ProfileChangesStyle(CludesUIDB.profiles[target])
                                 -- _specProfileSwitching disabled (see doSwitch comment)
-                                CludesUI.SwitchProfile(target)
-                                CludesUI.RefreshAllAddons()
+                                CUI.SwitchProfile(target)
+                                CUI.RefreshAllAddons()
                                 if fontChange or skinsChange or styleChange then
-                                    CludesUI:ShowConfirmPopup({
+                                    CUI:ShowConfirmPopup({
                                         title = "Reload Required",
                                         message = fontChange
                                                 and "Font changed. A UI reload is needed to apply the new font."
@@ -5397,7 +5397,7 @@ do
             specRetry = nil
         end
 
-        local characterKey = CludesUI.CharKey(" - ")
+        local characterKey = CUI.CharKey(" - ")
         local isFirstLogin = (lastSpecId == nil)
         -- charChanged is true when the active character is different from the
         -- last session (alt-swap). On a plain /reload the charKey stays the same.
@@ -5429,7 +5429,7 @@ do
 
         -- Spec resolved successfully -- unlock auto-save if it was locked
         -- during PreSeedSpecProfile when spec was unavailable.
-        CludesUI._profileSaveLocked = false
+        CUI._profileSaveLocked = false
 
         ---------------------------------------------------------------
         --  Defer entire switch during combat
@@ -5449,16 +5449,16 @@ do
         -- displays the current spec), so a stale save would corrupt both baseline and
         -- spec-override data. Force- close DISCARDING the session before any harvest or
         -- apply runs. Combat parity is free: the whole handler defers to REGEN above.
-        if specTransition and CludesUI.ForceCloseUnlockDiscard then
-            CludesUI.ForceCloseUnlockDiscard()
+        if specTransition and CUI.ForceCloseUnlockDiscard then
+            CUI.ForceCloseUnlockDiscard()
         end
 
         -- Spec Overrides: harvest the outgoing spec's live values into the still-active
         -- profile BEFORE any spec-profile switch below, and mark the transition so
         -- mid-swap harvests can't mis-key values. Cross-char re-entries pass no old
         -- spec (live values may belong to another character's spec).
-        if specTransition and CludesUI.SpecOverrides_OnSpecChanged then
-            CludesUI.SpecOverrides_OnSpecChanged(
+        if specTransition and CUI.SpecOverrides_OnSpecChanged then
+            CUI.SpecOverrides_OnSpecChanged(
                 (not charChanged and prevSpecID ~= specId) and prevSpecID or nil,
                 specId
             )
@@ -5478,13 +5478,13 @@ do
                     -- before PLAYER_SPECIALIZATION_CHANGED (CDM completes
                     -- before the flag is set, flag stuck true forever).
                     -- CludesUI._specProfileSwitching = true
-                    local fontWillChange = CludesUI.ProfileChangesFont(saved.profiles[destProfile])
-                    local skinsWillChange = CludesUI.ProfileChangesWindowSkins(saved.profiles[destProfile])
-                    local styleWillChange = CludesUI.ProfileChangesStyle(saved.profiles[destProfile])
-                    CludesUI.SwitchProfile(destProfile)
-                    CludesUI.RefreshAllAddons()
+                    local fontWillChange = CUI.ProfileChangesFont(saved.profiles[destProfile])
+                    local skinsWillChange = CUI.ProfileChangesWindowSkins(saved.profiles[destProfile])
+                    local styleWillChange = CUI.ProfileChangesStyle(saved.profiles[destProfile])
+                    CUI.SwitchProfile(destProfile)
+                    CUI.RefreshAllAddons()
                     if not isFirstLogin and (fontWillChange or skinsWillChange or styleWillChange) then
-                        CludesUI:ShowConfirmPopup({
+                        CUI:ShowConfirmPopup({
                             title = "Reload Required",
                             message = fontWillChange
                                     and "Font changed. A UI reload is needed to apply the new font."
@@ -5513,10 +5513,10 @@ do
                 -- addons built with the right values and no further action is
                 -- needed. Only call SwitchProfile if the pre-seed did not run
                 -- (e.g. first session after update, no lastSpecByChar entry).
-                if not CludesUI._preSeedComplete then
+                if not CUI._preSeedComplete then
                     C_Timer.After(0, function()
                         C_Timer.After(0, function()
-                            CludesUI.SwitchProfile(destProfile)
+                            CUI.SwitchProfile(destProfile)
                         end)
                     end)
                 end
@@ -5560,7 +5560,7 @@ do
                 if fallbackName ~= current and saved.profiles[fallbackName] then
                     C_Timer.After(0, function()
                         C_Timer.After(0, function()
-                            CludesUI.SwitchProfile(fallbackName)
+                            CUI.SwitchProfile(fallbackName)
                         end)
                     end)
                 end
@@ -5571,8 +5571,8 @@ do
         -- switch above already applied values inside its RefreshAllAddons pass, so this
         -- duplicate is a value-equal no-op there; it is the ONLY apply for same-profile
         -- spec changes and plain first logins.
-        if specTransition and CludesUI.SpecOverrides_Apply then
-            CludesUI.SpecOverrides_Apply(specId, isFirstLogin)
+        if specTransition and CUI.SpecOverrides_Apply then
+            CUI.SpecOverrides_Apply(specId, isFirstLogin)
         end
     end)
 end
@@ -5588,15 +5588,15 @@ do
     -- into the active profile, and track the last non-spec profile.
     -- All addons use _dbRegistry (NewDB), so no manual snapshot is needed --
     -- they write directly to the central store.
-    CludesUI.Lite.RegisterPreLogout(function()
-        if not CludesUI._profileSaveLocked then
+    CUI.Lite.RegisterPreLogout(function()
+        if not CUI._profileSaveLocked then
             local saved = GetProfilesDB()
             local label = saved.activeProfile or "Default"
             local profileRec = saved.profiles[label]
             if profileRec then
-                profileRec.fonts = CopyDeep(CludesUI.GetFontsDB())
-                profileRec.customColors = CopyDeep(CludesUI.GetCustomColorsDB())
-                profileRec.darkMode = CopyDeep(CludesUI.GetDarkModeDB())
+                profileRec.fonts = CopyDeep(CUI.GetFontsDB())
+                profileRec.customColors = CopyDeep(CUI.GetCustomColorsDB())
+                profileRec.darkMode = CopyDeep(CUI.GetDarkModeDB())
                 profileRec.unlockLayout = SnapshotUnlockLayout()
             end
             -- Track the last active profile that was NOT spec-assigned so
@@ -5669,7 +5669,7 @@ do
 
         -- Restore saved profile keybinds
         C_Timer.After(1, function()
-            CludesUI.RestoreProfileKeybinds()
+            CUI.RestoreProfileKeybinds()
         end)
     end)
 end
@@ -5696,7 +5696,7 @@ end
 --  a paste overflowed the box without reaching the buffer; the cap is
 --  lifted so pasting again lands fully in the box.
 -------------------------------------------------------------------------------
-function CludesUI.AttachImportPasteAbsorber(inputBox, onRetry)
+function CUI.AttachImportPasteAbsorber(inputBox, onRetry)
     local CAP = 2048
     inputBox:SetMaxLetters(0)
     inputBox:SetMaxBytes(CAP)
@@ -5715,7 +5715,7 @@ function CludesUI.AttachImportPasteAbsorber(inputBox, onRetry)
             -- The box rejected part of the paste; the buffer holds all of it.
             capturedState = text
             settingLabel = true
-            inputBox:SetText(CludesUI.Lf("[ Import string captured (%1$s characters) ]", tostring(#text)))
+            inputBox:SetText(CUI.Lf("[ Import string captured (%1$s characters) ]", tostring(#text)))
             inputBox:SetCursorPosition(0)
             settingLabel = false
         elseif #boxText >= CAP then
@@ -5767,7 +5767,7 @@ end
 
 local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLabel)
     local POPUP_W, POPUP_H = 520, 310
-    local FONT = CludesUI.EXPRESSWAY
+    local FONT = CUI.EXPRESSWAY
 
     -- Dimmer
     local shade = CreateFrame("Frame", nil, UIParent)
@@ -5790,15 +5790,15 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
     local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.062, 0.070, 0.082, 1)
-    CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
+    CUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
 
     -- Title
-    local titleFS = CludesUI.MakeFont(dialog, 15, "", 1, 1, 1)
+    local titleFS = CUI.MakeFont(dialog, 15, "", 1, 1, 1)
     titleFS:SetPoint("TOP", dialog, "TOP", 0, -20)
     titleFS:SetText(title)
 
     -- Subtitle
-    local subFS = CludesUI.MakeFont(dialog, 11, "", 1, 1, 1)
+    local subFS = CUI.MakeFont(dialog, 11, "", 1, 1, 1)
     subFS:SetAlpha(0.45)
     subFS:SetPoint("TOP", titleFS, "BOTTOM", 0, -4)
     subFS:SetText(subtitle)
@@ -5824,7 +5824,7 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
     inputBox:SetPoint("TOPRIGHT", sc, "TOPRIGHT", -14, 0)
     inputBox:SetHeight(1) -- grows with content
 
-    local UpdateThumb, scrollTo = CludesUI.AttachSmoothScrollbar(scrollFrame)
+    local UpdateThumb, scrollTo = CUI.AttachSmoothScrollbar(scrollFrame)
 
     -- Reset on hide
     shade:HookScript("OnHide", function()
@@ -5891,7 +5891,7 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
     -- Attached after the OnTextChanged SetScript above so the hook survives.
     local absorber
     if not readOnly then
-        absorber = CludesUI.AttachImportPasteAbsorber(inputBox)
+        absorber = CUI.AttachImportPasteAbsorber(inputBox)
     end
 
     -- Buttons
@@ -5900,7 +5900,7 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
         confirmBtn:SetSize(120, 26)
         confirmBtn:SetPoint("BOTTOMRIGHT", dialog, "BOTTOM", -4, 14)
         confirmBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
-        CludesUI.MakeStyledButton(confirmBtn, confirmLabel or "Import", 11, CludesUI.WB_COLOURS, function()
+        CUI.MakeStyledButton(confirmBtn, confirmLabel or "Import", 11, CUI.WB_COLOURS, function()
             local packed = absorber and absorber.GetText() or inputBox:GetText()
             if packed and #packed > 0 then
                 shade:Hide()
@@ -5912,7 +5912,7 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
         cancelBtn:SetSize(120, 26)
         cancelBtn:SetPoint("BOTTOMLEFT", dialog, "BOTTOM", 4, 14)
         cancelBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
-        CludesUI.MakeStyledButton(cancelBtn, "Cancel", 11, CludesUI.RB_COLOURS, function()
+        CUI.MakeStyledButton(cancelBtn, "Cancel", 11, CUI.RB_COLOURS, function()
             shade:Hide()
         end)
     else
@@ -5920,7 +5920,7 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
         closeBtn:SetSize(120, 26)
         closeBtn:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 14)
         closeBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
-        CludesUI.MakeStyledButton(closeBtn, "Close", 11, CludesUI.RB_COLOURS, function()
+        CUI.MakeStyledButton(closeBtn, "Close", 11, CUI.RB_COLOURS, function()
             shade:Hide()
         end)
     end
@@ -5933,7 +5933,7 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
     end)
 
     -- Escape to close
-    CludesUI.PopupTakeKeys(dialog, shade)
+    CUI.PopupTakeKeys(dialog, shade)
     dialog:SetScript("OnKeyDown", function(self, entryKey)
         if InCombatLockdown() then
             return
@@ -5952,7 +5952,7 @@ end
 -------------------------------------------------------------------------------
 --  Export Popup
 -------------------------------------------------------------------------------
-function CludesUI:ShowExportPopup(exportStr)
+function CUI:ShowExportPopup(exportStr)
     local shade, inputBox, RefreshHeight =
         BuildStringPopup("Export Profile", "Copy the string below and share it", true, nil, nil)
 
@@ -5972,7 +5972,7 @@ end
 --  Same auto-highlight behavior as ShowExportPopup, but the caller supplies the
 --  title and subtitle (e.g. for the preset "Copy Blizz Edit Mode" string).
 -------------------------------------------------------------------------------
-function CludesUI:ShowCopyPopup(title, subtitle, packed)
+function CUI:ShowCopyPopup(title, subtitle, packed)
     local shade, inputBox, RefreshHeight = BuildStringPopup(title or "Copy", subtitle or "", true, nil, nil)
 
     inputBox._readOnly = packed or ""
@@ -5999,7 +5999,7 @@ end
 --  introduced into Edit Mode is wiped. Must be out of combat. Returns true if a
 --  layout was applied.
 -------------------------------------------------------------------------------
-function CludesUI.ApplyPresetEditMode(layoutString, layoutName)
+function CUI.ApplyPresetEditMode(layoutString, layoutName)
     if type(layoutString) ~= "string" or layoutString == "" then
         return false
     end
@@ -6060,7 +6060,7 @@ function CludesUI.ApplyPresetEditMode(layoutString, layoutName)
     -- Blizzard's built-in presets ahead of them, and SaveLayouts / SetActiveLayout
     -- index into that combined view: presets first, then the saved layouts, so
     -- the active index we hand back lines up with what the game uses.
-    local details, presetCount = CludesUI.EditModeLayoutsForSave()
+    local details, presetCount = CUI.EditModeLayoutsForSave()
     if not details then
         return false
     end
@@ -6099,7 +6099,7 @@ end
 -------------------------------------------------------------------------------
 --  Import Popup
 -------------------------------------------------------------------------------
-function CludesUI:ShowImportPopup(onImport, title, subtitle)
+function CUI:ShowImportPopup(onImport, title, subtitle)
     local shade, inputBox = BuildStringPopup(
         title or "Import Profile",
         subtitle or "Paste an CludesUI profile string below",
@@ -6125,17 +6125,17 @@ end
 --  https://github.com/methodgg/Wago-Creator-UI/blob/main/
 --  WagoUI_Libraries/LibAddonProfiles/ImplementationGuide.lua
 -------------------------------------------------------------------------------
-function CludesUI.DecodeProfileString(profileString)
-    local bundle = CludesUI.DecodeImportString(profileString)
+function CUI.DecodeProfileString(profileString)
+    local bundle = CUI.DecodeImportString(profileString)
     return bundle and bundle.data or nil
 end
 
-function CludesUI.SetProfile(profileKey)
-    CludesUI.SwitchProfile(profileKey)
+function CUI.SetProfile(profileKey)
+    CUI.SwitchProfile(profileKey)
 end
 
-function CludesUI.GetProfileKeys()
-    local _, profileNames = CludesUI.GetProfileList()
+function CUI.GetProfileKeys()
+    local _, profileNames = CUI.GetProfileList()
     local keyList = {}
     if profileNames then
         for key in pairs(profileNames) do
@@ -6145,22 +6145,22 @@ function CludesUI.GetProfileKeys()
     return keyList
 end
 
-function CludesUI.GetProfileAssignments()
+function CUI.GetProfileAssignments()
     return nil
 end
 
-function CludesUI.GetCurrentProfileKey()
-    return CludesUI.GetActiveProfileName()
+function CUI.GetCurrentProfileKey()
+    return CUI.GetActiveProfileName()
 end
 
-function CludesUI.OpenConfig()
+function CUI.OpenConfig()
     if not InCombatLockdown() then
-        CludesUI:Show()
+        CUI:Show()
     end
 end
 
-function CludesUI.CloseConfig()
-    CludesUI:Hide()
+function CUI.CloseConfig()
+    CUI:Hide()
 end
 
 -------------------------------------------------------------------------------
@@ -6188,14 +6188,14 @@ end
 --  box), source (optional display name of the caller), callback (optional).
 --  Returns true, or false + reason when the call could not start a session.
 -------------------------------------------------------------------------------
-function CludesUI.ImportProfileInteractive(options)
+function CUI.ImportProfileInteractive(options)
     if type(options) ~= "table" or type(options.importString) ~= "string" or options.importString == "" then
         return false, "invalid arguments"
     end
     if InCombatLockdown() then
         return false, "in combat"
     end
-    local existing = CludesUI._apiImportSession
+    local existing = CUI._apiImportSession
     if existing and existing.state ~= "done" then
         return false, "an interactive import is already pending"
     end
@@ -6205,13 +6205,13 @@ function CludesUI.ImportProfileInteractive(options)
     -- Profiles page -- and with it _ProfilesConsumeApiImport -- does not exist
     -- yet. Re-run the whole call next frame instead; the session is not created
     -- until then, so the re-entry is not blocked as "already pending".
-    if CludesUI:_SplitFirstOpen(function()
-        CludesUI.ImportProfileInteractive(options)
+    if CUI:_SplitFirstOpen(function()
+        CUI.ImportProfileInteractive(options)
     end) then
         return true
     end
 
-    CludesUI._apiImportSession = {
+    CUI._apiImportSession = {
         str = options.importString,
         name = type(options.profileName) == "string" and options.profileName or nil,
         source = type(options.source) == "string" and options.source or nil,
@@ -6223,23 +6223,23 @@ function CludesUI.ImportProfileInteractive(options)
     -- an earlier cached visit -- so after navigating, enter the import flow through the
     -- CURRENT build's registered entry. Never force a rebuild here: a rebuild
     -- mid-consume orphans the async decode's continuation on destroyed page frames.
-    CludesUI:NavigateToElementSettings("_CUIProfiles", "Profiles")
-    CludesUI._EnsureApiImportCloseHook()
-    if CludesUI._ProfilesConsumeApiImport then
-        CludesUI._ProfilesConsumeApiImport()
+    CUI:NavigateToElementSettings("_CUIProfiles", "Profiles")
+    CUI._EnsureApiImportCloseHook()
+    if CUI._ProfilesConsumeApiImport then
+        CUI._ProfilesConsumeApiImport()
     end
     return true
 end
 
 --- Fire the session callback exactly once and clear the session. pcall'd so a
 --- partner error can never break the import flow that invoked it.
-function CludesUI._FinishApiImportSession(accepted)
-    local cfg = CludesUI._apiImportSession
+function CUI._FinishApiImportSession(accepted)
+    local cfg = CUI._apiImportSession
     if not cfg or cfg.state == "done" then
         return
     end
     cfg.state = "done"
-    CludesUI._apiImportSession = nil
+    CUI._apiImportSession = nil
     if cfg.callback then
         pcall(cfg.callback, accepted and true or false)
     end
@@ -6251,17 +6251,17 @@ end
 --- only ever fires for genuine user closes.
 do
     local hooked = false
-    function CludesUI._EnsureApiImportCloseHook()
+    function CUI._EnsureApiImportCloseHook()
         if hooked then
             return
         end
-        local mf = CludesUI._mainFrame
+        local mf = CUI._mainFrame
         if not mf then
             return
         end -- panel not built yet; consumer retries
         hooked = true
         mf:HookScript("OnHide", function()
-            local cfg = CludesUI._apiImportSession
+            local cfg = CUI._apiImportSession
             if not cfg or cfg.state == "done" then
                 return
             end
@@ -6270,11 +6270,11 @@ do
             if InCombatLockdown() then
                 return
             end
-            CludesUI._FinishApiImportSession(false)
+            CUI._FinishApiImportSession(false)
             -- Clear the stale import page out of the cached Profiles wrapper
             -- so reopening the panel shows the normal Profiles view.
-            if CludesUI._ProfilesResetToMain then
-                pcall(CludesUI._ProfilesResetToMain)
+            if CUI._ProfilesResetToMain then
+                pcall(CUI._ProfilesResetToMain)
             end
         end)
     end
@@ -6319,7 +6319,7 @@ end
 --  Returns ok, err. NEVER reloads: the caller owns the ReloadUI at the end of
 --  its own flow (addon enable/disable state also only applies then).
 -------------------------------------------------------------------------------
-function CludesUI.ImportProfileSilent(options)
+function CUI.ImportProfileSilent(options)
     if type(options) ~= "table" or type(options.importString) ~= "string" or options.importString == "" then
         return false, "invalid arguments"
     end
@@ -6333,7 +6333,7 @@ function CludesUI.ImportProfileSilent(options)
 
     -- Decode once and hand ImportProfile the TABLE. Never re-encode a decoded
     -- payload: a serializer round trip is not identity on decoded content.
-    local bundle = CludesUI.DecodeImportString(options.importString)
+    local bundle = CUI.DecodeImportString(options.importString)
     if type(bundle) ~= "table" or type(bundle.data) ~= "table" then
         return false, "could not decode import string"
     end
@@ -6382,8 +6382,8 @@ function CludesUI.ImportProfileSilent(options)
         local layout = bundle.data.unlockLayout
         if layout then
             local meta = bundle.data.unlockLayoutMeta
-            local keyToFolder = CludesUI.BuildImportKeyToFolder(layout, meta and meta.keyToFolder)
-            bundle.data.unlockLayout = CludesUI.FilterLayoutToFolders(layout, keepCanon, keyToFolder)
+            local keyToFolder = CUI.BuildImportKeyToFolder(layout, meta and meta.keyToFolder)
+            bundle.data.unlockLayout = CUI.FilterLayoutToFolders(layout, keepCanon, keyToFolder)
         end
     end
     -- Meta is transport-only; never let it persist into the profile.
@@ -6401,11 +6401,11 @@ function CludesUI.ImportProfileSilent(options)
     if options.cleanSlate ~= false then
         local saved = GetProfilesDB()
         if saved.profiles and saved.profiles[profName] then
-            CludesUI.DeleteProfile(profName)
+            CUI.DeleteProfile(profName)
         end
     end
 
-    local success, err, status = CludesUI.ImportProfile(bundle, profName)
+    local success, err, status = CUI.ImportProfile(bundle, profName)
     if not success then
         return false, err
     end
@@ -6453,7 +6453,7 @@ end
 --  installer never imports, the picker returns on a later login without a
 --  registration.
 -------------------------------------------------------------------------------
-function CludesUI.RegisterExternalInstaller(displayName)
-    CludesUI._externalInstaller = (type(displayName) == "string" and displayName ~= "") and displayName
+function CUI.RegisterExternalInstaller(displayName)
+    CUI._externalInstaller = (type(displayName) == "string" and displayName ~= "") and displayName
         or true
 end

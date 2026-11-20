@@ -818,12 +818,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 --  "Apply to Bar" machinery (hover strip on flyout items). One table
                 --  local (AB) instead of individual locals: this function is enormous and Lua 5.1 caps active locals at 200.
                 -----------------------------------------------------------
-                local AB = {}
+                local ApplyBar = {}
                 -- A new menu row at the menu's current bottom (mH): the row button,
                 -- full width less a pixel each side, and its left-hand caption.
                 -- A flyout row's right-hand arrow (at arrowAlpha) and its hover
                 -- highlight, which starts hidden.
-                AB.RowArrowAndHighlight = function(menuRow, arrowAlpha)
+                ApplyBar.RowArrowAndHighlight = function(menuRow, arrowAlpha)
                     local arrow = menuRow:CreateTexture(nil, "ARTWORK")
                     arrow:SetSize(10, 10)
                     arrow:SetPoint("RIGHT", menuRow, "RIGHT", -8, 0)
@@ -839,7 +839,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- takes part in Spec Overrides capture): getColor returns r, g, b, a,
                 -- setColor takes a pick, withAlpha offers an opacity slider, and
                 -- onFirstClick, when given, runs on each click before the picker opens.
-                AB.ItemSwatch = function(subItem, getColor, setColor, withAlpha, onFirstClick)
+                ApplyBar.ItemSwatch = function(subItem, getColor, setColor, withAlpha, onFirstClick)
                     subItem._noCapture = true
                     local swatchBtn, refreshSwatch = CludesUI.BuildColorSwatch(
                         subItem,
@@ -855,7 +855,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         swatchBtn:HookScript("PreClick", onFirstClick)
                     end
                 end
-                AB.NewMenuRow = function(caption)
+                ApplyBar.NewMenuRow = function(caption)
                     local menuRow = CreateFrame("Button", nil, inner)
                     menuRow:SetHeight(ITEM_H)
                     menuRow:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -menuH)
@@ -873,13 +873,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- a swatch on the Custom item whose first click also picks Custom and
                 -- keeps the flyout open, re-lit; CustomColorApply is the row's Apply to
                 -- Bar, carrying the colour with the mode when the mode is Custom.
-                AB.CustomColorSwatch = function(key, g, b)
+                ApplyBar.CustomColorSwatch = function(key, g, b)
                     local rKey, gKey, bKey = key .. "R", key .. "G", key .. "B"
                     return function(subItem, entry, subMenu)
                         if entry.val ~= "custom" then
                             return
                         end
-                        AB.ItemSwatch(
+                        ApplyBar.ItemSwatch(
                             subItem,
                             function()
                                 return spellSettings[rKey] or 1, spellSettings[gKey] or g, spellSettings[bKey] or b, 1
@@ -904,7 +904,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         )
                     end
                 end
-                AB.CustomColorApply = function(key, g, b)
+                ApplyBar.CustomColorApply = function(key, g, b)
                     local rKey, gKey, bKey = key .. "R", key .. "G", key .. "B"
                     return {
                         apply = {
@@ -927,7 +927,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- false while a hide below would otherwise show through, else as
                 -- nothing. A glow reads as its menu value, a button* name moved
                 -- into cdStateGlow included. Every other key reads as stored.
-                AB.ScopeVal = function(tbl, keyName, raw)
+                ApplyBar.ScopeVal = function(tbl, keyName, raw)
                     if not tbl then
                         return nil
                     end
@@ -962,7 +962,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- True when an apply's keys hold either half of the pair: such an
                 -- apply moves a single-value glow into cdStateGlow on every table it
                 -- stamps or clears first (ns.CdStateSplitLegacy).
-                AB.TouchesCdState = function(keyList)
+                ApplyBar.TouchesCdState = function(keyList)
                     if not keyList then
                         return false
                     end
@@ -975,7 +975,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 end
                 -- Run fn(sid, entry) for every per-spell entry belonging to a bar in the
                 -- given spec profile. The DEFAULT buffs bar owns every buff-store entry not claimed by another buff bar (Blizzard-tracked buffs aren't in assignedSpells).
-                AB.ForEachMemberEntry = function(profileTbl, barSpellData, func)
+                ApplyBar.ForEachMemberEntry = function(profileTbl, barSpellData, func)
                     local familyStore = profileTbl and profileTbl[famKey]
                     if not familyStore then
                         return
@@ -1006,7 +1006,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                                 -- Also exclude HOSTED buffs (on cd/util bars): removed from Apply-to-Bar,
                                 -- so a default-buffs-bar apply must not treat their buff-store entry as unclaimed and wipe it.
-                                AB.ForEachHostedKey(b2, function(hkey)
+                                ApplyBar.ForEachHostedKey(b2, function(hkey)
                                     claimed[hkey] = true
                                 end)
                             end
@@ -1033,7 +1033,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
                 -- Zero-cost feature gates: a bar-tier write can enable features
                 -- the per-spell setters normally arm -- flip the same flags.
-                AB.FlipSessionGates = function(tbl)
+                ApplyBar.FlipSessionGates = function(tbl)
                     if not tbl then
                         return
                     end
@@ -1084,9 +1084,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- Any Resource Aware CD-ready glow already saved in this spec
                 -- (per-spell entries or bar tiers, in either saved form)? Gates the
                 -- one-time perf confirm popup, mirroring the per-spell setter.
-                AB.AnyResourceAwareGlowSaved = function()
+                ApplyBar.AnyResourceAwareGlowSaved = function()
                     local function hit(b)
-                        return AB.ScopeVal(b, "cdStateGlow", true) == "pixelGlowReadyUsable"
+                        return ApplyBar.ScopeVal(b, "cdStateGlow", true) == "pixelGlowReadyUsable"
                     end
                     local familyStore = mod.GetSpellSettingsStore and mod.GetSpellSettingsStore(barId)
                     if familyStore then
@@ -1118,7 +1118,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- Keys that preset/custom icons route through the profile-level
                 -- customActiveStates store instead of the ss/tier chain (Fake-Active
                 -- engine reads rule.cas first); a bar apply touching any of these also stamps each preset member's cas entry, so "Apply to Bar" styles preset icons too.
-                AB.CAS_KEYS = {
+                ApplyBar.CAS_KEYS = {
                     activeSwipeMode = true,
                     activeSwipeClassColor = true,
                     activeSwipeR = true,
@@ -1151,7 +1151,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- a buffs bar -- so a bar apply otherwise skips it entirely. These keys read
                 -- the same on any icon, so they stamp directly, like preset icons do through
                 -- StampMemberCas. Only rows whose keys are ALL in here stamp.
-                AB.HOSTED_KEYS = {
+                ApplyBar.HOSTED_KEYS = {
                     thresholdSeconds = true,
                     thresholdDecimals = true,
                     thresholdColorEnabled = true,
@@ -1160,13 +1160,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     thresholdColorB = true,
                 }
                 -- Hosted buffs keep their entries in the BUFF family store whatever family the host bar belongs to.
-                AB.hostedFamKey = mod.SettingsFamilyKey("buffs")
-                AB.TouchesHosted = function(keyList)
+                ApplyBar.hostedFamKey = mod.SettingsFamilyKey("buffs")
+                ApplyBar.TouchesHosted = function(keyList)
                     if not keyList or #keyList == 0 then
                         return false
                     end
                     for _, keyName in ipairs(keyList) do
-                        if not AB.HOSTED_KEYS[keyName] then
+                        if not ApplyBar.HOSTED_KEYS[keyName] then
                             return false
                         end
                     end
@@ -1182,7 +1182,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- one of your racials or a custom spell, whose settings live in
                 -- customActiveStates), not a hosted buff's marker, which is a real
                 -- Blizzard buff frame moved onto the bar.
-                AB.IsInjectedMember = function(barSpellData, sid)
+                ApplyBar.IsInjectedMember = function(barSpellData, sid)
                     local injected = (type(sid) == "number" and sid < 0)
                         or (mod._myRacialsSet and mod._myRacialsSet[sid])
                         or (barSpellData.customSpellIDs and barSpellData.customSpellIDs[sid])
@@ -1191,7 +1191,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     end
                     return not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid))
                 end
-                AB.ForEachHostedKey = function(barSpellData, func)
+                ApplyBar.ForEachHostedKey = function(barSpellData, func)
                     if type(barSpellData) ~= "table" or type(barSpellData.hostedBuffSpellIDs) ~= "table" then
                         return
                     end
@@ -1210,17 +1210,17 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- Stamp one spec profile's hosted buffs on this bar. Blocking-false has nothing
                 -- to block here (hosted entries chain to no tier), so an "off" apply clears the
                 -- keys instead, and an entry left empty is dropped.
-                AB.StampHostedBuffs = function(profileTbl, barSpellData, applyWrite, value, keyList)
+                ApplyBar.StampHostedBuffs = function(profileTbl, barSpellData, applyWrite, value, keyList)
                     local familyStore
                     local mintedCdKey = false
-                    AB.ForEachHostedKey(barSpellData, function(hkey)
+                    ApplyBar.ForEachHostedKey(barSpellData, function(hkey)
                         -- Resolved on the first hosted key, not up front: an All Specs apply on
                         -- a bar with no hosted buffs would otherwise mint an empty family store
                         -- in every spec profile.
                         familyStore = familyStore
                             or (
                                 mod.GetSpellSettingsStoreForProf
-                                and mod.GetSpellSettingsStoreForProf(profileTbl, AB.hostedFamKey, true)
+                                and mod.GetSpellSettingsStoreForProf(profileTbl, ApplyBar.hostedFamKey, true)
                             )
                         if not familyStore then
                             return
@@ -1252,7 +1252,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         mod.MarkBuffFamHasCdKey()
                     end
                 end
-                AB.StampMemberCas = function(barSpellData, applyWrite, value, keyList)
+                ApplyBar.StampMemberCas = function(barSpellData, applyWrite, value, keyList)
                     if not (barSpellData and type(barSpellData.assignedSpells) == "table") then
                         return
                     end
@@ -1279,7 +1279,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end
                     end
                     for _, memberId in ipairs(barSpellData.assignedSpells) do
-                        if AB.IsInjectedMember(barSpellData, memberId) then
+                        if ApplyBar.IsInjectedMember(barSpellData, memberId) then
                             if mod.SlotIDFromKey(memberId) then
                                 -- Equipment slots stamp the SLOT entry: one bar application
                                 -- covers whatever item is equipped, now or after any swap -- no entry minted per equipped item.
@@ -1297,7 +1297,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 if own and keyList then
                                     -- A single-value glow there first moves to cdStateGlow,
                                     -- read over the slot entry as the icon reads it.
-                                    if AB.TouchesCdState(keyList) then
+                                    if ApplyBar.TouchesCdState(keyList) then
                                         mod.ChainSettings(own, e)
                                         mod.CdStateSplitLegacy(own)
                                     end
@@ -1319,7 +1319,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- How many existing values would this apply REPLACE? Counts member per-spell
                 -- entries (and preset cas entries / other specs' bar-tier values for All Specs)
                 -- whose own value for a touched key differs -- equal values cost zero and don't count. Drives the "overwrite?" confirm popup.
-                AB.CountApplyOverwrites = function(keyList, applyWrite, value, everySpec)
+                ApplyBar.CountApplyOverwrites = function(keyList, applyWrite, value, everySpec)
                     keyList = keyList or {}
                     if #keyList == 0 or not applyWrite then
                         return 0
@@ -1329,12 +1329,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     applyWrite(temp, value)
                     local touchesCas = false
                     for _, keyName in ipairs(keyList) do
-                        if AB.CAS_KEYS[keyName] then
+                        if ApplyBar.CAS_KEYS[keyName] then
                             touchesCas = true
                             break
                         end
                     end
-                    local touchesHosted = AB.TouchesHosted(keyList)
+                    local touchesHosted = ApplyBar.TouchesHosted(keyList)
                     local count = 0
                     local CAS_FALSE_STRIPPED = {
                         cdStateEffect = true,
@@ -1348,7 +1348,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- Button Glow style its name implies, which an apply with another
                     -- style replaces.
                     local function ownOf(t, keyName, raw)
-                        local own = AB.ScopeVal(t, keyName, raw)
+                        local own = ApplyBar.ScopeVal(t, keyName, raw)
                         if own == nil and keyName == "cdStateGlowStyle" then
                             local g = rawget(t, "cdStateGlow")
                             if g == nil then
@@ -1389,7 +1389,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                             end
                         end
-                        AB.ForEachMemberEntry(profileTbl, barSpellData, function(_, e)
+                        ApplyBar.ForEachMemberEntry(profileTbl, barSpellData, function(_, e)
                             if entryLoses(e, false) then
                                 count = count + 1
                             end
@@ -1402,7 +1402,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             and mod.ResolveCustomActiveKey
                         then
                             for _, memberId in ipairs(barSpellData.assignedSpells) do
-                                if AB.IsInjectedMember(barSpellData, memberId) then
+                                if ApplyBar.IsInjectedMember(barSpellData, memberId) then
                                     -- Trinket slots resolve to the EQUIPPED item's own entry
                                     -- (the values the stamp will clear); the slot entry is the bar-level stamp itself (analogous to the tier) and is not counted.
                                     local e = mod.GetCustomActiveState(mod.ResolveCustomActiveKey(memberId))
@@ -1414,9 +1414,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end
                         -- Hosted buffs stamp their own entries (StampHostedBuffs), under the same blocking-false normalization the cas stamps use.
                         if touchesHosted then
-                            local familyStore = profileTbl[AB.hostedFamKey]
+                            local familyStore = profileTbl[ApplyBar.hostedFamKey]
                             if familyStore then
-                                AB.ForEachHostedKey(barSpellData, function(hkey)
+                                ApplyBar.ForEachHostedKey(barSpellData, function(hkey)
                                     local entry = familyStore[hkey]
                                     if type(entry) == "table" and entryLoses(entry, true) then
                                         count = count + 1
@@ -1445,7 +1445,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- Write a picked value into a bar tier and clear the shadowing per-spell
                 -- overrides from the bar's member spells, so the apply visibly takes effect
                 -- everywhere. allSpecs writes the profile-level bd tier (which specs with no CDM data yet inherit) and sweeps every spec's spec-tier + overrides.
-                AB.RunBarApply = function(applyKeys, applyWrite, value, everySpec)
+                ApplyBar.RunBarApply = function(applyKeys, applyWrite, value, everySpec)
                     if not applyWrite then
                         return
                     end
@@ -1459,7 +1459,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- A Cooldown State Effect apply first moves a single-value glow on
                     -- every table it stamps or clears into cdStateGlow, so the half of
                     -- the pair it leaves alone keeps its look.
-                    local splitCd = AB.TouchesCdState(keyList)
+                    local splitCd = ApplyBar.TouchesCdState(keyList)
                     local function stamp(tbl)
                         if splitCd then
                             mod.CdStateSplitLegacy(tbl)
@@ -1470,12 +1470,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     end
                     local touchesCas = false
                     for _, keyName in ipairs(keyList) do
-                        if AB.CAS_KEYS[keyName] then
+                        if ApplyBar.CAS_KEYS[keyName] then
                             touchesCas = true
                             break
                         end
                     end
-                    local touchesHosted = AB.TouchesHosted(keyList)
+                    local touchesHosted = ApplyBar.TouchesHosted(keyList)
                     local function sweepProf(profileTbl)
                         if type(profileTbl) ~= "table" then
                             return
@@ -1503,7 +1503,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             mod.ChainSettings(barSpellData.barSettings, absX)
                             tierX = barSpellData.barSettings
                         end
-                        AB.ForEachMemberEntry(profileTbl, barSpellData, function(memberId, e)
+                        ApplyBar.ForEachMemberEntry(profileTbl, barSpellData, function(memberId, e)
                             if splitCd then
                                 mod.ChainSettings(e, tierX)
                                 mod.CdStateSplitLegacy(e)
@@ -1519,10 +1519,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
                         end)
                         if touchesCas then
-                            AB.StampMemberCas(barSpellData, stamp, value, keyList)
+                            ApplyBar.StampMemberCas(barSpellData, stamp, value, keyList)
                         end
                         if touchesHosted then
-                            AB.StampHostedBuffs(profileTbl, barSpellData, stamp, value, keyList)
+                            ApplyBar.StampHostedBuffs(profileTbl, barSpellData, stamp, value, keyList)
                         end
                     end
                     if everySpec then
@@ -1537,7 +1537,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             mod._cdmResGen = (mod._cdmResGen or 0) + 1
                         end
                         stamp(abs)
-                        AB.FlipSessionGates(abs)
+                        ApplyBar.FlipSessionGates(abs)
                         local specStore = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
                         if specStore then
                             for _, profileTbl in pairs(specStore) do
@@ -1550,7 +1550,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- never both active (the reverse -- an All Specs apply clearing the
                         -- per-spec tier across every spec -- is handled by sweepProf above).
                         -- The canonical unapply also cleans up preset cas stamps; the per-spec write below then re-stamps THIS spec's members. No-op (and no refresh) when All Specs isn't active.
-                        AB.RunBarUnapply(keyList, true)
+                        ApplyBar.RunBarUnapply(keyList, true)
                         local bs = spellData.barSettings
                         if not bs then
                             bs = {}
@@ -1571,7 +1571,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         then
                             bs.cdStateGlow = glowBefore
                         end
-                        AB.FlipSessionGates(bs)
+                        ApplyBar.FlipSessionGates(bs)
                         local specStore = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
                         local specKeyA = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
                         local profileTbl = specStore and specKeyA and specStore[specKeyA]
@@ -1595,7 +1595,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- True when a BAR tier drives this setting -- "Apply to Bar" (this spec) or
                 -- "Apply to Bar (All Specs)" holds a value for any of these keys. A blocking
                 -- false counts (bar-spec "= Default" apply). Exclusion is per-spell now (SpellHasOwn), so there's no spec-level carve-out here: this only answers "does the bar drive this setting".
-                AB.KeysBarApplied = function(keyList)
+                ApplyBar.KeysBarApplied = function(keyList)
                     if not keyList then
                         return false
                     end
@@ -1603,7 +1603,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     local abs = selectedBar and selectedBar.barSpellSettings
                     for _, keyName in ipairs(keyList) do
                         if
-                            (bs and AB.ScopeVal(bs, keyName, true) ~= nil) or (abs and AB.ScopeVal(abs, keyName) ~= nil)
+                            (bs and ApplyBar.ScopeVal(bs, keyName, true) ~= nil) or (abs and ApplyBar.ScopeVal(abs, keyName) ~= nil)
                         then
                             return true
                         end
@@ -1614,12 +1614,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- True when the SPELL holds its OWN value for any of these keys (a
                 -- per-spell override in THIS spec's store) -- the "excluded from the bar"
                 -- state, having broken out of the bar apply. Inherently per spell AND spec (store is the active spec's profile).
-                AB.SpellHasOwn = function(keyList)
+                ApplyBar.SpellHasOwn = function(keyList)
                     if not (keyList and spellSettings) then
                         return false
                     end
                     for _, keyName in ipairs(keyList) do
-                        if AB.ScopeVal(spellSettings, keyName, true) ~= nil then
+                        if ApplyBar.ScopeVal(spellSettings, keyName, true) ~= nil then
                             return true
                         end
                         -- An own hide or None that shadows a single-value glow the
@@ -1643,14 +1643,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
                 -- Include This Spell: drop this spell's own value for these keys so it
                 -- rejoins the bar apply (per spell+spec; caller does the UI refresh). Shared by the b3 button and by Apply to Bar/All Specs on an already-excluded spell (same thing).
-                AB.IncludeSpell = function(keyList)
+                ApplyBar.IncludeSpell = function(keyList)
                     if not (keyList and spellSettings) then
                         return
                     end
                     -- A single-value glow on the spell moves to cdStateGlow first, so
                     -- the half of the pair these keys leave keeps its look.
                     local glowKeys = false
-                    if AB.TouchesCdState(keyList) then
+                    if ApplyBar.TouchesCdState(keyList) then
                         mod.CdStateSplitLegacy(spellSettings)
                         for _, keyName in ipairs(keyList) do
                             if keyName == "cdStateGlow" then
@@ -1666,7 +1666,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- A bar glow saved in the single-value form is shadowed by a hide
                     -- this spell keeps: to rejoin it, the tier holding it moves it to
                     -- cdStateGlow, which no hide above shadows.
-                    if glowKeys and tier and AB.MenuGlow(spellSettings) ~= AB.MenuGlow(tier) then
+                    if glowKeys and tier and ApplyBar.MenuGlow(spellSettings) ~= ApplyBar.MenuGlow(tier) then
                         local t = tier
                         for _ = 1, 2 do
                             if type(t) ~= "table" or mod.CdStateSplitLegacy(t) then
@@ -1681,7 +1681,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- Remove an active apply from one scope: clears the setting's keys from that
                 -- tier only. Per-spell values and the OTHER scope are left alone (bar falls
                 -- through to all-specs/defaults). Preset members' cas stamps are removed only when they still EQUAL the removed value -- per-icon cas tweaks made after the apply survive.
-                AB.RunBarUnapply = function(applyKeys, everySpec)
+                ApplyBar.RunBarUnapply = function(applyKeys, everySpec)
                     local keyList = applyKeys or {}
                     local t
                     if everySpec then
@@ -1708,14 +1708,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         if not everySpec then
                             mod.ChainSettings(t, selectedBar and selectedBar.barSpellSettings)
                         end
-                        if glowKeys or AB.ScopeVal(t, "cdStateEffect", true) == false then
+                        if glowKeys or ApplyBar.ScopeVal(t, "cdStateEffect", true) == false then
                             mod.CdStateSplitLegacy(t)
                         end
                     end
                     local removed = {}
                     local touchesCas = false
                     for _, keyName in ipairs(keyList) do
-                        if AB.CAS_KEYS[keyName] then
+                        if ApplyBar.CAS_KEYS[keyName] then
                             touchesCas = true
                         end
                         local own = rawget(t, keyName)
@@ -1724,7 +1724,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             rawset(t, keyName, nil)
                         end
                     end
-                    local touchesHosted = AB.TouchesHosted(keyList)
+                    local touchesHosted = ApplyBar.TouchesHosted(keyList)
                     if next(t) == nil then
                         if everySpec then
                             if selectedBar then
@@ -1770,9 +1770,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end
                         local function unstamp(profileTbl, barSpellData)
                             if touchesHosted then
-                                local familyStore = profileTbl and profileTbl[AB.hostedFamKey]
+                                local familyStore = profileTbl and profileTbl[ApplyBar.hostedFamKey]
                                 if familyStore then
-                                    AB.ForEachHostedKey(barSpellData, function(hkey)
+                                    ApplyBar.ForEachHostedKey(barSpellData, function(hkey)
                                         local entry = familyStore[hkey]
                                         if not entry then
                                             return
@@ -1789,7 +1789,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return
                             end
                             for _, memberId in ipairs(barSpellData.assignedSpells) do
-                                if AB.IsInjectedMember(barSpellData, memberId) then
+                                if ApplyBar.IsInjectedMember(barSpellData, memberId) then
                                     if mod.SlotIDFromKey(memberId) then
                                         -- Equipment slots: the stamp lives on the SLOT entry. Also
                                         -- sweep the equipped item's own entry -- it may carry a legacy per-item stamp from before slot stamping.
@@ -1843,7 +1843,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
                 -- The scope flyout itself: a vertical list (Apply to This Spell / Apply to
                 -- Bar / Apply to Bar (All Specs) / conditional Exclude this spec) docked to the right of the hovered flyout item. One shared frame per menu; context swapped on each hover.
-                AB.GetApplyStrip = function()
+                ApplyBar.GetApplyStrip = function()
                     if dropMenu._applyStrip then
                         return dropMenu._applyStrip
                     end
@@ -1981,7 +1981,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
                             local anyOwn, match = false, true
                             for _, keyName in ipairs(keyList) do
-                                local own = AB.ScopeVal(tier, keyName, raw)
+                                local own = ApplyBar.ScopeVal(tier, keyName, raw)
                                 if own ~= nil then
                                     anyOwn = true
                                 end
@@ -1994,7 +1994,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Excluded = the spell holds its OWN value for these keys. Exactly
                         -- ONE scope is the effective source: this spell when excluded, otherwise
                         -- whichever bar tier drives it -- so the overlay never sits on Apply to Bar while the spell is off on its own (even though the bar still holds it for others).
-                        local excluded = AB.SpellHasOwn(keyList)
+                        local excluded = ApplyBar.SpellHasOwn(keyList)
                         -- "Apply to This Spell" only shows when NO bar apply drives the setting
                         -- (a bar apply REPLACES it with Exclude/Include -- see Relayout), so it
                         -- just lights on the value the spell owns. Toggles light whenever the spell has its own value (on OR off); OR settings match the specific value.
@@ -2010,7 +2010,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         b2._rest()
                         -- Exclude/Include This Spell: shown whenever a bar apply drives the
                         -- setting (so this spell+spec can opt out/back in). Label + soft red/green colour flip on the excluded state (b3._excluded drives the colour -- see b3._rest above).
-                        if AB.KeysBarApplied(keyList) then
+                        if ApplyBar.KeysBarApplied(keyList) then
                             excludeBtn._excluded = excluded
                             excludeBtn._setText(
                                 excluded and ("+ " .. CludesUI.L("Include This Spell"))
@@ -2037,7 +2037,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local allActive = false
                         if abs then
                             for _, keyName in ipairs(keyList) do
-                                if AB.ScopeVal(abs, keyName) ~= nil then
+                                if ApplyBar.ScopeVal(abs, keyName) ~= nil then
                                     allActive = true
                                     break
                                 end
@@ -2070,7 +2070,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         for _, keyName in ipairs(keyList) do
                             local own
                             if scopeT then
-                                own = AB.ScopeVal(scopeT, keyName, not everySpec)
+                                own = ApplyBar.ScopeVal(scopeT, keyName, not everySpec)
                             end
                             if own ~= nil then
                                 scopeActive = true
@@ -2086,14 +2086,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Threshold Seconds; custom colour, where "custom" is fixed and the RGB
                         -- lives in ss; + Border Color's flag + RGBA): rejoin ONLY when the payload matches this scope; otherwise fall through and push it -- rejoining would silently discard it.
                         if
-                            AB.KeysBarApplied(keyList)
-                            and AB.SpellHasOwn(keyList)
+                            ApplyBar.KeysBarApplied(keyList)
+                            and ApplyBar.SpellHasOwn(keyList)
                             and (
                                 not (context.scalarApply or context.payloadValue)
                                 or (scopeActive and valuesMatch)
                             )
                         then
-                            AB.IncludeSpell(keyList)
+                            ApplyBar.IncludeSpell(keyList)
                             if mod.RefreshCDMIconAppearance then
                                 mod.RefreshCDMIconAppearance(barId)
                             end
@@ -2138,7 +2138,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     end
                                 end
                             end
-                            AB.RunBarUnapply(keyList, everySpec)
+                            ApplyBar.RunBarUnapply(keyList, everySpec)
                             if context.refresh then
                                 context.refresh()
                             end
@@ -2148,7 +2148,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             return
                         end
                         local function go()
-                            AB.RunBarApply(keyList, context.write, value, everySpec)
+                            ApplyBar.RunBarApply(keyList, context.write, value, everySpec)
                             if context.refresh then
                                 context.refresh()
                             end
@@ -2159,9 +2159,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Confirm before anything destructive or costly: a first-time Resource
                         -- Aware glow (perf note), replacing this scope's active apply with a
                         -- different value (mutually exclusive selections un-check each other), and/or replacing existing per-icon values. One composed popup, never two in a row.
-                        local needRA = context.confirmRA and not AB.AnyResourceAwareGlowSaved()
+                        local needRA = context.confirmRA and not ApplyBar.AnyResourceAwareGlowSaved()
                         local replacing = scopeActive -- (values differ, else un-applied above)
-                        local overwrites = AB.CountApplyOverwrites(keyList, context.write, value, everySpec)
+                        local overwrites = ApplyBar.CountApplyOverwrites(keyList, context.write, value, everySpec)
                         if not needRA and not replacing and overwrites == 0 then
                             go()
                             return
@@ -2224,7 +2224,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             return
                         end
                         EnsureStored()
-                        if AB.TouchesCdState(context.keys) then
+                        if ApplyBar.TouchesCdState(context.keys) then
                             mod.CdStateSplitLegacy(spellSettings)
                         end
                         context.write(spellSettings, value)
@@ -2263,9 +2263,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             return
                         end
                         local keyList = context.keys or {}
-                        if AB.SpellHasOwn(keyList) then
+                        if ApplyBar.SpellHasOwn(keyList) then
                             -- Include: drop this spell's own value -> rejoin the bar.
-                            AB.IncludeSpell(keyList)
+                            ApplyBar.IncludeSpell(keyList)
                         else
                             -- Exclude: break this spell out with its own value. OR
                             -- settings copy the current value (look unchanged); the
@@ -2298,8 +2298,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     return s
                 end
                 -- Attach the strip to a hovered flyout item. ctx carries the row/item apply info + a flyout-refresh closure.
-                AB.ShowApplyStripFor = function(itemBtn, context)
-                    local s = AB.GetApplyStrip()
+                ApplyBar.ShowApplyStripFor = function(itemBtn, context)
+                    local s = ApplyBar.GetApplyStrip()
                     s._ctx = context
                     s._ownerItem = itemBtn
                     if s._updateActive then
@@ -2357,7 +2357,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- offers no Resource Aware glow (the preset engine reads no
                 -- usability): one stamped there by a bar apply shows as the plain CD
                 -- Ready glow it renders as.
-                AB.MenuGlow = function(source, preset)
+                ApplyBar.MenuGlow = function(source, preset)
                     local g = mod.CdStateGlowOf(source)
                     g = g and mod.CD_STATE_GLOWS[g]
                     if preset and g == "pixelGlowReadyUsable" then
@@ -2375,11 +2375,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- glows also lock while a Proc Glow is set, a reason that wins over a
                 -- conflict; the glow shown stays clickable, since clearing it adds
                 -- nothing.
-                AB.CdStateItemState = function(source, procLocked, preset)
+                ApplyBar.CdStateItemState = function(source, procLocked, preset)
                     return function(subItem, entry)
                         local tipText
                         if entry.choiceGet then
-                            if AB.MenuGlow(source, preset) ~= entry.val then
+                            if ApplyBar.MenuGlow(source, preset) ~= entry.val then
                                 if procLocked and procLocked() then
                                     tipText = "Disable Proc Glow first"
                                 else
@@ -2387,20 +2387,20 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     if mod.CdStateGlowConflicts(hide, entry.val) then
                                         tipText = CludesUI.Lf(
                                             "Disabled while %1$s is enabled.",
-                                            CludesUI.L(AB.CD_STATE_LABELS[hide] or hide)
+                                            CludesUI.L(ApplyBar.CD_STATE_LABELS[hide] or hide)
                                         )
                                     end
                                 end
                             end
                         elseif entry.val ~= nil and mod.CD_STATE_HIDE[entry.val] then
-                            local glow = AB.MenuGlow(source, preset)
+                            local glow = ApplyBar.MenuGlow(source, preset)
                             if
                                 mod.CdStateHideOf(source) ~= entry.val
                                 and mod.CdStateGlowConflicts(entry.val, glow)
                             then
                                 tipText = CludesUI.Lf(
                                     "Disabled while %1$s is enabled.",
-                                    CludesUI.L(AB.CD_STATE_LABELS[glow] or glow)
+                                    CludesUI.L(ApplyBar.CD_STATE_LABELS[glow] or glow)
                                 )
                             end
                         else
@@ -2413,7 +2413,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- bar-wide is explicitly no hide (false blocks the all-specs tier
                 -- below); Lower Alpha pushes src's current percent, read before t
                 -- (src itself for the strip's own writes) is written.
-                AB.CdHideWrite = function(source)
+                ApplyBar.CdHideWrite = function(source)
                     return function(tbl, value)
                         local percent = source.cdStateLowerAlpha
                         tbl.cdStateEffect = value or false
@@ -2428,7 +2428,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- resolves as a direct pick would: src's own Glow Style wins, a
                 -- button* single value keeps its Action Button Glow look, else the
                 -- glow's default; read before t is written.
-                AB.CdGlowWrite = function(source)
+                ApplyBar.CdGlowWrite = function(source)
                     return function(tbl, value)
                         local current = mod.CdStateGlowOf(source)
                         tbl.cdStateGlow = value or false
@@ -2448,13 +2448,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end
                     end
                 end
-                AB.CD_GLOW_KEYS = { "cdStateGlow", "cdStateGlowStyle", "cdStateGlowAlpha" }
+                ApplyBar.CD_GLOW_KEYS = { "cdStateGlow", "cdStateGlowStyle", "cdStateGlowAlpha" }
                 -- One "+ Glow" choice of a menu m ({ get, set, write, view }): it picks
                 -- the glow beside the hide, or clears it when it is the glow shown.
                 -- The "+ " look is composed from the glow's own label. Its bar apply
                 -- works on the glow keys alone: another glow replaces the applied one,
                 -- and Exclude This Spell turns the glow off for the spell.
-                AB.CdGlowItem = function(m, value, labelText, tooltip)
+                ApplyBar.CdGlowItem = function(m, value, labelText, tooltip)
                     return {
                         val = value,
                         label = labelText,
@@ -2464,7 +2464,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end,
                         choiceGet = m.get,
                         choiceSet = m.set,
-                        applyKeys = AB.CD_GLOW_KEYS,
+                        applyKeys = ApplyBar.CD_GLOW_KEYS,
                         applyWrite = m.write,
                         applyView = m.view,
                     }
@@ -2473,14 +2473,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- runs an event-driven usability watcher shared by every spell that
                 -- uses one, so only the first in the spec confirms its small cost (a
                 -- spell's own saved value counts, so re-picks never prompt).
-                AB.SsGlowSet = function(value)
+                ApplyBar.SsGlowSet = function(value)
                     local function commit()
                         mod.CdStateWriteGlow(EnsureStored(), value)
                         if mod.RefreshCDMIconAppearance then
                             mod.RefreshCDMIconAppearance(barId)
                         end
                     end
-                    if value == "pixelGlowReadyUsable" and not AB.AnyResourceAwareGlowSaved() then
+                    if value == "pixelGlowReadyUsable" and not ApplyBar.AnyResourceAwareGlowSaved() then
                         dropMenu:Hide()
                         CludesUI:ShowConfirmPopup({
                             title = "CD Ready Glow (Resource Aware)",
@@ -2495,12 +2495,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 end
                 local ssGlowMenu = {
                     get = function()
-                        return AB.MenuGlow(spellSettings)
+                        return ApplyBar.MenuGlow(spellSettings)
                     end,
-                    set = AB.SsGlowSet,
-                    write = AB.CdGlowWrite(spellSettings),
+                    set = ApplyBar.SsGlowSet,
+                    write = ApplyBar.CdGlowWrite(spellSettings),
                     view = function(t)
-                        return AB.MenuGlow(t)
+                        return ApplyBar.MenuGlow(t)
                     end,
                 }
                 local CD_STATE_ITEMS = {
@@ -2569,12 +2569,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- the "+" toggles above. The style is its own row below
                     -- (cdStateGlowStyle); a button* single value still renders as Action
                     -- Button Glow and reads back as the matching choice here.
-                    AB.CdGlowItem(ssGlowMenu, "pixelGlowReady", "Glow (CD Ready)"),
+                    ApplyBar.CdGlowItem(ssGlowMenu, "pixelGlowReady", "Glow (CD Ready)"),
                     -- Resource Aware: also requires the spell to be castable
                     -- (resources/form), through the event-driven usability watcher. That
                     -- watcher has a small cost, so it is its own opt-in choice (with a
                     -- confirm popup) and the plain glows stay cost-free.
-                    AB.CdGlowItem(
+                    ApplyBar.CdGlowItem(
                         ssGlowMenu,
                         "pixelGlowReadyUsable",
                         "Glow CD Ready (Resource Aware)",
@@ -2582,7 +2582,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     ),
                     -- Mirror of the ready glow: glows for the whole cooldown instead of at
                     -- readiness. Shares the Glow Style picker and the Proc Glow priority gate.
-                    AB.CdGlowItem(ssGlowMenu, "glowOnCD", "Glow (On CD)"),
+                    ApplyBar.CdGlowItem(ssGlowMenu, "glowOnCD", "Glow (On CD)"),
                     -- Same logic as Hidden (On CD) but with a customizable opacity instead of
                     -- a hard 0. Click prompts for the percent; the label shows it (e.g. "50%
                     -- Lower Alpha (On CD)") while selected. Its bar apply skips the popup and pushes the current percent.
@@ -2627,10 +2627,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- The English label of every hide and glow value, for the lock
                 -- tooltips that name the choice blocking an item (both menus: the
                 -- preset menu's values are a subset of these).
-                AB.CD_STATE_LABELS = {}
+                ApplyBar.CD_STATE_LABELS = {}
                 for _, it in ipairs(CD_STATE_ITEMS) do
                     if it.val ~= nil then
-                        AB.CD_STATE_LABELS[it.val] = it.label
+                        ApplyBar.CD_STATE_LABELS[it.val] = it.label
                     end
                 end
                 -- Glow style picker (CDM saved numbering, every icon style), shared by
@@ -2725,7 +2725,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         AddStanceItem("in", familyStore)
                         AddStanceItem("out", familyStore)
                     end
-                    AB.STANCE_BAR_ITEMS = itemList
+                    ApplyBar.STANCE_BAR_ITEMS = itemList
                 end
 
                 -- Track open subnavs on the menu frame so OnUpdate can see them
@@ -2756,7 +2756,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     onItemCreated,
                     options
                 )
-                    local menuRow, labelFS = AB.NewMenuRow(labelText)
+                    local menuRow, labelFS = ApplyBar.NewMenuRow(labelText)
                     local acR, acG, acB = CludesUI.GetAccentColor()
 
                     -- Optional disabled state (opts.disabled = function -> bool): greys the row, blocks the flyout, and shows a tooltip.
@@ -2800,7 +2800,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         PokeStrip()
                     end
 
-                    local arrow, highlight = AB.RowArrowAndHighlight(menuRow, RowDisabled() and 0.2 or 0.7)
+                    local arrow, highlight = ApplyBar.RowArrowAndHighlight(menuRow, RowDisabled() and 0.2 or 0.7)
 
                     local subMenu
                     -- Set by the first build: re-applies what a fresh open shows.
@@ -2993,7 +2993,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     -- no strip to escape through, so it is never bar applied
                                     -- (else its toggles would lock).
                                     if
-                                        hostedBuffNoApply or not (applyKeys and AB.KeysBarApplied(applyKeys))
+                                        hostedBuffNoApply or not (applyKeys and ApplyBar.KeysBarApplied(applyKeys))
                                     then
                                         return false
                                     end
@@ -3014,7 +3014,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     end
                                     local probe = {}
                                     applyWrite(probe, entry.val)
-                                    return AB.ScopeVal(barTier, pk) == probe[pk]
+                                    return ApplyBar.ScopeVal(barTier, pk) == probe[pk]
                                 end
                                 local sArrow = subItem:CreateTexture(nil, "ARTWORK")
                                 sArrow:SetSize(10, 10)
@@ -3047,7 +3047,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     -- unlike the bar's must not hide Apply to Bar).
                                     if
                                         not (entry.scalarApply or isToggle)
-                                        and AB.KeysBarApplied(applyKeys)
+                                        and ApplyBar.KeysBarApplied(applyKeys)
                                         and not itemIsBarApplied()
                                     then
                                         if dropMenu._applyStrip then
@@ -3055,7 +3055,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         end
                                         return
                                     end
-                                    AB.ShowApplyStripFor(subItem, {
+                                    ApplyBar.ShowApplyStripFor(subItem, {
                                         keys = applyKeys,
                                         write = applyWrite,
                                         writeOwn = applyWriteOwn,
@@ -3172,8 +3172,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     if
                                         canApply
                                         and not plusLook
-                                        and AB.KeysBarApplied(applyKeys)
-                                        and not AB.SpellHasOwn(applyKeys)
+                                        and ApplyBar.KeysBarApplied(applyKeys)
+                                        and not ApplyBar.SpellHasOwn(applyKeys)
                                     then
                                         local cv = getVal()
                                         if cv == entry.val then
@@ -3499,7 +3499,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end)
                         elseif entry.val == "color" then
                             -- Inline color swatch (same shape as the Active State swipe swatch): picking a color also enables the toggle.
-                            AB.ItemSwatch(
+                            ApplyBar.ItemSwatch(
                                 subItem,
                                 function()
                                     return access.get("thresholdColorR") or 1,
@@ -3746,8 +3746,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         function()
                             return spellSettings.buffGlowColor == nil
                         end,
-                        AB.CustomColorSwatch("buffGlowColor", 0.776, 0.376),
-                        AB.CustomColorApply("buffGlowColor", 0.776, 0.376)
+                        ApplyBar.CustomColorSwatch("buffGlowColor", 0.776, 0.376),
+                        ApplyBar.CustomColorApply("buffGlowColor", 0.776, 0.376)
                     )
 
                     -- Cooldown Swipe (buffs only): tints the aura-duration swipe. Default =
@@ -3779,8 +3779,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         function()
                             return spellSettings.cdSwipeColor == nil
                         end,
-                        AB.CustomColorSwatch("cdSwipeColor", 0.776, 0.376),
-                        AB.CustomColorApply("cdSwipeColor", 0.776, 0.376)
+                        ApplyBar.CustomColorSwatch("cdSwipeColor", 0.776, 0.376),
+                        ApplyBar.CustomColorApply("cdSwipeColor", 0.776, 0.376)
                     )
 
                     -- Duration Text + Charge/Stack Size: each row opens a cog popup mirroring
@@ -3801,7 +3801,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- isChanged: a function returning true when this cog's per-icon values
                     -- DIFFER from the bar; the row label then rests at accent instead of dim (same "this is customized" cue as tri-state rows).
                     local function MakeCogRow(labelText, isChanged, buildCog)
-                        local menuRow, labelFS = AB.NewMenuRow(labelText)
+                        local menuRow, labelFS = ApplyBar.NewMenuRow(labelText)
                         -- Resting label color: accent when this cog's values differ from the bar, dim when they all match/inherit it.
                         local function UpdateLabel()
                             if isChanged() then
@@ -3813,7 +3813,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end
                         menuRow._updateLabel = UpdateLabel
                         UpdateLabel()
-                        local arrow, highlight = AB.RowArrowAndHighlight(menuRow, 0.7)
+                        local arrow, highlight = ApplyBar.RowArrowAndHighlight(menuRow, 0.7)
                         -- Show on hover, anchored to the side, like the other subnav flyouts.
                         -- Reuse BuildCogPopup but drop its slide animation + click-outside dismiss so the menu's _openSub machinery (hover-to-switch, close-with-menu) controls it.
                         local _, showFn, popFrame
@@ -4559,7 +4559,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
                         -- Plain clickable action row (label + hover highlight).
                         local function MakeActionRow(textValue, onClick)
-                            local menuRow, labelFS = AB.NewMenuRow(textValue)
+                            local menuRow, labelFS = ApplyBar.NewMenuRow(textValue)
                             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                             local highlight = menuRow:CreateTexture(nil, "ARTWORK")
                             highlight:SetAllPoints()
@@ -4597,10 +4597,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Aware glow shows it here as the CD Ready choice, whose bar apply
                         -- keeps that variant: the bar's scope then reads as holding it, and
                         -- an apply never swaps the bar's spells to the plain glow.
-                        local casGlowWrite = AB.CdGlowWrite(customState)
+                        local casGlowWrite = ApplyBar.CdGlowWrite(customState)
                         local casGlowMenu = {
                             get = function()
-                                return AB.MenuGlow(customState, true)
+                                return ApplyBar.MenuGlow(customState, true)
                             end,
                             set = function(value)
                                 mod.CdStateWriteGlow(ActiveStatesStore(), value)
@@ -4611,7 +4611,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             write = function(t, value)
                                 if
                                     value == "pixelGlowReady"
-                                    and AB.MenuGlow(mod.GetBarTierSettings(spellData, barId))
+                                    and ApplyBar.MenuGlow(mod.GetBarTierSettings(spellData, barId))
                                         == "pixelGlowReadyUsable"
                                 then
                                     value = "pixelGlowReadyUsable"
@@ -4619,7 +4619,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 casGlowWrite(t, value)
                             end,
                             view = function(t)
-                                return AB.MenuGlow(t, true)
+                                return ApplyBar.MenuGlow(t, true)
                             end,
                         }
                         local CD_STATE_ITEMS = {
@@ -4627,8 +4627,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             -- The glow beside the hide effect, picked or cleared like a "+"
                             -- toggle. No Resource Aware choice: the preset engine reads no
                             -- usability.
-                            AB.CdGlowItem(casGlowMenu, "pixelGlowReady", "Glow (CD Ready)"),
-                            AB.CdGlowItem(casGlowMenu, "glowOnCD", "Glow (On CD)"),
+                            ApplyBar.CdGlowItem(casGlowMenu, "pixelGlowReady", "Glow (CD Ready)"),
+                            ApplyBar.CdGlowItem(casGlowMenu, "glowOnCD", "Glow (On CD)"),
                             -- Same logic as Hidden (On CD) with a customizable opacity.
                             {
                                 val = "lowerAlphaOnCD",
@@ -4681,7 +4681,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Right-aligned colour swatch on a subnav item.
                         -- Per-spell settings are outside Spec Overrides, so the swatch opts out of capture.
                         local function MakeColorSwatch(subItem, getR, getG, getB, onChanged)
-                            AB.ItemSwatch(subItem, function()
+                            ApplyBar.ItemSwatch(subItem, function()
                                 return getR(), getG(), getB(), 1
                             end, function(red, green, blue)
                                 onChanged(red, green, blue)
@@ -4727,7 +4727,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                             end
 
-                            local menuRow, labelFS = AB.NewMenuRow("Combat Potion Icon")
+                            local menuRow, labelFS = ApplyBar.NewMenuRow("Combat Potion Icon")
                             local acR, acG, acB = CludesUI.GetAccentColor()
                             local function PaintPotRow()
                                 if PotIsDefault() then
@@ -4737,7 +4737,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                             end
                             PaintPotRow()
-                            local arrow, highlight = AB.RowArrowAndHighlight(menuRow, 0.7)
+                            local arrow, highlight = ApplyBar.RowArrowAndHighlight(menuRow, 0.7)
 
                             local subMenu
                             local function ShowPotSub()
@@ -4990,7 +4990,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end)
                             end
                         end, {
-                            itemState = AB.CdStateItemState(customState, nil, true),
+                            itemState = ApplyBar.CdStateItemState(customState, nil, true),
                             onRefresh = function()
                                 if (mod.CdStateGlowOf(customState) ~= nil) ~= hadGlowC then
                                     dropMenu._rebuildPending = true
@@ -4998,7 +4998,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end,
                             apply = {
                                 keys = { "cdStateEffect", "cdStateLowerAlpha" },
-                                write = AB.CdHideWrite(customState),
+                                write = ApplyBar.CdHideWrite(customState),
                                 view = mod.CdStateHideOf,
                             },
                         })
@@ -5213,10 +5213,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
                         -- Stance Bar (preset/custom): as on the regular-spell menu, stored in
                         -- customActiveStates; the Fake-Active engine runs it.
-                        if AB.STANCE_BAR_ITEMS then
+                        if ApplyBar.STANCE_BAR_ITEMS then
                             MakeSubnavRow(
                                 "Stance Bar",
-                                AB.STANCE_BAR_ITEMS,
+                                ApplyBar.STANCE_BAR_ITEMS,
                                 function()
                                     return customState.stanceBarHide or nil
                                 end,
@@ -5551,7 +5551,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local customDisabledTip = "Not available for custom injected spells"
                         -- On a custom injected spell, a row that does not apply to it is
                         -- dimmed, and hovering it shows why in place of its flyout.
-                        AB.DimForCustom = function(menuRow)
+                        ApplyBar.DimForCustom = function(menuRow)
                             if not (isCustomInjected and menuRow) then
                                 return
                             end
@@ -5670,7 +5670,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end, function(subItem, entry, subMenu)
                             if entry.val == "custom" then
                                 -- Clickable color swatch on right (opens color picker)
-                                AB.ItemSwatch(
+                                ApplyBar.ItemSwatch(
                                     subItem,
                                     function()
                                         return spellSettings.activeSwipeR or 1,
@@ -5714,7 +5714,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 )
                             elseif entry.activeBorder then
                                 -- Border Color swatch (mirrors CD Swipe Color): the swatch picks the color and enables the override; the row itself toggles it on/off (handled in the item loop).
-                                AB.ItemSwatch(
+                                ApplyBar.ItemSwatch(
                                     subItem,
                                     function()
                                         return spellSettings.activeBorderR or 1,
@@ -5793,7 +5793,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end,
                             },
                         })
-                        AB.DimForCustom(activeRow)
+                        ApplyBar.DimForCustom(activeRow)
 
                         -- 3. Active State Glow (default = nil / none)
                         local glowRow = MakeSubnavRow(
@@ -5825,7 +5825,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 },
                             }
                         )
-                        AB.DimForCustom(glowRow)
+                        ApplyBar.DimForCustom(glowRow)
 
                         -- 3a. Max Charges Glow (default = nil/none), 1:1 with Active State Glow:
                         -- glows the icon while a charge spell is at max charges. Shares the unified Glow Effect Color below. The stored key stays maxStacksGlow (label-only rename).
@@ -5855,7 +5855,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 },
                             }
                         )
-                        AB.DimForCustom(maxStacksGlowRow)
+                        ApplyBar.DimForCustom(maxStacksGlowRow)
 
                         -- 3b. Non Active State (default = nil/none): desaturates the icon when its active-state is NOT active -- the mirror of the runtime's active-branch SetDesaturated(false).
                         local NONACTIVE_ITEMS = {
@@ -5888,7 +5888,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 },
                             }
                         )
-                        AB.DimForCustom(nonActiveRow)
+                        ApplyBar.DimForCustom(nonActiveRow)
 
                         -- 3c. Cooldown Saturation (default = nil/none): suppresses the grey-out
                         -- Blizzard applies while the spell is on cooldown -- grouped with Non Active State above because both own the icon's saturation.
@@ -5949,7 +5949,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 },
                             }
                         )
-                        AB.DimForCustom(cdSatRow)
+                        ApplyBar.DimForCustom(cdSatRow)
 
                         -- 4. Cooldown State Effect (default = nil / none): the hide single-select
                         -- (cdStateEffect) plus the "+ Glow" choices beside it (cdStateGlow, see
@@ -5992,7 +5992,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end)
                             end
                         end, {
-                            itemState = AB.CdStateItemState(spellSettings, function()
+                            itemState = ApplyBar.CdStateItemState(spellSettings, function()
                                 return (spellSettings.procGlow and spellSettings.procGlow > 0) and true or false
                             end),
                             onRefresh = function()
@@ -6003,7 +6003,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             apply = {
                                 confirmRA = true,
                                 keys = { "cdStateEffect", "cdStateLowerAlpha" },
-                                write = AB.CdHideWrite(spellSettings),
+                                write = ApplyBar.CdHideWrite(spellSettings),
                                 -- The strip's own-entry write: an explicit value (None =
                                 -- false, the exclusion), keeping the glow the spell shows.
                                 -- Lower Alpha asks for its percent first, as a click on
@@ -6031,7 +6031,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             },
                         })
                         dropMenu._cseRow = cdStateRow
-                        AB.DimForCustom(cdStateRow)
+                        ApplyBar.DimForCustom(cdStateRow)
 
                         -- 4b. Glow Style: the style the CD Ready and On CD glows use, shown only
                         -- while a glow is picked in Cooldown State Effect.
@@ -6170,10 +6170,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- outside one of the class's paging stances, for keys that cast something
                         -- else on that page. Runtime in CludesUICdmStanceBar.lua, gated by
                         -- ns._cdmAnyStanceBar.
-                        if AB.STANCE_BAR_ITEMS then
+                        if ApplyBar.STANCE_BAR_ITEMS then
                             MakeSubnavRow(
                                 "Stance Bar",
-                                AB.STANCE_BAR_ITEMS,
+                                ApplyBar.STANCE_BAR_ITEMS,
                                 function()
                                     return spellSettings.stanceBarHide or nil
                                 end,
@@ -6245,7 +6245,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         )
                         -- Custom-injected spells drive their cd-state through the Fake-Active engine,
                         -- not the SetDesaturated/GetSpellCooldown edge this sound rides, so dim the row for them (same as Cooldown State Effect above).
-                        AB.DimForCustom(cdReadySoundRow)
+                        ApplyBar.DimForCustom(cdReadySoundRow)
 
                         -- 5. Glow Effect Color (unified color for all glow types)
                         local GLOW_COLOR_ITEMS = {
@@ -6280,8 +6280,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             function()
                                 return spellSettings.glowColor == nil
                             end,
-                            AB.CustomColorSwatch("glowColor", 0.788, 0.137),
-                            AB.CustomColorApply("glowColor", 0.788, 0.137)
+                            ApplyBar.CustomColorSwatch("glowColor", 0.788, 0.137),
+                            ApplyBar.CustomColorApply("glowColor", 0.788, 0.137)
                         )
                     end -- not isCustomInjected
                 end -- isBuffBar per-icon rows

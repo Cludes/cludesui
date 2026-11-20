@@ -796,7 +796,7 @@ local borderedFrames = {}
 -- A frame set is one HUD's frames: { root, speed, stack, sw, icon, classic,
 -- bordered }. The live HUD is one set, the options header's sample another;
 -- the layout and paint passes below take the set they draw.
-local function EnsureBorder(S, widget)
+local function EnsureBorder(Set, widget)
     if not widget or widget._edrBorderAdded then
         return
     end
@@ -805,7 +805,7 @@ local function EnsureBorder(S, widget)
     end
     CludesUI.PP.CreateBorder(widget, 0, 0, 0, 1, 1, "OVERLAY", 7)
     widget._edrBorderAdded = true
-    S.bordered[#S.bordered + 1] = widget
+    Set.bordered[#Set.bordered + 1] = widget
 end
 
 local function ApplyBorderEdges(widget, hideL, hideR, hideT, hideB)
@@ -820,7 +820,7 @@ local function ApplyBorderEdges(widget, hideL, hideR, hideT, hideB)
     edges._hideBottom = hideB or nil
 end
 
-local function ApplyBordersAll(S, L)
+local function ApplyBordersAll(Set, Lay)
     local Pix = CludesUI and CludesUI.PP
     if not Pix then
         return
@@ -828,8 +828,8 @@ local function ApplyBordersAll(S, L)
     local profile = saved.profile
     local color = profile.borderColor
     -- The Blizzard and Classic WoW UI bar styles draw their own frames instead.
-    local thick = L.chrome and 0 or (profile.borderThickness or 0)
-    for _, frame in ipairs(S.bordered) do
+    local thick = Lay.chrome and 0 or (profile.borderThickness or 0)
+    for _, frame in ipairs(Set.bordered) do
         if thick > 0 then
             Pix.UpdateBorder(frame, thick, color.r, color.g, color.b, color.a)
             Pix.ShowBorder(frame)
@@ -850,20 +850,20 @@ local function ApplyBordersAll(S, L)
         -- above or below it keep theirs).
         local gapTouch = profile.gap == 0
         local stackTouch = profile.stackSpacing == 0
-        local iconLo, iconHi = L.iconY - 0.01, L.iconY + L.iconSize + 0.01
-        local rowList = L.rows
-        local posY = L.colY + L.ov
+        local iconLo, iconHi = Lay.iconY - 0.01, Lay.iconY + Lay.iconSize + 0.01
+        local rowList = Lay.rows
+        local posY = Lay.colY + Lay.ov
         for idx, key in ipairs(rowList) do
             local hgt = profile[ROW_FIELD[key]]
-            local iconTouch = gapTouch and L.icon and posY >= iconLo and posY + hgt <= iconHi
+            local iconTouch = gapTouch and Lay.icon and posY >= iconLo and posY + hgt <= iconHi
             posY = posY + hgt + profile.gap
             local hideB = gapTouch and idx > 1 and rowList[idx - 1] ~= "speed"
             if key == "speed" then
-                ApplyBorderEdges(S.speed, false, iconTouch, gapTouch and idx < #rowList, hideB)
+                ApplyBorderEdges(Set.speed, false, iconTouch, gapTouch and idx < #rowList, hideB)
             else
-                local pips, num = S.stack.pips, SKYRIDING_PIPS
+                local pips, num = Set.stack.pips, SKYRIDING_PIPS
                 if key == "sw" then
-                    pips, num = S.sw.pips, SECONDWIND_PIPS
+                    pips, num = Set.sw.pips, SECONDWIND_PIPS
                 end
                 for jdx = 1, num do
                     local hideR = (stackTouch and jdx < num) or (iconTouch and jdx == num)
@@ -872,7 +872,7 @@ local function ApplyBordersAll(S, L)
             end
         end
         -- Re-snap so the updated hide flags take effect immediately.
-        for _, frame in ipairs(S.bordered) do
+        for _, frame in ipairs(Set.bordered) do
             Pix.SetBorderSize(frame, thick)
         end
     end
@@ -1093,10 +1093,10 @@ local PANEL_PIECES = {
 -- rows bottom to top, { key, x, y, h } from the root's bottom-left; w = row
 -- width; gap = Element Spacing; spacing = Stack Spacing. Nothing is built for
 -- the modern style.
-local function ApplyColumnChrome(S, L, geo, wid, gap, spacing)
-    local rootTbl = S.root
+local function ApplyColumnChrome(Set, Lay, geo, wid, gap, spacing)
+    local rootTbl = Set.root
     local colour = rootTbl._edrCol
-    local chromeFrame = L.chrome
+    local chromeFrame = Lay.chrome
     if not chromeFrame or #geo == 0 then
         if colour then
             colour:Hide()
@@ -1114,7 +1114,7 @@ local function ApplyColumnChrome(S, L, geo, wid, gap, spacing)
         rootTbl._edrCol = colour
     end
     -- Under the rows (the panel is their backdrop); the art level above them.
-    local rowLevel = S.speed:GetFrameLevel()
+    local rowLevel = Set.speed:GetFrameLevel()
     colour:SetFrameLevel(max(0, rowLevel - 1))
     colour.art:SetFrameLevel(rowLevel + 9)
 
@@ -1163,7 +1163,7 @@ local function ApplyColumnChrome(S, L, geo, wid, gap, spacing)
     if colour.classic then
         CF.SetShown(colour.classic, chromeFrame == "classic")
         if chromeFrame == "classic" then
-            CF.Seat(colour.classic, colour, L.frameK, false)
+            CF.Seat(colour.classic, colour, Lay.frameK, false)
         end
     end
 
@@ -1194,7 +1194,7 @@ local function ApplyColumnChrome(S, L, geo, wid, gap, spacing)
             local below = geo[idx - 1]
             Sep(g.x, below.y + below.h + Centre(gap), wid, pixel)
         end
-        local row = g.key == "sky" and S.stack or g.key == "sw" and S.sw
+        local row = g.key == "sky" and Set.stack or g.key == "sw" and Set.sw
         if row then
             for jdx = 1, #row.pips - 1 do
                 local pipTex = row.pips[jdx]
@@ -1210,8 +1210,8 @@ end
 -- Whirling Surge icon per bar style: Blizzard = action button frame, rounded
 -- mask and rounded swipe; Classic WoW UI = the vanilla slot ring; modern = the
 -- plain cropped square. The cooldown text is lifted above any frame.
-local function ApplyIconArt(S, chromeFrame)
-    local frame = S.icon
+local function ApplyIconArt(Set, chromeFrame)
+    local frame = Set.icon
     if chromeFrame and not frame.artFrame then
         frame.artFrame = CreateFrame("Frame", nil, frame)
         frame.artFrame:SetAllPoints(frame)
@@ -1403,12 +1403,12 @@ end
 
 -- The gem row at 1x: mirrored decor, six cells, decor. Built on first use only,
 -- so the modern style never pays for it.
-local function EnsureClassicFrame(S)
-    if S.classic then
-        return S.classic
+local function EnsureClassicFrame(Set)
+    if Set.classic then
+        return Set.classic
     end
     local C = CLASSIC
-    local frame = CreateFrame("Frame", nil, S.root)
+    local frame = CreateFrame("Frame", nil, Set.root)
     frame:SetSize(CLASSIC_W, CLASSIC_H)
 
     frame.decorL = frame:CreateTexture(nil, "ARTWORK")
@@ -1431,7 +1431,7 @@ local function EnsureClassicFrame(S)
         frame.cells[idx] = pipCell
         posX = posX + C.cellW
     end
-    S.classic = frame
+    Set.classic = frame
     return frame
 end
 
@@ -1481,23 +1481,23 @@ end
 
 -- The frames of one set under its root (CreateFrame order is the live HUD's).
 local function NewSet(rootTbl, bordered)
-    local S = { root = rootTbl, bordered = bordered }
-    S.speed = CreateSpeedBar(rootTbl)
-    EnsureBorder(S, S.speed)
+    local Set = { root = rootTbl, bordered = bordered }
+    Set.speed = CreateSpeedBar(rootTbl)
+    EnsureBorder(Set, Set.speed)
 
-    S.stack = CreateStackFrame(rootTbl, SKYRIDING_PIPS)
+    Set.stack = CreateStackFrame(rootTbl, SKYRIDING_PIPS)
     for idx = 1, SKYRIDING_PIPS do
-        EnsureBorder(S, S.stack.pips[idx])
+        EnsureBorder(Set, Set.stack.pips[idx])
     end
 
-    S.sw = CreateStackFrame(rootTbl, SECONDWIND_PIPS)
+    Set.sw = CreateStackFrame(rootTbl, SECONDWIND_PIPS)
     for idx = 1, SECONDWIND_PIPS do
-        EnsureBorder(S, S.sw.pips[idx])
+        EnsureBorder(Set, Set.sw.pips[idx])
     end
 
-    S.icon = CreateWhirlingSurgeIcon(rootTbl)
-    EnsureBorder(S, S.icon)
-    return S
+    Set.icon = CreateWhirlingSurgeIcon(rootTbl)
+    EnsureBorder(Set, Set.icon)
+    return Set
 end
 
 local liveCells
@@ -1518,8 +1518,8 @@ function Build()
 end
 
 -- Sizes and anchors one set for the layout L.
-local function LayoutSet(S, profile, L)
-    S.root:SetSize(L.totalW, L.totalH)
+local function LayoutSet(Set, profile, Lay)
+    Set.root:SetSize(Lay.totalW, Lay.totalH)
 
     -- Column rows, bottom to top, the column centred on the icon. Rows not in
     -- the layout are hidden; rows that stay are never hidden and re-shown.
@@ -1527,9 +1527,9 @@ local function LayoutSet(S, profile, L)
     -- laid out: a row or icon re-anchored while hidden and shown afterwards
     -- (Vigor Style Bars <-> Classic Gems, a row or the icon toggled back on)
     -- drew its pips piled up or not at all until a later pass.
-    local rowFrames = { speed = S.speed, sky = S.stack, sw = S.sw }
+    local rowFrames = { speed = Set.speed, sky = Set.stack, sw = Set.sw }
     local inLayout = {}
-    for _, key in ipairs(L.rows) do
+    for _, key in ipairs(Lay.rows) do
         inLayout[key] = true
     end
     for key, frame in pairs(rowFrames) do
@@ -1538,65 +1538,65 @@ local function LayoutSet(S, profile, L)
         end
     end
     local spacing = profile.stackSpacing
-    local clusterX = SnapPx((L.totalW - L.clusterW) / 2)
-    local posY = L.colY + L.ov
+    local clusterX = SnapPx((Lay.totalW - Lay.clusterW) / 2)
+    local posY = Lay.colY + Lay.ov
     local geo = {}
-    for idx, key in ipairs(L.rows) do
+    for idx, key in ipairs(Lay.rows) do
         local frame = rowFrames[key]
         local hgt = profile[ROW_FIELD[key]]
-        local rx, ry = clusterX + L.padX, posY
+        local rx, ry = clusterX + Lay.padX, posY
         geo[idx] = { key = key, x = rx, y = ry, h = hgt }
         frame:Show()
         frame:ClearAllPoints()
-        frame:SetPoint("BOTTOMLEFT", S.root, "BOTTOMLEFT", rx, ry)
+        frame:SetPoint("BOTTOMLEFT", Set.root, "BOTTOMLEFT", rx, ry)
         frame:SetSize(profile.width, hgt)
         if key == "sky" then
-            LayoutPips(S.stack, SKYRIDING_PIPS, profile.width, hgt, spacing)
+            LayoutPips(Set.stack, SKYRIDING_PIPS, profile.width, hgt, spacing)
         elseif key == "sw" then
-            LayoutPips(S.sw, SECONDWIND_PIPS, profile.width, hgt, spacing)
+            LayoutPips(Set.sw, SECONDWIND_PIPS, profile.width, hgt, spacing)
         end
         posY = posY + hgt + profile.gap
     end
-    ApplyColumnChrome(S, L, geo, profile.width, profile.gap, spacing)
+    ApplyColumnChrome(Set, Lay, geo, profile.width, profile.gap, spacing)
 
-    local iconTex = S.icon
-    if L.icon then
+    local iconTex = Set.icon
+    if Lay.icon then
         iconTex:Show()
         iconTex:ClearAllPoints()
         iconTex:SetPoint(
             "BOTTOMLEFT",
-            S.root,
+            Set.root,
             "BOTTOMLEFT",
-            clusterX + L.colW + (L.colW > 0 and profile.gap or 0),
-            L.iconY
+            clusterX + Lay.colW + (Lay.colW > 0 and profile.gap or 0),
+            Lay.iconY
         )
-        iconTex:SetSize(L.iconSize, L.iconSize)
+        iconTex:SetSize(Lay.iconSize, Lay.iconSize)
     else
         iconTex:Hide()
     end
-    ApplyIconArt(S, L.chrome)
+    ApplyIconArt(Set, Lay.chrome)
 
-    if L.classic then
-        local frame = EnsureClassicFrame(S)
+    if Lay.classic then
+        local frame = EnsureClassicFrame(Set)
         frame:Show()
-        frame:SetScale(L.scale)
+        frame:SetScale(Lay.scale)
         frame:ClearAllPoints()
         -- Offsets on a scaled frame are in its own units.
-        frame:SetPoint("TOPLEFT", S.root, "TOPLEFT", SnapPx((L.totalW - L.classicW) / 2) / L.scale, 0)
-    elseif S.classic then
-        S.classic:Hide()
+        frame:SetPoint("TOPLEFT", Set.root, "TOPLEFT", SnapPx((Lay.totalW - Lay.classicW) / 2) / Lay.scale, 0)
+    elseif Set.classic then
+        Set.classic:Hide()
     end
 end
 
 -- Textures, colours, texts, borders and bevels of one set.
-local function PaintSet(S, profile, L)
+local function PaintSet(Set, profile, Lay)
     -- Apply bar texture to all StatusBars
     local texPath = CludesUI.ResolveTexturePath(
         mod.EDR_BAR_TEXTURES,
         profile.barTexture or "none",
         "Interface\\Buttons\\WHITE8x8"
     )
-    local speedValue, stack, sw, iconTex = S.speed, S.stack, S.sw, S.icon
+    local speedValue, stack, sw, iconTex = Set.speed, Set.stack, Set.sw, Set.icon
     speedValue:SetStatusBarTexture(texPath)
     for idx = 1, SKYRIDING_PIPS do
         stack.pips[idx]:SetStatusBarTexture(texPath)
@@ -1653,12 +1653,12 @@ local function PaintSet(S, profile, L)
     iconTex.text:SetJustifyH(profile.whirlingSurgeText.justify or "CENTER")
     iconTex.text:SetShown(profile.whirlingSurgeText.enabled ~= false)
 
-    ApplyBordersAll(S, L)
+    ApplyBordersAll(Set, Lay)
 
     -- Bar style bevel (the column frame is laid out by Rebuild).
-    ApplyRowChrome(speedValue, L.chrome, profile.width, profile.speedHeight)
-    ApplyRowChrome(stack, L.chrome, profile.width, profile.skyridingHeight)
-    ApplyRowChrome(sw, L.chrome, profile.width, profile.secondWindHeight)
+    ApplyRowChrome(speedValue, Lay.chrome, profile.width, profile.speedHeight)
+    ApplyRowChrome(stack, Lay.chrome, profile.width, profile.skyridingHeight)
+    ApplyRowChrome(sw, Lay.chrome, profile.width, profile.secondWindHeight)
 end
 
 local RepaintSample
@@ -1668,22 +1668,22 @@ function RebuildBar()
         return
     end
     local profile = saved.profile
-    local L = ComputeLayout(profile)
-    LayoutSet(liveCells, profile, L)
+    local Lay = ComputeLayout(profile)
+    LayoutSet(liveCells, profile, Lay)
     classicFrame = liveCells.classic
-    Redraw(L)
+    Redraw(Lay)
     ApplyPos()
     UpdateVisibility()
 end
 
 -- L = the layout Rebuild already computed, or nil to compute it here.
-function Redraw(L)
+function Redraw(Lay)
     if not rootHost then
         return
     end
     local profile = saved.profile
-    L = L or ComputeLayout(profile)
-    PaintSet(liveCells, profile, L)
+    Lay = Lay or ComputeLayout(profile)
+    PaintSet(liveCells, profile, Lay)
 
     skyridingStale = true
     secondWindStale = true
@@ -1716,26 +1716,26 @@ local function PaintSample()
     if not (sampleSet and profile) then
         return
     end
-    local S = sampleSet
-    local L = ComputeLayout(profile)
+    local Set = sampleSet
+    local Lay = ComputeLayout(profile)
     -- The options page scales and anchors the root first: the pixel snaps
     -- below read the scale the sample shows at.
     if samplePlace then
-        samplePlace(S.root, L.totalW, L.totalH)
+        samplePlace(Set.root, Lay.totalW, Lay.totalH)
     end
-    LayoutSet(S, profile, L)
-    PaintSet(S, profile, L)
+    LayoutSet(Set, profile, Lay)
+    PaintSet(Set, profile, Lay)
 
     local fraction = (profile.maxSpeed > 0) and (SAMPLE_SPEED_PCT / profile.maxSpeed) or 0
-    S.speed:SetValue(max(0, min(1, fraction)))
-    S.speed.text:SetText(FormatSpeedText(SAMPLE_SPEED_PCT))
+    Set.speed:SetValue(max(0, min(1, fraction)))
+    Set.speed.text:SetText(FormatSpeedText(SAMPLE_SPEED_PCT))
     local color = (profile.thrillColorToggle and SAMPLE_SPEED_PCT >= (profile.thrillThreshold or 0)) and profile.thrillColor
         or profile.normalColor
-    S.speed:SetStatusBarColor(color.r, color.g, color.b, color.a)
+    Set.speed:SetStatusBarColor(color.r, color.g, color.b, color.a)
 
-    if L.classic then
+    if Lay.classic then
         -- Still gems: no pulse, flash or swirl in the header.
-        for idx, pipCell in ipairs(S.classic.cells) do
+        for idx, pipCell in ipairs(Set.classic.cells) do
             pipCell.flashAnim:Stop()
             pipCell.pulseAnim:Stop()
             pipCell.flash:SetAlpha(0)
@@ -1749,14 +1749,14 @@ local function PaintSample()
             pipCell.spark:SetShown(val > 0 and val < 1)
         end
     else
-        ApplyPipRow(S.stack.pips, SKYRIDING_PIPS, 4, SKYRIDING_PIPS, 0.5, -1, -1, profile.skyridingFilled, 0.4)
+        ApplyPipRow(Set.stack.pips, SKYRIDING_PIPS, 4, SKYRIDING_PIPS, 0.5, -1, -1, profile.skyridingFilled, 0.4)
     end
-    ApplyPipRow(S.sw.pips, SECONDWIND_PIPS, 2, SECONDWIND_PIPS, 0.6, -1, -1, profile.secondWindFilled, 0.4)
+    ApplyPipRow(Set.sw.pips, SECONDWIND_PIPS, 2, SECONDWIND_PIPS, 0.6, -1, -1, profile.secondWindFilled, 0.4)
 
     local nowTime = GetTime()
-    S.icon.cd:SetCooldown(nowTime - 8, 20)
-    S.icon.cd:Pause()
-    S.icon.text:SetText(FormatCooldownText(12))
+    Set.icon.cd:SetCooldown(nowTime - 8, 20)
+    Set.icon.cd:Pause()
+    Set.icon.text:SetText(FormatCooldownText(12))
 end
 
 function RepaintSample()
@@ -1852,15 +1852,15 @@ function RegisterUnlockElements()
                 return rootHost
             end,
             getSize = function()
-                local L = ComputeLayout(saved.profile)
-                return L.totalW, L.totalH
+                local Lay = ComputeLayout(saved.profile)
+                return Lay.totalW, Lay.totalH
             end,
             setWidth = function(_, wid)
                 local profile = saved.profile
-                local L = ComputeLayout(profile)
-                if L.colW == 0 then
+                local Lay = ComputeLayout(profile)
+                if Lay.colW == 0 then
                     -- No bars in the column: the handle scales the gems, if any.
-                    if L.classic then
+                    if Lay.classic then
                         profile.classicScale = max(0.5, min(2, floor(wid / CLASSIC_W * 100 + 0.5) / 100))
                         RebuildBar()
                     end
@@ -1869,17 +1869,17 @@ function RegisterUnlockElements()
                 -- Where getSize reports an even-pixel total, a restore of that
                 -- exact size is a no-op; any other width (a drag, a width
                 -- match) sizes the cluster as given, so a match converges.
-                if L.totalW ~= L.rawW and abs(wid - L.totalW) < 0.01 then
+                if Lay.totalW ~= Lay.rawW and abs(wid - Lay.totalW) < 0.01 then
                     return
                 end
                 local clusterW = wid
                 -- A gem row wider than the bars sets the width by itself; the
                 -- column only follows the handle once it is dragged past it.
-                if L.classicW > L.clusterW and clusterW <= L.classicW then
+                if Lay.classicW > Lay.clusterW and clusterW <= Lay.classicW then
                     return
                 end
-                local iconPart = L.icon and (profile.gap + L.iconSize) or 0
-                profile.width = max(60, SnapPx(clusterW - iconPart - 2 * L.padX))
+                local iconPart = Lay.icon and (profile.gap + Lay.iconSize) or 0
+                profile.width = max(60, SnapPx(clusterW - iconPart - 2 * Lay.padX))
                 RebuildBar()
             end,
             -- Height is built from independently-sized bars (Second Wind, modern
@@ -1892,25 +1892,25 @@ function RegisterUnlockElements()
             -- zero or past its usable size.
             setHeight = function(_, hgt)
                 local profile = saved.profile
-                local L = ComputeLayout(profile)
-                if L.clusterH == 0 then
-                    if L.classic then
+                local Lay = ComputeLayout(profile)
+                if Lay.clusterH == 0 then
+                    if Lay.classic then
                         profile.classicScale = max(0.5, min(2, floor(hgt / CLASSIC_H * 100 + 0.5) / 100))
                         RebuildBar()
                     end
                     return
                 end
                 -- A restore of getSize's even-pixel total is a no-op (see setWidth).
-                if L.totalH ~= L.rawH and abs(hgt - L.totalH) < 0.01 then
+                if Lay.totalH ~= Lay.rawH and abs(hgt - Lay.totalH) < 0.01 then
                     return
                 end
                 local newTotalH = SnapPx(hgt)
-                local classicPart = L.classic and (L.classicH + profile.gap) or 0
-                local keyName = max(8, newTotalH - classicPart) / L.clusterH
-                if L.icon and profile.iconSize then
-                    profile.iconSize = max(16, min(80, floor(L.iconSize * keyName + 0.5)))
+                local classicPart = Lay.classic and (Lay.classicH + profile.gap) or 0
+                local keyName = max(8, newTotalH - classicPart) / Lay.clusterH
+                if Lay.icon and profile.iconSize then
+                    profile.iconSize = max(16, min(80, floor(Lay.iconSize * keyName + 0.5)))
                 end
-                local rowList = L.rows
+                local rowList = Lay.rows
                 if #rowList == 0 then
                     RebuildBar()
                     return
@@ -1929,10 +1929,10 @@ function RegisterUnlockElements()
                 -- units. Each row's frame rim is a fixed size, not scaled with
                 -- the bar. The CludesUI bars filling the whole cluster take
                 -- the exact pixel-snapped height, as they always have.
-                local whole = L.colH == L.clusterH
-                local colTarget = whole and (newTotalH - classicPart) or L.colH * keyName
-                local targetSum = colTarget - (#rowList - 1) * profile.gap - 2 * L.ov
-                if L.chrome or L.classic or not whole then
+                local whole = Lay.colH == Lay.clusterH
+                local colTarget = whole and (newTotalH - classicPart) or Lay.colH * keyName
+                local targetSum = colTarget - (#rowList - 1) * profile.gap - 2 * Lay.ov
+                if Lay.chrome or Lay.classic or not whole then
                     targetSum = floor(targetSum + 0.5)
                 end
                 targetSum = max(loSum, targetSum)
@@ -2126,6 +2126,6 @@ mod.edrIconSize = function()
     if not profile then
         return 34
     end
-    local L = ComputeLayout(profile)
-    return StackHeight(profile, L.classic and STYLE_ROWS_GEMS or STYLE_ROWS_BARS, L.ov)
+    local Lay = ComputeLayout(profile)
+    return StackHeight(profile, Lay.classic and STYLE_ROWS_GEMS or STYLE_ROWS_BARS, Lay.ov)
 end

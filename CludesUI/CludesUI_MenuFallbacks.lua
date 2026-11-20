@@ -49,16 +49,16 @@ local HOUSING_OK = C_Housing and C_Housing.GetOthersOwnedHouses and C_Housing.Vi
 -------------------------------------------------------------------------------
 --  Theme (the window skin engine's palette)
 -------------------------------------------------------------------------------
-local T = {}
+local Fallbacks = {}
 local function ResolveTheme()
     local ACC = CUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
-    T.accR, T.accG, T.accB = ACC.r, ACC.g, ACC.b
-    T.bgR, T.bgG, T.bgB, T.bgA = 0.08, 0.08, 0.08, 0.92
-    T.insetR, T.insetG, T.insetB, T.insetA = 0.04, 0.04, 0.04, 0.85
-    T.brdR, T.brdG, T.brdB, T.brdA = 0.2, 0.2, 0.2, 1
-    T.fontPath = (CUI.GetFontPath("blizzardSkin")) or CUI._font or STANDARD_TEXT_FONT
-    T.fontFlag = (CUI.GetFontOutlineFlag("blizzardSkin")) or ""
-    T.fontShadow = (T.fontFlag == "")
+    Fallbacks.accR, Fallbacks.accG, Fallbacks.accB = ACC.r, ACC.g, ACC.b
+    Fallbacks.bgR, Fallbacks.bgG, Fallbacks.bgB, Fallbacks.bgA = 0.08, 0.08, 0.08, 0.92
+    Fallbacks.insetR, Fallbacks.insetG, Fallbacks.insetB, Fallbacks.insetA = 0.04, 0.04, 0.04, 0.85
+    Fallbacks.brdR, Fallbacks.brdG, Fallbacks.brdB, Fallbacks.brdA = 0.2, 0.2, 0.2, 1
+    Fallbacks.fontPath = (CUI.GetFontPath("blizzardSkin")) or CUI._font or STANDARD_TEXT_FONT
+    Fallbacks.fontFlag = (CUI.GetFontOutlineFlag("blizzardSkin")) or ""
+    Fallbacks.fontShadow = (Fallbacks.fontFlag == "")
         and (not CUI.GetFontUseShadow or CUI.GetFontUseShadow("blizzardSkin"))
 end
 
@@ -75,7 +75,7 @@ local function AddBorder(widget)
     if not (Pix and Pix.CreateBorder) then
         return
     end
-    local c = Pix.CreateBorder(widget, T.brdR, T.brdG, T.brdB, T.brdA, 1, "BORDER", -7)
+    local c = Pix.CreateBorder(widget, Fallbacks.brdR, Fallbacks.brdG, Fallbacks.brdB, Fallbacks.brdA, 1, "BORDER", -7)
     if c and c.SetFrameLevel then
         c:SetFrameLevel(widget:GetFrameLevel())
     end
@@ -86,19 +86,19 @@ end
 local function MakeText(hostFrame, size, red, green, blue, family)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     if family then
-        CUI.SetFontFamily(fontStr, T.fontPath, size, T.fontFlag or "", T.fontShadow)
+        CUI.SetFontFamily(fontStr, Fallbacks.fontPath, size, Fallbacks.fontFlag or "", Fallbacks.fontShadow)
     else
-        CUI.PrimeFontShadow(fontStr, T.fontShadow)
-        fontStr:SetFont(T.fontPath, size, T.fontFlag or "")
+        CUI.PrimeFontShadow(fontStr, Fallbacks.fontShadow)
+        fontStr:SetFont(Fallbacks.fontPath, size, Fallbacks.fontFlag or "")
     end
     fontStr:SetTextColor(red or 1, green or 1, blue or 1, 1)
     return fontStr
 end
 
 local function Panel(widget, inset)
-    local red, green, blue, a = T.bgR, T.bgG, T.bgB, T.bgA
+    local red, green, blue, a = Fallbacks.bgR, Fallbacks.bgG, Fallbacks.bgB, Fallbacks.bgA
     if inset then
-        red, green, blue, a = T.insetR, T.insetG, T.insetB, T.insetA
+        red, green, blue, a = Fallbacks.insetR, Fallbacks.insetG, Fallbacks.insetB, Fallbacks.insetA
     end
     local backdrop = SolidTex(widget, "BACKGROUND", red, green, blue, a, -6)
     backdrop:SetAllPoints(widget)
@@ -115,7 +115,7 @@ local function MakeButton(hostFrame, name, labelText, wid, hgt, secure)
     if secure then
         widget:SetAttribute("useOnKeyDown", false)
     end
-    local fill = SolidTex(widget, "BACKGROUND", T.bgR, T.bgG, T.bgB, T.bgA)
+    local fill = SolidTex(widget, "BACKGROUND", Fallbacks.bgR, Fallbacks.bgG, Fallbacks.bgB, Fallbacks.bgA)
     fill:SetAllPoints(widget)
     AddBorder(widget)
     local hover = SolidTex(widget, "HIGHLIGHT", 1, 1, 1, 0.1)
@@ -261,9 +261,9 @@ local function BuildList()
     header:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
     header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
     header:SetHeight(HEADER_H)
-    local hbg = SolidTex(header, "BACKGROUND", T.insetR, T.insetG, T.insetB, T.insetA, -5)
+    local hbg = SolidTex(header, "BACKGROUND", Fallbacks.insetR, Fallbacks.insetG, Fallbacks.insetB, Fallbacks.insetA, -5)
     hbg:SetAllPoints(header)
-    local hline = SolidTex(header, "BORDER", T.brdR, T.brdG, T.brdB, T.brdA)
+    local hline = SolidTex(header, "BORDER", Fallbacks.brdR, Fallbacks.brdG, Fallbacks.brdB, Fallbacks.brdA)
     hline:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", 0, 0)
     hline:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
     hline:SetHeight(1)

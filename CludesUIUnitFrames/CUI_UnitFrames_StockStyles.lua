@@ -642,15 +642,15 @@ end
 -- by sy (UF_SeatBarMask). Built once per kit geometry. A kit whose two tracks
 -- end apart gives its own (G.mergedHealth: the retail target art).
 mod._ufMergedMemo = setmetatable({}, { __mode = "k" })
-function mod.UF_MergedHealth(G)
-    if G.mergedHealth then
-        return G.mergedHealth
+function mod.UF_MergedHealth(Geom)
+    if Geom.mergedHealth then
+        return Geom.mergedHealth
     end
-    local m = mod._ufMergedMemo[G]
+    local m = mod._ufMergedMemo[Geom]
     if m then
         return m
     end
-    local H, P = G.health, G.power
+    local H, P = Geom.health, Geom.power
     local k = (P.y + P.h - H.y) / H.h
     m = {}
     for key, val in pairs(H) do
@@ -665,7 +665,7 @@ function mod.UF_MergedHealth(G)
     elseif H.mask then
         m.sy = k
     end
-    mod._ufMergedMemo[G] = m
+    mod._ufMergedMemo[Geom] = m
     return m
 end
 -- The stock-style seeds on the profile `p` for `styleKey` ("blizzard" |
@@ -912,20 +912,20 @@ function mod.UF_BlizzResolve(widget, unitToken)
     end
     local native = mod.UF_BLIZZ[kind]
     local edgeSide = mod.UF_BlizzSide(GetSettingsForUnit(unitToken), native)
-    local G, mirror = native, false
+    local Geom, mirror = native, false
     if native.small then
         mirror = edgeSide ~= native.side
     elseif edgeSide == "right" then
-        G = mod.UF_BLIZZ.target
+        Geom = mod.UF_BLIZZ.target
     else
-        G = mod.UF_BLIZZ.player
+        Geom = mod.UF_BLIZZ.player
     end
-    widget._blizzGeom = G
+    widget._blizzGeom = Geom
     widget._blizzMirror = mirror or nil
     -- The type strip, elite dragon and rare frame belong to the target family
     -- on its own art only.
-    widget._blizzExtras = (G.rep and kind == "target") or nil
-    return G, mirror
+    widget._blizzExtras = (Geom.rep and kind == "target") or nil
+    return Geom, mirror
 end
 function mod.UF_BlizzGeom(widget)
     if not widget then
@@ -943,8 +943,8 @@ function mod.UF_BlizzVis(widget)
     if not widget or not mod.UF_Blizz() then
         return nil
     end
-    local G = mod.UF_BlizzGeom(widget)
-    local val = G and G.vis
+    local Geom = mod.UF_BlizzGeom(widget)
+    local val = Geom and Geom.vis
     if not val then
         return nil
     end
@@ -1155,7 +1155,7 @@ end
 -- so SetAtlas + SetTexCoord samples the wrong region); see UF_PaintBlizzArt.
 -- The side the portrait renders on: the frame's Portrait Side setting (the
 -- inside variants map to their side), else the art's own side.
-function mod.UF_BlizzSide(prefs, G)
+function mod.UF_BlizzSide(prefs, Geom)
     local edgeSide = prefs and prefs.portraitSide
     if edgeSide == "insideleft" then
         edgeSide = "left"
@@ -1163,7 +1163,7 @@ function mod.UF_BlizzSide(prefs, G)
         edgeSide = "right"
     end
     if edgeSide ~= "left" and edgeSide ~= "right" then
-        edgeSide = G.side
+        edgeSide = Geom.side
     end
     return edgeSide
 end
@@ -1184,22 +1184,22 @@ end
 -- (re)seated after every texture swap (a swap replaces the fill object), so
 -- a re-apply can never leave a bar unmasked.
 function mod.UF_ApplyBlizzBarArt(widget)
-    local G = mod.UF_BlizzGeom(widget)
-    if not G then
+    local Geom = mod.UF_BlizzGeom(widget)
+    if not Geom then
         return
     end
     local mirror = widget._blizzMirror
     local healthBar = widget.Health
     if healthBar then
         -- Hide Power Bar: the taller bar and its stretched mask.
-        local HB = widget._blizzMerged and mod.UF_MergedHealth(G) or G.health
+        local HB = widget._blizzMerged and mod.UF_MergedHealth(Geom) or Geom.health
         local fillTex = healthBar:GetStatusBarTexture()
         healthBar:SetOrientation("HORIZONTAL")
         mod.ApplyFillRotation(healthBar)
         -- The mask object exists only for a kit with bar masks (the classic
         -- kit's bars are plain rectangles).
         local maskTex = healthBar._blizzMask
-        if not maskTex and mod.UF_AtlasOK(G.health.mask) then
+        if not maskTex and mod.UF_AtlasOK(Geom.health.mask) then
             maskTex = healthBar:CreateMaskTexture()
             healthBar._blizzMask = maskTex
         end
@@ -1212,7 +1212,7 @@ function mod.UF_ApplyBlizzBarArt(widget)
         end
         barList[1], barList[2], barList[3], barList[4], barList[5] =
             hp, hp and hp._forward, hp and hp._healAbsorb, hp and hp._topBar, hp and hp._healTopBar
-        if not mirror and mod.UF_AtlasOK(G.health.mask) then
+        if not mirror and mod.UF_AtlasOK(Geom.health.mask) then
             mod.UF_SeatBarMask(maskTex, healthBar, HB)
             mod.UF_SetMask(fillTex, maskTex)
             if healthBar.bg then
@@ -1269,17 +1269,17 @@ function mod.UF_ApplyBlizzBarArt(widget)
         -- a mirrored small frame runs unmasked.
         if pfill then
             local pm = powerBar._blizzMask
-            if powerBar._blizzMasked and not mirror and mod.UF_AtlasOK(G.power.mask) then
+            if powerBar._blizzMasked and not mirror and mod.UF_AtlasOK(Geom.power.mask) then
                 if not pm then
                     pm = powerBar:CreateMaskTexture()
                     powerBar._blizzMask = pm
                 end
-                mod.UF_SeatBarMask(pm, powerBar, G.power)
+                mod.UF_SeatBarMask(pm, powerBar, Geom.power)
                 mod.UF_SetMask(pfill, pm)
                 if powerBar.bg then
                     mod.UF_SetMask(powerBar.bg, pm)
                 end
-                mod.UF_BlizzBarShadow(powerBar, pm, G.power.h)
+                mod.UF_BlizzBarShadow(powerBar, pm, Geom.power.h)
             else
                 if pm then
                     pcall(pfill.RemoveMaskTexture, pfill, pm)
@@ -1289,7 +1289,7 @@ function mod.UF_ApplyBlizzBarArt(widget)
                 end
                 if powerBar._blizzMasked then
                     -- Mirrored small frame: in the track, unmasked.
-                    mod.UF_BlizzBarShadow(powerBar, nil, G.power.h)
+                    mod.UF_BlizzBarShadow(powerBar, nil, Geom.power.h)
                 elseif powerBar._blizzShadow then
                     -- Detached bar: it carries its own CUI border.
                     for index = 1, 4 do
@@ -1543,7 +1543,7 @@ end
 -- family) on a child frame under the bars and over the portrait, as the
 -- stock frame layers it: the art's ring overlaps the portrait, the bars
 -- draw over the art's tracks.
-function mod.UF_ApplyBlizzFrameArt(widget, G)
+function mod.UF_ApplyBlizzFrameArt(widget, Geom)
     local mirror = widget._blizzMirror
     local artFrame = widget._blizzArtFrame
     if not artFrame then
@@ -1595,7 +1595,7 @@ function mod.UF_ApplyBlizzFrameArt(widget, G)
     -- A kit whose art is opaque round transparent bar windows (the classic
     -- target and pet frames) draws it OVER the bars instead: above the
     -- clipped group, still under the text overlays.
-    if G.artAbove then
+    if Geom.artAbove then
         artFrame:SetFrameLevel(base + 2)
     else
         artFrame:SetFrameLevel(math.max(0, base - 1))
@@ -1605,15 +1605,15 @@ function mod.UF_ApplyBlizzFrameArt(widget, G)
     -- The target family resolves its art (classification variants) in the
     -- refresh below: one paint per change, never the base art first.
     if not artFrame._rep then
-        local key = mod.UF_ArtName(G.art) .. artFrame._artSig
+        local key = mod.UF_ArtName(Geom.art) .. artFrame._artSig
         if artFrame._artKey ~= key then
             artFrame._artKey = key
-            mod.UF_PaintBlizzArt(widget, G.art)
+            mod.UF_PaintBlizzArt(widget, Geom.art)
         end
     end
     -- The dark plaque behind the name and bars (classic kit): its own frame
     -- under the bars whatever level the art takes.
-    if G.back then
+    if Geom.back then
         local borderFrame = artFrame._backFrame
         if not borderFrame then
             borderFrame = CreateFrame("Frame", nil, widget)
@@ -1630,14 +1630,14 @@ function mod.UF_ApplyBlizzFrameArt(widget, G)
         -- over them; beside the portrait backdrop's level, never overlapping it.
         borderFrame:SetFrameLevel(math.max(0, base - 2))
         borderFrame._tex:ClearAllPoints()
-        mod.UF_BlizzPoint(borderFrame._tex, "TOPLEFT", widget, "TOPLEFT", G.back.x, -G.back.y, mirror)
-        borderFrame._tex:SetSize(G.back.w, G.back.h)
+        mod.UF_BlizzPoint(borderFrame._tex, "TOPLEFT", widget, "TOPLEFT", Geom.back.x, -Geom.back.y, mirror)
+        borderFrame._tex:SetSize(Geom.back.w, Geom.back.h)
         borderFrame:Show()
     elseif artFrame._backFrame then
         artFrame._backFrame:Hide()
     end
     if artFrame._rep then
-        local repBar = G.rep
+        local repBar = Geom.rep
         local repArt = repBar and (repBar.art or repBar.atlas)
         if
             widget._blizzExtras
@@ -1666,12 +1666,12 @@ function mod.UF_RefreshBlizzTargetArt(widget)
     if not artFrame or not artFrame._rep then
         return
     end
-    local G = widget._blizzGeom
-    if not G then
+    local Geom = widget._blizzGeom
+    if not Geom then
         return
     end
     local unitToken = widget._cuiUnit
-    local extras = widget._blizzExtras and G.rep and unitToken and UnitExists(unitToken)
+    local extras = widget._blizzExtras and Geom.rep and unitToken and UnitExists(unitToken)
     local c
     if extras then
         local red, green, blue = UnitSelectionColor(unitToken)
@@ -1693,8 +1693,8 @@ function mod.UF_RefreshBlizzTargetArt(widget)
     -- classification variant -- the stock kit's rare frame, or the classic
     -- kit's whole-frame elite / rare / rare-elite / boss arts (boss frames
     -- always wear the boss art) -- else the base art, memo on the result.
-    local artName = G.art
-    local byc = G.artByClass
+    local artName = Geom.art
+    local byc = Geom.artByClass
     if byc then
         -- A variant this client does not ship falls back a step (boss art to
         -- the elite frame, then the base art).
@@ -1705,8 +1705,8 @@ function mod.UF_RefreshBlizzTargetArt(widget)
         elseif extras and c and mod.UF_ArtOK(byc[c]) then
             artName = byc[c]
         end
-    elseif (c == "rare" or c == "rareelite") and mod.UF_ArtOK(G.artRare) then
-        artName = G.artRare
+    elseif (c == "rare" or c == "rareelite") and mod.UF_ArtOK(Geom.artRare) then
+        artName = Geom.artRare
     end
     local artKey = mod.UF_ArtName(artName) .. (artFrame._artSig or "")
     if artFrame._artKey ~= artKey then
@@ -1721,7 +1721,7 @@ function mod.UF_RefreshBlizzTargetArt(widget)
     -- Stock rule: the winged dragon for boss mobs, silver for rare elites,
     -- gold for elites, nothing else. WoW Forever puts the silver dragon on
     -- plain rares too and places each dragon its own way (the kit's `pos`).
-    local B = G.boss
+    local B = Geom.boss
     local dragon, dx, place
     if boss then
         dragon, dx, place = B.winged, 8, B.pos and B.pos.winged
@@ -1748,7 +1748,7 @@ end
 -- position with the stock mask (round, or the player frame's own crop), full
 -- art, no CUI backdrop, and UNDER the frame art (the art's ring and bar edge
 -- overlap it exactly as on the stock frame).
-function mod.UF_ApplyBlizzPortrait(widget, G)
+function mod.UF_ApplyBlizzPortrait(widget, Geom)
     local pt = widget.Portrait
     local edge = pt and pt.backdrop
     if not edge then
@@ -1756,8 +1756,8 @@ function mod.UF_ApplyBlizzPortrait(widget, G)
     end
     local mirror = widget._blizzMirror
     edge:ClearAllPoints()
-    mod.UF_BlizzPoint(edge, G.portrait.point, widget, G.portrait.point, G.portrait.x, G.portrait.y, mirror)
-    edge:SetSize(G.portrait.size, G.portrait.size)
+    mod.UF_BlizzPoint(edge, Geom.portrait.point, widget, Geom.portrait.point, Geom.portrait.x, Geom.portrait.y, mirror)
+    edge:SetSize(Geom.portrait.size, Geom.portrait.size)
     -- Under the art (which sits one level below the bar clip container; see
     -- UF_ApplyBlizzFrameArt), in the same strata.
     local clip = widget._barClip
@@ -1771,7 +1771,7 @@ function mod.UF_ApplyBlizzPortrait(widget, G)
         edge._2d:SetTexCoord(0, 1, 0, 1)
     end
     local m = edge._blizzMask
-    if not m and mod.UF_AtlasOK(G.portrait.mask) then
+    if not m and mod.UF_AtlasOK(Geom.portrait.mask) then
         m = edge:CreateMaskTexture()
         m:SetAllPoints(edge)
         if edge._2d then
@@ -1784,8 +1784,8 @@ function mod.UF_ApplyBlizzPortrait(widget, G)
     end
     -- Re-set each pass: a side change swaps the player crop for the circle.
     -- (A mirrored small frame keeps its circle; masks cannot flip anyway.)
-    if m and mod.UF_AtlasOK(G.portrait.mask) then
-        mod.UF_StockMask(m, G.portrait.mask)
+    if m and mod.UF_AtlasOK(Geom.portrait.mask) then
+        mod.UF_StockMask(m, Geom.portrait.mask)
     end
     -- SetPortraitTexture crops the art to a circle by itself (the stock
     -- target/pet frames keep that crop under their CircleMask); the player
@@ -1794,7 +1794,7 @@ function mod.UF_ApplyBlizzPortrait(widget, G)
     -- stamp; a change repaints the current art.
     local repaint
     if edge._2d then
-        local raw = (m and G.portrait.rawArt) or nil
+        local raw = (m and Geom.portrait.rawArt) or nil
         if edge._2d._blizzNoMask ~= raw then
             edge._2d._blizzNoMask = raw
             repaint = true
@@ -1814,9 +1814,9 @@ end
 -- Text zones: the left zone (the name by default) moves onto the stock name
 -- strip; the other zones keep their bar-relative placement.
 function mod.UF_BlizzTextPass(widget)
-    local G = mod.UF_BlizzGeom(widget)
+    local Geom = mod.UF_BlizzGeom(widget)
     local lt = widget and widget.LeftText
-    if not (G and lt and G.name) then
+    if not (Geom and lt and Geom.name) then
         return
     end
     -- The Left Text offsets still apply on top of the stock spot, in screen
@@ -1825,14 +1825,14 @@ function mod.UF_BlizzTextPass(widget)
     local cfg = GetSettingsForUnit(widget._cuiBaseUnit or widget._cuiUnit)
     local lxo, lyo = (cfg and cfg.leftTextX) or 0, (cfg and cfg.leftTextY) or 0
     lt:ClearAllPoints()
-    lt:SetJustifyH(G.name.justify or "LEFT")
-    local anchorPoint, posX = G.name.point, G.name.x
+    lt:SetJustifyH(Geom.name.justify or "LEFT")
+    local anchorPoint, posX = Geom.name.point, Geom.name.x
     if widget._blizzMirror then
         anchorPoint = mod._ufMirrorPoint[anchorPoint] or anchorPoint
         posX = -posX
     end
-    lt:SetPoint(anchorPoint, widget, anchorPoint, posX + lxo, G.name.y + lyo)
-    lt:SetWidth(G.name.w)
+    lt:SetPoint(anchorPoint, widget, anchorPoint, posX + lxo, Geom.name.y + lyo)
+    lt:SetWidth(Geom.name.w)
 end
 
 -- Level number in the frame's level circle, as the stock frames draw it:
@@ -1847,8 +1847,8 @@ end
 -- default on) off keeps an attackable unit's level gold too.
 mod.UF_BLIZZ_SKULL = "UI-HUD-UnitFrame-Target-HighLevelTarget_Icon"
 function mod.UF_BlizzLevelPass(widget)
-    local G = mod.UF_BlizzGeom(widget)
-    local L = G and G.level
+    local Geom = mod.UF_BlizzGeom(widget)
+    local L = Geom and Geom.level
     if not L then
         return
     end
@@ -1920,7 +1920,7 @@ function mod.UF_BlizzLevelPass(widget)
     -- WoW Forever: the level sits in a round badge at the frame's bottom
     -- corner, which the level's own offsets move as a whole; the number and
     -- the skull centre on it (a fixed size, so a missing atlas keeps the spot).
-    local rel, B = widget, G.badge
+    local rel, B = widget, Geom.badge
     if B then
         local badge = widget._blizzLevelBadge
         if not badge then
@@ -1952,7 +1952,7 @@ function mod.UF_BlizzLevelPass(widget)
     mod.UF_SetArt(skull, mod.UF_BLIZZ.skull or mod.UF_BLIZZ_SKULL, true)
     -- WoW Forever: the PvP crest on the player, target and focus frames
     -- (Blizzard's own display rule paints and shows it, below).
-    local PV = G.pvp
+    local PV = Geom.pvp
     local u = widget._cuiUnit
     if PV and (u == "player" or u == "target" or u == "focus") then
         local els = widget._blizzPvP
@@ -1970,9 +1970,9 @@ function mod.UF_BlizzLevelPass(widget)
     end
     -- Where the level shares the name's end of the strip, the name gives up
     -- that width while the level shows (the text pass set the full width).
-    if lt and G.name and L.nameTrim then
+    if lt and Geom.name and L.nameTrim then
         local enabled = cfg and cfg.blizzShowLevel ~= false
-        lt:SetWidth(G.name.w - (enabled and L.nameTrim or 0))
+        lt:SetWidth(Geom.name.w - (enabled and L.nameTrim or 0))
     end
     mod.UF_BlizzLevelRefresh(widget)
 end
@@ -2374,15 +2374,15 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
     end
     unitToken = unitToken or widget._cuiBaseUnit or widget._cuiUnit
     -- Layout by unit + Portrait Side (stamped on the frame for the helpers).
-    local G, mirror = mod.UF_BlizzResolve(widget, unitToken)
-    if not G then
+    local Geom, mirror = mod.UF_BlizzResolve(widget, unitToken)
+    if not Geom then
         return
     end
     local prefs = GetSettingsForUnit(unitToken)
 
     -- Frame: stock size + hit rect.
-    widget:SetSize(G.w, G.h)
-    local hit = G.hit
+    widget:SetSize(Geom.w, Geom.h)
+    local hit = Geom.hit
     if mirror then
         widget:SetHitRectInsets(hit[2], hit[1], hit[3], hit[4])
     else
@@ -2430,21 +2430,21 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
     -- Stamped for the bar art pass, and for the art painter (the cut that a
     -- kit drawing its art over the bars needs, UF_PaintArtCut).
     local main = mod.UF_IsMainSettings(prefs)
-    local merged = main and not G.small and G.power ~= nil and mod.UF_StockHidesPower(prefs)
+    local merged = main and not Geom.small and Geom.power ~= nil and mod.UF_StockHidesPower(prefs)
     widget._blizzMerged = merged or nil
-    widget._blizzMergeCut = (merged and G.merge) or nil
+    widget._blizzMergeCut = (merged and Geom.merge) or nil
 
     -- Health bar at the stock position; the offsets the class power and
     -- scale passes read back are kept in step.
     local healthBar = widget.Health
     local clip = widget._barClip or widget
-    local HB = merged and mod.UF_MergedHealth(G) or G.health
+    local HB = merged and mod.UF_MergedHealth(Geom) or Geom.health
     healthBar:ClearAllPoints()
     mod.UF_BlizzPoint(healthBar, "TOPLEFT", clip, "TOPLEFT", HB.x, -HB.y, mirror)
     healthBar:SetSize(HB.w, HB.h)
-    local hx = mirror and (G.w - HB.x - HB.w) or HB.x
+    local hx = mirror and (Geom.w - HB.x - HB.w) or HB.x
     healthBar._xOffset = hx
-    healthBar._rightInset = G.w - hx - HB.w
+    healthBar._rightInset = Geom.w - hx - HB.w
     healthBar._topOffset = HB.y
 
     -- Power bar: stock position when attached; detached bars keep their own
@@ -2453,18 +2453,18 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
     -- bar in the art's track, never a user-positioned one.
     local powerBar = widget.Power
     local ppPos = mod.UF_PowerPos(prefs)
-    if powerBar and G.small then
+    if powerBar and Geom.small then
         -- The stock power bar starts under the portrait ring and its mask
         -- rounds it off round the ring; mirrored it runs unmasked (masks
         -- cannot flip), so it stops where the health bar does instead.
-        local px, pw = G.power.x, G.power.w
+        local px, pw = Geom.power.x, Geom.power.w
         if mirror and px < HB.x then
             pw = pw - (HB.x - px)
             px = HB.x
         end
         powerBar:ClearAllPoints()
-        mod.UF_BlizzPoint(powerBar, "TOPLEFT", clip, "TOPLEFT", px, -G.power.y, mirror)
-        powerBar:SetSize(pw, G.power.h)
+        mod.UF_BlizzPoint(powerBar, "TOPLEFT", clip, "TOPLEFT", px, -Geom.power.y, mirror)
+        powerBar:SetSize(pw, Geom.power.h)
         if powerBar._pbBorder then
             powerBar._pbBorder:Hide()
         end
@@ -2474,8 +2474,8 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
         local detached = (ppPos == "detached_top" or ppPos == "detached_bottom")
         if not detached then
             powerBar:ClearAllPoints()
-            mod.UF_BlizzPoint(powerBar, "TOPLEFT", clip, "TOPLEFT", G.power.x, -G.power.y, mirror)
-            powerBar:SetSize(G.power.w, G.power.h)
+            mod.UF_BlizzPoint(powerBar, "TOPLEFT", clip, "TOPLEFT", Geom.power.x, -Geom.power.y, mirror)
+            powerBar:SetSize(Geom.power.w, Geom.power.h)
             -- The art pass below seats the stock mask after the fill texture is set.
             powerBar._blizzMasked = true
         else
@@ -2492,7 +2492,7 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
         powerBar:Hide()
     end
 
-    mod.UF_ApplyBlizzFrameArt(widget, G)
+    mod.UF_ApplyBlizzFrameArt(widget, Geom)
 
     mod.UF_ApplyBlizzBarArt(widget)
 
@@ -2514,7 +2514,7 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
         end
     end
 
-    mod.UF_ApplyBlizzPortrait(widget, G)
+    mod.UF_ApplyBlizzPortrait(widget, Geom)
 
     -- No CUI chrome: unified border and text bar step aside for the art.
     if widget.unifiedBorder then

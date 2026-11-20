@@ -296,7 +296,7 @@ end
 -- (includeDispelTypes), "np2" carries everything else -- which on an enemy
 -- buff means an enrage (no dispelName: include rejects it, exclude keeps
 -- it). Nothing is hidden by the split; only glow and color follow capability.
-local NPB = {
+local PlateBuffs = {
     MAGIC = { includeDispelTypes = { Magic = true } },
     NONMAGIC = { excludeDispelTypes = { Magic = true } },
 }
@@ -311,7 +311,7 @@ local NPB = {
 -- non-Magic group. Restricted content runs the single blanket-glow group
 -- instead (exactly the unsplit behavior); the boot's PEW lane reloads when
 -- restriction flips across a zone edge.
-function NPB.Split()
+function PlateBuffs.Split()
     if not PurgeGlowActive() then
         return false
     end
@@ -331,11 +331,11 @@ end
 -- Glow state and dispel type for glow group idx (1 = Magic, or the whole row
 -- while unsplit; 2 = non-Magic). The type passes on unconditionally --
 -- GetDispelGlowColor ignores it unless per-type colors are on.
-function NPB.GroupGlow(position)
+function PlateBuffs.GroupGlow(position)
     if not PurgeGlowActive() then
         return false, nil
     end
-    if not NPB.Split() then
+    if not PlateBuffs.Split() then
         return position ~= 2, nil
     end
     local magic, enrage = mod.GetOffensiveDispelTypes()
@@ -375,7 +375,7 @@ local function NPGlowHost(btnFrame, skinData, auraKey)
     -- NPB.bound: some button plays a glow itself, so a pooled bundle's
     -- buttons are worth releasing (NPB.ReleaseGlowButtons).
     if CludesUI.Glows.BindEngineHost(owner, btnFrame, skinData) then
-        NPB.bound = true
+        PlateBuffs.bound = true
     end
     return owner
 end
@@ -539,7 +539,7 @@ local function MakePlateStyle(kindName, variant)
     -- dispel type is unreadable under 12.1 secrecy, so the type is a
     -- property of the GROUP and resolves once, here, at style-build time.
     if kindName == "buffs" and variant ~= "plain" then
-        local glow, dispelType = NPB.GroupGlow(variant == 2 and 2 or 1)
+        local glow, dispelType = PlateBuffs.GroupGlow(variant == 2 and 2 or 1)
         look.purgeGlow = glow
         look.purgeSpec = mod.GetDispelGlowSpec and mod.GetDispelGlowSpec(dispelType) or nil
         look.applyExtra = ApplyNPBuffExtra
@@ -1266,11 +1266,11 @@ end
 -- only while the split is on (it parks at 0 frames afterwards -- groups are
 -- never removed). Both halves share the mode's filter STRING; only the
 -- candidate differs.
-function NPB.GlowSpec(position)
+function PlateBuffs.GlowSpec(position)
     local styleKey = (position == 2) and "np:buffs2" or "np:buffs"
     local cand
-    if NPB.Split() then
-        cand = (position == 2) and NPB.NONMAGIC or NPB.MAGIC
+    if PlateBuffs.Split() then
+        cand = (position == 2) and PlateBuffs.NONMAGIC or PlateBuffs.MAGIC
     else
         cand = BuffCand()
     end
@@ -1296,13 +1296,13 @@ end
 -- Declares or parks the non-Magic glow group to match the current split, on
 -- containers that already existed when capability / restriction / the type
 -- color option / the dispel glow style changed.
-function NPB.Apply(boxHolder)
+function PlateBuffs.Apply(boxHolder)
     if not boxHolder then
         return
     end
-    local split = NPB.Split()
+    local split = PlateBuffs.Split()
     if split and not boxHolder._npbSplit then
-        AK.AddGroupToContainer(boxHolder, NPB.GlowSpec(2))
+        AK.AddGroupToContainer(boxHolder, PlateBuffs.GlowSpec(2))
         boxHolder._npbSplit = true
         -- The new group carries the declaration's placeholder sizing until an
         -- anchor pass reaches it, and that pass skips containers whose layout
@@ -1334,9 +1334,9 @@ local function AddBundleBuffs(b)
             plainDecl[#plainDecl + 1] = "!" .. DISPELLABLE
         end
     end
-    local specs = { NPB.GlowSpec(1) }
-    if NPB.Split() then
-        specs[#specs + 1] = NPB.GlowSpec(2)
+    local specs = { PlateBuffs.GlowSpec(1) }
+    if PlateBuffs.Split() then
+        specs[#specs + 1] = PlateBuffs.GlowSpec(2)
     end
     specs[#specs + 1] = {
         key = "npnb",
@@ -2354,7 +2354,7 @@ end
 
 -- True while a built glow spec plays animations: everything but the static
 -- Blizzard Pandemic Border and Blizzard Border.
-function NPB.Animated(enabled, specInfo)
+function PlateBuffs.Animated(enabled, specInfo)
     if not (enabled and specInfo) then
         return false
     end
@@ -2365,7 +2365,7 @@ end
 -- Switches an enabled group off and straight back on: off releases its buttons
 -- at once (each clears its aura and stops the animations it plays), on keeps
 -- the group live for the next attach. A group already off is left alone.
-function NPB.CycleGroup(cfg, auraKey)
+function PlateBuffs.CycleGroup(cfg, auraKey)
     local success, enabled = pcall(cfg.IsAuraGroupEnabled, cfg, auraKey)
     if success and enabled == true and pcall(cfg.SetAuraGroupEnabled, cfg, auraKey, false) then
         pcall(cfg.SetAuraGroupEnabled, cfg, auraKey, true)
@@ -2378,18 +2378,18 @@ end
 -- register no events), only for the groups whose style draws an animated
 -- glow, and only once a host is bound: default (static) plates pay nothing.
 -- force: the style pass (NPC_ReloadAll), whose restyle may bind the hosts.
-function NPB.ReleaseGlowButtons(b, force)
-    if not ((force or NPB.bound) and AK and AK.styles) then
+function PlateBuffs.ReleaseGlowButtons(b, force)
+    if not ((force or PlateBuffs.bound) and AK and AK.styles) then
         return
     end
     local st = AK.styles
     local c = b.containers.debuffs
     local cfg = st["np:debuffs"]
-    if c and cfg and NPB.Animated(cfg.pandemicGlow, cfg.pandemicSpec) then
-        NPB.CycleGroup(c, "np")
+    if c and cfg and PlateBuffs.Animated(cfg.pandemicGlow, cfg.pandemicSpec) then
+        PlateBuffs.CycleGroup(c, "np")
         if c._npfGroups then
             for auraKey in pairs(c._npfGroups) do
-                NPB.CycleGroup(c, auraKey)
+                PlateBuffs.CycleGroup(c, auraKey)
             end
         end
     end
@@ -2398,12 +2398,12 @@ function NPB.ReleaseGlowButtons(b, force)
         return
     end
     cfg = st["np:buffs"]
-    if cfg and NPB.Animated(cfg.purgeGlow, cfg.purgeSpec) then
-        NPB.CycleGroup(c, "np")
+    if cfg and PlateBuffs.Animated(cfg.purgeGlow, cfg.purgeSpec) then
+        PlateBuffs.CycleGroup(c, "np")
     end
     cfg = st["np:buffs2"]
-    if c._npbSplit and cfg and NPB.Animated(cfg.purgeGlow, cfg.purgeSpec) then
-        NPB.CycleGroup(c, "np2")
+    if c._npbSplit and cfg and PlateBuffs.Animated(cfg.purgeGlow, cfg.purgeSpec) then
+        PlateBuffs.CycleGroup(c, "np2")
     end
 end
 
@@ -2430,7 +2430,7 @@ function mod.NPC_DetachPlate(backing)
         end
     end
     b.holder:Hide()
-    NPB.ReleaseGlowButtons(b)
+    PlateBuffs.ReleaseGlowButtons(b)
     b.holder:SetParent(UIParent)
     b.holder:ClearAllPoints()
     b.holder:SetPoint("CENTER", UIParent, "BOTTOMLEFT", -200, -200)
@@ -2460,7 +2460,7 @@ local function StyleFPFor(kindName, position)
         -- Capability and the per-type color toggle both feed BuildNPStyle,
         -- so they have to reach this fingerprint or a talent swap / toggle
         -- never restyles the engine buttons.
-        local glow, dispelType = NPB.GroupGlow(position or 1)
+        local glow, dispelType = PlateBuffs.GroupGlow(position or 1)
         local sp = mod.GetDispelGlowSpec and mod.GetDispelGlowSpec(dispelType, PURGE_FP_SPEC)
         if sp then
             purge = FP(
@@ -2613,7 +2613,7 @@ local function CfgFP()
         ProfileVal("maxDebuffs"),
         ProfileVal("showAllDebuffs"),
         BuffMode(),
-        NPB.Split(),
+        PlateBuffs.Split(),
         ProfileVal("debuffIncludeCC"),
         mod.NPF_FP(),
         ProfileVal("hideBloodPlagueCopies") ~= false,
@@ -2684,7 +2684,7 @@ local function QueueBundleEnsure(b)
         ensure("cc", cs, AddBundleCC)
         -- Capability split: declare or park the non-Magic glow group on
         -- containers that already existed when the split state changed.
-        NPB.Apply(b.containers.buffs)
+        PlateBuffs.Apply(b.containers.buffs)
         -- NPF record groups (Tracked Auras): declare missing variants,
         -- park stale ones, drive the np groups' counts by the configs.
         NPF_EnsureRecords(b)
@@ -2696,7 +2696,7 @@ end
 -- Class mode on an aura glow (Dispel or Pandemic) that takes a color: the style
 -- prints hold the palette colour, kept here for the colours-changed hook below
 -- NPC_ReloadAll. Any other state clears it, so later colour edits never reload.
-function NPB.SnapClassColor()
+function PlateBuffs.SnapClassColor()
     local PB = CludesUI.Glows.PANDEMIC_BORDER
     local class = (
         PurgeGlowActive()
@@ -2709,9 +2709,9 @@ function NPB.SnapClassColor()
             and mod.GetPandemicGlowStyle() ~= PB
         )
     if class then
-        NPB.ccR, NPB.ccG, NPB.ccB = CludesUI.Glows.ResolveColor("class")
+        PlateBuffs.ccR, PlateBuffs.ccG, PlateBuffs.ccB = CludesUI.Glows.ResolveColor("class")
     else
-        NPB.ccR = nil
+        PlateBuffs.ccR = nil
     end
 end
 
@@ -2752,7 +2752,7 @@ function mod.NPC_ReloadAll()
         .. StyleFPFor("buffs", 2)
         .. ";"
         .. StyleFPFor("cc")
-    NPB.SnapClassColor()
+    PlateBuffs.SnapClassColor()
     if npFP.style ~= val then
         npFP.style = val
         for i = 1, #KINDS do
@@ -2770,7 +2770,7 @@ function mod.NPC_ReloadAll()
         -- it showed; release those buttons before the restyle above hands
         -- them an animated glow, or it would play on the pooled bundle.
         for i = 1, #pool do
-            NPB.ReleaseGlowButtons(pool[i], true)
+            PlateBuffs.ReleaseGlowButtons(pool[i], true)
         end
     end
 
@@ -2783,8 +2783,8 @@ function mod.NPC_ReloadAll()
         -- Empty table (not nil) when nothing narrows: guarantees the setter
         -- REPLACES the stored filter rather than risking a nil no-op. While
         -- split, group "np" narrows to Magic; NPB.Apply owns group "np2".
-        local buffSplit = NPB.Split()
-        local buffCand = (buffSplit and NPB.MAGIC) or BuffCand() or {}
+        local buffSplit = PlateBuffs.Split()
+        local buffCand = (buffSplit and PlateBuffs.MAGIC) or BuffCand() or {}
         local buffFilter = AK.Filter(unpack(BuffFilterGlow()))
         local plainToks = BuffFilterPlain()
         local buffFilterPlain = plainToks and AK.Filter(unpack(plainToks)) or nil
@@ -2860,17 +2860,17 @@ do
     flush:Hide()
     flush:SetScript("OnUpdate", function(self)
         self:Hide()
-        local r0 = NPB.ccR
+        local r0 = PlateBuffs.ccR
         if r0 == nil then
             return
         end
         local red, green, blue = CludesUI.Glows.ResolveColor("class")
-        if red ~= r0 or green ~= NPB.ccG or blue ~= NPB.ccB then
+        if red ~= r0 or green ~= PlateBuffs.ccG or blue ~= PlateBuffs.ccB then
             mod.NPC_ReloadAll()
         end
     end)
     hooksecurefunc(CludesUI, "ApplyColorsToOUF", function()
-        if NPB.ccR ~= nil then
+        if PlateBuffs.ccR ~= nil then
             flush:Show()
         end
     end)
@@ -2988,8 +2988,8 @@ boot:SetScript("OnEvent", function(self, evt)
         -- which flips on zone edges -- a changed answer re-drives the split
         -- (CfgFP carries it) and the affected styles.
         local nowRestricted = (AK and AK.AurasRestricted and AK.AurasRestricted()) and true or false
-        if NPB.lastRestricted ~= nowRestricted then
-            NPB.lastRestricted = nowRestricted
+        if PlateBuffs.lastRestricted ~= nowRestricted then
+            PlateBuffs.lastRestricted = nowRestricted
             if mod.NPC_ReloadAll then
                 mod.NPC_ReloadAll()
             end

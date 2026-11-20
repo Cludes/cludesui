@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Profile sync mirror groups, per-module sync exclusions, and the sync
 --  popup anchored to the sidebar. Loads after CludesUI_Fonts.lua.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 -- Private namespace shared with CludesUI.lua (sidebar buttons).
 local _, CUI_NS = ...
 CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
@@ -24,18 +24,18 @@ do
     -- Manager and Simple Loot Council keep stores of their own)
     local SYNC_EXEMPT =
         { CludesUIPartyMode = true, CludesUILoadoutManager = true, CludesUISimpleLootCouncil = true }
-    CludesUI._syncExempt = SYNC_EXEMPT
+    CUI._syncExempt = SYNC_EXEMPT
 
     -- Modules with a sync icon but no per-profile data (always "synced"). BlizzardSkin hosts
     -- Dragon Riding's per-profile DB; its sync icon routes to CludesUIDragonRiding via syncFolder.
     local SYNC_GLOBAL_ONLY = { CludesUIForeverEssentials = true }
-    CludesUI._syncGlobalOnly = SYNC_GLOBAL_ONLY
+    CUI._syncGlobalOnly = SYNC_GLOBAL_ONLY
 
     -- Exclusion registry: keys NOT copied during sync (flat or dot-wildcard, see banner)
     local syncExclusions = {}
-    CludesUI._syncExclusions = syncExclusions
+    CUI._syncExclusions = syncExclusions
 
-    function CludesUI.RegisterSyncExclusions(moduleFolder, keyList)
+    function CUI.RegisterSyncExclusions(moduleFolder, keyList)
         if not syncExclusions[moduleFolder] then
             syncExclusions[moduleFolder] = {}
         end
@@ -53,7 +53,7 @@ do
     -- fresh table (shared registry never mutated); callers pcall and fall back to staticEx on error.
     -- fkey = folder.."\31"..path, segments joined by "\30" (mirrors SplitFKey in
     -- CludesUI_SpecOverrides.lua); matcher walks the tree dot-joined so gsub("\30",".") is exact.
-    CludesUI._SyncExclusionsWithOverrides = function(moduleFolder, staticEx, srcProf, dstProf)
+    CUI._SyncExclusionsWithOverrides = function(moduleFolder, staticEx, srcProf, dstProf)
         local merged
         local function ensure()
             if not merged then
@@ -196,7 +196,7 @@ do
         end
         return copy
     end
-    CludesUI._SelectiveCopy = SelectiveCopy
+    CUI._SelectiveCopy = SelectiveCopy
 
     -- True when an exclusion is fullKey itself or a path below it, by string prefix; a
     -- wildcard only counts above its '*', so a removed list entry goes with its
@@ -217,7 +217,7 @@ do
     -- Exclusion-aware deep overlay for destinations with existing data: writes src into dst
     -- leaf-by-leaf wherever an exclusion path (flat/dotted/wildcard) touches the subtree, so
     -- excluded keys keep dest values (replacing a parent whole would delete them).
-    function CludesUI._SelectiveOverlay(source, destination, excluded, deepCopy, parentPath)
+    function CUI._SelectiveOverlay(source, destination, excluded, deepCopy, parentPath)
         -- Mirror deletions, as the full copy does: drop dest keys the source no
         -- longer has, unless they hold excluded data.
         for key in pairs(destination) do
@@ -287,7 +287,7 @@ do
                                             if type(dstSub[syncKey]) ~= "table" then
                                                 dstSub[syncKey] = {}
                                             end
-                                            CludesUI._SelectiveOverlay(
+                                            CUI._SelectiveOverlay(
                                                 savedVars,
                                                 dstSub[syncKey],
                                                 excluded,
@@ -307,7 +307,7 @@ do
                         if type(destination[key]) ~= "table" then
                             destination[key] = {}
                         end
-                        CludesUI._SelectiveOverlay(val, destination[key], excluded, deepCopy, qualifiedKey)
+                        CUI._SelectiveOverlay(val, destination[key], excluded, deepCopy, qualifiedKey)
                     else
                         destination[key] = deepCopy(val)
                     end
@@ -318,7 +318,7 @@ do
         end
     end
 
-    function CludesUI.IsProfileSynced(moduleFolder, profileName)
+    function CUI.IsProfileSynced(moduleFolder, profileName)
         if not CludesUIDB then
             return false
         end
@@ -330,7 +330,7 @@ do
         return type(syncTargets) == "table" and syncTargets[profileName] == true
     end
 
-    function CludesUI.GetSyncedProfiles(moduleFolder)
+    function CUI.GetSyncedProfiles(moduleFolder)
         if not CludesUIDB or not CludesUIDB.syncedModules then
             return {}
         end
@@ -342,7 +342,7 @@ do
     end
 
     -- Check if ANY profile is synced for a module (for icon state)
-    function CludesUI.IsModuleSynced(moduleFolder)
+    function CUI.IsModuleSynced(moduleFolder)
         if not CludesUIDB or not CludesUIDB.syncedModules then
             return false
         end
@@ -359,7 +359,7 @@ do
     end
 
     -- Sync one module from active profile to specific target profiles
-    function CludesUI.SyncModuleToProfiles(moduleFolder, targetProfiles)
+    function CUI.SyncModuleToProfiles(moduleFolder, targetProfiles)
         if not CludesUIDB or not CludesUIDB.profiles then
             return
         end
@@ -368,13 +368,13 @@ do
         if not source or not source.addons or not source.addons[moduleFolder] then
             return
         end
-        local DeepCopy = CludesUI.Lite and CludesUI.Lite.DeepCopy
+        local DeepCopy = CUI.Lite and CUI.Lite.DeepCopy
         if not DeepCopy then
             return
         end
 
         local staticEx = syncExclusions[moduleFolder]
-        local exFn = CludesUI._SyncExclusionsWithOverrides
+        local exFn = CUI._SyncExclusionsWithOverrides
         for profileName in pairs(targetProfiles) do
             if profileName ~= isActive then
                 local profileTbl = CludesUIDB.profiles[profileName]
@@ -398,7 +398,7 @@ do
                             profileTbl.addons[moduleFolder] = SelectiveCopy(source.addons[moduleFolder], excluded)
                         else
                             -- Overlay leaf-by-leaf so excluded keys keep dest values
-                            CludesUI._SelectiveOverlay(source.addons[moduleFolder], destination, excluded, DeepCopy)
+                            CUI._SelectiveOverlay(source.addons[moduleFolder], destination, excluded, DeepCopy)
                         end
                     else
                         -- Full blob copy (no exclusions)
@@ -412,16 +412,16 @@ do
     -- Equalize a module across group members from an explicit source ("seed"). Non-active dests
     -- get a selective copy; an ACTIVE dest is written IN PLACE (live db.profile refs stay valid),
     -- defaults re-merged (stored blobs are sparse), then UI refreshed. Excluded (layout) keys keep each dest's values.
-    function CludesUI.SyncModuleFromProfile(moduleFolder, srcName, syncTargets)
+    function CUI.SyncModuleFromProfile(moduleFolder, srcName, syncTargets)
         if not CludesUIDB or not CludesUIDB.profiles then
             return
         end
         local isActive = CludesUIDB.activeProfile or "Default"
         if srcName == isActive then
-            CludesUI.SyncModuleToProfiles(moduleFolder, syncTargets)
+            CUI.SyncModuleToProfiles(moduleFolder, syncTargets)
             return
         end
-        local DeepCopy = CludesUI.Lite and CludesUI.Lite.DeepCopy
+        local DeepCopy = CUI.Lite and CUI.Lite.DeepCopy
         if not DeepCopy then
             return
         end
@@ -432,7 +432,7 @@ do
         end
 
         local staticEx = syncExclusions[moduleFolder]
-        local exFn = CludesUI._SyncExclusionsWithOverrides
+        local exFn = CUI._SyncExclusionsWithOverrides
         for profileName in pairs(syncTargets) do
             if profileName ~= srcName then
                 local profileTbl = CludesUIDB.profiles[profileName]
@@ -456,7 +456,7 @@ do
                             profileTbl.addons[moduleFolder] = destination
                         end
                         if excluded and next(excluded) then
-                            CludesUI._SelectiveOverlay(srcData, destination, excluded, DeepCopy)
+                            CUI._SelectiveOverlay(srcData, destination, excluded, DeepCopy)
                         else
                             wipe(destination)
                             for key, val in pairs(srcData) do
@@ -466,7 +466,7 @@ do
                     elseif not (excluded and next(excluded)) then
                         profileTbl.addons[moduleFolder] = DeepCopy(srcData)
                     elseif type(destination) == "table" then
-                        CludesUI._SelectiveOverlay(srcData, destination, excluded, DeepCopy)
+                        CUI._SelectiveOverlay(srcData, destination, excluded, DeepCopy)
                     else
                         profileTbl.addons[moduleFolder] = SelectiveCopy(srcData, excluded)
                     end
@@ -476,22 +476,22 @@ do
 
         if syncTargets[isActive] then
             -- Re-merge defaults into the adopted live table, then refresh addons and any open options page
-            local reg = CludesUI.Lite._dbRegistry
+            local reg = CUI.Lite._dbRegistry
             if reg then
                 for _, rdb in ipairs(reg) do
                     if rdb.folder == moduleFolder then
                         if rdb._profileDefaults and rdb.profile then
-                            CludesUI.Lite.DeepMergeDefaults(rdb.profile, rdb._profileDefaults)
+                            CUI.Lite.DeepMergeDefaults(rdb.profile, rdb._profileDefaults)
                         end
                         break
                     end
                 end
             end
-            if CludesUI.RefreshAllAddons then
-                CludesUI.RefreshAllAddons()
+            if CUI.RefreshAllAddons then
+                CUI.RefreshAllAddons()
             end
-            if CludesUI.RefreshPage then
-                CludesUI:RefreshPage()
+            if CUI.RefreshPage then
+                CUI:RefreshPage()
             end
         end
     end
@@ -502,15 +502,15 @@ do
     initFrame:RegisterEvent("PLAYER_LOGIN")
     initFrame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
-        if CludesUI.Lite and CludesUI.Lite.RegisterPreLogout then
-            CludesUI.Lite.RegisterPreLogout(function()
+        if CUI.Lite and CUI.Lite.RegisterPreLogout then
+            CUI.Lite.RegisterPreLogout(function()
                 if not CludesUIDB or not CludesUIDB.syncedModules then
                     return
                 end
                 local isActive = CludesUIDB.activeProfile or "Default"
                 for moduleFolder, syncTargets in pairs(CludesUIDB.syncedModules) do
                     if type(syncTargets) == "table" and syncTargets[isActive] then
-                        CludesUI.SyncModuleToProfiles(moduleFolder, syncTargets)
+                        CUI.SyncModuleToProfiles(moduleFolder, syncTargets)
                     end
                 end
             end)
@@ -521,7 +521,7 @@ end
 -------------------------------------------------------------------------------
 --  Sync Exclusions per Module -- keys listed here are NOT copied when syncing between profiles.
 -------------------------------------------------------------------------------
-CludesUI.RegisterSyncExclusions("CludesUIActionBars", {
+CUI.RegisterSyncExclusions("CludesUIActionBars", {
     "barPositions",
     "bars.*.growDirection",
     "bars.*.orientation",
@@ -537,7 +537,7 @@ CludesUI.RegisterSyncExclusions("CludesUIActionBars", {
     "bars.*.numRows",
 })
 
-CludesUI.RegisterSyncExclusions("CludesUIUnitFrames", {
+CUI.RegisterSyncExclusions("CludesUIUnitFrames", {
     "positions",
     "player.frameWidth",
     "player.healthHeight",
@@ -557,7 +557,7 @@ CludesUI.RegisterSyncExclusions("CludesUIUnitFrames", {
     "boss.healthHeight",
 })
 
-CludesUI.RegisterSyncExclusions("CludesUICooldownManager", {
+CUI.RegisterSyncExclusions("CludesUICooldownManager", {
     "cdmBarPositions",
     "cdmBars.bars.*.iconSize",
     "cdmBars.bars.*.numRows",
@@ -580,7 +580,7 @@ CludesUI.RegisterSyncExclusions("CludesUICooldownManager", {
     "rotationAssistIcon.keybindOffsetY",
 })
 
-CludesUI.RegisterSyncExclusions("CludesUIResourceBars", {
+CUI.RegisterSyncExclusions("CludesUIResourceBars", {
     "health.width",
     "health.height",
     "health.offsetX",
@@ -613,31 +613,31 @@ CludesUI.RegisterSyncExclusions("CludesUIResourceBars", {
     "general.orientation",
 })
 
-CludesUI.RegisterSyncExclusions("CludesUIAuraBuffReminders", {
+CUI.RegisterSyncExclusions("CludesUIAuraBuffReminders", {
     "unlockPos",
     "display.xOffset",
     "display.yOffset",
 })
 
-CludesUI.RegisterSyncExclusions("CludesUIRaidFrames", {
+CUI.RegisterSyncExclusions("CludesUIRaidFrames", {
     "unlockPos",
 })
 
-CludesUI.RegisterSyncExclusions("CludesUIMythicTimer", {
+CUI.RegisterSyncExclusions("CludesUIMythicTimer", {
     "standalonePos",
     "scale",
     "frameWidth",
 })
 
 -- Dragon Riding HUD position (unlockPos) stays per-profile on sync, like every module.
-CludesUI.RegisterSyncExclusions("CludesUIDragonRiding", {
+CUI.RegisterSyncExclusions("CludesUIDragonRiding", {
     "unlockPos",
 })
 
 -- QoL Secondary Stats/FPS positions, the cursor slice (GCD ring, cast circle, at
 -- profile.cursor) and the Battle Res and Bloodlust positions stay per-profile on
 -- sync: exported intact, never push-overwritten.
-CludesUI.RegisterSyncExclusions("CludesUIQoL", {
+CUI.RegisterSyncExclusions("CludesUIQoL", {
     "secondaryStatsPos",
     "fpsPos",
     "cursor.gcd.pos",
@@ -647,13 +647,13 @@ CludesUI.RegisterSyncExclusions("CludesUIQoL", {
 })
 
 -- Minimap settings nest under profile.minimap.
-CludesUI.RegisterSyncExclusions("CludesUIMinimap", {
+CUI.RegisterSyncExclusions("CludesUIMinimap", {
     "minimap.position", -- unlock-element drag position
     "minimap.btnPositions", -- per-button shift-drag offsets
 })
 
 -- Chat settings nest under profile.chat.
-CludesUI.RegisterSyncExclusions("CludesUIChat", {
+CUI.RegisterSyncExclusions("CludesUIChat", {
     "chat.chatPosition", -- unlock drag position
     "chat.chatScreenPoint", -- the screen point that position is measured from
     "chat.chatWidth", -- unlock resize-handle width
@@ -663,7 +663,7 @@ CludesUI.RegisterSyncExclusions("CludesUIChat", {
 })
 
 -- Damage Meters settings nest under profile.dm.
-CludesUI.RegisterSyncExclusions("CludesUIDamageMeters", {
+CUI.RegisterSyncExclusions("CludesUIDamageMeters", {
     "dm.standaloneTimerPos", -- drag-written standalone timer position
     "dm.windows.*.position", -- per-window drag position
     "dm.windows.*.width", -- per-window drag-resize width
@@ -671,7 +671,7 @@ CludesUI.RegisterSyncExclusions("CludesUIDamageMeters", {
 })
 
 -- DataBars per-bar geometry lives in the top-level bars array (wildcard shape as ActionBars).
-CludesUI.RegisterSyncExclusions("CludesUIDataBars", {
+CUI.RegisterSyncExclusions("CludesUIDataBars", {
     "bars.*.savedPos", -- unlock drag position
     "bars.*.length", -- unlock resize owned
     "bars.*.thickness", -- unlock resize owned
@@ -679,7 +679,7 @@ CludesUI.RegisterSyncExclusions("CludesUIDataBars", {
 })
 
 -- Bags is the one auto-synced module: without this the bank position mirrors across profiles.
-CludesUI.RegisterSyncExclusions("CludesUIBags", {
+CUI.RegisterSyncExclusions("CludesUIBags", {
     "bankPosition", -- bank window drag position
 })
 
@@ -690,26 +690,26 @@ CludesUI.RegisterSyncExclusions("CludesUIBags", {
 do
     local _syncPopup = nil
 
-    function CludesUI.CloseSyncPopup()
+    function CUI.CloseSyncPopup()
         if _syncPopup then
             _syncPopup:Hide()
         end
-        if CludesUI._syncConfirmFrame then
-            CludesUI._syncConfirmFrame:Hide()
+        if CUI._syncConfirmFrame then
+            CUI._syncConfirmFrame:Hide()
         end
     end
 
     -- Seed-picker confirm for create/update: user picks which member's settings the
     -- group starts from; after that first equalization the group is a mirror.
-    function CludesUI._ShowSyncSeedConfirm(options)
-        local fontFile = (CludesUI.GetFontPath and CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
-        local Pix = CludesUI.PanelPP or CludesUI.PP
+    function CUI._ShowSyncSeedConfirm(options)
+        local fontFile = (CUI.GetFontPath and CUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
+        local Pix = CUI.PanelPP or CUI.PP
         local W, PAD = 360, 18
 
-        if not CludesUI._syncConfirmFrame then
+        if not CUI._syncConfirmFrame then
             -- Controller cursor: screen-level overlays hang off the overlay
             -- parent, which is UIParent unless a controller cursor is loaded.
-            local overlayParent = CludesUI.OverlayParent()
+            local overlayParent = CUI.OverlayParent()
             local noteFrame = CreateFrame("Frame", nil, overlayParent)
             noteFrame:SetFrameStrata("FULLSCREEN_DIALOG")
             -- Below 200: the shared dropdown menu (hardcoded level 200) must render above
@@ -733,20 +733,20 @@ do
             noteFrame:SetScript("OnHide", function(self)
                 self._dimmer:Hide()
             end)
-            CludesUI._syncConfirmFrame = noteFrame
+            CUI._syncConfirmFrame = noteFrame
             -- Controller cursor: the dimmer and the panel block what is under
             -- them without being stops.
-            CludesUI.TrackOverlay(noteFrame)
-            CludesUI.TrackOverlay(dimmer)
-            CludesUI.PadHint(noteFrame, "nodepass")
-            CludesUI.PadHint(dimmer, "nodepass")
+            CUI.TrackOverlay(noteFrame)
+            CUI.TrackOverlay(dimmer)
+            CUI.PadHint(noteFrame, "nodepass")
+            CUI.PadHint(dimmer, "nodepass")
         end
-        local frame = CludesUI._syncConfirmFrame
+        local frame = CUI._syncConfirmFrame
 
         local function MakeFont(hostFrame, size, red, green, blue, a)
             local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
-            if CludesUI and CludesUI.PrimeFontShadow then
-                CludesUI.PrimeFontShadow(fontStr, true)
+            if CUI and CUI.PrimeFontShadow then
+                CUI.PrimeFontShadow(fontStr, true)
             end
             fontStr:SetFont(fontFile, size, "")
             fontStr:SetTextColor(red or 1, green or 1, blue or 1, a or 1)
@@ -761,8 +761,8 @@ do
             bgT:SetAllPoints()
             bgT:SetColorTexture(red, green, blue, a)
             local labelFS = button:CreateFontString(nil, "OVERLAY")
-            if CludesUI and CludesUI.PrimeFontShadow then
-                CludesUI.PrimeFontShadow(labelFS, false)
+            if CUI and CUI.PrimeFontShadow then
+                CUI.PrimeFontShadow(labelFS, false)
             end
             labelFS:SetFont(fontFile, 10, "")
             labelFS:SetTextColor(1, 1, 1, 1)
@@ -818,7 +818,7 @@ do
             parts = { ddValues = ddValues, ddOrder = ddOrder }
             frame._ui = parts
             if Pix then
-                CludesUI.MakeRoundedBorder(frame, 1, 1, 1, 0.15, frame._bg)
+                CUI.MakeRoundedBorder(frame, 1, 1, 1, 0.15, frame._bg)
             end
             parts.title = MakeFont(frame, 14, 1, 1, 1, 0.9)
             parts.msg = MakeFont(frame, 11, 1, 1, 1, 0.6)
@@ -830,7 +830,7 @@ do
             local ddHolder = CreateFrame("Frame", nil, frame)
             ddHolder:SetSize(ddVisW, ddVisH)
             ddHolder:SetFrameLevel(frame:GetFrameLevel() + 1)
-            local ddBtn = CludesUI.BuildDropdownControl(
+            local ddBtn = CUI.BuildDropdownControl(
                 ddHolder,
                 DD_W,
                 ddHolder:GetFrameLevel() + 1,
@@ -857,11 +857,11 @@ do
             parts.warn:SetWidth(W - PAD * 2)
             parts.warn:SetJustifyH("CENTER")
             parts.warn:SetText(
-                CludesUI.L("Position and size settings are not synced and keep each profile's own values.")
+                CUI.L("Position and size settings are not synced and keep each profile's own values.")
             )
 
-            parts.cancelBtn = MakeBtn(CludesUI.L("Cancel"), 0.172, 0.164, 0.156, 0.9, 0.231, 0.222, 0.215)
-            parts.confirmBtn = MakeBtn(CludesUI.L("Sync"), 0.05, 0.52, 0.39, 0.8, 0.07, 0.62, 0.49)
+            parts.cancelBtn = MakeBtn(CUI.L("Cancel"), 0.172, 0.164, 0.156, 0.9, 0.231, 0.222, 0.215)
+            parts.confirmBtn = MakeBtn(CUI.L("Sync"), 0.05, 0.52, 0.39, 0.8, 0.07, 0.62, 0.49)
         else
             parts.seedChoice = options.defaultSeed
             if sameMembers then
@@ -881,7 +881,7 @@ do
         title:SetFont(fontFile, 14, "")
         title:ClearAllPoints()
         title:SetPoint("TOP", frame, "TOP", 0, rowY)
-        title:SetText(CludesUI.L(options.hadGroup and "Update Sync Group" or "Create Sync Group"))
+        title:SetText(CUI.L(options.hadGroup and "Update Sync Group" or "Create Sync Group"))
         rowY = rowY - 22 - 8
 
         local msg = parts.msg
@@ -889,9 +889,9 @@ do
         msg:ClearAllPoints()
         msg:SetPoint("TOP", frame, "TOP", 0, rowY)
         msg:SetText(
-            CludesUI.Lf(
+            CUI.Lf(
                 "All selected profiles will keep their %1$s settings in sync: changes made on any of them carry over to the others. Choose which profile's settings the group starts from.",
-                CludesUI.L(options.displayName)
+                CUI.L(options.displayName)
             )
         )
         rowY = rowY - (msg:GetStringHeight() or 42) - 14
@@ -900,7 +900,7 @@ do
         ddLabel:SetFont(fontFile, 11, "")
         ddLabel:ClearAllPoints()
         ddLabel:SetPoint("TOP", frame, "TOP", 0, rowY)
-        ddLabel:SetText(CludesUI.L("Sync settings from:"))
+        ddLabel:SetText(CUI.L("Sync settings from:"))
         rowY = rowY - 16 - 6
 
         parts.ddHolder:ClearAllPoints()
@@ -937,7 +937,7 @@ do
             CludesUIDB.syncedModules[options.folder] = options.targets
             local seedChoice = parts.seedChoice
             if seedChoice then
-                CludesUI.SyncModuleFromProfile(options.folder, seedChoice, options.targets)
+                CUI.SyncModuleFromProfile(options.folder, seedChoice, options.targets)
             end
             if options.onDone then
                 options.onDone()
@@ -950,19 +950,19 @@ do
             end
         end)
         -- Controller cursor: its cancel press backs out through Cancel.
-        if CludesUI.PadCP() then
+        if CUI.PadCP() then
             frame.CloseButton = cancelBtn
         end
 
         frame._dimmer:Show()
         frame:Show()
         -- Controller cursor: start on the safe button.
-        CludesUI.PadFocus(cancelBtn)
+        CUI.PadFocus(cancelBtn)
     end
 
-    function CludesUI.OpenSyncPopup(moduleFolder, displayName, anchorBtn)
-        if CludesUI._syncConfirmFrame then
-            CludesUI._syncConfirmFrame:Hide()
+    function CUI.OpenSyncPopup(moduleFolder, displayName, anchorBtn)
+        if CUI._syncConfirmFrame then
+            CUI._syncConfirmFrame:Hide()
         end
         -- Toggle off if already open for this module
         if _syncPopup and _syncPopup:IsShown() and _syncPopup._folder == moduleFolder then
@@ -997,19 +997,19 @@ do
         end
 
         if #profileNames <= 1 then
-            if CludesUI.ShowWidgetTooltip then
-                CludesUI.ShowWidgetTooltip(anchorBtn, "No other profiles to sync to")
+            if CUI.ShowWidgetTooltip then
+                CUI.ShowWidgetTooltip(anchorBtn, "No other profiles to sync to")
                 C_Timer.After(1.5, function()
-                    CludesUI.HideWidgetTooltip()
+                    CUI.HideWidgetTooltip()
                 end)
             end
             return
         end
 
         local MEDIA_PATH = "Interface\\AddOns\\CludesUI\\media\\"
-        local fontFile = (CludesUI.GetFontPath and CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
-        local accentRGB = CludesUI.ACCENT_COLOR or CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
-        local Pix = CludesUI.PanelPP or CludesUI.PP
+        local fontFile = (CUI.GetFontPath and CUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
+        local accentRGB = CUI.ACCENT_COLOR or CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+        local Pix = CUI.PanelPP or CUI.PP
 
         local POPUP_W = 300
         local PAD = 16
@@ -1039,7 +1039,7 @@ do
 
         if not _syncPopup then
             -- Controller cursor: overlay parent (UIParent unless a controller cursor is loaded).
-            _syncPopup = CreateFrame("Frame", nil, CludesUI.OverlayParent())
+            _syncPopup = CreateFrame("Frame", nil, CUI.OverlayParent())
             _syncPopup:SetFrameStrata("FULLSCREEN_DIALOG")
             _syncPopup:SetFrameLevel(200)
             _syncPopup:EnableMouse(true)
@@ -1050,8 +1050,8 @@ do
             -- Born hidden, so the Show below runs its OnShow (the click-away)
             -- on the first open too.
             _syncPopup:Hide()
-            CludesUI.TrackOverlay(_syncPopup)
-            CludesUI.PadHint(_syncPopup, "nodepass")
+            CUI.TrackOverlay(_syncPopup)
+            CUI.PadHint(_syncPopup, "nodepass")
         end
         local dialog = _syncPopup
         dialog._folder = moduleFolder
@@ -1066,13 +1066,13 @@ do
             parts = { rows = {} }
             dialog._ui = parts
             if Pix then
-                CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, dialog._bg)
+                CUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, dialog._bg)
             end
         end
 
         -- Position: flush right of sidebar, centered on the sync icon, clamped
-        local sidebar = CludesUI._sidebar
-        local root = CludesUI._mainFrame
+        local sidebar = CUI._sidebar
+        local root = CUI._mainFrame
         if sidebar and anchorBtn then
             local btnMidY = select(2, anchorBtn:GetCenter()) or 0
             local sidebarMidY = select(2, sidebar:GetCenter()) or 0
@@ -1094,8 +1094,8 @@ do
 
         local function MakeFont(hostFrame, size, red, green, blue, a)
             local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
-            if CludesUI and CludesUI.PrimeFontShadow then
-                CludesUI.PrimeFontShadow(fontStr, true)
+            if CUI and CUI.PrimeFontShadow then
+                CUI.PrimeFontShadow(fontStr, true)
             end
             fontStr:SetFont(fontFile, size, "")
             fontStr:SetTextColor(red or 1, green or 1, blue or 1, a or 1)
@@ -1115,7 +1115,7 @@ do
             subtitle:SetWidth(POPUP_W - PAD * 2)
             subtitle:SetJustifyH("CENTER")
             subtitle:SetText(
-                CludesUI.L(
+                CUI.L(
                     "Syncing allows you to auto update all profiles whenever you change settings. This can be enabled per module."
                 )
             )
@@ -1125,7 +1125,7 @@ do
         iconTex:ClearAllPoints()
         iconTex:SetPoint("TOPLEFT", dialog, "TOPLEFT", PAD - 1, rowY + 1)
         -- Accent when this module has an active sync group, gray otherwise
-        if CludesUI.IsModuleSynced(moduleFolder) then
+        if CUI.IsModuleSynced(moduleFolder) then
             iconTex:SetVertexColor(accentRGB.r, accentRGB.g, accentRGB.b, 1)
         else
             iconTex:SetVertexColor(0.55, 0.55, 0.55, 1)
@@ -1135,7 +1135,7 @@ do
         title:SetFont(fontFile, 14, "")
         title:ClearAllPoints()
         title:SetPoint("TOP", dialog, "TOP", 0, rowY - 1)
-        title:SetText(CludesUI.Lf("%1$s Sync", CludesUI.L(displayName)))
+        title:SetText(CUI.Lf("%1$s Sync", CUI.L(displayName)))
         rowY = rowY - HEADER_H - 7
 
         local subtitle = parts.subtitle
@@ -1145,7 +1145,7 @@ do
         rowY = rowY - SUBTITLE_H - 14
 
         -- Toggle rows for every profile (the active one included)
-        local currentSynced = CludesUI.GetSyncedProfiles(moduleFolder)
+        local currentSynced = CUI.GetSyncedProfiles(moduleFolder)
         local toggleState = {}
         local hadGroup = next(currentSynced) ~= nil
         local refreshSyncBtnLabel -- defined with the button below
@@ -1160,7 +1160,7 @@ do
             math.floor(accentRGB.b * 255 + 0.5)
         )
 
-        local BuildToggleControl = CludesUI.BuildToggleControl
+        local BuildToggleControl = CUI.BuildToggleControl
         local rowList = parts.rows
         for idx, profileName in ipairs(profileNames) do
             local isSynced = currentSynced[profileName] == true
@@ -1250,11 +1250,11 @@ do
             local sBrd
             if Pix then
                 sBrd =
-                    CludesUI.MakeRoundedBorder(syncButton, accentRGB.r, accentRGB.g, accentRGB.b, 0.7, sBg)
+                    CUI.MakeRoundedBorder(syncButton, accentRGB.r, accentRGB.g, accentRGB.b, 0.7, sBg)
             end
             local subLabel = syncButton:CreateFontString(nil, "OVERLAY")
-            if CludesUI and CludesUI.PrimeFontShadow then
-                CludesUI.PrimeFontShadow(subLabel, false)
+            if CUI and CUI.PrimeFontShadow then
+                CUI.PrimeFontShadow(subLabel, false)
             end
             subLabel:SetPoint("CENTER")
             parts.syncBtn, parts.sBg, parts.sBrd, parts.sLbl = syncButton, sBg, sBrd, subLabel
@@ -1305,11 +1305,11 @@ do
                 end
             end
             if hadGroup and total == 0 then
-                subLabel:SetText(CludesUI.L("Disband Sync Group"))
+                subLabel:SetText(CUI.L("Disband Sync Group"))
             elseif hadGroup then
-                subLabel:SetText(CludesUI.L("Update Sync Group"))
+                subLabel:SetText(CUI.L("Update Sync Group"))
             else
-                subLabel:SetText(CludesUI.L("Create Sync Group"))
+                subLabel:SetText(CUI.L("Create Sync Group"))
             end
             ApplyBtnState(dirty)
         end
@@ -1356,10 +1356,10 @@ do
             end
 
             if total == 1 then
-                if CludesUI.ShowWidgetTooltip then
-                    CludesUI.ShowWidgetTooltip(syncButton, "A sync group needs at least two profiles")
+                if CUI.ShowWidgetTooltip then
+                    CUI.ShowWidgetTooltip(syncButton, "A sync group needs at least two profiles")
                     C_Timer.After(1.5, function()
-                        CludesUI.HideWidgetTooltip()
+                        CUI.HideWidgetTooltip()
                     end)
                 end
                 return
@@ -1399,7 +1399,7 @@ do
 
             dialog:SetFrameLevel(90)
             dialog:SetScript("OnUpdate", nil)
-            CludesUI._ShowSyncSeedConfirm({
+            CUI._ShowSyncSeedConfirm({
                 folder = moduleFolder,
                 displayName = displayName,
                 targets = syncTargets,
@@ -1434,11 +1434,11 @@ do
 
         -- Controller cursor: its cancel press clicks the sync icon, which
         -- toggles this popup off.
-        if CludesUI.PadCP() then
+        if CUI.PadCP() then
             dialog.CloseButton = anchorBtn
         end
         dialog:Show()
         -- Controller cursor: move it into the popup (its first row).
-        CludesUI.PadFocus(dialog)
+        CUI.PadFocus(dialog)
     end
 end

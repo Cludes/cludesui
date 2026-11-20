@@ -36,7 +36,7 @@ local EBON_AURA_ID = 395296
 mod.EMB121_Owns = true
 
 -- proxy, container, btn, bar, built, queued, armed, rbBar, pp, pc, fsErr
-local S = {}
+local EbonState = {}
 
 -- "18.4"-style remaining text (legacy parity: %.1f seconds; minutes floor
 -- to "2m" if extensions ever push past 60). Falls back to the suite
@@ -67,15 +67,15 @@ end
 
 local function Build()
     local AK = CUI.AuraKit
-    if S.built or not AK or not S.rbBar then
+    if EbonState.built or not AK or not EbonState.rbBar then
         return
     end
-    local rb, pp, pc = S.rbBar, S.pp or {}, S.pc
+    local rb, pp, pc = EbonState.rbBar, EbonState.pp or {}, EbonState.pc
 
     AK.styles["erb:emb121"] = AK.styles["erb:emb121"] or { noRegions = true, width = 1, height = 1 }
-    if not S.proxy then
-        S.proxy = CreateFrame("Frame", nil, UIParent)
-        S.proxy:Hide()
+    if not EbonState.proxy then
+        EbonState.proxy = CreateFrame("Frame", nil, UIParent)
+        EbonState.proxy:Hide()
     end
 
     -- Bake the live bar's visuals (our frames -- readable): fill texture
@@ -104,7 +104,7 @@ local function Build()
     end
     local showText = pp.textFormat and pp.textFormat ~= "none"
 
-    local boxHolder = AK.CreateContainerShell(S.proxy, { point = { "CENTER" } })
+    local boxHolder = AK.CreateContainerShell(EbonState.proxy, { point = { "CENTER" } })
     AK.AddSlotToContainer(boxHolder, {
         key = "em",
         filter = { "HELPFUL" },
@@ -114,7 +114,7 @@ local function Build()
             -- Creation window: the only legal moment to touch this
             -- subtree. Two-point anchoring sizes the button by anchors
             -- forever; all repositioning is proxy moves.
-            btnFrame:SetAllPoints(S.proxy)
+            btnFrame:SetAllPoints(EbonState.proxy)
             -- Both halves, and inside the creation window: this is the only
             -- legal moment to set them. The slot button is an engine Button, so
             -- mouse is on by default -- motion alone only suppresses the
@@ -208,32 +208,32 @@ local function Build()
                     end
                 end)
                 if not okFS then
-                    S.fsErr = errFS
+                    EbonState.fsErr = errFS
                 end
             end
 
-            S.btn, S.bar = btnFrame, barFrame
+            EbonState.btn, EbonState.bar = btnFrame, barFrame
         end,
     })
     AK.FinishContainer(boxHolder, "player")
-    S.container = boxHolder
-    S.built = true
+    EbonState.container = boxHolder
+    EbonState.built = true
 end
 
 local function EnsureBuilt()
-    if S.built or S.queued then
+    if EbonState.built or EbonState.queued then
         return
     end
     local AK = CUI.AuraKit
     if not (AK and AK.QueueBuildJob) then
         return
     end
-    S.queued = true
+    EbonState.queued = true
     AKWorker:Queue(function()
-        S.queued = nil
+        EbonState.queued = nil
         Build()
-        if S.built and S.armed and S.rbBar then
-            mod.EMB121_Sync(S.rbBar, S.pp, S.pc)
+        if EbonState.built and EbonState.armed and EbonState.rbBar then
+            mod.EMB121_Sync(EbonState.rbBar, EbonState.pp, EbonState.pc)
         end
     end, "erb:emb121-shell")
 end
@@ -246,16 +246,16 @@ end
 -- permanently blank for the rest of the session (S.built never gets a second
 -- attempt once set -- only a /reload resets it).
 function mod.EMB121_TextOk()
-    return S.built and not S.fsErr
+    return EbonState.built and not EbonState.fsErr
 end
 
 -- Called from UpdatePrimaryBar whenever the primary power type resolves:
 -- parks the overlay the moment the bar stops being Ebon Might (spec swap).
 function mod.EMB121_Gate(isEbon)
-    if not isEbon and S.armed then
-        S.armed = nil
-        if S.proxy then
-            S.proxy:Hide()
+    if not isEbon and EbonState.armed then
+        EbonState.armed = nil
+        if EbonState.proxy then
+            EbonState.proxy:Hide()
         end
     end
 end
@@ -264,20 +264,20 @@ end
 -- resolved settings -- the build trigger AND the attach, race-free by
 -- construction. Repositioning is always proxy moves (our frame).
 function mod.EMB121_Sync(barFrame, pp, pc)
-    S.rbBar, S.pp, S.pc = barFrame, pp, pc
-    S.armed = true
-    if not S.built then
+    EbonState.rbBar, EbonState.pp, EbonState.pc = barFrame, pp, pc
+    EbonState.armed = true
+    if not EbonState.built then
         EnsureBuilt()
         return
     end
-    S.proxy:SetParent(barFrame)
-    S.proxy:ClearAllPoints()
-    S.proxy:SetAllPoints(barFrame)
-    S.proxy:Show()
+    EbonState.proxy:SetParent(barFrame)
+    EbonState.proxy:ClearAllPoints()
+    EbonState.proxy:SetAllPoints(barFrame)
+    EbonState.proxy:Show()
     -- One container-level set lifts the whole engine subtree above the
     -- (empty) legacy fill.
     local lvl = barFrame:GetFrameLevel() + 1
-    S.container:SetFrameLevel(lvl)
+    EbonState.container:SetFrameLevel(lvl)
     -- ...which also lifts it above the bar's border strips (bar+2), so the
     -- fill -- a slot-button child two levels down, edge to edge over the whole
     -- rect -- paints over them: Border Size/Color silently did nothing while

@@ -16,8 +16,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  which now gates its conflict check on CludesUIDB.firstInstallPopupShown).
 -------------------------------------------------------------------------------
 
-local CludesUI = _G.CludesUI
-if not CludesUI then
+local CUI = _G.CludesUI
+if not CUI then
     return
 end
 
@@ -31,19 +31,19 @@ end
 local CUI_HOST_ADDON = ...
 local IS_STANDALONE = type(CUI_HOST_ADDON) == "string" and CUI_HOST_ADDON:find("Standalone") ~= nil
 
-local Pix = CludesUI.PanelPP
+local Pix = CUI.PanelPP
 
-local MakeBorder = CludesUI.MakeBorder
-local CLUDES_GREEN = CludesUI.CLUDES_GREEN
+local MakeBorder = CUI.MakeBorder
+local CLUDES_GREEN = CUI.CLUDES_GREEN
 
-local BORDER_R = CludesUI.BORDER_R or 1
-local BORDER_G = CludesUI.BORDER_G or 1
-local BORDER_B = CludesUI.BORDER_B or 1
-local CB_BOX_R = CludesUI.CB_BOX_R or 0.075
-local CB_BOX_G = CludesUI.CB_BOX_G or 0.113
-local CB_BOX_B = CludesUI.CB_BOX_B or 0.141
-local CB_BRD_A = CludesUI.CB_BRD_A or 0.25
-local CB_ACT_BRD_A = CludesUI.CB_ACT_BRD_A or 0.85
+local BORDER_R = CUI.BORDER_R or 1
+local BORDER_G = CUI.BORDER_G or 1
+local BORDER_B = CUI.BORDER_B or 1
+local CB_BOX_R = CUI.CB_BOX_R or 0.075
+local CB_BOX_G = CUI.CB_BOX_G or 0.113
+local CB_BOX_B = CUI.CB_BOX_B or 0.141
+local CB_BRD_A = CUI.CB_BRD_A or 0.25
+local CB_ACT_BRD_A = CUI.CB_ACT_BRD_A or 0.85
 
 -- Groups: { header, { entries } } where each entry is { label = "...", addon = "..." (folder) }
 -- If addon is nil the checkbox is informational / disabled (e.g. Cursor Circle, Bags).
@@ -99,7 +99,7 @@ local GROUPS = {
 -- Forever-only everywhere else) leave the picker (the sets live with the
 -- roster in CludesUI.lua).
 do
-    local hidden = CludesUI._CLIENT_HIDDEN_ADDONS
+    local hidden = CUI._CLIENT_HIDDEN_ADDONS
     for _, set in ipairs(GROUPS) do
         for idx = #set.entries, 1, -1 do
             local addon = set.entries[idx].addon
@@ -137,7 +137,7 @@ local function SetAddonEnabled(folder, enabled)
 end
 
 local function ShowFirstInstallPopup()
-    local FONT = CludesUI.GetFontPath()
+    local FONT = CUI.GetFontPath()
     local NUM_COLS = #GROUPS
     local COL_W = 210
     local COL_GAP = 18
@@ -165,7 +165,7 @@ local function ShowFirstInstallPopup()
     -- Escape is disabled (no onEscape): the user must click Reload UI so their
     -- addon selection always takes effect. The popup is modal with no Escape
     -- route, so it is clamped to never exceed the display.
-    local dimmer, dialog = CludesUI.BuildPopupShell("CUIFirstInstall", {
+    local dimmer, dialog = CUI.BuildPopupShell("CUIFirstInstall", {
         w = POPUP_W,
         h = POPUP_H,
         bump = 1,
@@ -235,14 +235,14 @@ local function ShowFirstInstallPopup()
     eyebrow:SetFont(FONT, 13, "")
     eyebrow:SetTextColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 0.9)
     Pix.Point(eyebrow, "TOP", dialog, "TOP", 0, -104)
-    eyebrow:SetText(CludesUI.L("FIRST TIME SETUP"))
+    eyebrow:SetText(CUI.L("FIRST TIME SETUP"))
 
     -- Title
     local title = dialog:CreateFontString(nil, "OVERLAY")
     title:SetFont(FONT, 25, "")
     title:SetTextColor(1, 1, 1, 1)
     Pix.Point(title, "TOP", eyebrow, "BOTTOM", 0, -6)
-    title:SetText(CludesUI.L("Welcome to CludesUI"))
+    title:SetText(CUI.L("Welcome to CludesUI"))
 
     -- Subtitle
     local sub = dialog:CreateFontString(nil, "OVERLAY")
@@ -253,7 +253,7 @@ local function ShowFirstInstallPopup()
     sub:SetJustifyH("CENTER")
     sub:SetWordWrap(true)
     sub:SetText(
-        CludesUI.L(
+        CUI.L(
             "Choose which addons you want enabled. You can change any of these later in the CludesUI settings panel."
         )
     )
@@ -266,7 +266,7 @@ local function ShowFirstInstallPopup()
     checkAllBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
     local checkAllLbl = checkAllBtn:CreateFontString(nil, "OVERLAY")
     checkAllLbl:SetFont(FONT, 14, "")
-    checkAllLbl:SetText(CludesUI.L("Check All"))
+    checkAllLbl:SetText(CUI.L("Check All"))
     checkAllLbl:SetTextColor(1, 1, 1, 0.45)
     checkAllLbl:SetPoint("CENTER")
     checkAllBtn:SetSize(checkAllLbl:GetStringWidth() + 4, 20)
@@ -292,7 +292,7 @@ local function ShowFirstInstallPopup()
     uncheckAllBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
     local uncheckAllLbl = uncheckAllBtn:CreateFontString(nil, "OVERLAY")
     uncheckAllLbl:SetFont(FONT, 14, "")
-    uncheckAllLbl:SetText(CludesUI.L("Uncheck All"))
+    uncheckAllLbl:SetText(CUI.L("Uncheck All"))
     uncheckAllLbl:SetTextColor(1, 1, 1, 0.45)
     uncheckAllLbl:SetPoint("CENTER")
     uncheckAllBtn:SetSize(uncheckAllLbl:GetStringWidth() + 4, 20)
@@ -320,7 +320,7 @@ local function ShowFirstInstallPopup()
         heading:SetFont(FONT, 18, "")
         heading:SetTextColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 0.9)
         Pix.Point(heading, "TOPLEFT", col, "TOPLEFT", 4, -4)
-        heading:SetText(CludesUI.L(set.header))
+        heading:SetText(CUI.L(set.header))
 
         local yOff = HEADER_H + HEADER_PAD
 
@@ -338,19 +338,19 @@ local function ShowFirstInstallPopup()
             local boxBg = box:CreateTexture(nil, "BACKGROUND")
             boxBg:SetAllPoints()
             boxBg:SetColorTexture(CB_BOX_R, CB_BOX_G, CB_BOX_B, 1)
-            local boxBorder = CludesUI.MakeRoundedBorder(box, BORDER_R, BORDER_G, BORDER_B, CB_BRD_A, boxBg)
+            local boxBorder = CUI.MakeRoundedBorder(box, BORDER_R, BORDER_G, BORDER_B, CB_BRD_A, boxBg)
 
             local check = box:CreateTexture(nil, "ARTWORK")
             Pix.Point(check, "TOPLEFT", box, "TOPLEFT", CHECK_INSET, -CHECK_INSET)
             Pix.Point(check, "BOTTOMRIGHT", box, "BOTTOMRIGHT", -CHECK_INSET, CHECK_INSET)
             check:SetColorTexture(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
-            CludesUI.RoundBody(box, check, 1)
+            CUI.RoundBody(box, check, 1)
 
             local labelFS = row:CreateFontString(nil, "OVERLAY")
             labelFS:SetFont(FONT, 17, "")
             Pix.Point(labelFS, "LEFT", box, "RIGHT", 8, 0)
             labelFS:SetTextColor(1, 1, 1, 0.65)
-            labelFS:SetText(CludesUI.L(record.label))
+            labelFS:SetText(CUI.L(record.label))
 
             -- Initial state resolution:
             --   entry.comingSoon -> disabled, greyed, "Coming soon" tooltip
@@ -403,13 +403,13 @@ local function ShowFirstInstallPopup()
             end)
             row:SetScript("OnEnter", function(self)
                 if self._informational then
-                    CludesUI.ShowWidgetTooltip(self, "Coming soon")
+                    CUI.ShowWidgetTooltip(self, "Coming soon")
                     return
                 end
                 self._lbl:SetTextColor(1, 1, 1, 0.90)
             end)
             row:SetScript("OnLeave", function(self)
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
                 if self._informational then
                     return
                 end
@@ -430,7 +430,7 @@ local function ShowFirstInstallPopup()
     local doneBg = doneBtn:CreateTexture(nil, "BACKGROUND")
     doneBg:SetAllPoints()
     doneBg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
-    local doneBrd = CludesUI.MakeRoundedBorder(doneBtn, ACC.r, ACC.g, ACC.b, 0.9, doneBg)
+    local doneBrd = CUI.MakeRoundedBorder(doneBtn, ACC.r, ACC.g, ACC.b, 0.9, doneBg)
     local doneLbl = doneBtn:CreateFontString(nil, "OVERLAY")
     doneLbl:SetFont(FONT, 16, "")
     Pix.Point(doneLbl, "CENTER", doneBtn, "CENTER", 0, 0)
@@ -447,7 +447,7 @@ local function ShowFirstInstallPopup()
     local function SyncButtonLabel()
         -- Picking addons always ends in a reload so the enable/disable choices
         -- take effect, so the button always reads "Reload UI".
-        doneLbl:SetText(CludesUI.L("Reload UI"))
+        doneLbl:SetText(CUI.L("Reload UI"))
     end
     SyncButtonLabel()
 
@@ -497,8 +497,8 @@ local function ShowFirstInstallPopup()
         -- The style picker (CludesUI_StyleChoicePopup.lua) follows on the
         -- next login, after this popup's reload; on WoW Forever only while
         -- no look was settled here.
-        CludesUIDB.styleChoicePending = (lookOpen or not CludesUI.IS_FOREVER) and true or nil
-        CludesUI._firstInstallPending = nil
+        CludesUIDB.styleChoicePending = (lookOpen or not CUI.IS_FOREVER) and true or nil
+        CUI._firstInstallPending = nil
 
         -- Write QoL cursor setting directly into the profile table so it
         -- survives even if the user also disables the QoL addon. NewDB merges
@@ -544,19 +544,19 @@ local function ShowFirstInstallPopup()
             -- card then closes the picker without a second reload). The
             -- options addon loads for it, never in combat; in combat, or when
             -- it cannot load, the picker offers the look as its default instead.
-            CludesUI.RequestReload(nil, nil, function()
+            CUI.RequestReload(nil, nil, function()
                 for _, row in ipairs(allRows) do
                     if row._entry.addon then
                         SetAddonEnabled(row._entry.addon, row._checked)
                     end
                 end
                 if
-                    CludesUI.IS_FOREVER
+                    CUI.IS_FOREVER
                     and lookOpen
                     and not InCombatLockdown()
-                    and CludesUI.EnsureOptionsLoaded()
+                    and CUI.EnsureOptionsLoaded()
                 then
-                    CludesUI.ApplyFirstInstallLook("forever")
+                    CUI.ApplyFirstInstallLook("forever")
                 end
             end)
             return
@@ -569,8 +569,8 @@ local function ShowFirstInstallPopup()
             pcall(_G._CUCL_Apply)
         end
         -- No reload needed, so run the deferred conflict check now
-        if CludesUI._RunConflictCheck then
-            C_Timer.After(0.5, CludesUI._RunConflictCheck)
+        if CUI._RunConflictCheck then
+            C_Timer.After(0.5, CUI._RunConflictCheck)
         end
     end
 
@@ -581,12 +581,12 @@ local function ShowFirstInstallPopup()
 
     dimmer:Show()
     -- Controller cursor: the picker has no other way out, so bring the gamepad pointer up.
-    if CludesUI.PadNative() then
-        CludesUI.RaiseGamePadCursor()
+    if CUI.PadNative() then
+        CUI.RaiseGamePadCursor()
     end
 end
 
-CludesUI.ShowFirstInstallPopup = ShowFirstInstallPopup
+CUI.ShowFirstInstallPopup = ShowFirstInstallPopup
 
 -------------------------------------------------------------------------------
 --  Trigger on first install only
@@ -639,7 +639,7 @@ loader:SetScript("OnEvent", function(self, evt, addonName)
         _showPopupOnLogin = ComputeShowOnLogin()
         -- WoW Forever: the style picker (WoW Forever by default there) is due
         -- even if this session ends before the module picker's reload.
-        if _showPopupOnLogin and CludesUI.IS_FOREVER then
+        if _showPopupOnLogin and CUI.IS_FOREVER then
             if not CludesUIDB then
                 CludesUIDB = {}
             end
@@ -650,7 +650,7 @@ loader:SetScript("OnEvent", function(self, evt, addonName)
             -- reload prompt): the picker is coming and ALWAYS ends in its own
             -- forced ReloadUI, so reload-prompting popups must stay silent and
             -- let that reload apply their changes. Cleared in Close().
-            CludesUI._firstInstallPending = true
+            CUI._firstInstallPending = true
         end
     elseif evt == "PLAYER_LOGIN" then
         self:UnregisterEvent("PLAYER_LOGIN")
@@ -665,7 +665,7 @@ loader:SetScript("OnEvent", function(self, evt, addonName)
             -- keep the picker silent (the pending handshake stays armed; the
             -- installer's import stamps first-install state, and a session
             -- with no registration brings the picker back).
-            if CludesUI._externalInstaller then
+            if CUI._externalInstaller then
                 return
             end
             ShowFirstInstallPopup()

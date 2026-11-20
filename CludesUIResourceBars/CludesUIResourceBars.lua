@@ -144,7 +144,7 @@ function mod.ReflowFontString(fontStr)
 end
 
 -- PowerType enum values (Enum.PowerType)
-local PT = {
+local POWER = {
     MANA = 0,
     RAGE = 1,
     FOCUS = 2,
@@ -273,16 +273,16 @@ local CLASS_COLORS = setmetatable({}, {
 
 -- Power type enum -> CUI power key string mapping for GetPowerColor lookup
 local POWER_ENUM_TO_KEY = {
-    [PT.MANA] = "MANA",
-    [PT.RAGE] = "RAGE",
-    [PT.FOCUS] = "FOCUS",
-    [PT.ENERGY] = "ENERGY",
-    [PT.RUNIC_POWER] = "RUNIC_POWER",
-    [PT.LUNAR_POWER] = "LUNAR_POWER",
-    [PT.MAELSTROM] = "MAELSTROM",
-    [PT.INSANITY] = "INSANITY",
-    [PT.FURY] = "FURY",
-    [PT.PAIN] = "PAIN",
+    [POWER.MANA] = "MANA",
+    [POWER.RAGE] = "RAGE",
+    [POWER.FOCUS] = "FOCUS",
+    [POWER.ENERGY] = "ENERGY",
+    [POWER.RUNIC_POWER] = "RUNIC_POWER",
+    [POWER.LUNAR_POWER] = "LUNAR_POWER",
+    [POWER.MAELSTROM] = "MAELSTROM",
+    [POWER.INSANITY] = "INSANITY",
+    [POWER.FURY] = "FURY",
+    [POWER.PAIN] = "PAIN",
 }
 
 -- Resolve any power key (enum number, string, or _BAR variant) to the
@@ -416,18 +416,18 @@ local DARK_FILL_A = 0.90
 local DARK_BG_A = 1
 
 local PRIMARY_CLASS_MAP = {
-    WARRIOR = PT.RAGE,
-    PALADIN = PT.MANA,
-    HUNTER = PT.FOCUS,
-    ROGUE = PT.ENERGY,
-    PRIEST = PT.MANA,
-    DEATHKNIGHT = PT.RUNIC_POWER,
-    SHAMAN = PT.MANA,
-    MAGE = PT.MANA,
-    WARLOCK = PT.MANA,
-    MONK = PT.ENERGY,
-    DEMONHUNTER = PT.FURY,
-    EVOKER = PT.MANA,
+    WARRIOR = POWER.RAGE,
+    PALADIN = POWER.MANA,
+    HUNTER = POWER.FOCUS,
+    ROGUE = POWER.ENERGY,
+    PRIEST = POWER.MANA,
+    DEATHKNIGHT = POWER.RUNIC_POWER,
+    SHAMAN = POWER.MANA,
+    MAGE = POWER.MANA,
+    WARLOCK = POWER.MANA,
+    MONK = POWER.ENERGY,
+    DEMONHUNTER = POWER.FURY,
+    EVOKER = POWER.MANA,
 }
 
 local function GetPrimaryPowerType()
@@ -442,7 +442,7 @@ local function GetPrimaryPowerType()
         if shade and shade.foreverDruid then
             local _, castFrame = UnitClass("player")
             if castFrame == "DRUID" then
-                return PT.MANA
+                return POWER.MANA
             end
         end
         local live = UnitPowerType("player")
@@ -466,35 +466,35 @@ local function GetPrimaryPowerType()
         local shade = primary and primary.powerTypeOverride
         local o = ovSpec and shade and shade[ovSpec]
         if o == "mana" then
-            return PT.MANA
+            return POWER.MANA
         end -- Balance "Mana": every form
         if o then
             if specInfo == 1 then
-                return PT.LUNAR_POWER
+                return POWER.LUNAR_POWER
             end -- Balance alt: Astral Power
-            return PT.MANA -- Feral/Guardian/Restoration alt: Mana
+            return POWER.MANA -- Feral/Guardian/Restoration alt: Mana
         end
         if form == 1 then
-            return PT.ENERGY
+            return POWER.ENERGY
         end
         if form == 5 then
-            return PT.RAGE
+            return POWER.RAGE
         end
-        return PT.MANA
+        return POWER.MANA
     end
 
     if class == "SHAMAN" and specInfo == 1 then
         local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local shade = primary and primary.powerTypeOverride
         if ovSpec and shade and shade[ovSpec] then
-            return PT.MAELSTROM
+            return POWER.MAELSTROM
         end -- Elemental alt: Maelstrom
     end
     if class == "PRIEST" and specInfo == 3 then
         local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local shade = primary and primary.powerTypeOverride
         if ovSpec and shade and shade[ovSpec] then
-            return PT.INSANITY
+            return POWER.INSANITY
         end -- Shadow alt: Insanity
     end
     if class == "HUNTER" then
@@ -503,24 +503,24 @@ local function GetPrimaryPowerType()
         if specInfo == 1 or specInfo == 2 then
             local pp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
             if pp and pp.hunterFocusAsPower then
-                return PT.FOCUS
+                return POWER.FOCUS
             end
             return nil
         end
     end
     if class == "MONK" then
         if specInfo == 1 then
-            return PT.ENERGY
+            return POWER.ENERGY
         end -- Brewmaster
         if specInfo == 2 then
-            return PT.MANA
+            return POWER.MANA
         end -- Mistweaver
         if specInfo == 3 then
-            return PT.ENERGY
+            return POWER.ENERGY
         end -- Windwalker
     end
     if class == "DEMONHUNTER" then
-        return PT.FURY
+        return POWER.FURY
     end
     if class == "EVOKER" and specInfo == 3 then
         local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
@@ -530,10 +530,10 @@ local function GetPrimaryPowerType()
         if not (ovSpec and shade and shade[ovSpec]) then
             return "EBON_MIGHT"
         end
-        return PT.MANA
+        return POWER.MANA
     end
 
-    return PRIMARY_CLASS_MAP[class] or PT.MANA
+    return PRIMARY_CLASS_MAP[class] or POWER.MANA
 end
 
 -- Ebon Might (Augmentation Evoker) -- aura-based countdown on the power bar
@@ -651,18 +651,18 @@ local function GetSecondaryResource()
     end
 
     if class == "PALADIN" then
-        local mx = UnitPowerMax("player", PT.HOLY_POWER)
+        local mx = UnitPowerMax("player", POWER.HOLY_POWER)
         return {
-            power = PT.HOLY_POWER,
+            power = POWER.HOLY_POWER,
             max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
             type = "points",
         }
     elseif class == "ROGUE" then
-        local mx = UnitPowerMax("player", PT.COMBO)
+        local mx = UnitPowerMax("player", POWER.COMBO)
         -- onTarget: WoW Forever keeps combo points on the target, so the count is
         -- read with GetComboPoints and repainted on a target swap.
         return {
-            power = PT.COMBO,
+            power = POWER.COMBO,
             max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
             type = "points",
             onTarget = (CludesUI.IS_FOREVER == true and GetComboPoints ~= nil) or nil,
@@ -682,16 +682,16 @@ local function GetSecondaryResource()
         mod._internals.SetIronfurBaseDur(IronfurBaseDuration())
         return { power = "IRONFUR_BAR", max = 1, type = "bar" }
     elseif class == "DRUID" and form == 1 then
-        local mx = UnitPowerMax("player", PT.COMBO)
+        local mx = UnitPowerMax("player", POWER.COMBO)
         return {
-            power = PT.COMBO,
+            power = POWER.COMBO,
             max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
             type = "points",
             onTarget = (CludesUI.IS_FOREVER == true and GetComboPoints ~= nil) or nil,
         }
     elseif class == "DRUID" and specInfo == 1 then
         -- Balance: Astral Power as a class resource bar (like Elemental maelstrom)
-        local mx = UnitPowerMax("player", PT.LUNAR_POWER)
+        local mx = UnitPowerMax("player", POWER.LUNAR_POWER)
         if issecretvalue and issecretvalue(mx) then
             mx = 100
         end
@@ -704,9 +704,9 @@ local function GetSecondaryResource()
         -- above already handled the cat-form combo swap).
         return nil
     elseif class == "MONK" and (specInfo == 3) then
-        local mx = UnitPowerMax("player", PT.CHI)
+        local mx = UnitPowerMax("player", POWER.CHI)
         return {
-            power = PT.CHI,
+            power = POWER.CHI,
             max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
             type = "points",
         }
@@ -721,31 +721,31 @@ local function GetSecondaryResource()
         end
         return { power = "BREWMASTER_STAGGER", max = mx, type = "bar" }
     elseif class == "WARLOCK" then
-        local mx = UnitPowerMax("player", PT.SOUL_SHARDS)
+        local mx = UnitPowerMax("player", POWER.SOUL_SHARDS)
         -- frac: renders SUB-UNIT values so the value moves without the whole-unit
         -- count changing. Destruction (spec index 3, same spec the partial-pip
         -- render checks) spends/gains shard FRAGMENTS in tenths; the flag makes
         -- UpdateSecondaryResource's value guard compare the fragment read and keeps
         -- ArmTick/PollTick polling, since out-of-combat fragment decay has no event.
         return {
-            power = PT.SOUL_SHARDS,
+            power = POWER.SOUL_SHARDS,
             max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
             type = "points",
             frac = (specInfo == 3) or nil,
         }
     elseif class == "DEATHKNIGHT" then
-        return { power = PT.RUNES, max = 6, type = "runes" }
+        return { power = POWER.RUNES, max = 6, type = "runes" }
     elseif class == "EVOKER" then
-        local mx = UnitPowerMax("player", PT.ESSENCE)
+        local mx = UnitPowerMax("player", POWER.ESSENCE)
         return {
-            power = PT.ESSENCE,
+            power = POWER.ESSENCE,
             max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
             type = "points",
         }
     elseif class == "MAGE" and specInfo == 1 then
-        local mx = UnitPowerMax("player", PT.ARCANE)
+        local mx = UnitPowerMax("player", POWER.ARCANE)
         return {
-            power = PT.ARCANE,
+            power = POWER.ARCANE,
             max = (not issecretvalue or not issecretvalue(mx)) and mx or 4,
             type = "points",
         }
@@ -772,7 +772,7 @@ local function GetSecondaryResource()
         return nil
     elseif class == "SHAMAN" and specInfo == 1 then
         -- Elemental: Maelstrom as a bar (like Devourer soul fragments)
-        local mx = UnitPowerMax("player", PT.MAELSTROM)
+        local mx = UnitPowerMax("player", POWER.MAELSTROM)
         if issecretvalue and issecretvalue(mx) then
             mx = 100
         end
@@ -782,7 +782,7 @@ local function GetSecondaryResource()
         return { power = "MAELSTROM_BAR", max = mx, type = "bar" }
     elseif class == "PRIEST" and specInfo == 3 then
         -- Shadow: Insanity as a bar (like Elemental maelstrom)
-        local mx = UnitPowerMax("player", PT.INSANITY)
+        local mx = UnitPowerMax("player", POWER.INSANITY)
         if issecretvalue and issecretvalue(mx) then
             mx = 100
         end
@@ -802,7 +802,7 @@ local function GetSecondaryResource()
         if pp and pp.hunterFocusAsPower then
             return nil
         end
-        local mx = UnitPowerMax("player", PT.FOCUS)
+        local mx = UnitPowerMax("player", POWER.FOCUS)
         if issecretvalue and issecretvalue(mx) then
             mx = 100
         end
@@ -879,7 +879,7 @@ CludesUI.NewInternals(mod, "_internals", {
     MANGLE_SPELL = MANGLE_SPELL,
     POWER_COLORS = POWER_COLORS,
     POWER_ENUM_TO_KEY = POWER_ENUM_TO_KEY,
-    PT = PT,
+    PT = POWER,
     SetRBFont = SetRBFont,
     SnapXY = SnapXY,
     ironfurBaseDurSetters = {},

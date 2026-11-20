@@ -16,8 +16,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  a lock on the style alone -- the color swatches and the Pixel Glow cog stay
 --  live, and the template leaves the site alone while it holds.
 
-local GO = {}
-CludesUI.GlowOptions = GO
+local GlowOpts = {}
+CludesUI.GlowOptions = GlowOpts
 
 -- The glow engine loads in the parent addon, before any options file.
 local G = CludesUI.Glows
@@ -38,7 +38,7 @@ local function NoneOf(desc)
 end
 
 -- Saved value -> shared index, or nil for None and the extras.
-function GO.ToShared(desc, val)
+function GlowOpts.ToShared(desc, val)
     if val == nil or val == NoneOf(desc) then
         return nil
     end
@@ -55,7 +55,7 @@ function GO.ToShared(desc, val)
 end
 
 -- Shared index -> saved value.
-function GO.FromShared(desc, position)
+function GlowOpts.FromShared(desc, position)
     if desc.fromShared then
         return desc.fromShared(position)
     end
@@ -67,12 +67,12 @@ end
 
 -- Shared index -> the nearest style this site both renders and offers (its view
 -- or order can lack styles the host could draw), plus whether it changed.
-function GO.Resolve(desc, position)
+function GlowOpts.Resolve(desc, position)
     local ex = desc._resolveEx
     if not ex then
         ex = {}
         for i = 1, #G.STYLES do
-            if (desc.excludes and desc.excludes[i]) or GO.FromShared(desc, i) == nil then
+            if (desc.excludes and desc.excludes[i]) or GlowOpts.FromShared(desc, i) == nil then
                 ex[i] = true
             end
         end
@@ -91,7 +91,7 @@ local function OrderedStyleValues(desc)
     local result = {}
     if desc.order then
         for _, val in ipairs(desc.order) do
-            local position = GO.ToShared(desc, val)
+            local position = GlowOpts.ToShared(desc, val)
             if position and StyleOffered(desc, position) then
                 result[#result + 1] = val
             end
@@ -113,7 +113,7 @@ local function OrderedStyleValues(desc)
 end
 
 -- values/order pair for a WidgetFactory dropdown.
-function GO.StyleValues(desc)
+function GlowOpts.StyleValues(desc)
     local values, sequence = {}, {}
     if not desc.noNone then
         local nv = NoneOf(desc)
@@ -128,7 +128,7 @@ function GO.StyleValues(desc)
     end
     local styles = G.STYLES
     for _, val in ipairs(OrderedStyleValues(desc)) do
-        values[val] = styles[GO.ToShared(desc, val)].name
+        values[val] = styles[GlowOpts.ToShared(desc, val)].name
         sequence[#sequence + 1] = val
     end
     return values, sequence
@@ -144,9 +144,9 @@ local function DisplayValue(desc, values)
     if values[val] ~= nil then
         return val
     end
-    local position = GO.ToShared(desc, val)
+    local position = GlowOpts.ToShared(desc, val)
     if position then
-        local rv = GO.FromShared(desc, (GO.Resolve(desc, position)))
+        local rv = GlowOpts.FromShared(desc, (GlowOpts.Resolve(desc, position)))
         if rv ~= nil and values[rv] ~= nil then
             return rv
         end
@@ -157,7 +157,7 @@ end
 -------------------------------------------------------------------------------
 --  State
 -------------------------------------------------------------------------------
-function GO.IsOff(desc)
+function GlowOpts.IsOff(desc)
     if desc.isOff and desc.isOff() then
         return true
     end
@@ -167,7 +167,7 @@ end
 
 -- The site's own lock (desc.disabled: every control), or a style-only lock
 -- (desc.styleDisabled: the style dropdown alone). Either keeps the template out.
-function GO.StyleLocked(desc)
+function GlowOpts.StyleLocked(desc)
     if desc.disabled and desc.disabled() then
         return true
     end
@@ -177,14 +177,14 @@ end
 -- A real glow (not off, not an extra such as Blizzard Default or Solid).
 -- paramsOnly sites (Pixel Glow parameters without a style of their own, e.g. a
 -- CDM bar's pixelGlow* keys) always count as one.
-function GO.IsCustomGlow(desc)
+function GlowOpts.IsCustomGlow(desc)
     if desc.paramsOnly then
         return true
     end
-    if GO.IsOff(desc) then
+    if GlowOpts.IsOff(desc) then
         return false
     end
-    return GO.ToShared(desc, desc.get("style")) ~= nil
+    return GlowOpts.ToShared(desc, desc.get("style")) ~= nil
 end
 
 -- The extra entry for the site's current value, if that value is one.
@@ -203,11 +203,11 @@ end
 
 -- Something is drawn that takes a color: a custom glow, or a rendered extra
 -- (x.style, e.g. Blizzard Border). Rendered extras are never template targets.
-function GO.Renders(desc)
-    if GO.IsCustomGlow(desc) then
+function GlowOpts.Renders(desc)
+    if GlowOpts.IsCustomGlow(desc) then
         return true
     end
-    if GO.IsOff(desc) then
+    if GlowOpts.IsOff(desc) then
         return false
     end
     local posX = CurrentExtra(desc)
@@ -221,23 +221,23 @@ local function NoColor(desc)
     return posX ~= nil and posX.noColor == true
 end
 
-function GO.IsPixel(desc)
+function GlowOpts.IsPixel(desc)
     if desc.paramsOnly then
         return true
     end
-    return GO.IsCustomGlow(desc) and GO.ToShared(desc, desc.get("style")) == 1
+    return GlowOpts.IsCustomGlow(desc) and GlowOpts.ToShared(desc, desc.get("style")) == 1
 end
 
 -- Render spec for StartSpecGlow from the site's current values (one reused
 -- table per descriptor).
-function GO.Spec(desc)
+function GlowOpts.Spec(desc)
     local color = desc._spec
     if not color then
         color = {}
         desc._spec = color
     end
     local posX = CurrentExtra(desc)
-    color.style = GO.ToShared(desc, desc.get("style")) or (posX and posX.style) or 1
+    color.style = GlowOpts.ToShared(desc, desc.get("style")) or (posX and posX.style) or 1
     color.excludes = desc.excludes
     local dc = desc.defaultColor
     local mode = desc.caps and desc.caps.mode and desc.get("mode") or "custom"
@@ -260,7 +260,7 @@ end
 
 -- Refresh the module, then this site's current preview (skipped once that
 -- preview's page is gone: descriptors outlive page rebuilds).
-function GO.Changed(desc)
+function GlowOpts.Changed(desc)
     if desc.onChange then
         desc.onChange()
     end
@@ -300,7 +300,7 @@ local function StyleLock(desc)
         return desc.disabled and desc.disabled()
     end
     return function()
-        return GO.StyleLocked(desc)
+        return GlowOpts.StyleLocked(desc)
     end, function()
         if not siteOff() then
             return desc.styleDisabledTooltip
@@ -323,8 +323,8 @@ local function StyleLock(desc)
 end
 
 -- DualRow half spec for the style dropdown.
-function GO.DropdownSpec(desc, textValue, tooltip)
-    local values, sequence = GO.StyleValues(desc)
+function GlowOpts.DropdownSpec(desc, textValue, tooltip)
+    local values, sequence = GlowOpts.StyleValues(desc)
     local lockFn, lockTip, lockRaw = StyleLock(desc)
     return {
         type = "dropdown",
@@ -339,7 +339,7 @@ function GO.DropdownSpec(desc, textValue, tooltip)
         setValue = function(val)
             local function commit()
                 desc.set("style", val)
-                GO.Changed(desc)
+                GlowOpts.Changed(desc)
                 C_Timer.After(0, function()
                     CludesUI:RefreshPage()
                 end)
@@ -355,7 +355,7 @@ end
 
 local function NotPixel(desc)
     return function()
-        return not GO.IsPixel(desc)
+        return not GlowOpts.IsPixel(desc)
     end
 end
 
@@ -363,7 +363,7 @@ end
 -- frame, so a slider drag does not queue a refresh per tick.
 local _cogRefreshQueued = false
 local function CogChanged(desc)
-    GO.Changed(desc)
+    GlowOpts.Changed(desc)
     if _cogRefreshQueued then
         return
     end
@@ -474,7 +474,7 @@ local function CogRows(desc)
     return rowList
 end
 
-GO.CogRows = CogRows
+GlowOpts.CogRows = CogRows
 
 -- Default/Custom/Class swatches as one BuildCogPopup row (off: when the
 -- row is locked).
@@ -487,7 +487,7 @@ local function ColorRow(desc, off)
     local function pick(m)
         return function()
             desc.set("mode", m)
-            GO.Changed(desc)
+            GlowOpts.Changed(desc)
             CludesUI:RefreshPage()
         end
     end
@@ -524,7 +524,7 @@ local function ColorRow(desc, off)
                 onClick = function(self)
                     if desc.get("mode") ~= "custom" then
                         desc.set("mode", "custom")
-                        GO.Changed(desc)
+                        GlowOpts.Changed(desc)
                         CludesUI:RefreshPage()
                     elseif self._eabOrigClick then
                         self._eabOrigClick(self)
@@ -548,11 +548,11 @@ end
 -- lives inside a cog: style dropdown, Default/Custom/Class swatches, pixel rows.
 -- hidePixel: the Pixel Glow rows are left out, not greyed, while another style
 -- is picked (row.hidden: the popup swaps its rows as the style changes).
-function GO.PopupRows(desc, styleLabel, hidePixel)
-    local values, sequence = GO.StyleValues(desc)
+function GlowOpts.PopupRows(desc, styleLabel, hidePixel)
+    local values, sequence = GlowOpts.StyleValues(desc)
     local rowList = {}
     local off = function()
-        return not GO.Renders(desc)
+        return not GlowOpts.Renders(desc)
     end
     local lockFn, lockTip, lockRaw = StyleLock(desc)
     rowList[#rowList + 1] = {
@@ -568,7 +568,7 @@ function GO.PopupRows(desc, styleLabel, hidePixel)
         set = function(val)
             local function commit()
                 desc.set("style", val)
-                GO.Changed(desc)
+                GlowOpts.Changed(desc)
                 CludesUI:RefreshPage()
             end
             if desc.confirm then
@@ -598,7 +598,7 @@ end
 -- rgn = the DualRow half-region holding the style dropdown; colorRgn = an
 -- optional free half-region (a "Glow Color" label) that takes the swatches.
 -- A style-only lock (desc.styleDisabled) leaves both live.
-function GO.AttachInline(region, desc, colorRgn)
+function GlowOpts.AttachInline(region, desc, colorRgn)
     if CludesUI._prebuilding or not region then
         return
     end
@@ -611,7 +611,7 @@ function GO.AttachInline(region, desc, colorRgn)
         if siteOff() then
             return true
         end
-        return not GO.Renders(desc)
+        return not GlowOpts.Renders(desc)
     end
     -- colorDisabled: the site's color comes from elsewhere (NP Color by Type).
     -- A colored extra (Solid Border) draws nothing to style but takes the color;
@@ -620,7 +620,7 @@ function GO.AttachInline(region, desc, colorRgn)
         if siteOff() then
             return true
         end
-        if not GO.Renders(desc) then
+        if not GlowOpts.Renders(desc) then
             local posX = CurrentExtra(desc)
             if not (posX and posX.colored) then
                 return true
@@ -638,7 +638,7 @@ function GO.AttachInline(region, desc, colorRgn)
         if siteOff() then
             return CludesUI.ResolveDisabledTip(desc)
         end
-        if not GO.Renders(desc) then
+        if not GlowOpts.Renders(desc) then
             return CludesUI.DisabledTooltip(NO_STYLE_TIP)
         end
         if NoColor(desc) then
@@ -687,7 +687,7 @@ function GO.AttachInline(region, desc, colorRgn)
                 if off() then
                     return true
                 end
-                return not hasExtra and not GO.IsPixel(desc)
+                return not hasExtra and not GlowOpts.IsPixel(desc)
             end,
             -- Whichever lock holds, as the sentence shown: the site's own
             -- requirement, else a glow to set (rows beyond Pixel's), else Pixel Glow.
@@ -725,7 +725,7 @@ function GO.AttachInline(region, desc, colorRgn)
             end,
             -- Mode clicks: the trio's highlight and page status refresh via widget refresh.
             onChange = function()
-                GO.Changed(desc)
+                GlowOpts.Changed(desc)
                 CludesUI:RefreshPage()
             end,
             hasClassColor = true,
@@ -764,7 +764,7 @@ end
 -------------------------------------------------------------------------------
 local PREVIEW_ICON = 136197
 
-function GO.BuildPreview(hostFrame, desc, options)
+function GlowOpts.BuildPreview(hostFrame, desc, options)
     if CludesUI._prebuilding or not hostFrame then
         return
     end
@@ -821,13 +821,13 @@ function GO.BuildPreview(hostFrame, desc, options)
         if iconFn and not isBar then
             texture:SetTexture(iconFn() or PREVIEW_ICON)
         end
-        if not GO.Renders(desc) then
+        if not GlowOpts.Renders(desc) then
             G.StopGlow(shade)
             frame:SetAlpha(0.3)
             return
         end
         frame:SetAlpha(1)
-        G.StartSpecGlow(shade, GO.Spec(desc), wid, height, desc.host, G.PANEL_EXTRA)
+        G.StartSpecGlow(shade, GlowOpts.Spec(desc), wid, height, desc.host, G.PANEL_EXTRA)
     end
     -- A hidden preview (options closed, page left or rebuilt) stops its glow,
     -- so it leaves the glow driver and a closed panel costs nothing; shown
@@ -855,7 +855,7 @@ local function FlatKey(p, f)
     return FLAT_FIELDS[f] and G.FlatKeys(p)[f] or nil
 end
 
-function GO.FlatGet(tbl, p, f, defs)
+function GlowOpts.FlatGet(tbl, p, f, defs)
     local key = FlatKey(p, f)
     if not (key and tbl) then
         return nil
@@ -876,7 +876,7 @@ function GO.FlatGet(tbl, p, f, defs)
     return val
 end
 
-function GO.FlatSet(tbl, p, f, a, b, c)
+function GlowOpts.FlatSet(tbl, p, f, a, b, c)
     local key = FlatKey(p, f)
     if not (key and tbl) then
         return
@@ -893,7 +893,7 @@ end
 --  aura managers' icon glows (RF Debuff/Buff Manager, Player Aura Bars).
 --  getT returns the live settings table; style is a shared index, 0 = off.
 -------------------------------------------------------------------------------
-function GO.PrefixSite(getT, p, host, onChange, defColor)
+function GlowOpts.PrefixSite(getT, p, host, onChange, defColor)
     local key = G.PrefixKeys(p)
     local desc = {
         host = host,
@@ -958,21 +958,21 @@ end
 --  group "bar":    a provider returning the current list of per-bar
 --                  descriptors (bars are created and removed at runtime).
 -------------------------------------------------------------------------------
-GO.sites = {}
+GlowOpts.sites = {}
 
 -- entry = { id, label, module, page, section, highlight, group, sub,
 --           desc = descriptor | nil, list = function() return { {label, sub, desc, nav}, ... } end }
 -- nav = { page, section, highlight, preSelect } for a list item's Open Settings;
 -- sub = the group heading the row is listed under on the Glows page card;
 -- info = { text = fn, tooltip, glyph = "icon"/"bar" } instead of desc/list: a hint row with Go to Settings.
-function GO.RegisterSite(record)
-    for i = 1, #GO.sites do
-        if GO.sites[i].id == record.id then
-            GO.sites[i] = record
+function GlowOpts.RegisterSite(record)
+    for i = 1, #GlowOpts.sites do
+        if GlowOpts.sites[i].id == record.id then
+            GlowOpts.sites[i] = record
             return
         end
     end
-    GO.sites[#GO.sites + 1] = record
+    GlowOpts.sites[#GlowOpts.sites + 1] = record
 end
 
 -- The saved style value a template writes into a site, whether the site had
@@ -980,12 +980,12 @@ end
 -- a site that takes no template: a paramsOnly site (the Pixel Glow parameters
 -- per-icon glows read, which the template never changes) or a style the site
 -- cannot map.
-function GO.TemplateValue(desc, tbl)
+function GlowOpts.TemplateValue(desc, tbl)
     if desc.paramsOnly then
         return nil, false
     end
-    local position, converted = GO.Resolve(desc, tbl.style or 1)
-    return GO.FromShared(desc, position), converted, position
+    local position, converted = GlowOpts.Resolve(desc, tbl.style or 1)
+    return GlowOpts.FromShared(desc, position), converted, position
 end
 
 -- Write a template (shared-index style + color + parameters) into a site.
@@ -994,14 +994,14 @@ end
 -- A locked site (GO.StyleLocked) and a paramsOnly site are never written.
 -- Writes directly: a caller acting for the user routes the style through the
 -- site's own confirm first (see desc.confirm). Returns applied, converted.
-function GO.ApplyTemplate(desc, color, anyState)
-    if not anyState and not GO.IsCustomGlow(desc) then
+function GlowOpts.ApplyTemplate(desc, color, anyState)
+    if not anyState and not GlowOpts.IsCustomGlow(desc) then
         return false, false
     end
-    if GO.StyleLocked(desc) then
+    if GlowOpts.StyleLocked(desc) then
         return false, false
     end
-    local val, converted, position = GO.TemplateValue(desc, color)
+    local val, converted, position = GlowOpts.TemplateValue(desc, color)
     if val == nil then
         return false, false
     end
@@ -1032,13 +1032,13 @@ end
 
 -- Does the site already show what ApplyTemplate would write? An off glow or
 -- an extra never does, nor a paramsOnly site (never a template target).
-function GO.MatchesTemplate(desc, color)
-    if desc.paramsOnly or not GO.IsCustomGlow(desc) then
+function GlowOpts.MatchesTemplate(desc, color)
+    if desc.paramsOnly or not GlowOpts.IsCustomGlow(desc) then
         return false
     end
     local caps = desc.caps or {}
-    local position = GO.Resolve(desc, color.style or 1)
-    if GO.ToShared(desc, desc.get("style")) ~= position then
+    local position = GlowOpts.Resolve(desc, color.style or 1)
+    if GlowOpts.ToShared(desc, desc.get("style")) ~= position then
         return false
     end
     local mode = caps.mode and desc.get("mode") or "custom"
@@ -1099,7 +1099,7 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
 
     local entries = opts.entries
 
-    local GO = CludesUI.GlowOptions
+    local GlowOpts = CludesUI.GlowOptions
 
     -- One "ICON EFFECTS" section block per list entry.
     for bi = 1, #entries do
@@ -1146,7 +1146,7 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
         end
 
         -- Row 1: Filters | Icon Glow (shared glow controls)
-        local glowDesc = GO.PrefixSite(function()
+        local glowDesc = GlowOpts.PrefixSite(function()
             return entry
         end, "glow", "engine", opts.apply)
         -- The half next to Filters is too narrow for the color swatches.
@@ -1161,10 +1161,10 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
                 return "__placeholder"
             end,
             setValue = function() end,
-        }, GO.DropdownSpec(glowDesc, "Icon Glow"))
+        }, GlowOpts.DropdownSpec(glowDesc, "Icon Glow"))
         sy = sy - hh
         opts.filters(row._leftRegion, entry)
-        GO.AttachInline(row._rightRegion, glowDesc)
+        GlowOpts.AttachInline(row._rightRegion, glowDesc)
 
         -- Row 2: Border (+ swatch, the DISPLAY-section Border style) | Size
         -- (icon size for the matched filters; 0 = the grid's own size).

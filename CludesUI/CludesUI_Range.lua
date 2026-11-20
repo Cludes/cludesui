@@ -57,7 +57,7 @@ local RANGE_ITEMS = {
     { range = 80, id = 35278 }, -- Reinforced Net
 }
 
-local RG = {
+local RangeKit = {
     ladder = {}, -- ascending { range = yds, spells = { sid, ... } }
     ladderBuilt = false,
     dirty = false,
@@ -84,7 +84,7 @@ local brCache = { unit = nil, stop = nil, t = 0, has = false, mn = nil, mx = nil
 local function ResetCaches()
     lbCache.has = false
     brCache.has = false
-    RG.probeCutoff = nil
+    RangeKit.probeCutoff = nil
 end
 
 local DRUID_MELEE_FORMS = { [1] = true, [2] = true } -- Bear, Cat
@@ -117,8 +117,8 @@ local function SpecAttackCutoff(holyPaladinMelee)
         then
             EnsureLadder()
             local best
-            for idx = 1, #RG.ladder do
-                local r = RG.ladder[idx].range
+            for idx = 1, #RangeKit.ladder do
+                local r = RangeKit.ladder[idx].range
                 if r > 5 and r <= 40 then
                     best = r
                 end
@@ -183,26 +183,26 @@ function CludesUI.Range_GetAttackCutoff(customCutoff, holyPaladinMelee)
     end
 
     if holyPaladinMelee then
-        local val = RG.cutoffHolyMelee
+        local val = RangeKit.cutoffHolyMelee
         if val == nil then
             val = SpecAttackCutoff(true)
-            RG.cutoffHolyMelee = val
+            RangeKit.cutoffHolyMelee = val
         end
         return val
     end
-    local val = RG.cutoffBase
+    local val = RangeKit.cutoffBase
     if val == nil then
         val = SpecAttackCutoff(false)
-        RG.cutoffBase = val
+        RangeKit.cutoffBase = val
     end
     return val
 end
 
 local function BuildLadder()
-    RG.ladderBuilt = true
-    RG.dirty = false
+    RangeKit.ladderBuilt = true
+    RangeKit.dirty = false
     ResetCaches()
-    wipe(RG.ladder)
+    wipe(RangeKit.ladder)
     if
         not (
             C_SpellBook
@@ -257,7 +257,7 @@ local function BuildLadder()
                         if not rung then
                             rung = { range = maxR, spells = {} }
                             byRange[maxR] = rung
-                            RG.ladder[#RG.ladder + 1] = rung
+                            RangeKit.ladder[#RangeKit.ladder + 1] = rung
                         end
                         if #rung.spells < MAX_SPELLS_PER_RUNG then
                             rung.spells[#rung.spells + 1] = spellRef
@@ -267,13 +267,13 @@ local function BuildLadder()
             end
         end
     end
-    table.sort(RG.ladder, function(lhs, rhs)
+    table.sort(RangeKit.ladder, function(lhs, rhs)
         return lhs.range < rhs.range
     end)
 end
 
 EnsureLadder = function()
-    if RG.dirty or not RG.ladderBuilt then
+    if RangeKit.dirty or not RangeKit.ladderBuilt then
         BuildLadder()
     end
 end
@@ -361,7 +361,7 @@ function CludesUI.Range_LowerBound(unitToken)
         return lbCache.v
     end
     EnsureLadder()
-    local ladder = RG.ladder
+    local ladder = RangeKit.ladder
     local lower, result, answered = 0, nil, false
     for idx = 1, #ladder do
         local res = RungInRange(ladder[idx], unitToken)
@@ -460,11 +460,11 @@ function CludesUI.Range_BeyondCutoff(unitToken, cutoff)
         return nil
     end
     EnsureLadder()
-    if RG.probeCutoff ~= cutoff then
-        RG.probeCutoff = cutoff
-        wipe(RG.probes)
+    if RangeKit.probeCutoff ~= cutoff then
+        RangeKit.probeCutoff = cutoff
+        wipe(RangeKit.probes)
         local maxWindow = cutoff + 10
-        local ladder = RG.ladder
+        local ladder = RangeKit.ladder
         for idx = 1, #ladder do -- ascending ladder walked forwards = closest-to-cutoff first
             local rung = ladder[idx]
             if rung.range >= cutoff then
@@ -473,20 +473,20 @@ function CludesUI.Range_BeyondCutoff(unitToken, cutoff)
                 end
                 local spells = rung.spells
                 for jdx = 1, #spells do
-                    if #RG.probes >= MAX_PROBE_SPELLS then
+                    if #RangeKit.probes >= MAX_PROBE_SPELLS then
                         break
                     end
-                    RG.probes[#RG.probes + 1] = spells[jdx]
+                    RangeKit.probes[#RangeKit.probes + 1] = spells[jdx]
                 end
-                if #RG.probes >= MAX_PROBE_SPELLS then
+                if #RangeKit.probes >= MAX_PROBE_SPELLS then
                     break
                 end
             end
         end
     end
     local FindOvr = C_SpellBook and C_SpellBook.FindSpellOverrideByID
-    for idx = 1, #RG.probes do
-        local spellRef = RG.probes[idx]
+    for idx = 1, #RangeKit.probes do
+        local spellRef = RangeKit.probes[idx]
         local live = (FindOvr and FindOvr(spellRef)) or spellRef
         local res = C_Spell.IsSpellInRange(live, unitToken)
         if not (issecretvalue and issecretvalue(res)) and res ~= nil then
@@ -575,29 +575,29 @@ end
 -- with every range feature disabled. Idempotent and cheap on repeat calls.
 function CludesUI.Range_SetActive(key, enabled)
     enabled = enabled and true or nil
-    if RG.active[key] == enabled then
+    if RangeKit.active[key] == enabled then
         return
     end
-    RG.active[key] = enabled
-    RG.activeCount = RG.activeCount + (enabled and 1 or -1)
-    if enabled and RG.activeCount == 1 then
-        if not RG.evt then
-            RG.evt = CreateFrame("Frame")
-            RG.evt:SetScript("OnEvent", function()
-                RG.dirty = true
-                RG.cutoffBase, RG.cutoffHolyMelee = nil, nil
+    RangeKit.active[key] = enabled
+    RangeKit.activeCount = RangeKit.activeCount + (enabled and 1 or -1)
+    if enabled and RangeKit.activeCount == 1 then
+        if not RangeKit.evt then
+            RangeKit.evt = CreateFrame("Frame")
+            RangeKit.evt:SetScript("OnEvent", function()
+                RangeKit.dirty = true
+                RangeKit.cutoffBase, RangeKit.cutoffHolyMelee = nil, nil
             end)
         end
-        RG.evt:RegisterEvent("SPELLS_CHANGED")
-        RG.evt:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-        RG.evt:RegisterEvent("TRAIT_CONFIG_UPDATED")
-        RG.evt:RegisterEvent("PLAYER_ENTERING_WORLD")
+        RangeKit.evt:RegisterEvent("SPELLS_CHANGED")
+        RangeKit.evt:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+        RangeKit.evt:RegisterEvent("TRAIT_CONFIG_UPDATED")
+        RangeKit.evt:RegisterEvent("PLAYER_ENTERING_WORLD")
         -- Events were unregistered until now; anything may have changed.
-        RG.dirty = true
-        RG.cutoffBase, RG.cutoffHolyMelee = nil, nil
-    elseif not enabled and RG.activeCount == 0 then
-        if RG.evt then
-            RG.evt:UnregisterAllEvents()
+        RangeKit.dirty = true
+        RangeKit.cutoffBase, RangeKit.cutoffHolyMelee = nil, nil
+    elseif not enabled and RangeKit.activeCount == 0 then
+        if RangeKit.evt then
+            RangeKit.evt:UnregisterAllEvents()
         end
     end
 end

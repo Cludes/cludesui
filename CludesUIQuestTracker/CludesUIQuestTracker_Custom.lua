@@ -15,10 +15,10 @@ end
 -- in our own list (the Forever file's quest tools, read-only).
 -------------------------------------------------------------------------------
 local _, mod = ...
-local EQT = mod.EQT
+local TrackerNS = mod.EQT
 local IsSecret = CludesUI.IsSecret
 local function TrackerCfg(key)
-    return EQT.Cfg(key)
+    return TrackerNS.Cfg(key)
 end
 
 -- The tracker's width, and the height it grows to before it scrolls: the
@@ -156,12 +156,12 @@ local function BuildList()
     end
     -- One log snapshot per pass; filters and sort keys read it too.
     local log
-    log, zoneOf = EQT.QuestLogSnapshot()
-    local auto = EQT.AutoTrackOn()
+    log, zoneOf = TrackerNS.QuestLogSnapshot()
+    local auto = TrackerNS.AutoTrackOn()
     for _, details in ipairs(log) do
         local questId = details.questID
         if questId and not details.isHeader then
-            if pinned[questId] or (auto and EQT.QuestInArea(details, zoneOf[questId])) then
+            if pinned[questId] or (auto and TrackerNS.QuestInArea(details, zoneOf[questId])) then
                 if
                     not watched[questId]
                     and not untracked[questId]
@@ -178,11 +178,11 @@ local function BuildList()
         end
     end
     for index = #sequence, 1, -1 do
-        if EQT.IsQuestFiltered(sequence[index]) then
+        if TrackerNS.IsQuestFiltered(sequence[index]) then
             table.remove(sequence, index)
         end
     end
-    EQT.SortQuestList(sequence)
+    TrackerNS.SortQuestList(sequence)
     if next(pinned) then
         for _, questId in ipairs(sequence) do
             listRank[questId] = pinned[questId] and 0 or 1
@@ -215,7 +215,7 @@ local OnLineClick, OnLineEnter, OnLineLeave, ToggleFocus, SyncItems, HideOverlay
 local function StyleText(fontStr, px)
     CludesUI.PrimeFontShadow(fontStr, CludesUI.GetFontUseShadow("questTracker") and true or false)
     local flag = CludesUI.GetFontOutlineFlag("questTracker")
-    if not pcall(fontStr.SetFont, fontStr, EQT.GetFont(), px, flag) then
+    if not pcall(fontStr.SetFont, fontStr, TrackerNS.GetFont(), px, flag) then
         fontStr:SetFont("Fonts/FRIZQT__.TTF", px, flag)
     end
 end
@@ -326,29 +326,29 @@ local DONE_RGB = OBJECTIVE_TRACKER_COLOR and OBJECTIVE_TRACKER_COLOR.Complete or
 
 local function TitleRGB(questId, isComplete)
     if questId == C_SuperTrack.GetSuperTrackedQuestID() then
-        return EQT.GetFocusRGB()
+        return TrackerNS.GetFocusRGB()
     end
     if isComplete then
-        return EQT.GetCompletedRGB()
+        return TrackerNS.GetCompletedRGB()
     end
     -- Title Difficulty Colors: the game's own option (EQT.TitleDifficultyOn)
-    if EQT.TitleDifficultyOn() then
-        local red, green, blue = EQT.QuestDifficultyRGB(questId)
+    if TrackerNS.TitleDifficultyOn() then
+        local red, green, blue = TrackerNS.QuestDifficultyRGB(questId)
         if red then
             return red, green, blue
         end
     end
-    return EQT.GetTitleRGB()
+    return TrackerNS.GetTitleRGB()
 end
 
 -- Zone headers: the colour picked on Group Quests by Zone (the accent or a
 -- custom colour); with no pick, the Header Color. The fourth return is true
 -- while that colour is the accent.
 local function ZoneRGB()
-    local cfg = EQT.DB()
+    local cfg = TrackerNS.DB()
     local accent = cfg.customZoneUseAccent
     if accent == nil then
-        local red, green, blue = EQT.GetHeaderRGB()
+        local red, green, blue = TrackerNS.GetHeaderRGB()
         return red, green, blue, not (cfg.headerShowClassColor or cfg.headerUseAccent == false)
     end
     if accent then
@@ -357,7 +357,7 @@ local function ZoneRGB()
     end
     return cfg.customZoneR or 1, cfg.customZoneG or 1, cfg.customZoneB or 1, false
 end
-EQT.CustomZoneRGB = ZoneRGB
+TrackerNS.CustomZoneRGB = ZoneRGB
 
 local function ObjectiveRGBA(object)
     local red, green, blue = OBJ_RGB.r, OBJ_RGB.g, OBJ_RGB.b
@@ -367,9 +367,9 @@ local function ObjectiveRGBA(object)
     if TrackerCfg("objProgressColor") then
         local req = object.numRequired
         if object.finished then
-            red, green, blue = EQT.ProgressRGB(1)
+            red, green, blue = TrackerNS.ProgressRGB(1)
         elseif type(req) == "number" and req > 0 then
-            red, green, blue = EQT.ProgressRGB(math.min((object.numFulfilled or 0) / req, 1))
+            red, green, blue = TrackerNS.ProgressRGB(math.min((object.numFulfilled or 0) / req, 1))
         end
     end
     local a = (object.finished and TrackerCfg("objDimCompleted")) and (TrackerCfg("objDimAlpha") or 45) / 100 or 1
@@ -574,7 +574,7 @@ local function AddObjectives(questId, posY, width, posX)
             or C_QuestLog.GetNextWaypointText(questId)
             or QUEST_WATCH_QUEST_READY
         l, hgt = AcquireLine("obj", questId, "- " .. textValue, posX, posY, wid)
-        local red, green, blue = EQT.GetCompletedRGB()
+        local red, green, blue = TrackerNS.GetCompletedRGB()
         l.text:SetTextColor(red, green, blue, 1)
         return posY + hgt + gap
     end
@@ -838,7 +838,7 @@ local function AddRecipeList(entries, isRecraft, posY, width, titleX, objX)
             name = PROFESSIONS_CRAFTING_FORM_RECRAFTING_HEADER:format(name)
         end
         local l, hgt = AcquireLine("recipe", ident, name, titleX, posY, math.max(TITLE_MIN_W, width - titleX))
-        l.text:SetTextColor(EQT.GetTitleRGB())
+        l.text:SetTextColor(TrackerNS.GetTitleRGB())
         posY = posY + hgt + 2
         -- Modifying reagent slots first, as Blizzard lists them.
         local slots = schematic.reagentSlotSchematics
@@ -1222,7 +1222,7 @@ function Queue()
     pending = true
     C_Timer.After(0, Render)
 end
-EQT.RefreshCustom = Queue
+TrackerNS.RefreshCustom = Queue
 
 -- Public: fn(slot, questID, titleFontString) runs for each quest title row on
 -- every render. width (0-64, default 0) is kept free right of the title.
@@ -1289,7 +1289,7 @@ function ToggleFocus(questId)
 end
 
 -- For the details window (Details.lua).
-EQT.CustomQuestActions = { Focus = ToggleFocus, Untrack = Untrack, Abandon = Abandon }
+TrackerNS.CustomQuestActions = { Focus = ToggleFocus, Untrack = Untrack, Abandon = Abandon }
 
 local function Disabled()
     return true
@@ -1342,13 +1342,13 @@ local function ShowMenu(ownerFrame, questId)
     }
     -- Wowhead Quest Links: the entry Blizzard's tracker menu gets, after a divider
     -- as there (QuestLinks.lua).
-    if EQT.WowheadQuestOK(questId) then
+    if TrackerNS.WowheadQuestOK(questId) then
         itemList[#itemList + 1] = "---"
         itemList[#itemList + 1] = {
             text = CludesUI.L("Wowhead Link"),
             noLoc = true,
             onClick = function()
-                EQT.ShowWowheadLink(questId)
+                TrackerNS.ShowWowheadLink(questId)
             end,
         }
     end
@@ -1380,7 +1380,7 @@ function OnLineClick(self, btnFrame)
         local action = TrackerCfg("customClickAction") or "collapse"
         if action ~= "collapse" and not IsModifierKeyDown() then
             if action == "details" then
-                EQT.ShowQuestDetails(ident)
+                TrackerNS.ShowQuestDetails(ident)
             end
             -- map: the overlay's job; reached only in combat, where it is off.
             return
@@ -1523,7 +1523,7 @@ end
 -- Uncached items redraw the tooltip once loaded, if owner still holds it.
 local function AddRewardLine(e, ownerFrame)
     if not e.name then
-        EQT.OnRewardLoad(e, function()
+        TrackerNS.OnRewardLoad(e, function()
             if GameTooltip:IsOwned(ownerFrame) then
                 OnLineEnter(ownerFrame)
             end
@@ -1547,7 +1547,7 @@ local function AddRewardLine(e, ownerFrame)
 end
 
 local function AddRewards(questId, ownerFrame)
-    local region = EQT.QuestRewards(questId)
+    local region = TrackerNS.QuestRewards(questId)
     if not region then
         return
     end
@@ -1614,11 +1614,11 @@ local function ApplyBackground()
     if not widget then
         return
     end
-    local cfg = EQT.DB()
+    local cfg = TrackerNS.DB()
     widget.bg:SetColorTexture(cfg.bgR or 0, cfg.bgG or 0, cfg.bgB or 0, cfg.bgAlpha or 0.5)
-    widget.topLine:SetColorTexture(EQT.GetLineRGB())
+    widget.topLine:SetColorTexture(TrackerNS.GetLineRGB())
     ShowBackground(true)
-    local hr, hg, hb = EQT.GetHeaderRGB()
+    local hr, hg, hb = TrackerNS.GetHeaderRGB()
     headerFrame.text:SetTextColor(hr, hg, hb)
     headerFrame.toggle:SetTextColor(hr, hg, hb)
 end
@@ -1769,13 +1769,13 @@ local function BlizzardPanel()
         return
     end
     local s = scale / ui
-    if EQT.Blizz() then
+    if TrackerNS.Blizz() then
         return leftX * s, topY * s, wid * s, hgt * s
     end
     local padLeft = TrackerCfg("showQuestIcons") and SKIN_LEFT_ICONS or SKIN_LEFT
     local panelTop = topY
     local headerFrame = objectiveTracker.HeaderMenu or objectiveTracker.Header
-    if headerFrame and EQT.ShouldHideMasterHeader() then
+    if headerFrame and TrackerNS.ShouldHideMasterHeader() then
         local bottom = headerFrame:GetBottom()
         if bottom and not IsSecret(bottom) and bottom < topY then
             panelTop = bottom
@@ -1794,7 +1794,7 @@ local function TakeBlizzardSpot()
     if not leftX then
         return false
     end
-    local cfg = EQT.DB()
+    local cfg = TrackerNS.DB()
     if (cfg.customWidth or DEF_WIDTH) == DEF_WIDTH then
         cfg.customWidth = Clamp(math.floor(wid + 0.5), WIDTH_MIN, WIDTH_MAX)
     end
@@ -2008,7 +2008,7 @@ local function CanHideInCombat()
     if instanceType == "raid" and TrackerCfg("hideInRaidMode") ~= "never" then
         return true
     end
-    local saved = EQT.DB()
+    local saved = TrackerNS.DB()
     if CludesUI.VisDependsOnCombat(saved, "visibility") then
         return true
     end
@@ -2025,14 +2025,14 @@ local function CanHideInCombat()
 end
 
 local function Blocked()
-    return TrackerCfg("enabled") == false or EQT.IsSuppressed() or AutoHidden()
+    return TrackerCfg("enabled") == false or TrackerNS.IsSuppressed() or AutoHidden()
 end
 
 local function UpdateVisibility()
     if not widget then
         return
     end
-    local vis = not Blocked() and CludesUI.EvalVisibility(EQT.DB())
+    local vis = not Blocked() and CludesUI.EvalVisibility(TrackerNS.DB())
     if not vis then
         widget:Hide()
         return
@@ -2128,36 +2128,36 @@ end)
 -------------------------------------------------------------------------------
 local function Noop() end
 
-function EQT.InitCustom()
-    EQT.MuteBlizzardTracker()
+function TrackerNS.InitCustom()
+    TrackerNS.MuteBlizzardTracker()
     BuildFrame()
 
-    EQT.UpdateVisibility = UpdateVisibility
-    EQT.RefreshStateDriver = UpdateVisibility
-    EQT.ApplyBackground = ApplyBackground
-    EQT.RefreshFonts = RefreshFonts
-    EQT.RestyleAll = function()
+    TrackerNS.UpdateVisibility = UpdateVisibility
+    TrackerNS.RefreshStateDriver = UpdateVisibility
+    TrackerNS.ApplyBackground = ApplyBackground
+    TrackerNS.RefreshFonts = RefreshFonts
+    TrackerNS.RestyleAll = function()
         ApplyBackground()
         RefreshFonts()
     end
-    EQT.ApplyForceOnScreen = function()
+    TrackerNS.ApplyForceOnScreen = function()
         widget:SetClampedToScreen(TrackerCfg("forceOnScreen") == true)
     end
-    EQT.ApplyMasterHeaderVisibility = Noop
-    EQT.QueueResize = Noop
-    EQT.ResizeBGToContent = Noop
+    TrackerNS.ApplyMasterHeaderVisibility = Noop
+    TrackerNS.QueueResize = Noop
+    TrackerNS.ResizeBGToContent = Noop
     -- Profile swap, and the options page's Width and Max Height: the
     -- profile's width, height and spot.
-    EQT.SyncPosition = PlaceAtSpot
+    TrackerNS.SyncPosition = PlaceAtSpot
 
     for _, event in ipairs(EVENTS) do
         eventTag:RegisterEvent(event)
     end
     CludesUI.RegisterVisibilityUpdater(UpdateVisibility)
     CludesUI.RegisterMouseoverTarget(widget, function()
-        return not Blocked() and CludesUI.VisWantsMouseover(EQT.DB(), "visibility")
+        return not Blocked() and CludesUI.VisWantsMouseover(TrackerNS.DB(), "visibility")
     end)
-    CludesUI.RegAccent({ type = "callback", fn = EQT.RestyleAll })
+    CludesUI.RegAccent({ type = "callback", fn = TrackerNS.RestyleAll })
 
     -- Unlock Mode keeps the edge the tracker grows away from: its own answer
     -- in place of the one Blizzard's tracker has under this key.
@@ -2187,14 +2187,14 @@ function EQT.InitCustom()
             -- Unlock Mode also calls these with no size, to lay the element out again.
             setWidth = function(_, wid)
                 if wid then
-                    EQT.Set("customWidth", Clamp(math.floor(wid + 0.5), WIDTH_MIN, WIDTH_MAX))
+                    TrackerNS.Set("customWidth", Clamp(math.floor(wid + 0.5), WIDTH_MIN, WIDTH_MAX))
                 end
                 widget:SetWidth(TrackerCfg("customWidth") or DEF_WIDTH)
                 Queue()
             end,
             setHeight = function(_, hgt)
                 if hgt then
-                    EQT.Set("customMaxHeight", Clamp(math.floor(hgt + 0.5), HEIGHT_MIN, HEIGHT_MAX))
+                    TrackerNS.Set("customMaxHeight", Clamp(math.floor(hgt + 0.5), HEIGHT_MIN, HEIGHT_MAX))
                 end
                 if CludesUI._unlockActive then
                     widget:SetHeight(TrackerCfg("customMaxHeight") or DEF_HEIGHT)
@@ -2205,7 +2205,7 @@ function EQT.InitCustom()
                 if not anchorPoint then
                     return
                 end
-                EQT.Set(
+                TrackerNS.Set(
                     "customPos",
                     Anchored({ point = anchorPoint, relPoint = relPoint, x = posX, y = posY })
                 )
@@ -2216,7 +2216,7 @@ function EQT.InitCustom()
             loadPos = GrowSpot,
             -- Back to its starting place: where Blizzard's tracker sits.
             clearPos = function()
-                EQT.Set("customPos", nil)
+                TrackerNS.Set("customPos", nil)
                 PlaceAtSpot()
                 PlaceTracker()
             end,
@@ -2242,22 +2242,22 @@ function EQT.InitCustom()
 end
 
 -- The options page's sliders: the width and height a user can set.
-function EQT.CustomSizeRange()
+function TrackerNS.CustomSizeRange()
     return WIDTH_MIN, WIDTH_MAX, HEIGHT_MIN, HEIGHT_MAX
 end
 
 -- The options page's Grow Direction. The saved spot moves to the other edge
 -- of the same area, so the tracker fills the box it had from its other end,
 -- and a later Max Height change leaves the edge it keeps where it is.
-function EQT.SetCustomGrowUp(up)
+function TrackerNS.SetCustomGrowUp(up)
     up = up and true or false
     if GrowsUp() == up then
         return
     end
-    EQT.Set("customGrowUp", up)
+    TrackerNS.Set("customGrowUp", up)
     local p = TrackerCfg("customPos")
     if p and p.point then
-        EQT.Set("customPos", Anchored(p))
+        TrackerNS.Set("customPos", Anchored(p))
     end
     if widget then
         PlaceAtSpot()

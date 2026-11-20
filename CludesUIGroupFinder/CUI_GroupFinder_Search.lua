@@ -10,7 +10,7 @@ if CludesUI.HELD_BACK_ADDONS[ADDON_NAME] then
     return
 end -- held back (CludesUIGroupFinder.lua)
 local FOLDER = ADDON_NAME
-local CM = CludesUI
+local CUI = CludesUI
 
 local DUNGEONS = GROUP_FINDER_CATEGORY_ID_DUNGEONS or 2
 local DELVES = GROUP_FINDER_CATEGORY_ID_DELVES or 121
@@ -37,8 +37,8 @@ local Finder = {}
 -- grey for our white glyphs
 Finder.GLYPH = 0.78
 -- dimmed tooltip lines, gold bountiful line
-Finder.DIM_HEX = CM.HexColor(0.7, 0.7, 0.7)
-Finder.GOLD_HEX = CM.HexColor(GOLD_R, GOLD_G, GOLD_B)
+Finder.DIM_HEX = CUI.HexColor(0.7, 0.7, 0.7)
+Finder.GOLD_HEX = CUI.HexColor(GOLD_R, GOLD_G, GOLD_B)
 -- shared empty list (never written)
 Finder.EMPTY = {}
 -- plain tooltip, extra lines dimmed
@@ -55,7 +55,7 @@ function Finder.Tip(ownerFrame, title, ...)
         end
     end
     Finder.tipOwner = ownerFrame
-    CM.ShowWidgetTooltip(ownerFrame, textValue)
+    CUI.ShowWidgetTooltip(ownerFrame, textValue)
 end
 function Finder.ClassLine(classFile, textValue)
     local color = C_ClassColor and C_ClassColor.GetClassColor and C_ClassColor.GetClassColor(classFile)
@@ -63,12 +63,12 @@ function Finder.ClassLine(classFile, textValue)
 end
 function Finder.Untip()
     Finder.tipOwner = nil
-    CM.HideWidgetTooltip()
+    CUI.HideWidgetTooltip()
 end
 
 -- our text in the module's font
 function Finder.Font(fontStr, px, flags)
-    CM.ApplyModuleFont(fontStr, nil, px, ADDON_NAME, flags or "")
+    CUI.ApplyModuleFont(fontStr, nil, px, ADDON_NAME, flags or "")
 end
 
 -- blizzard's frames only move out of combat: queued till it ends
@@ -120,12 +120,12 @@ local function FinderCfg()
     return mod.Cfg()
 end
 local function AccentRGB()
-    local a = CM.CLUDES_GREEN
+    local a = CUI.CLUDES_GREEN
     return a.r, a.g, a.b
 end
 -- the skin's window engine, so our buttons follow its theme
 local function WindowSkin()
-    local skinNS = CM._ModuleNS.CludesUIBlizzardSkin
+    local skinNS = CUI._ModuleNS.CludesUIBlizzardSkin
     return skinNS and skinNS.WSkin
 end
 -- cui's group finder skin is on; off, our parts take blizzard's look. read once per session, at login,
@@ -135,7 +135,7 @@ function Finder.SkinOn()
     if isOn ~= nil then
         return isOn
     end
-    local style = CM.GetBlizzWindowStyle -- nil while blizzard skins+ is off
+    local style = CUI.GetBlizzWindowStyle -- nil while blizzard skins+ is off
     isOn = (WindowSkin() ~= nil and style ~= nil and style("lfg") ~= "off") and true or false
     if IsLoggedIn() then
         Finder.skinOn = isOn
@@ -158,16 +158,16 @@ mod.Skin, mod.ThemeBorder = WindowSkin, ThemeBorder
 -- an unpicked square's edge: the theme's, or none on blizzard's rounded button
 function Finder.RestBorder(frame)
     if Finder.SkinOn() then
-        CM.PanelPP.SetBorderColor(frame, ThemeBorder())
+        CUI.PanelPP.SetBorderColor(frame, ThemeBorder())
     else
-        CM.PanelPP.SetBorderColor(frame, 0, 0, 0, 0)
+        CUI.PanelPP.SetBorderColor(frame, 0, 0, 0, 0)
     end
 end
 -- a picked square: a white edge, or blizzard's highlight held on
 function Finder.PickBorder(square, edge, isOn)
     if Finder.SkinOn() then
         if isOn then
-            CM.PanelPP.SetBorderColor(edge, 1, 1, 1, 1)
+            CUI.PanelPP.SetBorderColor(edge, 1, 1, 1, 1)
         else
             Finder.RestBorder(edge)
         end
@@ -182,7 +182,7 @@ function Finder.PickBorder(square, edge, isOn)
 end
 mod.BOTTOM_Y = BOTTOM_Y
 local function SetBorderColor(widget, red, green, blue, a)
-    CM.PanelPP.SetBorderColor(widget, red, green, blue, a)
+    CUI.PanelPP.SetBorderColor(widget, red, green, blue, a)
 end
 
 -------------------------------------------------------------------------------
@@ -1220,7 +1220,7 @@ function Finder.PartyNeeds(need)
     need.TANK, need.HEALER, need.DAMAGER = 0, 0, 0
     local members = IsInRaid() and 0 or GetNumSubgroupMembers()
     for index = 0, math.min(members, #Finder.PARTY) do
-        local roleName, secret = CM.UnitEffectiveRole(index == 0 and "player" or Finder.PARTY[index])
+        local roleName, secret = CUI.UnitEffectiveRole(index == 0 and "player" or Finder.PARTY[index])
         if secret then
             return nil
         end
@@ -2318,11 +2318,11 @@ local function MenuItem(hostFrame, posY, textValue, onClick)
     local cbBg = callback:CreateTexture(nil, "BACKGROUND")
     cbBg:SetAllPoints()
     cbBg:SetColorTexture(0.12, 0.12, 0.12, 1)
-    entry.ring = CM.MakeBorder(callback, 0.25, 0.25, 0.25, 0.6, CM.PanelPP)
+    entry.ring = CUI.MakeBorder(callback, 0.25, 0.25, 0.25, 0.6, CUI.PanelPP)
     entry.fill = callback:CreateTexture(nil, "ARTWORK")
     entry.fill:SetPoint("TOPLEFT", callback, "TOPLEFT", 3, -3)
     entry.fill:SetPoint("BOTTOMRIGHT", callback, "BOTTOMRIGHT", -3, 3)
-    local tR, tG, tB, tA = CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A
+    local tR, tG, tB, tA = CUI.TEXT_DIM_R, CUI.TEXT_DIM_G, CUI.TEXT_DIM_B, CUI.TEXT_DIM_A
     entry.label = entry:CreateFontString(nil, "OVERLAY")
     Finder.Font(entry.label, ITEM_FONT)
     entry.label:SetPoint("LEFT", callback, "RIGHT", 7, 0)
@@ -2336,7 +2336,7 @@ local function MenuItem(hostFrame, posY, textValue, onClick)
     highlight:SetColorTexture(1, 1, 1, 0)
     entry:SetScript("OnEnter", function()
         entry.label:SetTextColor(1, 1, 1, 1)
-        highlight:SetColorTexture(1, 1, 1, CM.DD_ITEM_HL_A)
+        highlight:SetColorTexture(1, 1, 1, CUI.DD_ITEM_HL_A)
     end)
     entry:SetScript("OnLeave", function()
         entry.label:SetTextColor(tR, tG, tB, tA)
@@ -2368,7 +2368,7 @@ local hairlines = {} -- parent -> its dividers
 local function FitHairline(texture)
     local es = texture:GetParent():GetEffectiveScale()
     if es and es > 0 then
-        texture:SetHeight(CM.PP.perfect / es)
+        texture:SetHeight(CUI.PP.perfect / es)
     end
 end
 function Finder.Hairline(texture)
@@ -2563,7 +2563,7 @@ function Finder.OpenOpList(button, roleName)
         local backdrop = L:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0, 0, 0, 1)
-        CM.MakeBorder(L, ThemeBorder())
+        CUI.MakeBorder(L, ThemeBorder())
         L.items = {}
         for index, o in ipairs(Finder.COUNT_OPS) do
             local entry = CreateFrame("Button", nil, L)
@@ -2576,7 +2576,7 @@ function Finder.OpenOpList(button, roleName)
             entry.text:SetText(o.label)
             local highlight = entry:CreateTexture(nil, "HIGHLIGHT")
             highlight:SetAllPoints()
-            highlight:SetColorTexture(1, 1, 1, CM.DD_ITEM_HL_A)
+            highlight:SetColorTexture(1, 1, 1, CUI.DD_ITEM_HL_A)
             entry.opKey = o.key
             entry:SetScript("OnClick", function()
                 local cfg = FinderCfg()
@@ -2606,7 +2606,7 @@ function Finder.OpenOpList(button, roleName)
     local rule = (FinderCfg().roleCounts or Finder.EMPTY)[roleName]
     local current = (type(rule) == "table" and rule.op) or "lt"
     local ar, ag, ab = AccentRGB()
-    local tR, tG, tB, tA = CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A
+    local tR, tG, tB, tA = CUI.TEXT_DIM_R, CUI.TEXT_DIM_G, CUI.TEXT_DIM_B, CUI.TEXT_DIM_A
     for _, entry in ipairs(L.items) do
         if entry.opKey == current then
             entry.text:SetTextColor(ar, ag, ab, 1)
@@ -2632,7 +2632,7 @@ function Finder.MenuBox(hostFrame, wid, letters)
     local backdrop = checkBox:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0, 0, 0, 1)
-    CM.MakeBorder(checkBox, ThemeBorder())
+    CUI.MakeBorder(checkBox, ThemeBorder())
     checkBox:SetScript("OnEnterPressed", function(self)
         self:ClearFocus()
     end)
@@ -2663,7 +2663,7 @@ function Finder.AddCountRow(menu, posY, roleName, textValue)
     local sbg = swatchBtn:CreateTexture(nil, "BACKGROUND")
     sbg:SetAllPoints()
     sbg:SetColorTexture(0.12, 0.12, 0.12, 1)
-    swatchBtn.ring = CM.MakeBorder(swatchBtn, 0.25, 0.25, 0.25, 0.6, CM.PanelPP)
+    swatchBtn.ring = CUI.MakeBorder(swatchBtn, 0.25, 0.25, 0.25, 0.6, CUI.PanelPP)
     swatchBtn.fill = swatchBtn:CreateTexture(nil, "ARTWORK")
     swatchBtn.fill:SetPoint("TOPLEFT", swatchBtn, "TOPLEFT", 3, -3)
     swatchBtn.fill:SetPoint("BOTTOMRIGHT", swatchBtn, "BOTTOMRIGHT", -3, 3)
@@ -2683,10 +2683,10 @@ function Finder.AddCountRow(menu, posY, roleName, textValue)
     local obg = op:CreateTexture(nil, "BACKGROUND")
     obg:SetAllPoints()
     obg:SetColorTexture(0, 0, 0, 1)
-    CM.MakeBorder(op, ThemeBorder())
+    CUI.MakeBorder(op, ThemeBorder())
     op.text = op:CreateFontString(nil, "OVERLAY")
     Finder.Font(op.text, ITEM_FONT + 1)
-    op.text:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
+    op.text:SetTextColor(CUI.TEXT_DIM_R, CUI.TEXT_DIM_G, CUI.TEXT_DIM_B, CUI.TEXT_DIM_A)
     op.text:SetPoint("CENTER", 0, 1)
     local highlight = op:CreateTexture(nil, "HIGHLIGHT")
     highlight:SetAllPoints()
@@ -2706,7 +2706,7 @@ function Finder.AddCountRow(menu, posY, roleName, textValue)
     end)
     local labelText = rowF:CreateFontString(nil, "OVERLAY")
     Finder.Font(labelText, ITEM_FONT)
-    labelText:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
+    labelText:SetTextColor(CUI.TEXT_DIM_R, CUI.TEXT_DIM_G, CUI.TEXT_DIM_B, CUI.TEXT_DIM_A)
     labelText:SetPoint("LEFT", checkBox, "RIGHT", 6, 0)
     labelText:SetText(textValue)
     menu.counts = menu.counts or {}
@@ -2825,7 +2825,7 @@ local function AddRatingRow(menu, posY)
     local cbg = callback:CreateTexture(nil, "BACKGROUND")
     cbg:SetAllPoints()
     cbg:SetColorTexture(0.12, 0.12, 0.12, 1)
-    callback.ring = CM.MakeBorder(callback, 0.25, 0.25, 0.25, 0.6, CM.PanelPP)
+    callback.ring = CUI.MakeBorder(callback, 0.25, 0.25, 0.25, 0.6, CUI.PanelPP)
     callback.fill = callback:CreateTexture(nil, "ARTWORK")
     callback.fill:SetPoint("TOPLEFT", callback, "TOPLEFT", 3, -3)
     callback.fill:SetPoint("BOTTOMRIGHT", callback, "BOTTOMRIGHT", -3, 3)
@@ -2841,7 +2841,7 @@ local function AddRatingRow(menu, posY)
     end)
     local labelText = rowF:CreateFontString(nil, "OVERLAY")
     Finder.Font(labelText, ITEM_FONT)
-    labelText:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
+    labelText:SetTextColor(CUI.TEXT_DIM_R, CUI.TEXT_DIM_G, CUI.TEXT_DIM_B, CUI.TEXT_DIM_A)
     labelText:SetPoint("LEFT", callback, "RIGHT", 7, 0)
     labelText:SetText(RATING)
     local checkBox = Finder.MenuBox(rowF, 44, 4)
@@ -3051,7 +3051,7 @@ local function BuildSidePanel(menu, raids)
     if S and S.AddBorder then
         S.AddBorder(edge)
     else
-        CM.MakeBorder(edge, ThemeBorder())
+        CUI.MakeBorder(edge, ThemeBorder())
     end
     sidePane:Hide()
     menu.side = sidePane
@@ -3230,7 +3230,7 @@ local function SkinnedButton(hostFrame, wid, hgt, keepKeys, decorate)
         local backdrop = widget:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.06, 0.06, 0.06, 0.95)
-        CM.MakeBorder(widget, 0.25, 0.25, 0.25, 1, CM.PanelPP)
+        CUI.MakeBorder(widget, 0.25, 0.25, 0.25, 1, CUI.PanelPP)
         local highlight = widget:CreateTexture(nil, "HIGHLIGHT")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0.1)
@@ -3328,7 +3328,7 @@ end
 
 -- dungeon square: a skinned button with the icon inset 1px.
 local function MakeSquare(hostFrame)
-    local px = Finder.SkinOn() and CM.PP.mult or 3 -- blizzard's button: its black inside
+    local px = Finder.SkinOn() and CUI.PP.mult or 3 -- blizzard's button: its black inside
     local widget = SkinnedButton(hostFrame, BTN, BTN, { "Icon" }, function(button)
         button:SetText("")
         button.Icon = button:CreateTexture(nil, "ARTWORK")
@@ -3397,7 +3397,7 @@ local function MakeDelveSquare(hostFrame)
     line:SetHeight(2)
     if Finder.SkinOn() then
         local red, green, blue, a = ThemeBorder()
-        CM.PanelPP.CreateBorder(widget.edge, red, green, blue, a, 1, "OVERLAY", 7)
+        CUI.PanelPP.CreateBorder(widget.edge, red, green, blue, a, 1, "OVERLAY", 7)
     end
     widget.gold:Hide()
     widget:SetScript("OnEnter", DelveEnter)
@@ -3546,7 +3546,7 @@ local function BossPickList()
     backdrop:SetAllPoints()
     local red, green, blue = ThemeFill()
     backdrop:SetColorTexture(red, green, blue, 0.98)
-    CM.MakeBorder(entries, ThemeBorder())
+    CUI.MakeBorder(entries, ThemeBorder())
     entries.rows = {}
     for index, p in ipairs(BOSS_PICKS) do
         local entry = CreateFrame("Button", nil, entries)
@@ -3559,7 +3559,7 @@ local function BossPickList()
         entry.cur:SetColorTexture(1, 1, 1, 0.12)
         local highlight = entry:CreateTexture(nil, "HIGHLIGHT")
         highlight:SetAllPoints()
-        highlight:SetColorTexture(1, 1, 1, CM.DD_ITEM_HL_A or 0.08)
+        highlight:SetColorTexture(1, 1, 1, CUI.DD_ITEM_HL_A or 0.08)
         entry:SetScript("OnEnter", function(self)
             Finder.Tip(self, p.tip)
         end)
@@ -3630,7 +3630,7 @@ local function MakeBossSquare(hostFrame)
         widget.state:SetPoint("BOTTOMRIGHT", widget.icon, "BOTTOMRIGHT", 1, -1)
         widget.state:SetFrameLevel(widget:GetFrameLevel() + 2)
         widget.state:EnableMouse(false)
-        CM.PanelPP.CreateBorder(widget.state, 0, 0, 0, 0, 1, "OVERLAY", 7)
+        CUI.PanelPP.CreateBorder(widget.state, 0, 0, 0, 0, 1, "OVERLAY", 7)
     end
     widget:SetScript("OnEnter", BossEnter)
     widget:SetScript("OnClick", function(self)
@@ -3703,7 +3703,7 @@ local function BuildRaidMenu()
     if S and S.AddBorder then
         S.AddBorder(raidMenu)
     else
-        CM.MakeBorder(raidMenu, ThemeBorder())
+        CUI.MakeBorder(raidMenu, ThemeBorder())
     end
     raidMenu.items = {}
     local posY = 3
@@ -3828,7 +3828,7 @@ local function BuildTierMenu()
     if S and S.AddBorder then
         S.AddBorder(tierMenu)
     else
-        CM.MakeBorder(tierMenu, ThemeBorder())
+        CUI.MakeBorder(tierMenu, ThemeBorder())
     end
     local function Tiers()
         local cfg = FinderCfg()
@@ -3965,7 +3965,7 @@ Paint = function()
             edge:SetAllPoints()
             edge:SetFrameLevel(difficultyBtn:GetFrameLevel() + 3)
             edge:EnableMouse(false)
-            CM.MakeBorder(edge, 0.3, 0.85, 0.4, 1, CM.PanelPP)
+            CUI.MakeBorder(edge, 0.3, 0.85, 0.4, 1, CUI.PanelPP)
             difficultyBtn.activeEdge = edge
         end
         difficultyBtn.activeEdge:SetShown(difficultyBtn.active)
@@ -4194,10 +4194,10 @@ local function CogFilterButton(button)
     catcher:SetScript("OnClick", function()
         Finder.Untip()
         if InCombatLockdown() then
-            CM.PrintError(CludesUI.L("Cannot open options during combat."))
+            CUI.PrintError(CludesUI.L("Cannot open options during combat."))
             return
         end
-        CM:ShowModule(ADDON_NAME)
+        CUI:ShowModule(ADDON_NAME)
     end)
     skinData.catcher = catcher
 
@@ -4536,7 +4536,7 @@ local function LayoutPanel()
         refreshButton:SetFrameLevel(SP:GetFrameLevel() + 5)
         refreshButton:EnableMouse(false) -- blizzard's button underneath takes the click
         refreshButton.Glyph:SetSize(14, 14)
-        local px = CM.PP.mult
+        local px = CUI.PP.mult
         local cd = CreateFrame("Cooldown", nil, refreshButton, "CooldownFrameTemplate")
         cd:SetPoint("TOPLEFT", refreshButton, "TOPLEFT", px, -px)
         cd:SetPoint("BOTTOMRIGHT", refreshButton, "BOTTOMRIGHT", -px, px)
@@ -4870,21 +4870,21 @@ local function LayoutEntryFields()
         Finder.Defer("entryFields", LayoutEntryFields)
         return
     end
-    local EC = LFGListFrame and LFGListFrame.EntryCreation
+    local EntryCreate = LFGListFrame and LFGListFrame.EntryCreation
     local cfg = FinderCfg()
-    if not EC then
+    if not EntryCreate then
         return
     end
     local padding = tonumber(cfg.padding) or 12
-    local W = EC:GetWidth()
+    local W = EntryCreate:GetWidth()
     if type(W) ~= "number" or W <= 0 then
         return
     end
     local inner = W - padding * 2
-    local set, activity = EC.GroupDropdown, EC.ActivityDropdown
+    local set, activity = EntryCreate.GroupDropdown, EntryCreate.ActivityDropdown
     if set then
         set:ClearAllPoints()
-        set:SetPoint("TOPLEFT", EC, "TOPLEFT", padding, -76)
+        set:SetPoint("TOPLEFT", EntryCreate, "TOPLEFT", padding, -76)
         if activity and activity:IsShown() then
             local half = (inner - SQ_GAP) / 2
             set:SetWidth(half)
@@ -4895,18 +4895,18 @@ local function LayoutEntryFields()
             set:SetWidth(inner)
         end
     end
-    local nameLabel, descLabel = EC.NameLabel, EC.DescriptionLabel
+    local nameLabel, descLabel = EntryCreate.NameLabel, EntryCreate.DescriptionLabel
     if nameLabel then
         nameLabel:ClearAllPoints()
-        nameLabel:SetPoint("TOPLEFT", EC, "TOPLEFT", padding, -120)
+        nameLabel:SetPoint("TOPLEFT", EntryCreate, "TOPLEFT", padding, -120)
     end
-    local label = EC.Name
+    local label = EntryCreate.Name
     if label and nameLabel then
         label:ClearAllPoints()
         label:SetPoint("TOPLEFT", nameLabel, "BOTTOMLEFT", 0, -5)
         label:SetPoint("TOPRIGHT", nameLabel, "BOTTOMLEFT", inner, -5)
     end
-    local desc = EC.Description
+    local desc = EntryCreate.Description
     if desc and descLabel then
         desc:ClearAllPoints()
         desc:SetPoint("TOPLEFT", descLabel, "BOTTOMLEFT", 0, -10)
@@ -4935,15 +4935,15 @@ local function LayoutEntryFields()
         end
     end
     -- shorter placeholders (voice chat says discord).
-    local vc = EC.VoiceChat and EC.VoiceChat.EditBox
+    local vc = EntryCreate.VoiceChat and EntryCreate.VoiceChat.EditBox
     if vc and type(vc.Instructions) == "table" then
         vc.Instructions:SetText("Discord")
     end
-    local il = EC.ItemLevel and EC.ItemLevel.EditBox
+    local il = EntryCreate.ItemLevel and EntryCreate.ItemLevel.EditBox
     if il and type(il.Instructions) == "table" then
         il.Instructions:SetAlpha(0)
     end
-    local style = EC.PlayStyleDropdown
+    local style = EntryCreate.PlayStyleDropdown
     if style and desc then
         style:ClearAllPoints()
         style:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 0, -20)
@@ -4975,17 +4975,17 @@ function Finder.AlignEntryRows()
         Finder.Defer("entryFields", LayoutEntryFields)
         return
     end
-    local EC = LFGListFrame and LFGListFrame.EntryCreation
-    local style = EC and EC.PlayStyleDropdown
+    local EntryCreate = LFGListFrame and LFGListFrame.EntryCreation
+    local style = EntryCreate and EntryCreate.PlayStyleDropdown
     local sr = style and style:GetRight()
     if not sr then
         return
     end
     local TXT_X = Finder.TXT_X
-    local lg = EC.ListGroupButton
+    local lg = EntryCreate.ListGroupButton
     local bw = type(lg) == "table" and lg:GetWidth()
     for _, key in ipairs(Finder.ENTRY_BOX_ROWS) do
-        local line = EC[key]
+        local line = EntryCreate[key]
         local checkBox = type(line) == "table" and line.EditBox
         local rr = type(line) == "table" and line.GetRight and line:GetRight()
         if checkBox and rr then
@@ -5006,7 +5006,7 @@ function Finder.AlignEntryRows()
     end
     local sl = style:GetLeft()
     for _, key in ipairs(Finder.ENTRY_CHECK_ROWS) do
-        local line = EC[key]
+        local line = EntryCreate[key]
         local callback = type(line) == "table" and line.CheckButton
         local rl = type(line) == "table" and line.GetLeft and line:GetLeft()
         if type(callback) == "table" and sl and rl then
@@ -5018,8 +5018,8 @@ function Finder.AlignEntryRows()
             end
         end
     end
-    local vbox = EC.VoiceChat and EC.VoiceChat.EditBox
-    local prow = EC.PrivateGroup
+    local vbox = EntryCreate.VoiceChat and EntryCreate.VoiceChat.EditBox
+    local prow = EntryCreate.PrivateGroup
     local pcb = type(prow) == "table" and prow.CheckButton
     local bl = type(vbox) == "table" and vbox:GetLeft()
     local pl = type(prow) == "table" and prow.GetLeft and prow:GetLeft()
@@ -5190,12 +5190,12 @@ local function LayoutEntrySwitches()
         Finder.Defer("entrySwitches", LayoutEntrySwitches)
         return
     end
-    local EC = LFGListFrame and LFGListFrame.EntryCreation
-    if not EC or not Finder.SkinOn() then
+    local EntryCreate = LFGListFrame and LFGListFrame.EntryCreation
+    if not EntryCreate or not Finder.SkinOn() then
         return
     end
     for _, key in ipairs(Finder.ENTRY_SWITCH_ROWS) do
-        SwitchCheckbox(EC[key])
+        SwitchCheckbox(EntryCreate[key])
     end
 end
 
@@ -5211,35 +5211,35 @@ end
 mod.Search_LayoutEntry = LayoutEntryButtons
 
 -- the listed group's bottom row: three equal buttons
-local function LayoutViewerButtons(AV)
+local function LayoutViewerButtons(AppViewer)
     local padding = tonumber(FinderCfg().padding) or 12
     local x0 = padding
-    local pw = AV:GetWidth()
+    local pw = AppViewer:GetWidth()
     if not (type(pw) == "number" and pw > 0) then
         return
     end
     local wid = (pw - padding - x0 - SQ_GAP * 2) / 3
-    local browse, delist, edit = AV.BrowseGroupsButton, AV.RemoveEntryButton, AV.EditButton
+    local browse, delist, edit = AppViewer.BrowseGroupsButton, AppViewer.RemoveEntryButton, AppViewer.EditButton
     browse:ClearAllPoints()
-    browse:SetPoint("BOTTOMLEFT", AV, "BOTTOMLEFT", x0, BOTTOM_Y)
+    browse:SetPoint("BOTTOMLEFT", AppViewer, "BOTTOMLEFT", x0, BOTTOM_Y)
     browse:SetWidth(wid)
     delist:ClearAllPoints()
-    delist:SetPoint("BOTTOMLEFT", AV, "BOTTOMLEFT", x0 + wid + SQ_GAP, BOTTOM_Y)
+    delist:SetPoint("BOTTOMLEFT", AppViewer, "BOTTOMLEFT", x0 + wid + SQ_GAP, BOTTOM_Y)
     delist:SetWidth(wid)
     edit:ClearAllPoints()
-    edit:SetPoint("BOTTOMRIGHT", AV, "BOTTOMRIGHT", -padding, BOTTOM_Y)
+    edit:SetPoint("BOTTOMRIGHT", AppViewer, "BOTTOMRIGHT", -padding, BOTTOM_Y)
     edit:SetWidth(wid)
 end
 
 -- same look as search again, blizzard's button underneath takes the click
-local function LayoutViewerRefresh(AV)
-    local refreshBtn = AV.RefreshButton
+local function LayoutViewerRefresh(AppViewer)
+    local refreshBtn = AppViewer.RefreshButton
     if not Finder.viewerRefresh then
-        local lookName = GlyphButton(AV, ROW1_H, "UI-RefreshButton", true)
-        lookName:SetFrameLevel(AV:GetFrameLevel() + 5)
+        local lookName = GlyphButton(AppViewer, ROW1_H, "UI-RefreshButton", true)
+        lookName:SetFrameLevel(AppViewer:GetFrameLevel() + 5)
         lookName:EnableMouse(false)
         lookName.Glyph:SetSize(14, 14)
-        local px = CM.PP.mult
+        local px = CUI.PP.mult
         local cd = CreateFrame("Cooldown", nil, lookName, "CooldownFrameTemplate")
         cd:SetPoint("TOPLEFT", lookName, "TOPLEFT", px, -px)
         cd:SetPoint("BOTTOMRIGHT", lookName, "BOTTOMRIGHT", -px, px)
@@ -5270,45 +5270,45 @@ local function LayoutViewerRefresh(AV)
     lookName:Show()
     refreshBtn:SetAlpha(0)
     local padding = tonumber(FinderCfg().padding) or 12
-    local ar, ir = AV:GetRight(), AV.Inset:GetRight()
+    local ar, ir = AppViewer:GetRight(), AppViewer.Inset:GetRight()
     lookName:ClearAllPoints()
     -- 3 in from the rows' edge, over the decline buttons
-    lookName:SetPoint("BOTTOMRIGHT", AV.Inset, "TOPRIGHT", (ar and ir) and (ar - ir - padding - 3) or 0, 0)
+    lookName:SetPoint("BOTTOMRIGHT", AppViewer.Inset, "TOPRIGHT", (ar and ir) and (ar - ir - padding - 3) or 0, 0)
     refreshBtn:ClearAllPoints()
     refreshBtn:SetAllPoints(lookName)
     refreshBtn:SetFrameLevel(lookName:GetFrameLevel() + 4)
 end
 
 -- own list off: back to blizzard's layout
-local function RestoreViewer(AV)
+local function RestoreViewer(AppViewer)
     if not Finder.viewerLaid then
         return
     end
     Finder.viewerLaid = nil
-    AV.BrowseGroupsButton:ClearAllPoints()
-    AV.BrowseGroupsButton:SetPoint("BOTTOMLEFT", AV, "BOTTOMLEFT", -3, 4)
-    AV.BrowseGroupsButton:SetWidth(145)
-    AV.RemoveEntryButton:SetWidth(90)
-    AV.RemoveEntryButton:ClearAllPoints()
+    AppViewer.BrowseGroupsButton:ClearAllPoints()
+    AppViewer.BrowseGroupsButton:SetPoint("BOTTOMLEFT", AppViewer, "BOTTOMLEFT", -3, 4)
+    AppViewer.BrowseGroupsButton:SetWidth(145)
+    AppViewer.RemoveEntryButton:SetWidth(90)
+    AppViewer.RemoveEntryButton:ClearAllPoints()
     if UnitIsGroupLeader("player", LE_PARTY_CATEGORY_HOME) then
-        AV.RemoveEntryButton:SetPoint("LEFT", AV.BrowseGroupsButton, "RIGHT", 15, 0)
+        AppViewer.RemoveEntryButton:SetPoint("LEFT", AppViewer.BrowseGroupsButton, "RIGHT", 15, 0)
     else
-        AV.RemoveEntryButton:SetPoint("BOTTOMLEFT", AV, "BOTTOMLEFT", -3, 4)
+        AppViewer.RemoveEntryButton:SetPoint("BOTTOMLEFT", AppViewer, "BOTTOMLEFT", -3, 4)
     end
-    AV.EditButton:ClearAllPoints()
-    AV.EditButton:SetPoint("BOTTOMRIGHT", AV, "BOTTOMRIGHT", -3, 4)
-    AV.EditButton:SetWidth(90)
+    AppViewer.EditButton:ClearAllPoints()
+    AppViewer.EditButton:SetPoint("BOTTOMRIGHT", AppViewer, "BOTTOMRIGHT", -3, 4)
+    AppViewer.EditButton:SetWidth(90)
     Finder.viewerRefresh:Hide()
-    local refreshBtn = AV.RefreshButton
+    local refreshBtn = AppViewer.RefreshButton
     refreshBtn:SetAlpha(1)
     refreshBtn:ClearAllPoints()
-    refreshBtn:SetPoint("BOTTOMRIGHT", AV.Inset, "TOPRIGHT", 21, 0)
-    refreshBtn:SetFrameLevel(AV:GetFrameLevel() + 1)
+    refreshBtn:SetPoint("BOTTOMRIGHT", AppViewer.Inset, "TOPRIGHT", 21, 0)
+    refreshBtn:SetFrameLevel(AppViewer:GetFrameLevel() + 1)
 end
 
 local function LayoutViewer()
-    local AV = LFGListFrame and LFGListFrame.ApplicationViewer
-    if not (AV and AV:IsVisible()) then
+    local AppViewer = LFGListFrame and LFGListFrame.ApplicationViewer
+    if not (AppViewer and AppViewer:IsVisible()) then
         return
     end
     if InCombatLockdown() then
@@ -5316,12 +5316,12 @@ local function LayoutViewer()
         return
     end
     if not mod.ApplicantListOn() then
-        RestoreViewer(AV)
+        RestoreViewer(AppViewer)
         return
     end
     Finder.viewerLaid = true
-    LayoutViewerButtons(AV)
-    LayoutViewerRefresh(AV)
+    LayoutViewerButtons(AppViewer)
+    LayoutViewerRefresh(AppViewer)
 end
 mod.LayoutViewer = LayoutViewer
 
@@ -5350,31 +5350,31 @@ local function Init()
             LayoutCategoryButtons()
         end
     end
-    local EC = LFGListFrame.EntryCreation
-    if EC then
-        EC:HookScript("OnShow", LayoutEntryButtons)
+    local EntryCreate = LFGListFrame.EntryCreation
+    if EntryCreate then
+        EntryCreate:HookScript("OnShow", LayoutEntryButtons)
         if LFGListEntryCreation_Select then
             hooksecurefunc("LFGListEntryCreation_Select", function()
-                if EC:IsShown() then
+                if EntryCreate:IsShown() then
                     LayoutEntryFields()
                     LayoutEntrySwitches()
                 end
             end)
         end
-        if EC:IsShown() then
+        if EntryCreate:IsShown() then
             LayoutEntryButtons()
         end
     end
-    local AV = LFGListFrame.ApplicationViewer
+    local AppViewer = LFGListFrame.ApplicationViewer
     if
-        AV
-        and AV.Inset
-        and AV.RefreshButton
-        and AV.BrowseGroupsButton
-        and AV.RemoveEntryButton
-        and AV.EditButton
+        AppViewer
+        and AppViewer.Inset
+        and AppViewer.RefreshButton
+        and AppViewer.BrowseGroupsButton
+        and AppViewer.RemoveEntryButton
+        and AppViewer.EditButton
     then
-        AV:HookScript("OnShow", LayoutViewer)
+        AppViewer:HookScript("OnShow", LayoutViewer)
         -- blizzard re-anchors delist on every update
         if LFGListApplicationViewer_UpdateInfo then
             hooksecurefunc("LFGListApplicationViewer_UpdateInfo", LayoutViewer)
