@@ -467,16 +467,16 @@ local function OpenPicker(onPick)
             end,
         })
         function p.Update()
-            for idx, b in ipairs(p.buttons) do
+            for idx, btn in ipairs(p.buttons) do
                 local icon = PickerIcon(p.offset + idx)
-                b.value = icon
+                btn.value = icon
                 if icon then
-                    b.icon:SetTexture(IconPath(icon))
-                    b.selected = icon == p.current
-                    b.Paint(false)
-                    b:Show()
+                    btn.icon:SetTexture(IconPath(icon))
+                    btn.selected = icon == p.current
+                    btn.Paint(false)
+                    btn:Show()
                 else
-                    b:Hide()
+                    btn:Hide()
                 end
             end
         end

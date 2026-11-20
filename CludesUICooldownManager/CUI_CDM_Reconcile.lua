@@ -1672,9 +1672,9 @@ function mod.RepopulateFromBlizzard(fromRequest)
     -- share its spell ID).
     local racialSD = racialBar and mod.GetBarSpellData(racialBar)
     if racialSD then
-        for _, b in ipairs(p.cdmBars.bars) do
-            local isBuff = b.barType == "custom_buff" or mod.IsBarBuffFamily(b)
-            local barSpells = not isBuff and b.key and mod.GetBarSpellData(b.key)
+        for _, bar in ipairs(p.cdmBars.bars) do
+            local isBuff = bar.barType == "custom_buff" or mod.IsBarBuffFamily(bar)
+            local barSpells = not isBuff and bar.key and mod.GetBarSpellData(bar.key)
             local entries = barSpells and barSpells.assignedSpells
             if entries then
                 for index = #entries, 1, -1 do

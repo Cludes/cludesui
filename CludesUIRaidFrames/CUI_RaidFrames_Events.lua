@@ -682,17 +682,17 @@ local function OnEvent(self, evt, arg1, ...)
                 UpdateButton(xf)
             end
         else
-            for _, b in ipairs(allButtons) do
-                local u = b:GetAttribute("unit")
-                if u and b:IsVisible() then
-                    UpdateButton(b)
+            for _, btn in ipairs(allButtons) do
+                local u = btn:GetAttribute("unit")
+                if u and btn:IsVisible() then
+                    UpdateButton(btn)
                 end
             end
             if not mod._partyPvActive then
-                for _, b in ipairs(mod._partyAllButtons) do
-                    local u = b:GetAttribute("unit")
-                    if u and b:IsVisible() then
-                        UpdateButton(b)
+                for _, btn in ipairs(mod._partyAllButtons) do
+                    local u = btn:GetAttribute("unit")
+                    if u and btn:IsVisible() then
+                        UpdateButton(btn)
                     end
                 end
             end

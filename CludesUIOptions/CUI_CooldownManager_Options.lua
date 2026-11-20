@@ -3196,11 +3196,11 @@ CludesUI.AtOptionsLogin(function()
             end
             local seenShapes = {}
             local keyList = {}
-            for _, b in ipairs(barList) do
-                local shape = (b.key == "focuskick") and "focuskick" or b.barType
+            for _, bar in ipairs(barList) do
+                local shape = (bar.key == "focuskick") and "focuskick" or bar.barType
                 if shape and not seenShapes[shape] then
                     seenShapes[shape] = true
-                    keyList[#keyList + 1] = b.key
+                    keyList[#keyList + 1] = bar.key
                 end
             end
             if optionState.selectedCDMBarIndex < 1 then

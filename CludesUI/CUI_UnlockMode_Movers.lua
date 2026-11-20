@@ -1070,8 +1070,8 @@ CUI_NS.unlockParts.Movers = function(LM)
             -- Skip RefreshLinkStates if a link button is currently hovered (would reset its white color)
             local linkHovered = false
             if handle._linkBtns then
-                for _, b in ipairs(handle._linkBtns) do
-                    if b:IsMouseOver() then
+                for _, btn in ipairs(handle._linkBtns) do
+                    if btn:IsMouseOver() then
                         linkHovered = true
                         break
                     end
@@ -1238,8 +1238,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                 if not handle:IsMouseOver() then
                     local overChild = handle._cogBtn and handle._cogBtn:IsMouseOver()
                     if not overChild and handle._linkBtns then
-                        for _, b in ipairs(handle._linkBtns) do
-                            if b:IsMouseOver() then
+                        for _, btn in ipairs(handle._linkBtns) do
+                            if btn:IsMouseOver() then
                                 overChild = true
                                 break
                             end
@@ -2588,8 +2588,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                         if not m:IsMouseOver() and not (m._cogBtn and m._cogBtn:IsMouseOver()) then
                             local overLink = false
                             if m._linkBtns then
-                                for _, b in ipairs(m._linkBtns) do
-                                    if b:IsMouseOver() then
+                                for _, btn in ipairs(m._linkBtns) do
+                                    if btn:IsMouseOver() then
                                         overLink = true
                                         break
                                     end
@@ -2607,8 +2607,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                             m._hoverPending = false
                             local stillOver = m:IsMouseOver() or (m._cogBtn and m._cogBtn:IsMouseOver())
                             if not stillOver and m._linkBtns then
-                                for _, b in ipairs(m._linkBtns) do
-                                    if b:IsMouseOver() then
+                                for _, btn in ipairs(m._linkBtns) do
+                                    if btn:IsMouseOver() then
                                         stillOver = true
                                         break
                                     end

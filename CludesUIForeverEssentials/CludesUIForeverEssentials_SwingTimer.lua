@@ -181,9 +181,9 @@ local function Apply()
         end
     else
         ev:UnregisterAllEvents()
-        for _, b in pairs(barList) do
-            b.started = nil
-            b:SetScript("OnUpdate", nil)
+        for _, bar in pairs(barList) do
+            bar.started = nil
+            bar:SetScript("OnUpdate", nil)
         end
     end
     module.SwingLayout()

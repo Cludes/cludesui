@@ -853,24 +853,24 @@ local function RefreshPermissions(force)
     end
     lastAssist, lastLeader, lastRaid = hasAssist, leader, raid
 
-    for _, b in ipairs(groupBtns) do
+    for _, btn in ipairs(groupBtns) do
         local allowed
-        if b.ungated then
+        if btn.ungated then
             allowed = true
-        elseif b.needsLeader then
+        elseif btn.needsLeader then
             allowed = leader
         else
             allowed = hasAssist
         end
-        SetButtonEnabled(b, allowed)
+        SetButtonEnabled(btn, allowed)
     end
 
     -- Secure buttons: cosmetic only, never Enable/Disable (see header).
     -- 0.8 is the grid's resting opacity (hover lifts to 1); 0.4 is the
     -- no-assist dim, which also suppresses the hover lift.
-    for _, b in ipairs(markerButtons) do
-        b._baseAlpha = hasAssist and 0.8 or 0.4
-        b.icon:SetAlpha(b._baseAlpha)
+    for _, btn in ipairs(markerButtons) do
+        btn._baseAlpha = hasAssist and 0.8 or 0.4
+        btn.icon:SetAlpha(btn._baseAlpha)
     end
 
     if convertButton then
@@ -1122,8 +1122,8 @@ local function LayoutGroupContent()
     end
 
     -- Hide all, then show only what the plan placed.
-    for _, b in ipairs(groupBtns) do
-        b:Hide()
+    for _, btn in ipairs(groupBtns) do
+        btn:Hide()
     end
 
     local posY = 0

@@ -36,8 +36,8 @@ local function EnsureFocusKickBar()
     -- Desired position: directly after the "buffs" default bar and before any custom bars (skipping ghost bars).
     local barList = p.cdmBars.bars
     local goalIdx
-    for index, b in ipairs(barList) do
-        if b.key == "buffs" then
+    for index, bar in ipairs(barList) do
+        if bar.key == "buffs" then
             goalIdx = index + 1
             break
         end
@@ -46,8 +46,8 @@ local function EnsureFocusKickBar()
         goalIdx = #barList + 1
     end
     local foundIdx
-    for index, b in ipairs(barList) do
-        if b.key == FOCUSKICK_BAR_KEY then
+    for index, bar in ipairs(barList) do
+        if bar.key == FOCUSKICK_BAR_KEY then
             foundIdx = index
             break
         end

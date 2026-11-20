@@ -142,9 +142,9 @@ do
     end
 
     FB.RangeTick = function()
-        for _, b in ipairs(FB.buttons) do
-            if b:IsVisible() then
-                FB.ApplyRange(b)
+        for _, btn in ipairs(FB.buttons) do
+            if btn:IsVisible() then
+                FB.ApplyRange(btn)
             end
         end
     end
@@ -675,21 +675,21 @@ do
             stepW = wid + sp
         end
 
-        for index, b in ipairs(ownerFrame.buttons) do
-            b:SetSize(wid, hgt)
-            b:ClearAllPoints()
+        for index, btn in ipairs(ownerFrame.buttons) do
+            btn:SetSize(wid, hgt)
+            btn:ClearAllPoints()
             local off = index - 1
             if growDir == "UP" then
-                b:SetPoint("BOTTOMLEFT", ownerFrame.container, "BOTTOMLEFT", 0, off * stepH)
+                btn:SetPoint("BOTTOMLEFT", ownerFrame.container, "BOTTOMLEFT", 0, off * stepH)
             elseif growDir == "LEFT" then
-                b:SetPoint("TOPRIGHT", ownerFrame.container, "TOPRIGHT", -off * stepW, 0)
+                btn:SetPoint("TOPRIGHT", ownerFrame.container, "TOPRIGHT", -off * stepW, 0)
             elseif growDir == "RIGHT" then
-                b:SetPoint("TOPLEFT", ownerFrame.container, "TOPLEFT", off * stepW, 0)
+                btn:SetPoint("TOPLEFT", ownerFrame.container, "TOPLEFT", off * stepW, 0)
             else -- DOWN
-                b:SetPoint("TOPLEFT", ownerFrame.container, "TOPLEFT", 0, -off * stepH)
+                btn:SetPoint("TOPLEFT", ownerFrame.container, "TOPLEFT", 0, -off * stepH)
             end
 
-            FB.StyleVisuals(b, s, wid, hgt, texPath, bgc)
+            FB.StyleVisuals(btn, s, wid, hgt, texPath, bgc)
         end
     end
 
@@ -1067,8 +1067,8 @@ do
                         UnregisterAttributeDriver(FB.controller, "state-fb" .. index)
                     end
                 end
-                for _, b in ipairs(FB.buttons) do
-                    b:Hide()
+                for _, btn in ipairs(FB.buttons) do
+                    btn:Hide()
                 end
                 FB.container:Hide()
             end
@@ -1103,9 +1103,9 @@ do
         if SecureHandlerExecute then
             SecureHandlerExecute(FB.controller, FB.RELAYOUT)
         end
-        for _, b in ipairs(FB.buttons) do
-            if b:IsVisible() then
-                FB.Update(b)
+        for _, btn in ipairs(FB.buttons) do
+            if btn:IsVisible() then
+                FB.Update(btn)
             end
         end
 
@@ -1119,13 +1119,13 @@ do
             FB.rangeSpell = FB.ForeverKnownHeal(pClass)
         end
         if not FB.rangeSpell then
-            for _, b in ipairs(FB.buttons) do
-                b:SetAlpha(1)
+            for _, btn in ipairs(FB.buttons) do
+                btn:SetAlpha(1)
             end
         else
-            for _, b in ipairs(FB.buttons) do
-                if b:IsVisible() then
-                    FB.ApplyRange(b)
+            for _, btn in ipairs(FB.buttons) do
+                if btn:IsVisible() then
+                    FB.ApplyRange(btn)
                 end
             end
         end
@@ -1327,16 +1327,16 @@ do
             elseif not FB.built or not FB.container or not FB.container:IsShown() then
                 return
             elseif evt == "INSTANCE_ENCOUNTER_ENGAGE_UNIT" then
-                for _, b in ipairs(FB.buttons) do
-                    if b:IsVisible() then
-                        FB.Update(b)
+                for _, btn in ipairs(FB.buttons) do
+                    if btn:IsVisible() then
+                        FB.Update(btn)
                     end
                 end
             elseif evt == "PLAYER_TARGET_CHANGED" then
                 -- Only the border state can change here, and only on the buttons that flipped
-                for _, b in ipairs(FB.buttons) do
-                    if b:IsVisible() and FB.ReadTarget(b, FB.UnitOf(b)) then
-                        FB.ApplyBorderColor(b)
+                for _, btn in ipairs(FB.buttons) do
+                    if btn:IsVisible() and FB.ReadTarget(btn, FB.UnitOf(btn)) then
+                        FB.ApplyBorderColor(btn)
                     end
                 end
             elseif evt == "GROUP_ROSTER_UPDATE" then

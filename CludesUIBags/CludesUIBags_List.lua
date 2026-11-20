@@ -868,9 +868,9 @@ function mod.UpdateListHeaderBar(owner, cols, leftX, topY, startX, noSort)
     barFrame:SetPoint("TOPRIGHT", owner, "TOPRIGHT", 0, topY)
     barFrame:Show()
     -- Hide only dropped columns: hiding the held button would end its drag
-    for ident, b in pairs(barFrame._btns) do
+    for ident, btn in pairs(barFrame._btns) do
         if not IndexOf(cols, ident) then
-            b:Hide()
+            btn:Hide()
         end
     end
     local sortKey = not noSort and BP().bagListSortKey

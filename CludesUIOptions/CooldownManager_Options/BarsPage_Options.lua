@@ -518,9 +518,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         if not profile or not profile.cdmBars or not profile.cdmBars.bars then
             return barInfo
         end
-        for _, b in ipairs(profile.cdmBars.bars) do
-            if b.key == barId then
-                return b
+        for _, bar in ipairs(profile.cdmBars.bars) do
+            if bar.key == barId then
+                return bar
             end
         end
         return barInfo
@@ -643,9 +643,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         -- utility/buffs/focuskick) are never part of the order list.
         local function CustomBarDisplayOrder()
             local sequence, seen, byKey = {}, {}, {}
-            for _, b in ipairs(barList) do
-                if b.key and not b.isGhostBar and not BUILT_IN[b.key] and b.key ~= "focuskick" then
-                    byKey[b.key] = b
+            for _, bar in ipairs(barList) do
+                if bar.key and not bar.isGhostBar and not BUILT_IN[bar.key] and bar.key ~= "focuskick" then
+                    byKey[bar.key] = bar
                 end
             end
             local saved = p.cdmBars.customBarMenuOrder
@@ -657,8 +657,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     end
                 end
             end
-            for _, b in ipairs(barList) do
-                local keyName = b.key
+            for _, bar in ipairs(barList) do
+                local keyName = bar.key
                 if keyName and byKey[keyName] and not seen[keyName] then
                     sequence[#sequence + 1] = keyName
                     seen[keyName] = true
@@ -697,8 +697,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
             local menuH = 4
             local customCount = 0
-            for _, b in ipairs(barList) do
-                if not BUILT_IN[b.key] and not b.isGhostBar then
+            for _, bar in ipairs(barList) do
+                if not BUILT_IN[bar.key] and not bar.isGhostBar then
                     customCount = customCount + 1
                 end
             end
@@ -714,10 +714,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local displayList, realIdx = {}, {}
             do
                 local customsEmitted = false
-                for bIdx, b in ipairs(barList) do
-                    realIdx[b] = bIdx
-                    if not b.isGhostBar then
-                        if ordByKey[b.key] then
+                for bIdx, bar in ipairs(barList) do
+                    realIdx[bar] = bIdx
+                    if not bar.isGhostBar then
+                        if ordByKey[bar.key] then
                             if not customsEmitted then
                                 customsEmitted = true
                                 for _, keyName in ipairs(ordKeys) do
@@ -725,7 +725,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 end
                             end
                         else
-                            displayList[#displayList + 1] = b
+                            displayList[#displayList + 1] = bar
                         end
                     end
                 end
@@ -1218,9 +1218,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         if not profile or not profile.cdmBars then
             return
         end
-        for _, b in ipairs(profile.cdmBars.bars) do
-            if not b.isGhostBar and b.key ~= "focuskick" then
-                func(b)
+        for _, bar in ipairs(profile.cdmBars.bars) do
+            if not bar.isGhostBar and bar.key ~= "focuskick" then
+                func(bar)
             end
         end
     end
@@ -1780,8 +1780,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 if not (profile and profile.cdmBars) then
                     return false
                 end
-                for _, b in ipairs(profile.cdmBars.bars) do
-                    if b.key ~= barKey and b.maxIcons and b.maxIcons > 0 and b.overflowTarget == barKey then
+                for _, bar in ipairs(profile.cdmBars.bars) do
+                    if bar.key ~= barKey and bar.maxIcons and bar.maxIcons > 0 and bar.overflowTarget == barKey then
                         return true
                     end
                 end
@@ -1791,21 +1791,21 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             do
                 local profile = DB()
                 if profile and profile.cdmBars then
-                    for _, b in ipairs(profile.cdmBars.bars) do
-                        local bt = mod.GetBarType and mod.GetBarType(b) or b.barType
+                    for _, bar in ipairs(profile.cdmBars.bars) do
+                        local bt = mod.GetBarType and mod.GetBarType(bar) or bar.barType
                         -- Bars with their own active overflow config are not offered as targets (the recipient rule, other door).
-                        local hasOwnOverflow = b.maxIcons and b.maxIcons > 0 and b.overflowTarget ~= nil
+                        local hasOwnOverflow = bar.maxIcons and bar.maxIcons > 0 and bar.overflowTarget ~= nil
                         if
-                            b.key ~= barInfo.key
-                            and not b.isGhostBar
-                            and b.key ~= (mod.FOCUSKICK_BAR_KEY or "focuskick")
-                            and b.key ~= "buffs"
+                            bar.key ~= barInfo.key
+                            and not bar.isGhostBar
+                            and bar.key ~= (mod.FOCUSKICK_BAR_KEY or "focuskick")
+                            and bar.key ~= "buffs"
                             and bt ~= "buffs"
                             and bt ~= "custom_buff"
                             and not hasOwnOverflow
                         then
-                            ofVals[b.key] = CludesUI.L(b.name or b.key)
-                            ofOrder[#ofOrder + 1] = b.key
+                            ofVals[bar.key] = CludesUI.L(bar.name or bar.key)
+                            ofOrder[#ofOrder + 1] = bar.key
                         end
                     end
                     -- A stored target that the filter (or a bar delete) now excludes still
@@ -1813,9 +1813,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local current = barInfo.overflowTarget
                     if current and not ofVals[current] then
                         local curName = current
-                        for _, b in ipairs(profile.cdmBars.bars) do
-                            if b.key == current then
-                                curName = b.name or current
+                        for _, bar in ipairs(profile.cdmBars.bars) do
+                            if bar.key == current then
+                                curName = bar.name or current
                                 break
                             end
                         end

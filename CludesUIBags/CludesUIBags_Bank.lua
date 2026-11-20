@@ -3429,9 +3429,9 @@ end
 -- where the drop lands: the block under the cursor, before or after it
 local function DragTarget()
     local over
-    for _, b in pairs(_sidebarBtns) do
-        if b:IsShown() and b:IsMouseOver() then
-            over = b
+    for _, btn in pairs(_sidebarBtns) do
+        if btn:IsShown() and btn:IsMouseOver() then
+            over = btn
             break
         end
     end
@@ -3444,13 +3444,13 @@ local function DragTarget()
     end
     -- all of the block's rows (a group's header, members, details)
     local topY, bottom
-    for _, b in pairs(_sidebarBtns) do
-        if b:IsShown() and RowBlock(b) == ident then
-            if not topY or b:GetTop() > topY:GetTop() then
-                topY = b
+    for _, btn in pairs(_sidebarBtns) do
+        if btn:IsShown() and RowBlock(btn) == ident then
+            if not topY or btn:GetTop() > topY:GetTop() then
+                topY = btn
             end
-            if not bottom or b:GetBottom() < bottom:GetBottom() then
-                bottom = b
+            if not bottom or btn:GetBottom() < bottom:GetBottom() then
+                bottom = btn
             end
         end
     end

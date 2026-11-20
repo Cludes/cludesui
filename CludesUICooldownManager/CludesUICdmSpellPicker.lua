@@ -1639,12 +1639,12 @@ local function DropTrinketSidClaims(cooldownId, spellRef)
     if not (p and p.cdmBars and p.cdmBars.bars) then
         return
     end
-    for _, b in ipairs(p.cdmBars.bars) do
-        if b.barType ~= "custom_buff" then
-            if mod.IsBarBuffFamily(b) then
-                mod.RemoveSpellFromBar(b.key, spellRef)
+    for _, bar in ipairs(p.cdmBars.bars) do
+        if bar.barType ~= "custom_buff" then
+            if mod.IsBarBuffFamily(bar) then
+                mod.RemoveSpellFromBar(bar.key, spellRef)
             else
-                mod.RemoveSpellFromBar(b.key, mod.HostedBuffMarker(spellRef))
+                mod.RemoveSpellFromBar(bar.key, mod.HostedBuffMarker(spellRef))
             end
         end
     end
@@ -2249,10 +2249,10 @@ function mod.AddTrackedSpell(barId, ident)
     local p = ECME.db.profile
     local targetIsBuff = IsBarBuffFamily(barId)
     if p and p.cdmBars and p.cdmBars.bars then
-        for _, b in ipairs(p.cdmBars.bars) do
-            if b.key ~= barId and b.barType ~= "custom_buff" then
-                if IsBarBuffFamily(b) == targetIsBuff then
-                    mod.RemoveSpellFromBar(b.key, ident)
+        for _, bar in ipairs(p.cdmBars.bars) do
+            if bar.key ~= barId and bar.barType ~= "custom_buff" then
+                if IsBarBuffFamily(bar) == targetIsBuff then
+                    mod.RemoveSpellFromBar(bar.key, ident)
                 end
             end
         end
@@ -2369,9 +2369,9 @@ function mod.AddTrackedBuffByCdID(barId, cooldownId, spellRef)
     if barId == "buffs" then
         local p = ECME.db.profile
         if p and p.cdmBars and p.cdmBars.bars then
-            for _, b in ipairs(p.cdmBars.bars) do
-                if b.key ~= "buffs" and b.barType ~= "custom_buff" and IsBarBuffFamily(b) then
-                    mod.RemoveSpellFromBar(b.key, marker)
+            for _, bar in ipairs(p.cdmBars.bars) do
+                if bar.key ~= "buffs" and bar.barType ~= "custom_buff" and IsBarBuffFamily(bar) then
+                    mod.RemoveSpellFromBar(bar.key, marker)
                 end
             end
         end
@@ -2688,8 +2688,8 @@ function mod.AddCDMBar(barKind, label, numRows)
     local p = ECME.db.profile
     local bars = p.cdmBars.bars
     local customCount = 0
-    for _, b in ipairs(bars) do
-        if b.key ~= "cooldowns" and b.key ~= "utility" and b.key ~= "buffs" and not b.isGhostBar then
+    for _, bar in ipairs(bars) do
+        if bar.key ~= "cooldowns" and bar.key ~= "utility" and bar.key ~= "buffs" and not bar.isGhostBar then
             customCount = customCount + 1
         end
     end
@@ -2703,8 +2703,8 @@ function mod.AddCDMBar(barKind, label, numRows)
         or barKind == "custom_buff" and "Auras"
         or "Cooldowns"
     local typeCount = 0
-    for _, b in ipairs(bars) do
-        if b.barType == barKind then
+    for _, bar in ipairs(bars) do
+        if bar.barType == barKind then
             typeCount = typeCount + 1
         end
     end
@@ -2805,9 +2805,9 @@ function mod.RemoveCDMBar(barKey)
             table.remove(p.cdmBars.bars, i)
             -- Max Icons overflow: clear targets pointing at the removed bar
             -- (runtime fail-safes on a dangling key; this is config hygiene).
-            for _, b in ipairs(p.cdmBars.bars) do
-                if b.overflowTarget == barKey then
-                    b.overflowTarget = nil
+            for _, bar in ipairs(p.cdmBars.bars) do
+                if bar.overflowTarget == barKey then
+                    bar.overflowTarget = nil
                 end
             end
             -- Deletion shifts every later bar's array index, so captured

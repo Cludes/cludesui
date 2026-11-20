@@ -57,8 +57,8 @@ local function EnsureGhostBars()
         return
     end
     local hasCD = false
-    for _, b in ipairs(p.cdmBars.bars) do
-        if b.key == GHOST_CD_BAR_KEY then
+    for _, bar in ipairs(p.cdmBars.bars) do
+        if bar.key == GHOST_CD_BAR_KEY then
             hasCD = true
         end
     end
@@ -1262,14 +1262,14 @@ function mod.NormalizeRacialAssignments()
     -- each list's bar key so the keeper choice below can tell default bars
     -- from explicit custom placements.
     local lists, listBarKeys = {}, {}
-    for _, b in ipairs(p.cdmBars.bars) do
-        local isBuff = (b.barType == "custom_buff") or (mod.IsBarBuffFamily and mod.IsBarBuffFamily(b))
+    for _, bar in ipairs(p.cdmBars.bars) do
+        local isBuff = (bar.barType == "custom_buff") or (mod.IsBarBuffFamily and mod.IsBarBuffFamily(bar))
         -- b.key guard: a ghost bar (keyless skeleton from a stale override write) would index barSpells with nil and error.
-        if not isBuff and b.key then
-            local spellData = mod.GetBarSpellData(b.key)
+        if not isBuff and bar.key then
+            local spellData = mod.GetBarSpellData(bar.key)
             if spellData and spellData.assignedSpells then
                 lists[#lists + 1] = spellData.assignedSpells
-                listBarKeys[#lists] = b.key
+                listBarKeys[#lists] = bar.key
             end
         end
     end

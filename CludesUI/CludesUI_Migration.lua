@@ -1703,9 +1703,9 @@ CludesUI.RegisterMigration({
         local cdmStore = profileTbl and profileTbl.addons and profileTbl.addons.CludesUICooldownManager
         local barList = cdmStore and cdmStore.cdmBars and cdmStore.cdmBars.bars
         if type(barList) == "table" then
-            for _, b in ipairs(barList) do
-                if type(b) == "table" and b.barType == "buffs" and type(b.key) == "string" then
-                    buffKeySet[b.key] = true
+            for _, bar in ipairs(barList) do
+                if type(bar) == "table" and bar.barType == "buffs" and type(bar.key) == "string" then
+                    buffKeySet[bar.key] = true
                 end
             end
         end

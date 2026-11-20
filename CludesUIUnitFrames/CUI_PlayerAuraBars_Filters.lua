@@ -248,8 +248,8 @@ function mod.PAB_DeleteFilter(ident)
     end
     -- Editing-spec bucket bars share the same filter registry.
     if s.pabSpecBars then
-        for _, b in pairs(s.pabSpecBars) do
-            local blockList = b.buffBars
+        for _, bar in pairs(s.pabSpecBars) do
+            local blockList = bar.buffBars
             if blockList then
                 for i = 1, #blockList do
                     Strip(blockList[i], false)

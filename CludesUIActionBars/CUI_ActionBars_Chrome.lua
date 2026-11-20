@@ -785,8 +785,8 @@ function mod.AB_BagCapsExtent(holderFrame)
         return nil
     end
     local minL, maxR = mod.AB_BagEdge(_G.BagBarExpandToggle, hs, highlight, nil, nil)
-    for _, b in mgr:EnumerateBagButtons() do
-        minL, maxR = mod.AB_BagEdge(b, hs, highlight, minL, maxR)
+    for _, btn in mgr:EnumerateBagButtons() do
+        minL, maxR = mod.AB_BagEdge(btn, hs, highlight, minL, maxR)
     end
     if not minL or maxR - minL < 1 then
         return nil

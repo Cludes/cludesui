@@ -279,9 +279,9 @@ do
         local stepW, stepH = wid + sp, hgt + sp
         local powerH = IsPowerBarEnabled(s) and PixelSnap(s.powerHeight or 4) or 0
         local topBarH = (s.topNameBarEnabled and PixelSnap(s.topNameBarHeight or 20)) or 0
-        for i, b in ipairs(XF.buttons) do
-            b:SetSize(wid, hgt)
-            b:ClearAllPoints()
+        for i, btn in ipairs(XF.buttons) do
+            btn:SetSize(wid, hgt)
+            btn:ClearAllPoints()
             local off = i - 1
             local line = math.floor(off / per)
             local place = off - line * per
@@ -295,7 +295,7 @@ do
                 hUnits, vUnits, hDir, vDir = line, place, wrap, grow
             end
             local corner = (vDir == "UP" and "BOTTOM" or "TOP") .. (hDir == "LEFT" and "RIGHT" or "LEFT")
-            b:SetPoint(
+            btn:SetPoint(
                 corner,
                 XF.container,
                 corner,
@@ -304,7 +304,7 @@ do
             )
             -- The bulk passes size inner elements for the BASE frame size;
             -- correct the height/width-derived pieces for the offset size.
-            local skinData = GetFFD(b)
+            local skinData = GetFFD(btn)
             if skinData.health then
                 skinData.health:SetHeight(
                     (
@@ -396,7 +396,7 @@ do
                 mod._RFAnchorPing(skinData)
             end
             if mod.RF_FvMissingAnchor then
-                mod.RF_FvMissingAnchor(b, skinData)
+                mod.RF_FvMissingAnchor(btn, skinData)
             end
         end
     end
@@ -612,8 +612,8 @@ do
         XF.activeCount = #units
         if #units == 0 then
             if XF.built then
-                for _, b in ipairs(XF.buttons) do
-                    b:Hide()
+                for _, btn in ipairs(XF.buttons) do
+                    btn:Hide()
                 end
                 XF.container:Hide()
                 for i = 1, #XF.trackers do
@@ -741,9 +741,9 @@ do
             end
         end
         if not unitToken then
-            for _, b in ipairs(XF.buttons) do
-                if b:IsShown() and b:IsMouseOver() then
-                    unitToken = b:GetAttribute("unit")
+            for _, btn in ipairs(XF.buttons) do
+                if btn:IsShown() and btn:IsMouseOver() then
+                    unitToken = btn:GetAttribute("unit")
                     break
                 end
             end

@@ -543,17 +543,17 @@ function mod.AddBarToAllSpecs(srcIdx)
     end
 
     local function HasSameBar(barList)
-        for _, b in ipairs(barList) do
+        for _, bar in ipairs(barList) do
             -- A cooldown-tracking bar is never the same bar as a buff bar for the same spell: track types must match first.
-            if (b.trackType or "buff") == (srcBar.trackType or "buff") then
+            if (bar.trackType or "buff") == (srcBar.trackType or "buff") then
                 if srcBar.popularKey and srcBar.popularKey ~= "" then
-                    if b.popularKey == srcBar.popularKey then
+                    if bar.popularKey == srcBar.popularKey then
                         return true
                     end
                 elseif
-                    (not b.popularKey or b.popularKey == "")
-                    and b.spellID
-                    and b.spellID == srcBar.spellID
+                    (not bar.popularKey or bar.popularKey == "")
+                    and bar.spellID
+                    and bar.spellID == srcBar.spellID
                 then
                     return true
                 end
@@ -671,11 +671,11 @@ function mod.RemoveBarFromAllSpecs(srcIdx)
                     local oldPos = prof.tbbPositions or {}
                     local newBars, newPos = {}, {}
                     local didRemove = false
-                    for jdx, b in ipairs(tbb.bars) do
-                        if Matches(b) then
+                    for jdx, bar in ipairs(tbb.bars) do
+                        if Matches(bar) then
                             didRemove = true
                         else
-                            newBars[#newBars + 1] = b
+                            newBars[#newBars + 1] = bar
                             local p = oldPos[tostring(jdx)]
                             if p then
                                 newPos[tostring(#newBars)] = p

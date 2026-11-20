@@ -132,16 +132,16 @@ end
 
 -- Counts and cooldowns: plain frames, fine in combat.
 local function Paint()
-    for _, b in ipairs(buttons) do
-        if b:IsShown() and b.itemID then
-            local num = C_Item.GetItemCount(b.itemID, false, true) or 0
-            b.count:SetText(num > 1 and num or (num == 0 and "|cffff40400|r" or ""))
-            b.icon:SetDesaturated(num == 0)
-            local start, duration, enable = C_Container.GetItemCooldown(b.itemID)
+    for _, btn in ipairs(buttons) do
+        if btn:IsShown() and btn.itemID then
+            local num = C_Item.GetItemCount(btn.itemID, false, true) or 0
+            btn.count:SetText(num > 1 and num or (num == 0 and "|cffff40400|r" or ""))
+            btn.icon:SetDesaturated(num == 0)
+            local start, duration, enable = C_Container.GetItemCooldown(btn.itemID)
             if start and duration and duration > 1.5 and enable ~= 0 then
-                b.cd:SetCooldown(start, duration)
+                btn.cd:SetCooldown(start, duration)
             else
-                b.cd:Clear()
+                btn.cd:Clear()
             end
         end
     end

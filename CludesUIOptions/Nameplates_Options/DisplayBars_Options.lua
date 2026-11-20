@@ -910,9 +910,9 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 if not barList then
                     return nil
                 end
-                for _, b in ipairs(barList) do
-                    if b.key == "focuskick" then
-                        return b
+                for _, bar in ipairs(barList) do
+                    if bar.key == "focuskick" then
+                        return bar
                     end
                 end
                 return nil

@@ -414,8 +414,8 @@ function mod.GetTrackedBuffBars()
     -- legacy boolean is cleared so later per-bar edits are never stomped.
     if not tbb._groupMigrated then
         local checked = (tbb.groupEnabled == true)
-        for _, b in ipairs(tbb.bars or {}) do
-            b.grouped = checked
+        for _, bar in ipairs(tbb.bars or {}) do
+            bar.grouped = checked
         end
         tbb.groupEnabled = nil
         tbb._groupMigrated = true
@@ -425,12 +425,12 @@ function mod.GetTrackedBuffBars()
     -- (rendered pixels are identical: old fill+icon = new total). Read-time, flag-idempotent;
     -- imported old profiles lack the flag and convert on first read.
     if not tbb._iconTotalMigrated then
-        for _, b in ipairs(tbb.bars or {}) do
-            if (b.iconDisplay or "none") ~= "none" then
-                if b.verticalOrientation then
-                    b.height = (b.height or 24) + (b.width or 270)
+        for _, bar in ipairs(tbb.bars or {}) do
+            if (bar.iconDisplay or "none") ~= "none" then
+                if bar.verticalOrientation then
+                    bar.height = (bar.height or 24) + (bar.width or 270)
                 else
-                    b.width = (b.width or 270) + (b.height or 24)
+                    bar.width = (bar.width or 270) + (bar.height or 24)
                 end
             end
         end
@@ -438,13 +438,13 @@ function mod.GetTrackedBuffBars()
     end
     -- Live migration: pandemicGlowMode derived from a non-default legacy pandemicGlowColor (which was always set).
     if not tbb._pandemicModeMigrated then
-        for _, b in ipairs(tbb.bars or {}) do
-            if not b.pandemicGlowMode then
-                local c = b.pandemicGlowColor
+        for _, bar in ipairs(tbb.bars or {}) do
+            if not bar.pandemicGlowMode then
+                local c = bar.pandemicGlowColor
                 if c and not (c.r == 1 and c.g == 1 and c.b == 0) then
-                    b.pandemicGlowMode = "custom"
+                    bar.pandemicGlowMode = "custom"
                 else
-                    b.pandemicGlowMode = "default"
+                    bar.pandemicGlowMode = "default"
                 end
             end
         end
@@ -456,10 +456,10 @@ function mod.GetTrackedBuffBars()
     -- hideWhenInactive needs no migration, it already reads/writes the same field the new
     -- Visibility Options checkbox uses.
     if not tbb._visMigrated then
-        for _, b in ipairs(tbb.bars or {}) do
-            if b.onlyInCombat and (not b.barVisibility or b.barVisibility == "always") then
-                b.barVisibility = "in_combat"
-                b.onlyInCombat = false
+        for _, bar in ipairs(tbb.bars or {}) do
+            if bar.onlyInCombat and (not bar.barVisibility or bar.barVisibility == "always") then
+                bar.barVisibility = "in_combat"
+                bar.onlyInCombat = false
             end
         end
         tbb._visMigrated = true

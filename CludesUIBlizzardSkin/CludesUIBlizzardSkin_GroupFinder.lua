@@ -1076,8 +1076,8 @@ local function Skin_LFGList()
             FadeInset(CS.Inset)
         end
         if CS.CategoryButtons then
-            for _, b in ipairs(CS.CategoryButtons) do
-                SkinLFGCategoryButton(b)
+            for _, btn in ipairs(CS.CategoryButtons) do
+                SkinLFGCategoryButton(btn)
             end
             UpdateLFGCategorySelection()
         end

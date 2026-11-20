@@ -3809,22 +3809,22 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
     -- Lookup sets for already-bound spells/macros/items (used to dim in popups + strip)
     local boundSpells, boundMacros, boundItems = {}, {}, {}
-    for _, b in ipairs(GetGlobalBindings()) do
-        if b.spell then
-            boundSpells[mod.CC_SpellBoundKey(b.spellID, b.spell, b.rankPinned)] = true
+    for _, bind in ipairs(GetGlobalBindings()) do
+        if bind.spell then
+            boundSpells[mod.CC_SpellBoundKey(bind.spellID, bind.spell, bind.rankPinned)] = true
         end
-        MarkBoundMacro(boundMacros, b)
-        if b.itemSlot then
-            boundItems[b.itemSlot] = true
+        MarkBoundMacro(boundMacros, bind)
+        if bind.itemSlot then
+            boundItems[bind.itemSlot] = true
         end
     end
-    for _, b in ipairs(GetSpecBindings()) do
-        if b.spell then
-            boundSpells[mod.CC_SpellBoundKey(b.spellID, b.spell, b.rankPinned)] = true
+    for _, bind in ipairs(GetSpecBindings()) do
+        if bind.spell then
+            boundSpells[mod.CC_SpellBoundKey(bind.spellID, bind.spell, bind.rankPinned)] = true
         end
-        MarkBoundMacro(boundMacros, b)
-        if b.itemSlot then
-            boundItems[b.itemSlot] = true
+        MarkBoundMacro(boundMacros, bind)
+        if bind.itemSlot then
+            boundItems[bind.itemSlot] = true
         end
     end
     local _, playerClass = UnitClass("player")

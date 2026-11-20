@@ -1215,8 +1215,8 @@ local function AnyRightClickCancelActive(s)
     -- matching the legacy loop: the CVar repair may run while the spec is
     -- mid-change, so err on the permissive side).
     if s.pabSpecBars then
-        for _, b in pairs(s.pabSpecBars) do
-            local bl = b.buffBars
+        for _, bar in pairs(s.pabSpecBars) do
+            local bl = bar.buffBars
             if bl then
                 for index = 1, #bl do
                     local barFrame = bl[index]

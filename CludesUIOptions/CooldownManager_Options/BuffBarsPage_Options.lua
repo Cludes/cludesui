@@ -2697,9 +2697,9 @@ local function InitBuffBarsPage(
                     dropZone.rows = {}
                     dropZone.head = AddGroupHeaderRow(groupId, gkey)
                     dropZone.frames[1] = dropZone.head
-                    for index, b in ipairs(t.bars) do
-                        if mod.TBBBarGroupID(b) == groupId then
-                            local line = AddBarItem(index, b, 8)
+                    for index, bar in ipairs(t.bars) do
+                        if mod.TBBBarGroupID(bar) == groupId then
+                            local line = AddBarItem(index, bar, 8)
                             dropZone.frames[#dropZone.frames + 1] = line
                             dropZone.rows[#dropZone.rows + 1] = { frame = line, idx = index }
                         end
@@ -2723,11 +2723,11 @@ local function InitBuffBarsPage(
                 local indepZone = { gid = 0, label = CludesUI.L("Independent"), frames = {} }
                 dropZones[#dropZones + 1] = indepZone
                 local independent, anySoundable = {}, false
-                for index, b in ipairs(t.bars) do
-                    if mod.TBBBarGroupID(b) == 0 then
+                for index, bar in ipairs(t.bars) do
+                    if mod.TBBBarGroupID(bar) == 0 then
                         independent[#independent + 1] = index
                     end
-                    anySoundable = anySoundable or BarTakesSound(b)
+                    anySoundable = anySoundable or BarTakesSound(bar)
                 end
                 if #independent > 0 then
                     AddHeaderRow(CludesUI.L("INDEPENDENT BARS"))
@@ -3701,9 +3701,9 @@ local function InitBuffBarsPage(
             if groupId == 0 then
                 return
             end
-            for _, b in ipairs(mod.GetTrackedBuffBars().bars or {}) do
-                if b ~= barData and mod.TBBBarGroupID(b) == groupId then
-                    fn(b)
+            for _, bar in ipairs(mod.GetTrackedBuffBars().bars or {}) do
+                if bar ~= barData and mod.TBBBarGroupID(bar) == groupId then
+                    fn(bar)
                 end
             end
         end
@@ -3804,8 +3804,8 @@ local function InitBuffBarsPage(
                             return false
                         end
                         local val = barData[barKey] or default
-                        for _, b in ipairs(mod.GetTrackedBuffBars().bars or {}) do
-                            if Alike(barData, b) and (b[barKey] or default) ~= val then
+                        for _, bar in ipairs(mod.GetTrackedBuffBars().bars or {}) do
+                            if Alike(barData, bar) and (bar[barKey] or default) ~= val then
                                 return false
                             end
                         end
@@ -3817,9 +3817,9 @@ local function InitBuffBarsPage(
                             return
                         end
                         local val = barData[barKey] or default
-                        for _, b in ipairs(mod.GetTrackedBuffBars().bars or {}) do
-                            if Alike(barData, b) then
-                                b[barKey] = val
+                        for _, bar in ipairs(mod.GetTrackedBuffBars().bars or {}) do
+                            if Alike(barData, bar) then
+                                bar[barKey] = val
                             end
                         end
                         RefreshTBB()
@@ -4111,8 +4111,8 @@ local function InitBuffBarsPage(
                         return false
                     end
                     local place = TextPosition(barData, prefix)
-                    for _, b in ipairs(mod.GetTrackedBuffBars().bars or {}) do
-                        if TextPosition(b, prefix) ~= place then
+                    for _, bar in ipairs(mod.GetTrackedBuffBars().bars or {}) do
+                        if TextPosition(bar, prefix) ~= place then
                             return false
                         end
                     end
@@ -4124,10 +4124,10 @@ local function InitBuffBarsPage(
                         return
                     end
                     local place = TextPosition(barData, prefix)
-                    for _, b in ipairs(mod.GetTrackedBuffBars().bars or {}) do
-                        b[prefix .. "Position"] = place
+                    for _, bar in ipairs(mod.GetTrackedBuffBars().bars or {}) do
+                        bar[prefix .. "Position"] = place
                         if showKey then
-                            b[showKey] = (place ~= "none")
+                            bar[showKey] = (place ~= "none")
                         end
                     end
                     RefreshTBB()

@@ -353,8 +353,8 @@ local function ButtonOnClick(button)
     else
         pending[nodeID] = nil
     end
-    for _, b in ipairs(button.node.btns) do
-        PaintButton(b)
+    for _, btn in ipairs(button.node.btns) do
+        PaintButton(btn)
     end
     UpdateStatus()
     ButtonOnEnter(button)

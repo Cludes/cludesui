@@ -265,8 +265,8 @@ local function Bar(idx)
 end
 
 local function HideBars()
-    for _, b in ipairs(barList) do
-        b:Hide()
+    for _, bar in ipairs(barList) do
+        bar:Hide()
     end
 end
 

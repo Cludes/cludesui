@@ -169,12 +169,12 @@ function module.LoadActionProfile(name)
                 SetBinding(key2)
             end
         end
-        for _, b in ipairs(p.bindings) do
-            if b[2] then
-                SetBinding(b[2], b[1])
+        for _, bind in ipairs(p.bindings) do
+            if bind[2] then
+                SetBinding(bind[2], bind[1])
             end
-            if b[3] then
-                SetBinding(b[3], b[1])
+            if bind[3] then
+                SetBinding(bind[3], bind[1])
             end
         end
         SaveBindings(GetCurrentBindingSet())

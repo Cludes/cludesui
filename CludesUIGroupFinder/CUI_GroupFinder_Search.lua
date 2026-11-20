@@ -4796,15 +4796,15 @@ local function LayoutCategoryList()
         return
     end
     local padding = tonumber(c.padding) or 12
-    for index, b in ipairs(CS.CategoryButtons) do
-        b:ClearAllPoints()
+    for index, btn in ipairs(CS.CategoryButtons) do
+        btn:ClearAllPoints()
         if index == 1 then
-            b:SetPoint("TOPLEFT", CS, "TOPLEFT", padding, -77)
-            b:SetPoint("TOPRIGHT", CS, "TOPRIGHT", -padding, -77)
+            btn:SetPoint("TOPLEFT", CS, "TOPLEFT", padding, -77)
+            btn:SetPoint("TOPRIGHT", CS, "TOPRIGHT", -padding, -77)
         else
             local previous = CS.CategoryButtons[index - 1]
-            b:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -3)
-            b:SetPoint("TOPRIGHT", previous, "BOTTOMRIGHT", 0, -3)
+            btn:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -3)
+            btn:SetPoint("TOPRIGHT", previous, "BOTTOMRIGHT", 0, -3)
         end
     end
 end

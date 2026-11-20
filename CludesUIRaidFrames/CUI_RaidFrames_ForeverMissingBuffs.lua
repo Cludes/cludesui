@@ -805,8 +805,8 @@ local function Flush()
         PaintUnit(unitToken)
     end
     local GetFFD = mod.GetFFD
-    for b in pairs(pendingBtns) do
-        PaintButton(b, GetFFD(b))
+    for btn in pairs(pendingBtns) do
+        PaintButton(btn, GetFFD(btn))
     end
     wipe(dirty)
     wipe(pendingBtns)

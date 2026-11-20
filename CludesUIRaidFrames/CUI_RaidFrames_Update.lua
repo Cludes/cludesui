@@ -1184,9 +1184,9 @@ mod.CludesUI.RegisterNumberFormatCallback(function()
     if mod._partyPvActive then
         return
     end
-    for _, b in ipairs(mod._partyAllButtons) do
-        if b:GetAttribute("unit") and b:IsVisible() then
-            UpdateButton(b)
+    for _, btn in ipairs(mod._partyAllButtons) do
+        if btn:GetAttribute("unit") and btn:IsVisible() then
+            UpdateButton(btn)
         end
     end
 end)

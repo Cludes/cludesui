@@ -1199,8 +1199,8 @@ do
             return
         end
         for _, colour in ipairs(gb.Columns) do
-            for _, b in ipairs(colour.Buttons) do
-                b:HookScript("PostClick", function(self)
+            for _, btn in ipairs(colour.Buttons) do
+                btn:HookScript("PostClick", function(self)
                     CUI_Bags.ShowStackSplitter(self, { GetCurrentGuildBankTab() }, gb, guildOps)
                 end)
             end

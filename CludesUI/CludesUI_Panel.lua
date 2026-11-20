@@ -4123,12 +4123,12 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
     tabStrip:SetScript("OnUpdate", function(self)
         self:SetScript("OnUpdate", nil)
         local x = CONTENT_PAD
-        for _, b in ipairs(self._tabButtons) do
-            local tw = b._label:GetStringWidth() or 60
-            b:SetWidth(tw + 28)
-            b:ClearAllPoints()
-            b:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", x, 0)
-            x = x + b:GetWidth() + 4
+        for _, btn in ipairs(self._tabButtons) do
+            local tw = btn._label:GetStringWidth() or 60
+            btn:SetWidth(tw + 28)
+            btn:ClearAllPoints()
+            btn:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", x, 0)
+            x = x + btn:GetWidth() + 4
         end
     end)
 end

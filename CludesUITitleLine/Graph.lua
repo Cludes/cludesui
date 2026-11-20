@@ -363,11 +363,11 @@ local function MakeSegmented(hostFrame, options)
     Hairlines(box, 0.10)
     box.buttons = {}
     function box:Refresh()
-        for _, b in ipairs(self.buttons) do
-            local enabled = CludesUITitleLineDB.view == b.value
-            Color(b.bg, C.raised, enabled and 1 or 0)
-            local c = enabled and C.ink or (b:IsMouseOver() and C.ink2 or C.muted)
-            b.text:SetTextColor(c[1], c[2], c[3])
+        for _, btn in ipairs(self.buttons) do
+            local enabled = CludesUITitleLineDB.view == btn.value
+            Color(btn.bg, C.raised, enabled and 1 or 0)
+            local c = enabled and C.ink or (btn:IsMouseOver() and C.ink2 or C.muted)
+            btn.text:SetTextColor(c[1], c[2], c[3])
         end
     end
     for idx, o in ipairs(options) do

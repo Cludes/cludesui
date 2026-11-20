@@ -248,18 +248,18 @@ function CludesUI.ApplyPandemicGlowToAll(payload, options)
     end
     local p = ECME.db and ECME.db.profile
     if p and p.cdmBars and p.cdmBars.bars then
-        for _, b in ipairs(p.cdmBars.bars) do
-            if b.key ~= options.skipCdmKey and not b.isGhostBar and b.barType ~= "custom_buff" then
-                PG_Write(b, payload, PG_CdmIndexFromName)
+        for _, bar in ipairs(p.cdmBars.bars) do
+            if bar.key ~= options.skipCdmKey and not bar.isGhostBar and bar.barType ~= "custom_buff" then
+                PG_Write(bar, payload, PG_CdmIndexFromName)
             end
         end
     end
     -- Tracked Buff Bars (active spec) -- rectangles, so style coerces to Pixel/Auto-Cast.
     local tbb = mod.GetTrackedBuffBars and mod.GetTrackedBuffBars()
     if tbb and tbb.bars then
-        for _, b in ipairs(tbb.bars) do
-            if b ~= options.skipTbbBar then
-                PG_Write(b, payload, PG_TbbIndexFromName)
+        for _, bar in ipairs(tbb.bars) do
+            if bar ~= options.skipTbbBar then
+                PG_Write(bar, payload, PG_TbbIndexFromName)
             end
         end
     end
@@ -289,12 +289,12 @@ function CludesUI.IsPandemicGlowSyncedToAll(payload, options)
     end
     local p = ECME.db and ECME.db.profile
     if p and p.cdmBars and p.cdmBars.bars then
-        for _, b in ipairs(p.cdmBars.bars) do
+        for _, bar in ipairs(p.cdmBars.bars) do
             if
-                b.key ~= options.skipCdmKey
-                and not b.isGhostBar
-                and b.barType ~= "custom_buff"
-                and not PG_Matches(b, payload, PG_CdmIndexFromName)
+                bar.key ~= options.skipCdmKey
+                and not bar.isGhostBar
+                and bar.barType ~= "custom_buff"
+                and not PG_Matches(bar, payload, PG_CdmIndexFromName)
             then
                 return false
             end
@@ -302,10 +302,10 @@ function CludesUI.IsPandemicGlowSyncedToAll(payload, options)
     end
     local tbb = mod.GetTrackedBuffBars and mod.GetTrackedBuffBars()
     if tbb and tbb.bars then
-        for _, b in ipairs(tbb.bars) do
+        for _, bar in ipairs(tbb.bars) do
             if
-                b ~= options.skipTbbBar
-                and not PG_Matches(b, payload, PG_TbbIndexFromName, PG_TbbEffectiveStyle)
+                bar ~= options.skipTbbBar
+                and not PG_Matches(bar, payload, PG_TbbIndexFromName, PG_TbbEffectiveStyle)
             then
                 return false
             end

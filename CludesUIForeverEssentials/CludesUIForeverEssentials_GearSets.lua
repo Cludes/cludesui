@@ -80,11 +80,11 @@ local function Wear(ident)
 end
 
 local function Paint()
-    for _, b in ipairs(buttons) do
-        if b:IsShown() and b.setID then
-            local _, _, _, equipped = C_EquipmentSet.GetEquipmentSetInfo(b.setID)
-            b.lit:SetShown(equipped and true or false)
-            b.icon:SetDesaturated(not equipped)
+    for _, btn in ipairs(buttons) do
+        if btn:IsShown() and btn.setID then
+            local _, _, _, equipped = C_EquipmentSet.GetEquipmentSetInfo(btn.setID)
+            btn.lit:SetShown(equipped and true or false)
+            btn.icon:SetDesaturated(not equipped)
         end
     end
 end
