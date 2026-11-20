@@ -486,11 +486,11 @@ local function CreateHeader()
             for _, skinData in ipairs(itemList) do
                 skinData._sectionOrder = sectionOrder[skinData.categoryIndex] or 9999
             end
-            table.sort(itemList, function(a, b)
-                if a._sectionOrder ~= b._sectionOrder then
-                    return a._sectionOrder < b._sectionOrder
+            table.sort(itemList, function(lhs, rhs)
+                if lhs._sectionOrder ~= rhs._sectionOrder then
+                    return lhs._sectionOrder < rhs._sectionOrder
                 end
-                return VisualSortCompare(a, b)
+                return VisualSortCompare(lhs, rhs)
             end)
 
             -- Compute moves via selection sort on pre-computed data (zero API calls)

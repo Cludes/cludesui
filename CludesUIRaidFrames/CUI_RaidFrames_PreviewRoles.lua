@@ -141,23 +141,23 @@ local function BuildPreviewRoles()
                 for pri, c in ipairs(saved.profile.classOrder or mod._GetDefaultClassOrder()) do
                     classPri[c] = pri
                 end
-                table.sort(set, function(a, b)
+                table.sort(set, function(lhs, rhs)
                     if sortByRole then
-                        local ra, rb = rolePri[a.role] or 99, rolePri[b.role] or 99
+                        local ra, rb = rolePri[lhs.role] or 99, rolePri[rhs.role] or 99
                         if ra ~= rb then
                             return ra < rb
                         end
                     end
-                    local ca, callback = classPri[a.classToken] or 99, classPri[b.classToken] or 99
+                    local ca, callback = classPri[lhs.classToken] or 99, classPri[rhs.classToken] or 99
                     if ca ~= callback then
                         return ca < callback
                     end
                     -- Slot 1 (the player) carries no preview name.
-                    local na, nb = a.name or pName, b.name or pName
+                    local na, nb = lhs.name or pName, rhs.name or pName
                     if na ~= nb then
                         return na < nb
                     end
-                    return a.idx < b.idx
+                    return lhs.idx < rhs.idx
                 end)
             elseif sortMode == "ROLE" then
                 local roleOrder = saved.profile.roleOrder or { "TANK", "HEALER", "DAMAGER" }

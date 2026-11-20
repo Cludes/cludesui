@@ -242,8 +242,8 @@ function mod.Alert:ListSoundNames()
         return nil
     end
     local _, nameList = BuildSoundIndex(LSM)
-    table.sort(nameList, function(a, b)
-        return a:lower() < b:lower()
+    table.sort(nameList, function(lhs, rhs)
+        return lhs:lower() < rhs:lower()
     end)
     return nameList
 end

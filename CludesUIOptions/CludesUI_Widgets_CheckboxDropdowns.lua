@@ -1662,8 +1662,8 @@ function CludesUI.SpecPickItems(options)
             classList[#classList + 1] = { classID = classID, className = className }
         end
     end
-    table.sort(classList, function(a, b)
-        return a.className < b.className
+    table.sort(classList, function(lhs, rhs)
+        return lhs.className < rhs.className
     end)
     local healers, tanks, dps = {}, {}, {}
     for _, cls in ipairs(classList) do

@@ -596,13 +596,13 @@ CludesUI._unlockCoreInit = function()
             registeredOrder[#registeredOrder + 1] = key
         end
         -- Sort by order field (lower first), then alphabetically
-        table.sort(registeredOrder, function(a, b)
-            local oa = registeredElements[a].order or 1000
-            local ob = registeredElements[b].order or 1000
+        table.sort(registeredOrder, function(lhs, rhs)
+            local oa = registeredElements[lhs].order or 1000
+            local ob = registeredElements[rhs].order or 1000
             if oa ~= ob then
                 return oa < ob
             end
-            return a < b
+            return lhs < rhs
         end)
         CludesUI._unlockRegistrationDirty = false
     end

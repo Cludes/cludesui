@@ -616,8 +616,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         for _, value in ipairs(grp) do
                             sequence[#sequence + 1] = value
                         end
-                        table.sort(sequence, function(a, b)
-                            return a > b
+                        table.sort(sequence, function(lhs, rhs)
+                            return lhs > rhs
                         end)
                         for _, gi in ipairs(sequence) do
                             mod.RemoveTrackedSpell(barId, gi)
@@ -7019,8 +7019,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             { secUnassigned, secAssigned },
             { notTracked },
         }
-        table.sort(notTracked, function(a, b)
-            return (a.name or "") < (b.name or "")
+        table.sort(notTracked, function(lhs, rhs)
+            return (lhs.name or "") < (rhs.name or "")
         end)
         local started = false
         for _, group in ipairs(groups) do

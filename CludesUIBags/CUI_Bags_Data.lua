@@ -320,8 +320,8 @@ local function BuildExpansionBuckets(itemList)
     for sk in pairs(byKey) do
         keyList[#keyList + 1] = sk
     end
-    table.sort(keyList, function(a, b)
-        return a > b
+    table.sort(keyList, function(lhs, rhs)
+        return lhs > rhs
     end)
     local result = {}
     for _, sk in ipairs(keyList) do
@@ -642,14 +642,14 @@ local function ApplySavedOrder(key, items)
         end
     end
 
-    table.sort(items, function(a, b)
-        if a._savedPos ~= b._savedPos then
-            return a._savedPos < b._savedPos
+    table.sort(items, function(lhs, rhs)
+        if lhs._savedPos ~= rhs._savedPos then
+            return lhs._savedPos < rhs._savedPos
         end
-        if a.bag ~= b.bag then
-            return a.bag < b.bag
+        if lhs.bag ~= rhs.bag then
+            return lhs.bag < rhs.bag
         end
-        return a.slot < b.slot
+        return lhs.slot < rhs.slot
     end)
 end
 

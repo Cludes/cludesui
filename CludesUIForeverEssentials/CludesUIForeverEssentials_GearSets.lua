@@ -46,8 +46,8 @@ function module.GearSetList()
             result[#result + 1] = { id = ident, name = name, icon = iconTex, equipped = equipped }
         end
     end
-    table.sort(result, function(a, b)
-        return a.name < b.name
+    table.sort(result, function(lhs, rhs)
+        return lhs.name < rhs.name
     end)
     return result
 end

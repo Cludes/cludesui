@@ -578,8 +578,8 @@ local function Refresh()
             end
         end
     end
-    table.sort(list, function(a, b)
-        return (a.rec.lastSeen or 0) > (b.rec.lastSeen or 0)
+    table.sort(list, function(lhs, rhs)
+        return (lhs.rec.lastSeen or 0) > (rhs.rec.lastSeen or 0)
     end)
     rows = rows or {}
     for i, e in ipairs(list) do

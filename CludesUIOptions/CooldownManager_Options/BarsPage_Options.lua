@@ -2249,8 +2249,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     end
                 end
             end
-            table.sort(kicks, function(a, b)
-                return a.name < b.name
+            table.sort(kicks, function(lhs, rhs)
+                return lhs.name < rhs.name
             end)
             if #kicks > 0 then
                 orderList[#orderList + 1] = "---"

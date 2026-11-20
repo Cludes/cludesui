@@ -456,8 +456,8 @@ function CludesUI.ShowTrackedAurasPopup(options)
                 local nm = C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
                 sorted[#sorted + 1] = { id = ident, on = val == true, name = nm or tostring(ident) }
             end
-            table.sort(sorted, function(a, b)
-                return a.name < b.name
+            table.sort(sorted, function(lhs, rhs)
+                return lhs.name < rhs.name
             end)
             for idx = 1, #sorted do
                 local row = rowList[idx]

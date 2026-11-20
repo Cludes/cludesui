@@ -1720,8 +1720,8 @@ function CludesUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
                 icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(id),
             }
         end
-        table.sort(items, function(a, b)
-            return tostring(a.label or a.key) < tostring(b.label or b.key)
+        table.sort(items, function(lhs, rhs)
+            return tostring(lhs.label or lhs.key) < tostring(rhs.label or rhs.key)
         end)
         return items
     end

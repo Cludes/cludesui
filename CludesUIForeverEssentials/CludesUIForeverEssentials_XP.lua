@@ -262,8 +262,8 @@ Update = function()
                 keyList[#keyList + 1] = level
             end
         end
-        table.sort(keyList, function(a, b)
-            return a > b
+        table.sort(keyList, function(lhs, rhs)
+            return lhs > rhs
         end)
         for index = 1, math.min(#keyList, X.Get("history")) do
             lines[#lines + 1] = ("|cff9aa6b2Level %d  %s|r"):format(

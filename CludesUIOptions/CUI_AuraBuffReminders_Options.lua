@@ -3648,8 +3648,8 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
         end
-        table.sort(talents, function(a, b)
-            return a.name < b.name
+        table.sort(talents, function(lhs, rhs)
+            return lhs.name < rhs.name
         end)
         return talents
     end

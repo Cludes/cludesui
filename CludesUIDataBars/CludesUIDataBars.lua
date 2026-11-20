@@ -4036,8 +4036,8 @@ function mod.BuildLDBList()
         values[name] = mod.LDBLabel(name, object)
         sequence[#sequence + 1] = name
     end
-    tsort(sequence, function(a, b)
-        return a:lower() < b:lower()
+    tsort(sequence, function(lhs, rhs)
+        return lhs:lower() < rhs:lower()
     end)
     return values, sequence
 end

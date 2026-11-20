@@ -237,8 +237,8 @@ local function BuildDungeons()
             result[#result + 1] = { cmID = cmID, name = label, icon = texture, groupID = groupId }
         end
     end
-    table.sort(result, function(a, b)
-        return (a.name or "") < (b.name or "")
+    table.sort(result, function(lhs, rhs)
+        return (lhs.name or "") < (rhs.name or "")
     end)
     return #result > 0 and result or nil
 end
@@ -601,8 +601,8 @@ local function BuildDelves()
             end
         end
     end
-    table.sort(entries, function(a, b)
-        return a.name < b.name
+    table.sort(entries, function(lhs, rhs)
+        return lhs.name < rhs.name
     end)
     if #entries == 0 then
         return nil

@@ -348,8 +348,8 @@ local function SortFiltersCanonical(entries)
         result[idx] = entries[idx]
         place[entries[idx]] = idx
     end
-    table.sort(result, function(a, b)
-        return (rank[a.name] or (1000 + place[a])) < (rank[b.name] or (1000 + place[b]))
+    table.sort(result, function(lhs, rhs)
+        return (rank[lhs.name] or (1000 + place[lhs])) < (rank[rhs.name] or (1000 + place[rhs]))
     end)
     return result
 end

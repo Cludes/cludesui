@@ -1787,8 +1787,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
             GetDepth(childBarKey, {})
             sequence[#sequence + 1] = childBarKey
         end
-        table.sort(sequence, function(a, b)
-            return depth[a] < depth[b]
+        table.sort(sequence, function(lhs, rhs)
+            return depth[lhs] < depth[rhs]
         end)
         for _, childBarKey in ipairs(sequence) do
             applyFn(childBarKey, saved[childBarKey])

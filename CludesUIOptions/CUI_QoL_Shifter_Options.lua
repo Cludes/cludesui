@@ -112,8 +112,8 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         end
         collect(CludesUIDB and CludesUIDB.shifterPositions)
         collect(CludesUIDB and CludesUIDB.shifterScales)
-        table.sort(ddOrder, function(a, b)
-            return ddValues[a] < ddValues[b]
+        table.sort(ddOrder, function(lhs, rhs)
+            return ddValues[lhs] < ddValues[rhs]
         end)
     end
 

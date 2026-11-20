@@ -1345,14 +1345,14 @@ local function SortQueueByCrest()
     for i, tn in ipairs(Data.trackOrder) do
         trackIdx[tn] = i
     end
-    table.sort(queueList, function(a, b)
+    table.sort(queueList, function(lhs, rhs)
         -- No crest cost sorts first (0), then by track order, unknowns last.
-        local ia = (a.crestCost or 0) == 0 and 0 or (trackIdx[a.trackKey] or 99)
-        local ib = (b.crestCost or 0) == 0 and 0 or (trackIdx[b.trackKey] or 99)
+        local ia = (lhs.crestCost or 0) == 0 and 0 or (trackIdx[lhs.trackKey] or 99)
+        local ib = (rhs.crestCost or 0) == 0 and 0 or (trackIdx[rhs.trackKey] or 99)
         if ia ~= ib then
             return ia < ib
         end
-        return (a.slotID or 0) < (b.slotID or 0)
+        return (lhs.slotID or 0) < (rhs.slotID or 0)
     end)
     queuedSlots = {}
     for i, it in ipairs(queueList) do
@@ -1660,11 +1660,11 @@ PopulateGear = function()
     end
 
     -- Sort: needs-upgrades first, then at-max. Within each group follow character sheet slot order.
-    table.sort(tileEntries, function(a, b)
-        if a.isAtMax ~= b.isAtMax then
-            return not a.isAtMax
+    table.sort(tileEntries, function(lhs, rhs)
+        if lhs.isAtMax ~= rhs.isAtMax then
+            return not lhs.isAtMax
         end
-        return a.slotID < b.slotID
+        return lhs.slotID < rhs.slotID
     end)
 
     -- Restore queue from DB on the first PopulateGear call after a session start.

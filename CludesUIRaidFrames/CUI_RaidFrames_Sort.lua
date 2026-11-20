@@ -179,16 +179,16 @@ function mod._BuildSelfFirstNameList(playerGroup, sortByRole, roleOrder, selfLas
     if #members == 0 then
         return nil
     end
-    table.sort(members, function(a, b)
+    table.sort(members, function(lhs, rhs)
         -- Player to the top (self-first) or bottom (self-last). Exactly one of
         -- a/b is the player inside this branch, so the XOR with selfLast flips it.
-        if a.isPlayer ~= b.isPlayer then
-            return a.isPlayer ~= selfLast
+        if lhs.isPlayer ~= rhs.isPlayer then
+            return lhs.isPlayer ~= selfLast
         end
-        if sortByRole and a.rolePri ~= b.rolePri then
-            return a.rolePri < b.rolePri
+        if sortByRole and lhs.rolePri ~= rhs.rolePri then
+            return lhs.rolePri < rhs.rolePri
         end
-        return a.index < b.index
+        return lhs.index < rhs.index
     end)
     return mod._FinishNameList(members)
 end
@@ -211,8 +211,8 @@ function mod._GetDefaultClassOrder()
             nameList[details.classFile] = details.className or details.classFile
         end
     end
-    table.sort(entries, function(a, b)
-        return (nameList[a] or a) < (nameList[b] or b)
+    table.sort(entries, function(lhs, rhs)
+        return (nameList[lhs] or lhs) < (nameList[rhs] or rhs)
     end)
     mod._classNameByToken = nameList
     if #entries > 0 then
@@ -274,14 +274,14 @@ function mod._BuildPartyClassNameList(includePlayer, sortByRole, roleOrder, clas
     if #members == 0 then
         return nil
     end
-    table.sort(members, function(a, b)
-        if sortByRole and a.rolePri ~= b.rolePri then
-            return a.rolePri < b.rolePri
+    table.sort(members, function(lhs, rhs)
+        if sortByRole and lhs.rolePri ~= rhs.rolePri then
+            return lhs.rolePri < rhs.rolePri
         end
-        if a.classPri ~= b.classPri then
-            return a.classPri < b.classPri
+        if lhs.classPri ~= rhs.classPri then
+            return lhs.classPri < rhs.classPri
         end
-        return a.name < b.name
+        return lhs.name < rhs.name
     end)
     return mod._FinishNameList(members)
 end
@@ -339,16 +339,16 @@ function mod._BuildArenaNameList(hideSelf, selfFirst, selfLast, sortByRole, role
     if #members == 0 then
         return nil
     end
-    table.sort(members, function(a, b)
+    table.sort(members, function(lhs, rhs)
         -- Player to top (self-first) or bottom (self-last); exactly one of a/b
         -- is the player in this branch, so the XOR with selfLast flips it.
-        if (selfFirst or selfLast) and a.isPlayer ~= b.isPlayer then
-            return a.isPlayer ~= selfLast
+        if (selfFirst or selfLast) and lhs.isPlayer ~= rhs.isPlayer then
+            return lhs.isPlayer ~= selfLast
         end
-        if sortByRole and a.rolePri ~= b.rolePri then
-            return a.rolePri < b.rolePri
+        if sortByRole and lhs.rolePri ~= rhs.rolePri then
+            return lhs.rolePri < rhs.rolePri
         end
-        return a.index < b.index
+        return lhs.index < rhs.index
     end)
     return mod._FinishNameList(members)
 end
@@ -398,16 +398,16 @@ function mod._BuildMergedSelfNameList(sortByRole, roleOrder, selfLast, visibleGr
     if #members == 0 then
         return nil
     end
-    table.sort(members, function(a, b)
+    table.sort(members, function(lhs, rhs)
         -- Player to top (self-first) or bottom (self-last); exactly one of a/b
         -- is the player in this branch, so the XOR with selfLast flips it.
-        if a.isPlayer ~= b.isPlayer then
-            return a.isPlayer ~= selfLast
+        if lhs.isPlayer ~= rhs.isPlayer then
+            return lhs.isPlayer ~= selfLast
         end
-        if sortByRole and a.rolePri ~= b.rolePri then
-            return a.rolePri < b.rolePri
+        if sortByRole and lhs.rolePri ~= rhs.rolePri then
+            return lhs.rolePri < rhs.rolePri
         end
-        return a.index < b.index
+        return lhs.index < rhs.index
     end)
     return mod._FinishNameList(members)
 end

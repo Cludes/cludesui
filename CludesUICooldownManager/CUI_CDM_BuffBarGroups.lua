@@ -571,8 +571,8 @@ do
             for k in pairs(registry) do
                 entries[#entries + 1] = k
             end
-            table.sort(entries, function(a, b)
-                return (tonumber(a:match("%d+")) or 0) < (tonumber(b:match("%d+")) or 0)
+            table.sort(entries, function(lhs, rhs)
+                return (tonumber(lhs:match("%d+")) or 0) < (tonumber(rhs:match("%d+")) or 0)
             end)
         end
         return entries

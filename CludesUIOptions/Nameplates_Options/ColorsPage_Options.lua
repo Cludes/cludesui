@@ -199,11 +199,11 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
             end
         end
     end
-    table.sort(ORDER, function(a, b)
-        if (a == playerClass) ~= (b == playerClass) then
-            return a == playerClass
+    table.sort(ORDER, function(lhs, rhs)
+        if (lhs == playerClass) ~= (rhs == playerClass) then
+            return lhs == playerClass
         end
-        return NAME[a] < NAME[b]
+        return NAME[lhs] < NAME[rhs]
     end)
     local CLASS_VALUES = { _noLoc = true }
     for _, classFile in ipairs(ORDER) do

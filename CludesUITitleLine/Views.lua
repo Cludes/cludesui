@@ -471,8 +471,8 @@ local function DrawCard(panelFrame)
     for _, map in ipairs(context.maps) do
         rowList[#rowList + 1] = byMap[map] or { map = map }
     end
-    table.sort(rowList, function(a, b)
-        return (a.level or 0) > (b.level or 0)
+    table.sort(rowList, function(lhs, rhs)
+        return (lhs.level or 0) > (rhs.level or 0)
     end)
 
     local NAME, BEST, SCORE, WHEN = 14, 300, 470, wid
@@ -546,8 +546,8 @@ function Views.guild(panelFrame, context)
     for _, s in ipairs(tiers) do
         lines[#lines + 1] = s
     end
-    table.sort(lines, function(a, b)
-        return a.lineNow > b.lineNow
+    table.sort(lines, function(lhs, rhs)
+        return lhs.lineNow > rhs.lineNow
     end)
     local counts = {}
     for _, s in ipairs(lines) do

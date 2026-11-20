@@ -435,12 +435,12 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
             isShown[#isShown + 1] = { text = t, i = idx, pos = PosOf(t) }
         end
     end
-    table.sort(isShown, function(a, b)
-        local pa, pb = POS_INDEX[a.pos] or 99, POS_INDEX[b.pos] or 99
+    table.sort(isShown, function(lhs, rhs)
+        local pa, pb = POS_INDEX[lhs.pos] or 99, POS_INDEX[rhs.pos] or 99
         if pa ~= pb then
             return pa < pb
         end
-        return a.i < b.i
+        return lhs.i < rhs.i
     end)
 
     local kit = mod.RF_OptPartyKit()

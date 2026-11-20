@@ -428,8 +428,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             end
         end
         -- Sort by _baseX ascending (left to right on screen)
-        table.sort(rowSlots, function(a, b)
-            return a.slot._baseX < b.slot._baseX
+        table.sort(rowSlots, function(lhs, rhs)
+            return lhs.slot._baseX < rhs.slot._baseX
         end)
 
         local swapZone = iconSz * 0.2
@@ -1027,8 +1027,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 for _, value in ipairs(grp) do
                     sequence[#sequence + 1] = value
                 end
-                table.sort(sequence, function(a, b)
-                    return a > b
+                table.sort(sequence, function(lhs, rhs)
+                    return lhs > rhs
                 end)
                 local removedAny = false
                 for _, position in ipairs(sequence) do

@@ -1350,8 +1350,8 @@ local function InitBuffBarsPage(
     end
 
     local function SortStackThresholds(entries)
-        table.sort(entries, function(a, b)
-            return (a.value or 0) < (b.value or 0)
+        table.sort(entries, function(lhs, rhs)
+            return (lhs.value or 0) < (rhs.value or 0)
         end)
     end
 

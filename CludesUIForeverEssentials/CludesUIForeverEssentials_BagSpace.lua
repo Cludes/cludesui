@@ -58,8 +58,8 @@ local function Cheapest()
             end
         end
     end
-    table.sort(entries, function(a, b)
-        return a.value < b.value
+    table.sort(entries, function(lhs, rhs)
+        return lhs.value < rhs.value
     end)
     return entries
 end

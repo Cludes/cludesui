@@ -391,8 +391,8 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
                     sum = sum + copper
                 end
             end
-            table.sort(keys, function(a, b)
-                return (chars[a].money or 0) > (chars[b].money or 0)
+            table.sort(keys, function(lhs, rhs)
+                return (chars[lhs].money or 0) > (chars[rhs].money or 0)
             end)
             listed = #keys
             local realmCount = 0

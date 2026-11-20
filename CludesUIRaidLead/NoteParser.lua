@@ -160,8 +160,8 @@ function Parser.Parse(textValue, spellName)
             end
         end
     end
-    table.sort(entries, function(a, b)
-        return a.at < b.at
+    table.sort(entries, function(lhs, rhs)
+        return lhs.at < rhs.at
     end)
     return entries, skipped
 end

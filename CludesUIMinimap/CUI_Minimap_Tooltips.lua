@@ -971,11 +971,11 @@ local function GetCalendarLockoutEntries()
         return
     end
 
-    table.sort(entries, function(a, b)
-        if a.name ~= b.name then
-            return a.name < b.name
+    table.sort(entries, function(lhs, rhs)
+        if lhs.name ~= rhs.name then
+            return lhs.name < rhs.name
         end
-        return a.tierOrder < b.tierOrder
+        return lhs.tierOrder < rhs.tierOrder
     end)
     return entries
 end

@@ -195,11 +195,11 @@ local function Nearest(npcs, num)
             result[#result + 1] = { npc = npc, dist = dist }
         end
     end
-    table.sort(result, function(a, b)
-        if a.dist ~= b.dist then
-            return a.dist < b.dist
+    table.sort(result, function(lhs, rhs)
+        if lhs.dist ~= rhs.dist then
+            return lhs.dist < rhs.dist
         end
-        return a.npc[NPC_NAME] < b.npc[NPC_NAME]
+        return lhs.npc[NPC_NAME] < rhs.npc[NPC_NAME]
     end)
     local picked = {}
     for idx = 1, math.min(num or #result, #result) do
@@ -325,8 +325,8 @@ local function Professions()
             end
         end
     end
-    table.sort(entries, function(a, b)
-        return a.name < b.name
+    table.sort(entries, function(lhs, rhs)
+        return lhs.name < rhs.name
     end)
     return entries
 end
@@ -639,8 +639,8 @@ local function Draw()
             ups[#ups + 1] = region
         end
     end
-    table.sort(ups, function(a, b)
-        return (a.grey or 0) < (b.grey or 0)
+    table.sort(ups, function(lhs, rhs)
+        return (lhs.grey or 0) < (rhs.grey or 0)
     end)
     if #ups > 0 then
         rowList:Gap(6)

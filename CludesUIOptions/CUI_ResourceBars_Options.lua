@@ -2221,8 +2221,8 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function SortBands(bands)
-        table.sort(bands, function(a, b)
-            return (a.to or 0) < (b.to or 0)
+        table.sort(bands, function(lhs, rhs)
+            return (lhs.to or 0) < (rhs.to or 0)
         end)
     end
 

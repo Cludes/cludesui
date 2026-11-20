@@ -4293,9 +4293,9 @@ local function CollectAllChildren(wrapper)
             end
         end
     end
-    table.sort(children, function(a, b)
-        local ay = a._origAnchor and a._origAnchor[5] or 0
-        local by = b._origAnchor and b._origAnchor[5] or 0
+    table.sort(children, function(lhs, rhs)
+        local ay = lhs._origAnchor and lhs._origAnchor[5] or 0
+        local by = rhs._origAnchor and rhs._origAnchor[5] or 0
         return ay > by -- y offsets are negative, so higher (less negative) = higher on page
     end)
 

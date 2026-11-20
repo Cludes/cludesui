@@ -114,8 +114,8 @@ end
 -- season's runs in order rebuilds it over time. `exact` says whether the replay
 -- lands on the rating the game reports; when it does not, the graph says so.
 function mod.Replay(runs, actual, nowTime)
-    table.sort(runs, function(a, b)
-        return a.t < b.t
+    table.sort(runs, function(lhs, rhs)
+        return lhs.t < rhs.t
     end)
     local best, total, points = {}, 0, {}
     for _, run in ipairs(runs) do
@@ -520,8 +520,8 @@ function mod.Guild(startsAt, nowTime)
                 end
             end
         end
-        table.sort(result, function(a, b)
-            return a.score > b.score
+        table.sort(result, function(lhs, rhs)
+            return lhs.score > rhs.score
         end)
         return { members = result, stale = stale }
     end)
@@ -653,8 +653,8 @@ function mod.Chars(regionKey)
                 { key = key, name = c.name, class = c.class, score = c.score, updated = c.updated }
         end
     end
-    table.sort(result, function(a, b)
-        return a.score > b.score
+    table.sort(result, function(lhs, rhs)
+        return lhs.score > rhs.score
     end)
     return result
 end
@@ -913,8 +913,8 @@ local function PruneSeen()
         end
     end
     if #keyList > SEEN_CAP then
-        table.sort(keyList, function(a, b)
-            return CludesUITitleLineDB.seen[a].last > CludesUITitleLineDB.seen[b].last
+        table.sort(keyList, function(lhs, rhs)
+            return CludesUITitleLineDB.seen[lhs].last > CludesUITitleLineDB.seen[rhs].last
         end)
         for idx = SEEN_CAP + 1, #keyList do
             CludesUITitleLineDB.seen[keyList[idx]] = nil

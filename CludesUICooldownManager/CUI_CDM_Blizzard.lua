@@ -111,8 +111,8 @@ CaptureCDMPositions = function()
 
             if #shownIcons >= 2 and payload.iconSize then
                 -- Sort by left edge so we measure truly adjacent icons
-                table.sort(shownIcons, function(a, b)
-                    return (a:GetLeft() or 0) < (b:GetLeft() or 0)
+                table.sort(shownIcons, function(lhs, rhs)
+                    return (lhs:GetLeft() or 0) < (rhs:GetLeft() or 0)
                 end)
                 -- Smallest step between consecutive sorted icons. GetLeft() returns UIParent-coordinate-space values.
                 local bestStep = nil

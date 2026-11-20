@@ -1258,8 +1258,8 @@ function mod.RenderListView(itemList, options)
     -- Pinned first, category (or bag) order, Junk after the last saved category
     -- (virtual categories follow it, as in the grid and the sidebar)
     local RANK = { pinned = -2, recent = -1, main = 0, junk = CUI_CategoryManager:GetSavedCount() + 0.5 }
-    table.sort(sequence, function(a, b)
-        return (RANK[a.key] or a.key) < (RANK[b.key] or b.key)
+    table.sort(sequence, function(lhs, rhs)
+        return (RANK[lhs.key] or lhs.key) < (RANK[rhs.key] or rhs.key)
     end)
     local pinnedLabel, recentLabel = L("Pinned Items"), L("Recent Items")
     for _, c in ipairs(cats) do

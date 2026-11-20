@@ -378,8 +378,8 @@ local function BuildModuleAliases()
             end
         end
     end
-    table.sort(_moduleAliases, function(a, b)
-        return #a.alias > #b.alias
+    table.sort(_moduleAliases, function(lhs, rhs)
+        return #lhs.alias > #rhs.alias
     end)
 end
 

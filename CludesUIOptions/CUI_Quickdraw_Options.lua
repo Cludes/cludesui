@@ -2010,16 +2010,16 @@ CludesUI.AtOptionsLogin(function()
             -- otherwise alphabetical can still lead with the row the user came
             -- for.
             if not category.keepOrder then
-                table.sort(entries, function(a, b)
-                    if (a.pin or false) ~= (b.pin or false) then
-                        return a.pin == true
+                table.sort(entries, function(lhs, rhs)
+                    if (lhs.pin or false) ~= (rhs.pin or false) then
+                        return lhs.pin == true
                     end
                     -- WoW Forever's lower ranks follow their spell's row, highest first.
-                    local an, bn = a.sortName or a.name, b.sortName or b.name
+                    local an, bn = lhs.sortName or lhs.name, rhs.sortName or rhs.name
                     if an ~= bn then
                         return an < bn
                     end
-                    return (a.rankNum or math.huge) > (b.rankNum or math.huge)
+                    return (lhs.rankNum or math.huge) > (rhs.rankNum or math.huge)
                 end)
             end
             pickerLists[category.key] = entries

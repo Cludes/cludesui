@@ -698,8 +698,8 @@ local function Commit()
     for _, c in ipairs(offTree) do
         result[#result + 1] = c
     end
-    table.sort(result, function(a, b)
-        return a.nodeID < b.nodeID
+    table.sort(result, function(lhs, rhs)
+        return lhs.nodeID < rhs.nodeID
     end)
     -- Hiding clears onConfirm (dimmer OnHide), so take it first.
     local confirm = onConfirm

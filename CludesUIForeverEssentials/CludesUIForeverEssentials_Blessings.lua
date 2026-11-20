@@ -1418,11 +1418,11 @@ do
                 p.count = p.count + 1
             end
         end
-        table.sort(entries, function(a, b)
-            if a.count ~= b.count then
-                return a.count < b.count
+        table.sort(entries, function(lhs, rhs)
+            if lhs.count ~= rhs.count then
+                return lhs.count < rhs.count
             end
-            return a.who < b.who
+            return lhs.who < rhs.who
         end)
         return entries
     end

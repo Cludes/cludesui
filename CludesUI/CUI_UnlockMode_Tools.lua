@@ -1411,8 +1411,8 @@ CUI_NS.unlockParts.Tools = function(LM)
             sorted[#sorted + 1] = { key = barKey, mover = handle, area = area }
         end
         -- Largest area first -> lowest frame level
-        table.sort(sorted, function(a, b)
-            return a.area > b.area
+        table.sort(sorted, function(lhs, rhs)
+            return lhs.area > rhs.area
         end)
         for i, record in ipairs(sorted) do
             local lvl = BASE + i * STEP

@@ -1513,9 +1513,9 @@ local function BuildRecords(s, dmCfg)
             local tileDef = matchTiles[i]
             sequence[tileDef], picks[tileDef] = i, #MatchAtoms(tileDef.claim, false)
         end
-        table.sort(matchTiles, function(a, b)
-            if picks[a] ~= picks[b] then return picks[a] > picks[b] end
-            return sequence[a] < sequence[b]
+        table.sort(matchTiles, function(lhs, rhs)
+            if picks[lhs] ~= picks[rhs] then return picks[lhs] > picks[rhs] end
+            return sequence[lhs] < sequence[rhs]
         end)
         for i = 1, #matchTiles do
             local tileDef = matchTiles[i]

@@ -317,21 +317,21 @@ local function SortPreviewList(entries, buffSide, conf)
     end
 
     if method == "Expiration" then
-        table.sort(tagged, function(a, b)
-            local da = PREVIEW_DURATIONS[((a.idx - 1) % #PREVIEW_DURATIONS) + 1]
-            local saved = PREVIEW_DURATIONS[((b.idx - 1) % #PREVIEW_DURATIONS) + 1]
+        table.sort(tagged, function(lhs, rhs)
+            local da = PREVIEW_DURATIONS[((lhs.idx - 1) % #PREVIEW_DURATIONS) + 1]
+            local saved = PREVIEW_DURATIONS[((rhs.idx - 1) % #PREVIEW_DURATIONS) + 1]
             if da ~= saved then
                 if reverse then
                     return da > saved
                 end
                 return da < saved
             end
-            return a.idx < b.idx
+            return lhs.idx < rhs.idx
         end)
     elseif method == "Name" then
-        table.sort(tagged, function(a, b)
-            local sa = buffSide and a.entry or a.entry.id
-            local scrollBar = buffSide and b.entry or b.entry.id
+        table.sort(tagged, function(lhs, rhs)
+            local sa = buffSide and lhs.entry or lhs.entry.id
+            local scrollBar = buffSide and rhs.entry or rhs.entry.id
             local na, nb = PreviewSpellName(sa), PreviewSpellName(scrollBar)
             if na ~= nb then
                 if reverse then
@@ -339,12 +339,12 @@ local function SortPreviewList(entries, buffSide, conf)
                 end
                 return na < nb
             end
-            return a.idx < b.idx
+            return lhs.idx < rhs.idx
         end)
     elseif method == "ImportantOnly" then
-        table.sort(tagged, function(a, b)
-            local sa = buffSide and a.entry or a.entry.id
-            local scrollBar = buffSide and b.entry or b.entry.id
+        table.sort(tagged, function(lhs, rhs)
+            local sa = buffSide and lhs.entry or lhs.entry.id
+            local scrollBar = buffSide and rhs.entry or rhs.entry.id
             local ia = (C_Spell and C_Spell.IsSpellImportant and C_Spell.IsSpellImportant(sa)) and 0 or 1
             local ib = (C_Spell and C_Spell.IsSpellImportant and C_Spell.IsSpellImportant(scrollBar)) and 0
                 or 1
@@ -354,7 +354,7 @@ local function SortPreviewList(entries, buffSide, conf)
                 end
                 return ia < ib
             end
-            return a.idx < b.idx
+            return lhs.idx < rhs.idx
         end)
     end
 

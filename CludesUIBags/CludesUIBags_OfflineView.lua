@@ -833,18 +833,18 @@ local function Group(itemList)
     for _, g in pairs(by) do
         catGroups[#catGroups + 1] = g
     end
-    table.sort(catGroups, function(a, b)
-        return a.idx < b.idx
+    table.sort(catGroups, function(lhs, rhs)
+        return lhs.idx < rhs.idx
     end)
     for _, g in ipairs(catGroups) do
-        table.sort(g.items, function(a, b)
-            if a.q ~= b.q then
-                return a.q > b.q
+        table.sort(g.items, function(lhs, rhs)
+            if lhs.q ~= rhs.q then
+                return lhs.q > rhs.q
             end
-            if a.name ~= b.name then
-                return a.name < b.name
+            if lhs.name ~= rhs.name then
+                return lhs.name < rhs.name
             end
-            return a.str < b.str
+            return lhs.str < rhs.str
         end)
     end
     return catGroups

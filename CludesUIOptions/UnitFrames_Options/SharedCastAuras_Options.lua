@@ -2661,8 +2661,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                             sorted[#sorted + 1] = entries[idx]
                             place[entries[idx]] = idx
                         end
-                        table.sort(sorted, function(a, b)
-                            return (rank[a.name] or (1000 + place[a])) < (rank[b.name] or (1000 + place[b]))
+                        table.sort(sorted, function(lhs, rhs)
+                            return (rank[lhs.name] or (1000 + place[lhs])) < (rank[rhs.name] or (1000 + place[rhs]))
                         end)
                         for idx = 1, #sorted do
                             itemList[#itemList + 1] = {

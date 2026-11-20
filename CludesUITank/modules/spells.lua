@@ -500,8 +500,8 @@ function mod.SpellData.CustomAlerts(saved)
             entries[#entries + 1] = { id = ident, key = key, alert = alert }
         end
     end
-    table.sort(entries, function(a, b)
-        return a.id < b.id
+    table.sort(entries, function(lhs, rhs)
+        return lhs.id < rhs.id
     end)
     return entries
 end

@@ -319,13 +319,13 @@ local TrimLinesToMax = function(lines, maxN)
 end
 
 local function SortLinesChronological(lines)
-    table.sort(lines, function(a, b)
-        local ta = a.serverTime or a.timestamp or 0
-        local tb = b.serverTime or b.timestamp or 0
+    table.sort(lines, function(lhs, rhs)
+        local ta = lhs.serverTime or lhs.timestamp or 0
+        local tb = rhs.serverTime or rhs.timestamp or 0
         if ta ~= tb then
             return ta < tb
         end
-        return (a.captureSeq or 0) < (b.captureSeq or 0)
+        return (lhs.captureSeq or 0) < (rhs.captureSeq or 0)
     end)
     return lines
 end

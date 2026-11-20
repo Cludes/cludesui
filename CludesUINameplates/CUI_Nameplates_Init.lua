@@ -622,12 +622,12 @@ mod._oocPlatesCtl:RegisterEvent("PLAYER_LOGIN")
 mod._keptCVarNames = { "nameplateMotionSpeed", "nameplateTopInset" }
 
 -- Equal as numbers: the client keeps its own number format.
-mod.KeptCVarSame = function(a, b)
-    local posX, posY = tonumber(a), tonumber(b)
+mod.KeptCVarSame = function(lhs, rhs)
+    local posX, posY = tonumber(lhs), tonumber(rhs)
     if posX and posY then
         return math.abs(posX - posY) < 1e-6
     end
-    return a == b
+    return lhs == rhs
 end
 
 -- The sliders' write: sets the CVar, then keeps what the client holds.

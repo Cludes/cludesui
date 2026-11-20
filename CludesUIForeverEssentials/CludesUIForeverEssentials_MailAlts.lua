@@ -205,11 +205,11 @@ local function AltList()
             }
         end
     end
-    table.sort(entries, function(a, b)
-        if a.level ~= b.level then
-            return a.level > b.level
+    table.sort(entries, function(lhs, rhs)
+        if lhs.level ~= rhs.level then
+            return lhs.level > rhs.level
         end
-        return a.name < b.name
+        return lhs.name < rhs.name
     end)
     return entries
 end
@@ -251,8 +251,8 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         if not elsewhere then
             return
         end
-        table.sort(rowList, function(a, b)
-            return a.count > b.count
+        table.sort(rowList, function(lhs, rhs)
+            return lhs.count > rhs.count
         end)
         tooltip:AddDoubleLine("Total owned", sum, 1, 1, 1, 1, 1, 1)
         for index = 1, math.min(#rowList, 8) do

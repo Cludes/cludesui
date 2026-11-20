@@ -849,8 +849,8 @@ local function BuildAllPlayerTargets(session, sessionID)
             entries[#entries + 1] =
                 { name = enemyNames[eKey], total = sum, amountPerSecond = AmountPerSecond(sum, duration) }
         end
-        table.sort(entries, function(a, b)
-            return a.total > b.total
+        table.sort(entries, function(lhs, rhs)
+            return lhs.total > rhs.total
         end)
         map[pName] = entries
     end

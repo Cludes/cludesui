@@ -2551,12 +2551,12 @@ do
                 picked[#picked + 1] = i
             end
         end
-        table.sort(picked, function(a, b)
-            local va, vb = statList[entries[a][1]], statList[entries[b][1]]
+        table.sort(picked, function(lhs, rhs)
+            local va, vb = statList[entries[lhs][1]], statList[entries[rhs][1]]
             if va ~= vb then
                 return va > vb
             end
-            return a < b
+            return lhs < rhs
         end)
         local result = ""
         for n = 1, #picked do

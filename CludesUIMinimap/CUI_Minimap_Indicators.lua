@@ -159,11 +159,11 @@ local function GetOrderedWeeklyActivities(activityType)
         ordered[index] = activities[index]
     end
 
-    table.sort(ordered, function(a, b)
-        local aIndex = a and a.index or 0
-        local bIndex = b and b.index or 0
+    table.sort(ordered, function(lhs, rhs)
+        local aIndex = lhs and lhs.index or 0
+        local bIndex = rhs and rhs.index or 0
         if aIndex == bIndex then
-            return (a and a.threshold or 0) < (b and b.threshold or 0)
+            return (lhs and lhs.threshold or 0) < (rhs and rhs.threshold or 0)
         end
         return aIndex < bIndex
     end)

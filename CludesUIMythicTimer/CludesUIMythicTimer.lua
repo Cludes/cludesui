@@ -2171,11 +2171,11 @@ local function CreateStandaloneFrame()
         for label, count in pairs(deaths) do
             list[#list + 1] = { name = label, count = count }
         end
-        table.sort(list, function(a, b)
-            if a.count ~= b.count then
-                return a.count > b.count
+        table.sort(list, function(lhs, rhs)
+            if lhs.count ~= rhs.count then
+                return lhs.count > rhs.count
             end
-            return a.name < b.name
+            return lhs.name < rhs.name
         end)
 
         EnsureRows(#list)

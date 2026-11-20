@@ -771,8 +771,8 @@ local function TabOrder()
     for key, tab in pairs(tabs) do
         entries[#entries + 1] = tab
     end
-    table.sort(entries, function(a, b)
-        return a.order < b.order
+    table.sort(entries, function(lhs, rhs)
+        return lhs.order < rhs.order
     end)
     return entries
 end

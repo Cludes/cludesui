@@ -230,8 +230,8 @@ local function Build()
         for _, e in pairs(map and seen[map] and seen[map].entries or {}) do
             sequence[#sequence + 1] = e
         end
-        table.sort(sequence, function(a, b)
-            return a.at > b.at
+        table.sort(sequence, function(lhs, rhs)
+            return lhs.at > rhs.at
         end)
         if #sequence == 0 then
             GameTooltip:AddLine("Target or mouse over an NPC to read your layer.", 0.6, 0.6, 0.6, true)

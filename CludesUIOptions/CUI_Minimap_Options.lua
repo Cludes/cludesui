@@ -1018,13 +1018,13 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return nil
                 end
-                table.sort(itemList, function(a, b)
-                    local oa, ob = OrderOf(a.key), OrderOf(b.key)
+                table.sort(itemList, function(lhs, rhs)
+                    local oa, ob = OrderOf(lhs.key), OrderOf(rhs.key)
                     if oa and ob then
                         if oa ~= ob then
                             return oa < ob
                         end
-                        return a.label < b.label
+                        return lhs.label < rhs.label
                     end
                     if oa then
                         return true
@@ -1032,7 +1032,7 @@ CludesUI.AtOptionsLogin(function()
                     if ob then
                         return false
                     end
-                    return a.label < b.label
+                    return lhs.label < rhs.label
                 end)
                 return itemList
             end

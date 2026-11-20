@@ -208,8 +208,8 @@ local function Casts(f)
             end
         end
     end
-    table.sort(out, function(a, b)
-        return a.due < b.due
+    table.sort(out, function(lhs, rhs)
+        return lhs.due < rhs.due
     end)
     return out
 end
@@ -672,11 +672,11 @@ local function Draw()
             entries[#entries + 1] = a
         end
     end
-    table.sort(entries, function(a, b)
-        if a.phase ~= b.phase then
-            return a.phase < b.phase
+    table.sort(entries, function(lhs, rhs)
+        if lhs.phase ~= rhs.phase then
+            return lhs.phase < rhs.phase
         end
-        return (a.times[1] or 0) < (b.times[1] or 0)
+        return (lhs.times[1] or 0) < (rhs.times[1] or 0)
     end)
     local lastPhase
     for _, a in ipairs(entries) do

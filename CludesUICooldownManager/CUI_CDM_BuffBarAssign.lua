@@ -1008,11 +1008,11 @@ function mod.GetTrackedBarSpells(includeUntalented)
         end
     end
 
-    table.sort(outcome, function(a, b)
-        if a.layoutIndex ~= b.layoutIndex then
-            return a.layoutIndex < b.layoutIndex
+    table.sort(outcome, function(lhs, rhs)
+        if lhs.layoutIndex ~= rhs.layoutIndex then
+            return lhs.layoutIndex < rhs.layoutIndex
         end
-        return (a.name or "") < (b.name or "")
+        return (lhs.name or "") < (rhs.name or "")
     end)
     return outcome
 end

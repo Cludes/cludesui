@@ -1066,8 +1066,8 @@ local function PadCategoryEntries(root, button, category, catIndex, isGroupHeade
                     }
                 end
             end
-            table.sort(rowList, function(a, b)
-                return a.sort < b.sort
+            table.sort(rowList, function(lhs, rhs)
+                return lhs.sort < rhs.sort
             end)
         end
         rowList.title = CludesUI.L("Remove Assigned Item")

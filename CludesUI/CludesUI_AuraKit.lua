@@ -51,8 +51,8 @@ function AK.Filter(...)
             rest[#rest + 1] = unitToken
         end
     end
-    table.sort(rest, function(a, b)
-        return TokenSortKey(a) < TokenSortKey(b)
+    table.sort(rest, function(lhs, rhs)
+        return TokenSortKey(lhs) < TokenSortKey(rhs)
     end)
 
     local result

@@ -106,11 +106,11 @@ CUI_NS.unlockParts.Movers = function(LM)
         if #hits < 2 then
             return
         end
-        table.sort(hits, function(a, b)
-            if a.base == b.base then
-                return a.mover._barKey < b.mover._barKey
+        table.sort(hits, function(lhs, rhs)
+            if lhs.base == rhs.base then
+                return lhs.mover._barKey < rhs.mover._barKey
             end
-            return a.base > b.base
+            return lhs.base > rhs.base
         end)
         local index
         for idx, hit in ipairs(hits) do

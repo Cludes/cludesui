@@ -103,8 +103,8 @@ local function ZonesNamed(query)
     if #found == 0 then
         return nil
     end
-    table.sort(found, function(a, b)
-        return zoneIds[a] < zoneIds[b]
+    table.sort(found, function(lhs, rhs)
+        return zoneIds[lhs] < zoneIds[rhs]
     end)
     local ids, names, seenSlot, seenName = {}, {}, {}, {}
     for _, i in ipairs(found) do
@@ -168,8 +168,8 @@ local function MapsFor(spec)
     elseif #ids == 0 then
         CUI.PrintError(Lf("Map pins cannot be placed on %1$s.", first))
     elseif #names > 1 then
-        table.sort(names, function(a, b)
-            return strcmputf8i(a, b) < 0
+        table.sort(names, function(lhs, rhs)
+            return strcmputf8i(lhs, rhs) < 0
         end)
         local shown = table.concat(names, ", ", 1, min(#names, 8)) .. (#names > 8 and ", ..." or "")
         Say(Lf("Several zones match %1$s:", spec.zone) .. " " .. shown)

@@ -513,14 +513,14 @@ local function EnumerateCDMViewerSpells(includeBuffViewer)
         viewerOrder = viewerOrder + 10000
     end
 
-    table.sort(entryList, function(a, b)
-        if a.viewerOrder ~= b.viewerOrder then
-            return a.viewerOrder < b.viewerOrder
+    table.sort(entryList, function(lhs, rhs)
+        if lhs.viewerOrder ~= rhs.viewerOrder then
+            return lhs.viewerOrder < rhs.viewerOrder
         end
-        if a.layoutIndex ~= b.layoutIndex then
-            return a.layoutIndex < b.layoutIndex
+        if lhs.layoutIndex ~= rhs.layoutIndex then
+            return lhs.layoutIndex < rhs.layoutIndex
         end
-        return a.sid < b.sid
+        return lhs.sid < rhs.sid
     end)
 
     for i, e in ipairs(entryList) do
@@ -948,11 +948,11 @@ function mod.GetCDMSpellsForBar(barId, includeUntalented)
     end
 
     -- Viewer order first (Essential before Utility), then alpha.
-    table.sort(spellSet, function(a, b)
-        if a.cdmCat ~= b.cdmCat then
-            return (a.cdmCat or 0) < (b.cdmCat or 0)
+    table.sort(spellSet, function(lhs, rhs)
+        if lhs.cdmCat ~= rhs.cdmCat then
+            return (lhs.cdmCat or 0) < (rhs.cdmCat or 0)
         end
-        return a.name < b.name
+        return lhs.name < rhs.name
     end)
 
     return spellSet
@@ -1208,8 +1208,8 @@ function mod.MergeDormantSpellsIntoAssigned()
                     returning[#returning + 1] = { sid = spellRef, slot = slot }
                 end
             end
-            table.sort(returning, function(a, b)
-                return a.slot < b.slot
+            table.sort(returning, function(lhs, rhs)
+                return lhs.slot < rhs.slot
             end)
 
             -- Build dedup set for the active list so we don't double-insert
@@ -1560,11 +1560,11 @@ function mod.CollectDefaultBuffTrackEntries()
         end
     end
 
-    table.sort(out, function(a, b)
-        if a.layoutIndex ~= b.layoutIndex then
-            return a.layoutIndex < b.layoutIndex
+    table.sort(out, function(lhs, rhs)
+        if lhs.layoutIndex ~= rhs.layoutIndex then
+            return lhs.layoutIndex < rhs.layoutIndex
         end
-        return (a.key or "") < (b.key or "")
+        return (lhs.key or "") < (rhs.key or "")
     end)
     return out
 end
@@ -1702,8 +1702,8 @@ local function SyncPresentBuffOrderToBlizzard(sequence, present, entryList)
             sortedPresent[#sortedPresent + 1] = barKey
         end
     end
-    table.sort(sortedPresent, function(a, b)
-        return (blizzRank[a] or 99999) < (blizzRank[b] or 99999)
+    table.sort(sortedPresent, function(lhs, rhs)
+        return (blizzRank[lhs] or 99999) < (blizzRank[rhs] or 99999)
     end)
     local pi = 1
     local synced = {}
@@ -1781,11 +1781,11 @@ function mod.ReconcileBuffDisplayOrder()
         end
     end
     if #newcomers > 0 then
-        table.sort(newcomers, function(a, b)
-            if a.layoutIndex ~= b.layoutIndex then
-                return a.layoutIndex < b.layoutIndex
+        table.sort(newcomers, function(lhs, rhs)
+            if lhs.layoutIndex ~= rhs.layoutIndex then
+                return lhs.layoutIndex < rhs.layoutIndex
             end
-            return (a.key or "") < (b.key or "")
+            return (lhs.key or "") < (rhs.key or "")
         end)
         local blizzRank = {}
         for i, e in ipairs(entryList) do

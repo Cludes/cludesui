@@ -150,20 +150,20 @@ local function BuildPartyPreviewRoles()
                     classPri[c] = i
                 end
             end
-            table.sort(set, function(a, b)
+            table.sort(set, function(lhs, rhs)
                 if sortByRole then
-                    local ra, rb = rolePri[a.role] or 99, rolePri[b.role] or 99
+                    local ra, rb = rolePri[lhs.role] or 99, rolePri[rhs.role] or 99
                     if ra ~= rb then
                         return ra < rb
                     end
                 end
                 if classPri then
-                    local ca, callback = classPri[a.classToken] or 99, classPri[b.classToken] or 99
+                    local ca, callback = classPri[lhs.classToken] or 99, classPri[rhs.classToken] or 99
                     if ca ~= callback then
                         return ca < callback
                     end
                 end
-                return a.idx < b.idx
+                return lhs.idx < rhs.idx
             end)
         end
         if showSelfFirst then

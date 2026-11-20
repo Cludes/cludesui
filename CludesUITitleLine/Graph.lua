@@ -1401,8 +1401,8 @@ function Graph.ShowMember(cell)
             runs[#runs + 1] = r
         end
     end
-    table.sort(runs, function(a, b)
-        return a.mapScore > b.mapScore
+    table.sort(runs, function(lhs, rhs)
+        return lhs.mapScore > rhs.mapScore
     end)
     local posY = -30
     for _, r in ipairs(runs) do

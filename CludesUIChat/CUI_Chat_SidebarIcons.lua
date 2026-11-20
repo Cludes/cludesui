@@ -230,12 +230,12 @@ function CHAT.ResolveSidebarIconOrder()
         end
         return SIDEBAR_FALLBACK_ORDER[key] or 999
     end
-    table.sort(keyList, function(a, b)
-        local oa, ob = OrderOf(a), OrderOf(b)
+    table.sort(keyList, function(lhs, rhs)
+        local oa, ob = OrderOf(lhs), OrderOf(rhs)
         if oa ~= ob then
             return oa < ob
         end
-        return keyIndex[a] < keyIndex[b]
+        return keyIndex[lhs] < keyIndex[rhs]
     end)
     return keyList
 end

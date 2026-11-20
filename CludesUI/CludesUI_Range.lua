@@ -267,8 +267,8 @@ local function BuildLadder()
             end
         end
     end
-    table.sort(RG.ladder, function(a, b)
-        return a.range < b.range
+    table.sort(RG.ladder, function(lhs, rhs)
+        return lhs.range < rhs.range
     end)
 end
 

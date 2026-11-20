@@ -171,8 +171,8 @@ local function CollectFlyoutButtons()
             collected[#collected + 1] = button
         end
     end
-    table.sort(collected, function(a, b)
-        return GetMinimapButtonLabel(a):lower() < GetMinimapButtonLabel(b):lower()
+    table.sort(collected, function(lhs, rhs)
+        return GetMinimapButtonLabel(lhs):lower() < GetMinimapButtonLabel(rhs):lower()
     end)
     return collected
 end

@@ -66,12 +66,12 @@ local function Prepare()
         skinData.questInfo = (skinData.instance and byMap[skinData.instance]) or byName[skinData.name]
         skinData.levels = skinData.questInfo and skinData.questInfo.levels
     end
-    table.sort(J.dungeons, function(a, b)
-        local la, lb = a.levels and a.levels[1] or 99, b.levels and b.levels[1] or 99
+    table.sort(J.dungeons, function(lhs, rhs)
+        local la, lb = lhs.levels and lhs.levels[1] or 99, rhs.levels and rhs.levels[1] or 99
         if la ~= lb then
             return la < lb
         end
-        return a.name < b.name
+        return lhs.name < rhs.name
     end)
 end
 
@@ -184,8 +184,8 @@ local function FillList()
         entries[#entries + 1] = skinData
     end
     if #J.factions > 0 then
-        table.sort(J.factions, function(a, b)
-            return a.name < b.name
+        table.sort(J.factions, function(lhs, rhs)
+            return lhs.name < rhs.name
         end)
         entries[#entries + 1] = { heading = "Reputation" }
         for _, frame in ipairs(J.factions) do
@@ -543,8 +543,8 @@ local function MapBuild()
                 Offer(key and map.pins[key])
             end
         end
-        table.sort(self.floors, function(a, b)
-            return Walked(map, a) < Walked(map, b)
+        table.sort(self.floors, function(lhs, rhs)
+            return Walked(map, lhs) < Walked(map, rhs)
         end)
         if #self.floors == 0 then
             for n = 1, map.order and #map.order or map.floors do

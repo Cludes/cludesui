@@ -1166,8 +1166,8 @@ function mod.RenderGridView(
                 end
             end
             if #bagList > 0 then
-                table.sort(bagList, function(a, b)
-                    return a.slot < b.slot
+                table.sort(bagList, function(lhs, rhs)
+                    return lhs.slot < rhs.slot
                 end)
                 RenderBagGrid(BagDisplayName(bag) .. " (" .. bagFilled .. " / " .. #bagList .. ")", bagList)
             end
@@ -1190,11 +1190,11 @@ function mod.RenderGridView(
                     mainSlots[#mainSlots + 1] = skinData
                 end
             end
-            table.sort(mainSlots, function(a, b)
-                if a.bag ~= b.bag then
-                    return a.bag < b.bag
+            table.sort(mainSlots, function(lhs, rhs)
+                if lhs.bag ~= rhs.bag then
+                    return lhs.bag < rhs.bag
                 end
-                return a.slot < b.slot
+                return lhs.slot < rhs.slot
             end)
             RenderBagGrid(CludesUI.Lf("Main Bags (%d / %d)", mainFilled, #mainSlots), mainSlots)
             if special then
@@ -1223,8 +1223,8 @@ function mod.RenderGridView(
                 reagentSlotList[#reagentSlotList + 1] = skinData
             end
         end
-        table.sort(reagentSlotList, function(a, b)
-            return a.slot < b.slot
+        table.sort(reagentSlotList, function(lhs, rhs)
+            return lhs.slot < rhs.slot
         end)
 
         if #reagentSlotList > 0 then

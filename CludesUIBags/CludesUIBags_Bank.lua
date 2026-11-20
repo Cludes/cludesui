@@ -2125,23 +2125,23 @@ local function BuildBankBuckets(slotArray, mode)
     -- Empty slots last, then unknown/other, then per-mode order. Keys can be
     -- numbers or strings depending on mode, so never compare across buckets
     -- until those two flags have been settled.
-    table.sort(entries, function(a, b)
-        if a.isEmpty ~= b.isEmpty then
-            return b.isEmpty
+    table.sort(entries, function(lhs, rhs)
+        if lhs.isEmpty ~= rhs.isEmpty then
+            return rhs.isEmpty
         end
-        if a.isOther ~= b.isOther then
-            return b.isOther
+        if lhs.isOther ~= rhs.isOther then
+            return rhs.isOther
         end
-        if a.isEmpty or a.isOther then
-            return a.label < b.label
+        if lhs.isEmpty or lhs.isOther then
+            return lhs.label < rhs.label
         end
         if mode == "type" then
-            return a.label < b.label
+            return lhs.label < rhs.label
         end
         if mode == "slot" then
-            return a.key < b.key
+            return lhs.key < rhs.key
         end
-        return a.key > b.key -- expansion: newest first
+        return lhs.key > rhs.key -- expansion: newest first
     end)
     return entries
 end

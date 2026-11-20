@@ -216,11 +216,11 @@ function Offline.Characters()
             }
         end
     end
-    table.sort(entries, function(a, b)
-        if a.realm ~= b.realm then
-            return a.realm < b.realm
+    table.sort(entries, function(lhs, rhs)
+        if lhs.realm ~= rhs.realm then
+            return lhs.realm < rhs.realm
         end
-        return a.name < b.name
+        return lhs.name < rhs.name
     end)
     return entries
 end
@@ -714,8 +714,8 @@ local function BuildLines(ident)
             sum = sum + num
         end
     end
-    table.sort(lines, function(a, b)
-        return a.n > b.n
+    table.sort(lines, function(lhs, rhs)
+        return lhs.n > rhs.n
     end)
     if war and war.n then
         sum = sum + war.n

@@ -367,8 +367,8 @@ function CategoryManager:InitCategories()
                             sets[#sets + 1] = { id = setId, name = sname, icon = sicon }
                         end
                     end
-                    table.sort(sets, function(a, b)
-                        return a.name < b.name
+                    table.sort(sets, function(lhs, rhs)
+                        return lhs.name < rhs.name
                     end)
                     for _, s in ipairs(sets) do
                         categoryList[#categoryList + 1] = {

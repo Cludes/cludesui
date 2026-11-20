@@ -957,22 +957,22 @@ local function Entries()
                 }
             end
         end
-        table.sort(list, function(a, b)
-            if a.kos ~= b.kos then
-                return a.kos > b.kos
+        table.sort(list, function(lhs, rhs)
+            if lhs.kos ~= rhs.kos then
+                return lhs.kos > rhs.kos
             end
-            if a.act ~= b.act then
-                return a.act > b.act
+            if lhs.act ~= rhs.act then
+                return lhs.act > rhs.act
             end
-            return a.at > b.at
+            return lhs.at > rhs.at
         end)
     else
         local src = tab == 2 and lastHour or (tab == 3 and s.kos or s.ignore)
         for name, at in pairs(src) do
             list[#list + 1] = { name = name, at = at }
         end
-        table.sort(list, function(a, b)
-            return a.at > b.at
+        table.sort(list, function(lhs, rhs)
+            return lhs.at > rhs.at
         end)
     end
     return list
@@ -1138,8 +1138,8 @@ local function StatsRefresh()
             list[#list + 1] = { name = name, p = p }
         end
     end
-    table.sort(list, function(a, b)
-        return (a.p.last or 0) > (b.p.last or 0)
+    table.sort(list, function(lhs, rhs)
+        return (lhs.p.last or 0) > (rhs.p.last or 0)
     end)
     for i, e in ipairs(list) do
         local region = statRows[i]

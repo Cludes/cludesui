@@ -86,11 +86,11 @@ local function Collect()
             end
         end
     end
-    table.sort(entries, function(a, b)
-        if a.order ~= b.order then
-            return a.order < b.order
+    table.sort(entries, function(lhs, rhs)
+        if lhs.order ~= rhs.order then
+            return lhs.order < rhs.order
         end
-        return a.id < b.id
+        return lhs.id < rhs.id
     end)
     return entries
 end

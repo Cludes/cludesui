@@ -585,11 +585,11 @@ ShowKeystonePopup = function()
             }
         end
     end
-    table.sort(partyEntries, function(a, b)
-        if a.lvl ~= b.lvl then
-            return a.lvl > b.lvl
+    table.sort(partyEntries, function(lhs, rhs)
+        if lhs.lvl ~= rhs.lvl then
+            return lhs.lvl > rhs.lvl
         end
-        return a.name < b.name
+        return lhs.name < rhs.name
     end)
 
     -- Collect guild keys (exclude ourselves)
@@ -608,11 +608,11 @@ ShowKeystonePopup = function()
             }
         end
     end
-    table.sort(guildEntries, function(a, b)
-        if a.lvl ~= b.lvl then
-            return a.lvl > b.lvl
+    table.sort(guildEntries, function(lhs, rhs)
+        if lhs.lvl ~= rhs.lvl then
+            return lhs.lvl > rhs.lvl
         end
-        return a.name < b.name
+        return lhs.name < rhs.name
     end)
 
     -- One class-color pass for the whole rebuild, and only when some entry

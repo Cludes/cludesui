@@ -284,11 +284,11 @@ function mod.RefreshReadyWindow()
             }
         end
     end
-    table.sort(lines, function(a, b)
-        if a.bad ~= b.bad then
-            return a.bad
+    table.sort(lines, function(lhs, rhs)
+        if lhs.bad ~= rhs.bad then
+            return lhs.bad
         end
-        return a.text < b.text
+        return lhs.text < rhs.text
     end)
     if #silent > 0 then
         table.sort(silent)

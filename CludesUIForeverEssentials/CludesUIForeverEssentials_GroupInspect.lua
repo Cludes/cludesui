@@ -249,8 +249,8 @@ Refresh = function()
         end
         entries[#entries + 1] = { unit = unitToken, text = textValue, ilvl = c and c.ilvl or -1 }
     end
-    table.sort(entries, function(a, b)
-        return a.ilvl > b.ilvl
+    table.sort(entries, function(lhs, rhs)
+        return lhs.ilvl > rhs.ilvl
     end)
     for index, l in ipairs(entries) do
         local region = Row(index)

@@ -1451,8 +1451,8 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
                 ungrouped[#ungrouped + 1] = { btn = button, order = sequence }
             end
         end
-        table.sort(ungrouped, function(a, b)
-            return a.order < b.order
+        table.sort(ungrouped, function(lhs, rhs)
+            return lhs.order < rhs.order
         end)
         for index, record in ipairs(ungrouped) do
             local button = record.btn

@@ -184,8 +184,8 @@ local function ShowGoldTooltip(anchor)
         charList[#charList + 1] = { id = charID, data = payload }
         totalGold = totalGold + payload.money
     end
-    table.sort(charList, function(a, b)
-        return (a.data.name or a.id) < (b.data.name or b.id)
+    table.sort(charList, function(lhs, rhs)
+        return (lhs.data.name or lhs.id) < (rhs.data.name or rhs.id)
     end)
 
     local warbandGold = ledger.warband and ledger.warband.money
@@ -429,8 +429,8 @@ local function UpdateCurrencyDisplays(footerWidth)
                 tracked[#tracked + 1] = { currencyTypesID = cID, order = sequence }
             end
         end
-        table.sort(tracked, function(a, b)
-            return a.order < b.order
+        table.sort(tracked, function(lhs, rhs)
+            return lhs.order < rhs.order
         end)
     end
 

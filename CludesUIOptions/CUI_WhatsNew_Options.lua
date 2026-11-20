@@ -72,8 +72,8 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         for i, e in ipairs(entries) do
             position[i] = { e, i }
         end
-        table.sort(position, function(a, b)
-            local am, bm = a[1].module or "", b[1].module or ""
+        table.sort(position, function(lhs, rhs)
+            local am, bm = lhs[1].module or "", rhs[1].module or ""
             if am ~= bm then
                 -- Localization always closes the list.
                 if am == "Localization" or bm == "Localization" then
@@ -81,7 +81,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
                 end
                 return am < bm
             end
-            return a[2] < b[2]
+            return lhs[2] < rhs[2]
         end)
         local result = {}
         for i = 1, #position do

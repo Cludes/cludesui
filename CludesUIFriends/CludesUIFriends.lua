@@ -2941,11 +2941,11 @@ local function SkinFriendsFrame()
                 return
             end
 
-            table.sort(matchList, function(a, b)
-                if a.online ~= b.online then
-                    return a.online
+            table.sort(matchList, function(lhs, rhs)
+                if lhs.online ~= rhs.online then
+                    return lhs.online
                 end
-                return a.sortName < b.sortName
+                return lhs.sortName < rhs.sortName
             end)
 
             local scrollBar = FriendsListFrame and FriendsListFrame.ScrollBox
