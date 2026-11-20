@@ -151,7 +151,7 @@ local _previewExpiry = 0 -- stand-in lockout expiry for the preview countdown
 -- Preview runs exactly as long as the owning options page is on screen. Reading
 -- IsVisible() beats latching a boolean: a page that was hidden, destroyed or
 -- replaced by a rebuild ends the preview on its own, in any order.
-local function _previewActive()
+local function _previewShown()
     return _previewOwner ~= nil and _previewOwner:IsVisible() and true or false
 end
 local _satedWasPresent = false -- rising-edge baseline so only a FRESH debuff arms the buff window
@@ -752,7 +752,7 @@ local function ShouldShow()
     -- VISIBILITY: everything above them (size, shape, border, zoom, position)
     -- stays configurable with both switched off, so a blank page would just read
     -- as broken. Which state gets previewed still follows Show Ready, in PollSated.
-    if _previewActive() then
+    if _previewShown() then
         return true
     end
     -- Show Sated / Show Ready are independent: which one gates visibility depends
@@ -846,7 +846,7 @@ local function PollSated()
             _syncDesat()
             return
         end
-        if _previewActive() then
+        if _previewShown() then
             -- Same reasoning; the stand-in sets its own countdown text. This is
             -- the fallback state for the preview: Show Ready above picks the ready
             -- label when it is on, everything else previews the lockout, including
@@ -891,7 +891,7 @@ function UpdateVisibility()
         -- lockout does. In the ready state there is nothing to count down and a
         -- fresh debuff arrives on UNIT_AURA, so polling there would just burn
         -- aura lookups for the whole encounter.
-        if _satedActive or (_previewActive() and not RP("showReady")) then
+        if _satedActive or (_previewShown() and not RP("showReady")) then
             if not _ticker then
                 _ticker = C_Timer.NewTicker(0.5, PollSated)
             end
@@ -910,7 +910,7 @@ function UpdateVisibility()
         end
         -- Preview just ended: drop the stand-in swipe and countdown text so no
         -- later path can surface them as if they were real lockout data.
-        if _previewExpiry ~= 0 and not _previewActive() then
+        if _previewExpiry ~= 0 and not _previewShown() then
             _previewExpiry = 0
             if cdFrame then
                 cdFrame:Clear()
@@ -1133,7 +1133,7 @@ end
 -------------------------------------------------------------------------------
 --  Apply (settings entry point)
 -------------------------------------------------------------------------------
-local function Apply()
+local function ApplyLust()
     if not saved then
         return
     end
@@ -1155,7 +1155,7 @@ local function Apply()
     end
     UpdateVisibility()
 end
-_G._CUI_Bloodlust_Apply = Apply
+_G._CUI_Bloodlust_Apply = ApplyLust
 
 -------------------------------------------------------------------------------
 --  Unlock mode registration (mirrors the BattleRes icon)
@@ -1199,7 +1199,7 @@ local function RegisterUnlock()
                 end
                 local PPb = CludesUI and CludesUI.PP
                 profile.iconSize = math.max(16, PPb and PPb.Snap(wid) or math.floor(wid + 0.5))
-                Apply()
+                ApplyLust()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("CUI_Bloodlust")
                 end
@@ -1211,7 +1211,7 @@ local function RegisterUnlock()
                 end
                 local PPb = CludesUI and CludesUI.PP
                 profile.iconSize = math.max(16, PPb and PPb.Snap(hgt) or math.floor(hgt + 0.5))
-                Apply()
+                ApplyLust()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("CUI_Bloodlust")
                 end
@@ -1259,7 +1259,7 @@ boot:SetScript("OnEvent", function(self)
             return saved
         end
         CreateBloodlustFrame()
-        Apply()
+        ApplyLust()
         RegisterUnlock()
     end
     init()

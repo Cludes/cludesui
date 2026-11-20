@@ -23,7 +23,7 @@ local function KickCfg()
     return profile and profile.kickTracker
 end
 
-local function Get(key, fallback)
+local function KickGet(key, fallback)
     local c = KickCfg()
     local val = c and c[key]
     if val == nil then
@@ -34,7 +34,7 @@ end
 -- A row getter over Get: the key's value, or the default given.
 local function GetRow(key, default)
     return function()
-        return Get(key, default)
+        return KickGet(key, default)
     end
 end
 
@@ -69,20 +69,20 @@ local function SetRow(key)
 end
 
 local function On()
-    return Get("enabled", false) == true
+    return KickGet("enabled", false) == true
 end
 local function Off()
     return not On()
 end
 local function PlatesOn()
-    return On() and Get("showPlates", true) ~= false
+    return On() and KickGet("showPlates", true) ~= false
 end
 local function PlatesOff()
     return not PlatesOn()
 end
 local REQ_PLATES = "Show on Nameplates"
 local function BarsOn()
-    return On() and Get("showBars", true) ~= false
+    return On() and KickGet("showBars", true) ~= false
 end
 local function BarsHidden()
     return not BarsOn()
@@ -186,8 +186,8 @@ local function SetPosition(val)
     if not c then
         return
     end
-    local old = Get("anchor", "LEFT")
-    if SIDE_X[val] and Get("offsetX", -4) == SIDE_X[old] and Get("offsetY", 0) == 0 then
+    local old = KickGet("anchor", "LEFT")
+    if SIDE_X[val] and KickGet("offsetX", -4) == SIDE_X[old] and KickGet("offsetY", 0) == 0 then
         c.offsetX = SIDE_X[val]
     end
     Set("anchor", val)
@@ -285,7 +285,7 @@ local function AnnounceDefault()
 end
 
 local function EditAnnounceText()
-    local current = Get("announceText", nil)
+    local current = KickGet("announceText", nil)
     if type(current) ~= "string" or current == "" then
         current = AnnounceDefault()
     end
@@ -403,7 +403,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         values = MarkerValues(),
         order = MARKER_ORDER,
         getValue = function()
-            return tostring(Get("focusMarker", 0))
+            return tostring(KickGet("focusMarker", 0))
         end,
         setValue = function(val)
             Set("focusMarker", tonumber(val) or 0)
@@ -431,7 +431,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                 CludesUI.L("Nameplate Kick Icons use this to auto-assign kicks when a mob is first marked."),
                 function()
                     return not PlatesOn()
-                        or (tonumber(Get("focusMarker", 0)) or 0) ~= 0
+                        or (tonumber(KickGet("focusMarker", 0)) or 0) ~= 0
                         or (CludesUIDB and CludesUIDB.dismissedKickMarkerWarning) == true
                 end,
                 {
@@ -557,7 +557,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             disabled = PlatesOff,
             disabledTooltip = REQ_PLATES,
             getValue = function()
-                return Get("showTimer", true) == true
+                return KickGet("showTimer", true) == true
             end,
             setValue = function(val)
                 Set("showTimer", val and true or false)
@@ -590,7 +590,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                 fxRgn:GetFrameLevel() + 2,
                 ICON_EFFECTS,
                 function(key)
-                    return Get(key, key ~= "desaturate") == true
+                    return KickGet(key, key ~= "desaturate") == true
                 end,
                 function(key, val)
                     Set(key, val and true or false)
@@ -610,7 +610,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                 tip = "Timer Settings",
                 title = "Cooldown Timer",
                 disabled = function()
-                    return PlatesOff() or Get("showTimer", true) ~= true
+                    return PlatesOff() or KickGet("showTimer", true) ~= true
                 end,
                 disabledTooltip = "Show Cooldown Timer",
                 rows = {
@@ -660,7 +660,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             disabled = PlatesOff,
             disabledTooltip = REQ_PLATES,
             getValue = function()
-                return Get("aboveOverlap", true) ~= false
+                return KickGet("aboveOverlap", true) ~= false
             end,
             setValue = function(val)
                 Set("aboveOverlap", val and true or false)
@@ -739,7 +739,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             values = { DOWN = "Down", UP = "Up" },
             order = { "DOWN", "UP" },
             getValue = function()
-                return Get("barGrowUp", false) == true and "UP" or "DOWN"
+                return KickGet("barGrowUp", false) == true and "UP" or "DOWN"
             end,
             setValue = function(val)
                 Set("barGrowUp", val == "UP")
@@ -784,14 +784,14 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        return Get("barBgMode", "class") ~= "custom" and 1 or 0.3
+                        return KickGet("barBgMode", "class") ~= "custom" and 1 or 0.3
                     end,
                 },
                 {
                     tooltip = "Custom Color",
                     hasAlpha = true,
                     getValue = function()
-                        local col = Get("barBgColor", nil)
+                        local col = KickGet("barBgColor", nil)
                         return (col and col.r) or 0,
                             (col and col.g) or 0,
                             (col and col.b) or 0,
@@ -806,7 +806,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         Set("barBgMode", "custom")
                     end,
                     onClick = function(self)
-                        if Get("barBgMode", "class") ~= "custom" then
+                        if KickGet("barBgMode", "class") ~= "custom" then
                             Set("barBgMode", "custom")
                             CludesUI:RefreshPage()
                             return
@@ -816,7 +816,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         end
                     end,
                     refreshAlpha = function()
-                        return Get("barBgMode", "class") == "custom" and 1 or 0.3
+                        return KickGet("barBgMode", "class") == "custom" and 1 or 0.3
                     end,
                 },
             },
@@ -853,7 +853,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             disabled = BarsHidden,
             disabledTooltip = REQ_BARS,
             getValue = function()
-                return Get("barIncludeSelf", true) == true
+                return KickGet("barIncludeSelf", true) == true
             end,
             setValue = function(val)
                 Set("barIncludeSelf", val and true or false)
@@ -875,7 +875,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                 elRgn:GetFrameLevel() + 2,
                 BAR_ELEMENTS,
                 function(key)
-                    return Get(key, true) == true
+                    return KickGet(key, true) == true
                 end,
                 function(key, val)
                     Set(key, val and true or false)
@@ -901,7 +901,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         type = "toggle",
                         label = "Icon on Right",
                         get = function()
-                            return Get("barIconOnRight", false) == true
+                            return KickGet("barIconOnRight", false) == true
                         end,
                         set = function(val)
                             Set("barIconOnRight", val and true or false)

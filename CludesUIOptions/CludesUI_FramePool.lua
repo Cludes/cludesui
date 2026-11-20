@@ -287,7 +287,7 @@ end
 --  Graveyard, probes, replay
 -------------------------------------------------------------------------------
 local graveyard
-local function Graveyard()
+local function SpareParent()
     if not graveyard then
         graveyard = _G.CreateFrame("Frame")
         graveyard:Hide()
@@ -318,7 +318,7 @@ local function Bury(o)
         )
         return
     end
-    getmetatable(o).__index.SetParent(o, Graveyard())
+    getmetatable(o).__index.SetParent(o, SpareParent())
 end
 
 -- The hidden frame that holds the probe objects and the inert animation target.
@@ -2862,7 +2862,7 @@ function Pool._DevVerifyReset()
             end
         end
         a:Hide()
-        a:SetParent(Graveyard())
+        a:SetParent(SpareParent())
     end
 
     local function VerifyRegion(kindName, method, entries)
@@ -2889,7 +2889,7 @@ function Pool._DevVerifyReset()
         Pool._ResetForTest(b)
         finish()
         a:Hide()
-        a:SetParent(Graveyard())
+        a:SetParent(SpareParent())
     end
 
     local function VerifyAnimations()
@@ -2948,7 +2948,7 @@ function Pool._DevVerifyReset()
             end
         end
         a:Hide()
-        a:SetParent(Graveyard())
+        a:SetParent(SpareParent())
     end
     -- the same for an animation's smoothing: its group must be retired
     do

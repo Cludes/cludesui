@@ -82,7 +82,7 @@ local function _previewActive()
     return _previewOwner ~= nil and _previewOwner:IsVisible() and true or false
 end
 
-local function IsTextMode()
+local function TextMode()
     local profile = P()
     return (profile and profile.displayMode) == "text"
 end
@@ -613,7 +613,7 @@ local function _showPreviewCharges()
         end
     end
     local timeLabel = FormatTime(_previewExpiry - GetTime())
-    if IsTextMode() then
+    if TextMode() then
         _setTextDisplay("2", timeLabel, false)
         return
     end
@@ -626,7 +626,7 @@ local function PollCharges()
     if not widget then
         return
     end
-    local textMode = IsTextMode()
+    local textMode = TextMode()
     local details = C_Spell and C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(BREZ_SPELL_ID)
     if not details or not details.maxCharges then
         if _previewActive() then
@@ -670,7 +670,7 @@ end
 
 -- Ticker only runs while the icon is actually visible.
 local _ticker
-local function UpdateVisibility()
+local function SyncResShown()
     if not widget then
         return
     end
@@ -697,7 +697,7 @@ local function UpdateVisibility()
             if cdFrame then
                 cdFrame:Clear()
             end
-            if IsTextMode() then
+            if TextMode() then
                 _setTextDisplay("", "", false)
             else
                 _setCount("", false)
@@ -706,19 +706,19 @@ local function UpdateVisibility()
         end
     end
 end
-_G._CUI_BattleRes_UpdateVisibility = UpdateVisibility
+_G._CUI_BattleRes_UpdateVisibility = SyncResShown
 
 -- The options page hands us its frame on build; _previewActive() takes it from there.
 function _G._CUI_BattleRes_SetPreviewOwner(frame)
     _previewOwner = frame
     _previewExpiry = 0 -- every visit starts a fresh stand-in countdown
-    UpdateVisibility()
+    SyncResShown()
 end
 
 -------------------------------------------------------------------------------
 --  Frame creation
 -------------------------------------------------------------------------------
-local function CreateBrezFrame()
+local function BuildResFrame()
     if widget then
         return widget
     end
@@ -775,9 +775,9 @@ local function ApplyResTracker()
         return
     end
     if not widget then
-        CreateBrezFrame()
+        BuildResFrame()
     end
-    if IsTextMode() then
+    if TextMode() then
         -- Text display: hide every icon element (duration/count texts are
         -- children of the cooldown frame, so they hide with it).
         iconTexture:Hide()
@@ -803,7 +803,7 @@ local function ApplyResTracker()
     end
     ApplyPosition()
     _syncEventRegistration()
-    UpdateVisibility()
+    SyncResShown()
 end
 _G._CUI_BattleRes_Apply = ApplyResTracker
 
@@ -828,7 +828,7 @@ end
 local _eventFrame
 local function OnEvent(_, evt)
     mod.ApplyInstanceEvent(_state, evt)
-    UpdateVisibility()
+    SyncResShown()
 end
 
 -- Events are registered only while the icon can ever show (enabled and
@@ -891,7 +891,7 @@ local function RegisterUnlock()
             end,
             getFrame = function()
                 if not widget then
-                    CreateBrezFrame()
+                    BuildResFrame()
                 end
                 return widget
             end,
@@ -901,7 +901,7 @@ local function RegisterUnlock()
                     -- Text display: the frame is sized to the measured text
                     -- box by ApplyText, so report that instead of iconSize.
                     if not widget then
-                        CreateBrezFrame()
+                        BuildResFrame()
                     end
                     local wid, hgt = widget:GetWidth(), widget:GetHeight()
                     if wid and wid > 0 then
@@ -986,7 +986,7 @@ boot:SetScript("OnEvent", function(self)
     _G._CUI_BattleRes_DB = function()
         return addonName.db
     end
-    CreateBrezFrame()
+    BuildResFrame()
     -- Apply registers events (gated on enabled + visibility) and refreshes
     -- encounter/keystone state as part of _syncEventRegistration
     ApplyResTracker()

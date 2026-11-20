@@ -124,7 +124,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     -- those labels, and the labels of the rows it stands in for, are the
     -- entry's search text. barKey (optional) is the bar a hit opens, in place
     -- of the bar being built.
-    local function RowSearch(labelText, words, barId)
+    local function AddRowSearch(labelText, words, barId)
         if not CludesUI._RegisterSearchEntry then
             return
         end
@@ -216,7 +216,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "actionbars")
 
     -- Stock mode (Blizzard Style or Classic WoW UI): the shared gate.
-    local function BlizzStyleOn()
+    local function BlizzLookOn()
         return CludesUI.BlizzStyle.Get("actionbars")
     end
 
@@ -265,7 +265,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             sizeCfg = {
                 type = "dropdown",
                 text = "Border Size",
-                disabled = BlizzStyleOn,
+                disabled = BlizzLookOn,
                 disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
                 requireState = "disabled",
                 values = mod.BORDER_THICKNESS_LABELS,
@@ -307,7 +307,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         else
             sizeCfg = CludesUI.BorderPxSliderCfg({
                 text = "Border Size",
-                disabled = BlizzStyleOn,
+                disabled = BlizzLookOn,
                 disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
                 requireState = "disabled",
                 -- The step the buttons render with (ResolveBorderThickness's regular
@@ -353,7 +353,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 type = "dropdown",
                 text = "Border Style",
                 disabled = function()
-                    return BlizzStyleOn() or HasCustomShape()
+                    return BlizzLookOn() or HasCustomShape()
                 end,
                 disabledTooltip = function()
                     if HasCustomShape() then
@@ -421,7 +421,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             if btnTex ~= "" and btnTex ~= "solid" then
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                     addonKey = "actionbars",
-                    disabled = BlizzStyleOn,
+                    disabled = BlizzLookOn,
                     disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
                     requireState = "disabled",
                     getTex = function()
@@ -468,7 +468,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             -- The offsets/shifts the buttons render with when none is set: the
             -- step's registry defaults (looked up as before), scaled to an exact
             -- size when one is set, as ApplyButtonBorders draws them.
-            local function ButtonBorderDefaults()
+            local function BtnBorderDefaults()
                 local texture = SGet("borderTexture") or "solid"
                 local th = SGet("borderThickness") or "thin"
                 local step, px = mod.ResolveBorderThickness(SB())
@@ -490,12 +490,12 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                             if value then
                                 return value
                             end
-                            local _, _, dsx = ButtonBorderDefaults()
+                            local _, _, dsx = BtnBorderDefaults()
                             return dsx
                         end,
                         set = function(value)
                             -- The shift shown by default stores nil (follow the style again).
-                            local _, _, dsx = ButtonBorderDefaults()
+                            local _, _, dsx = BtnBorderDefaults()
                             if value == math.floor(dsx + 0.5) then
                                 value = nil
                             end
@@ -516,11 +516,11 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                             if value then
                                 return value
                             end
-                            local _, _, _, dsy = ButtonBorderDefaults()
+                            local _, _, _, dsy = BtnBorderDefaults()
                             return dsy
                         end,
                         set = function(value)
-                            local _, _, _, dsy = ButtonBorderDefaults()
+                            local _, _, _, dsy = BtnBorderDefaults()
                             if value == math.floor(dsy + 0.5) then
                                 value = nil
                             end
@@ -551,12 +551,12 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                         label = "Border Above Effects",
                         tooltip = "Draws this bar's button borders over proc glows, the assisted highlight and the cooldown swipe.",
                         disabled = function()
-                            return BlizzStyleOn()
+                            return BlizzLookOn()
                                 or HasCustomShape()
                                 or (SGet("borderBehind") and true or false)
                         end,
                         disabledTooltip = function()
-                            if BlizzStyleOn() then
+                            if BlizzLookOn() then
                                 return CludesUI.DisabledTooltip(
                                     CludesUI.BlizzStyle.Label("actionbars"),
                                     "disabled"
@@ -781,7 +781,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         CludesUI.BlizzStyle.Gate("actionbars", {
             type = "dropdown",
             text = "Custom Button Shape",
-            disabled = BlizzStyleOn,
+            disabled = BlizzLookOn,
             disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
             requireState = "disabled",
             values = SHAPE_VALUES,
@@ -847,7 +847,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             min = 0,
             max = 10,
             step = 0.5,
-            disabled = BlizzStyleOn,
+            disabled = BlizzLookOn,
             disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
             requireState = "disabled",
             getValue = function()
@@ -926,7 +926,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             min = 0,
             max = 100,
             step = 1,
-            disabled = BlizzStyleOn,
+            disabled = BlizzLookOn,
             disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
             requireState = "disabled",
             getValue = function()
@@ -991,8 +991,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     -- Inline swatch: icon background color (left). Dimmed while a stock style is on (no slot background exists) or at 0 opacity.
     do
         local region = slotBgRow._leftRegion
-        local function SbgOff()
-            if BlizzStyleOn() then
+        local function SlotBgOff()
+            if BlizzLookOn() then
                 return true
             end
             local value = ABAR.db.profile.slotBgOpacity
@@ -1017,10 +1017,10 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         )
         Pix.Point(sbgSwatch, "RIGHT", region._control, "LEFT", -8, 0)
         region._lastInline = sbgSwatch
-        sbgSwatch:SetAlpha(SbgOff() and 0.15 or 1)
+        sbgSwatch:SetAlpha(SlotBgOff() and 0.15 or 1)
         local sbgOrigClick = sbgSwatch:GetScript("OnClick")
         sbgSwatch:SetScript("OnClick", function(self, ...)
-            if SbgOff() then
+            if SlotBgOff() then
                 return
             end
             if sbgOrigClick then
@@ -1028,8 +1028,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             end
         end)
         sbgSwatch:SetScript("OnEnter", function(self)
-            if SbgOff() then
-                if BlizzStyleOn() then
+            if SlotBgOff() then
+                if BlizzLookOn() then
                     CludesUI.ShowWidgetTooltip(
                         self,
                         CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled")
@@ -1043,7 +1043,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             CludesUI.HideWidgetTooltip()
         end)
         CludesUI.RegisterWidgetRefresh(function()
-            sbgSwatch:SetAlpha(SbgOff() and 0.15 or 1)
+            sbgSwatch:SetAlpha(SlotBgOff() and 0.15 or 1)
             sbgUpdateSwatch()
         end)
     end
@@ -1384,7 +1384,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     -- The offsets/shifts the background border renders with when none is
                     -- set: its registry defaults (looked up as before), scaled to an exact
                     -- size when one is set, as ApplyBackgroundForBar draws them.
-                    local function BgBorderDefaults()
+                    local function BackBorderDefaults()
                         local texture = SVal("bgBorderTexture", "solid")
                         local thickness = SVal("bgBorderThickness", "thin")
                         local record = mod.BORDER_THICKNESS[SVal("bgBorderThickness", "none")]
@@ -1408,12 +1408,12 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                                     if value ~= nil then
                                         return value
                                     end
-                                    local _, _, defaultX = BgBorderDefaults()
+                                    local _, _, defaultX = BackBorderDefaults()
                                     return defaultX
                                 end,
                                 set = function(value)
                                     -- The shift shown by default stores nil (follow the style again).
-                                    local _, _, defaultX = BgBorderDefaults()
+                                    local _, _, defaultX = BackBorderDefaults()
                                     if value == math.floor(defaultX + 0.5) then
                                         value = nil
                                     end
@@ -1434,11 +1434,11 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                                     if value ~= nil then
                                         return value
                                     end
-                                    local _, _, _, defaultY = BgBorderDefaults()
+                                    local _, _, _, defaultY = BackBorderDefaults()
                                     return defaultY
                                 end,
                                 set = function(value)
-                                    local _, _, _, defaultY = BgBorderDefaults()
+                                    local _, _, _, defaultY = BackBorderDefaults()
                                     if value == math.floor(defaultY + 0.5) then
                                         value = nil
                                     end
@@ -1646,9 +1646,9 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             end),
         }
         local capsRow, bgRgn
-        RowSearch("Bar Background", { "Enable Bar Background" })
+        AddRowSearch("Bar Background", { "Enable Bar Background" })
         if CAPS.forever then
-            RowSearch(
+            AddRowSearch(
                 "Bar Frame",
                 { "Show the frame and dividers behind the bar's buttons.", "Show Bar Background" }
             )
@@ -1721,7 +1721,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     cursorY = cursorY - height
 
     -- Desaturate on Cooldown | Alpha on Cooldown
-    RowSearch("Alpha on Cooldown", {
+    AddRowSearch("Alpha on Cooldown", {
         "Dims action button icons to this opacity while on cooldown (100 = off), using the same detection as Desaturate on Cooldown.",
         "Alpha when on CD",
     })
@@ -1761,7 +1761,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     cursorY = cursorY - height
 
     -- Out of Range Coloring | Cooldown Swipe Opacity
-    RowSearch("Cooldown Swipe Opacity", {
+    AddRowSearch("Cooldown Swipe Opacity", {
         "Opacity of the cooldown swipe (the dark radial sweep); use the swatch to set its colour.",
         "CD Swipe Opacity",
     })
@@ -1839,16 +1839,16 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         Pix.Point(rangeSwatch, "RIGHT", leftRegion._control, "LEFT", -12, 0)
         leftRegion._lastInline = rangeSwatch
 
-        local function RangeDisabled()
+        local function RangeColorOff()
             return not SGet("outOfRangeColoring")
         end
 
         CludesUI.RegisterWidgetRefresh(function()
-            local off = RangeDisabled()
+            local off = RangeColorOff()
             rangeSwatch:SetAlpha(off and 0.3 or 1)
             rangeUpdateSwatch()
         end)
-        rangeSwatch:SetAlpha(RangeDisabled() and 0.3 or 1)
+        rangeSwatch:SetAlpha(RangeColorOff() and 0.3 or 1)
 
         local rangeBlock = CludesUI.NewSwatchBlocker(rangeSwatch)
         rangeBlock:SetScript("OnEnter", function()
@@ -1858,9 +1858,9 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             CludesUI.HideWidgetTooltip()
         end)
         CludesUI.RegisterWidgetRefresh(function()
-            rangeBlock:SetShown(RangeDisabled())
+            rangeBlock:SetShown(RangeColorOff())
         end)
-        rangeBlock:SetShown(RangeDisabled())
+        rangeBlock:SetShown(RangeColorOff())
     end
     -- Inline swatch for Cooldown Swipe Opacity (right): colour-only (hasAlpha=false), since alpha lives on the slider.
     do
@@ -1915,7 +1915,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     -- saved false, not nil, as WoW Forever defaults it on; the Blizzard and
     -- Classic styles draw their own, so it locks under them).
     do
-        RowSearch("Item Information", {
+        AddRowSearch("Item Information", {
             "Item details shown on action buttons.",
             "Item Rank",
             "Equipped Item Color",
@@ -1956,7 +1956,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 key = "equipped",
                 label = "Equipped Item Color",
                 tooltip = "Equipped items get a rarity color border.",
-                lockedFn = BlizzStyleOn,
+                lockedFn = BlizzLookOn,
                 lockedTooltip = function()
                     return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled")
                 end,
@@ -2377,8 +2377,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 words[#words + 1] = "Modifier Paging"
                 words[#words + 1] = "Target Paging"
                 words[#words + 1] = "Modifier/Target Paging"
-                RowSearch("Paging Options", words, "MainBar")
-                RowSearch("Paging Arrows", {
+                AddRowSearch("Paging Options", words, "MainBar")
+                AddRowSearch("Paging Arrows", {
                     "When Action Bar 1's paging arrows show.",
                     "Never",
                     "Always",
@@ -2679,11 +2679,11 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     -- Charge Numbers | Charge Text Size. Charge Numbers: which counts this
     -- bar's buttons show, each its own key (true hides that count; unset,
     -- the default, shows it).
-    RowSearch(
+    AddRowSearch(
         "Charge Numbers",
         { "Which counts show on this bar's buttons.", "Charges", "Stacks", "Item Count" }
     )
-    RowSearch("Charge Text Size", { "Charges Text Size" })
+    AddRowSearch("Charge Text Size", { "Charges Text Size" })
     chargesRow, height = W:DualRow(
         hostFrame,
         cursorY,
@@ -2745,7 +2745,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     end
 
     -- Keybind Text | Keybind Text Size
-    RowSearch("Keybind Text", { "Hide Keybind Text" })
+    AddRowSearch("Keybind Text", { "Hide Keybind Text" })
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Keybind Text",
@@ -2802,7 +2802,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     end
 
     -- Macro Text | Macro Text Size
-    RowSearch("Macro Text", { "Hide Macro Text" })
+    AddRowSearch("Macro Text", { "Hide Macro Text" })
     local macroRow
     macroRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",

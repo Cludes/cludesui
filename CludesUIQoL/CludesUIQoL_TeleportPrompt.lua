@@ -471,7 +471,7 @@ local eventFrame = CreateFrame("Frame")
 -- disable, so a disabled reminder costs nothing on roster/zone/combat events.
 -- PLAYER_REGEN_ENABLED outlives a mid-combat disable while a combat-blocked
 -- hide or secure attribute write is pending; its handler re-syncs afterwards.
-local function SyncEvents()
+local function SyncPromptEvents()
     if PromptOn() then
         eventFrame:RegisterEvent("LFG_LIST_JOINED_GROUP")
         eventFrame:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
@@ -518,12 +518,12 @@ ApplyTeleportPrompt = function()
         end
         pendingBuild = nil
         BuildPopup()
-        SyncEvents()
+        SyncPromptEvents()
     else
         pendingBuild = nil
         ClearPending()
         HidePrompt()
-        SyncEvents()
+        SyncPromptEvents()
     end
 end
 _G._CUI_ApplyTeleportPrompt = ApplyTeleportPrompt
@@ -534,7 +534,7 @@ eventFrame:SetScript("OnEvent", function(self, evt, arg1, arg2)
         -- Login is always out of combat: safe to create the secure button now.
         if PromptOn() then
             BuildPopup()
-            SyncEvents()
+            SyncPromptEvents()
             SeedShownFromListing()
         end
         return
@@ -567,7 +567,7 @@ eventFrame:SetScript("OnEvent", function(self, evt, arg1, arg2)
             end
         end
         -- Drop any event that only stayed registered for the flushes above.
-        SyncEvents()
+        SyncPromptEvents()
         return
     elseif evt == "PLAYER_REGEN_DISABLED" then
         HidePrompt() -- combat-start guard (teleports cannot be cast in combat)

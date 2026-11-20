@@ -506,7 +506,7 @@ local function FindWheelTarget()
     end
 end
 
-local function UpdateWheelOverlay()
+local function SyncWheelOverlay()
     if WheelArm.shown == 0 or not (IsEnabled() and (IsShiftKeyDown() or IsControlKeyDown())) then
         wheelTarget, wheelTargetName = nil, nil
         wheelCatcher:Hide()
@@ -536,7 +536,7 @@ do
             return
         end
         acc = 0
-        UpdateWheelOverlay()
+        SyncWheelOverlay()
     end)
 end
 
@@ -567,7 +567,7 @@ function WheelArm.Sync()
     else
         watcher:UnregisterEvent("MODIFIER_STATE_CHANGED")
     end
-    UpdateWheelOverlay()
+    SyncWheelOverlay()
 end
 
 function WheelArm.Note(delta)
@@ -1841,7 +1841,7 @@ watcher:SetScript("OnEvent", function(self, evt, arg1)
             end
         end
     elseif evt == "MODIFIER_STATE_CHANGED" then
-        UpdateWheelOverlay()
+        SyncWheelOverlay()
     end
 end)
 
@@ -1856,7 +1856,7 @@ end
 -- installed, but every hook body bails first-line while disabled.
 function CludesUI._ShutdownShifter()
     watcher:UnregisterEvent("MODIFIER_STATE_CHANGED")
-    UpdateWheelOverlay()
+    SyncWheelOverlay()
 end
 
 -- Exposed for the options reset button (positions AND zoom)

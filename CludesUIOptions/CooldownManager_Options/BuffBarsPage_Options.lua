@@ -542,7 +542,7 @@ local function InitBuffBarsPage(
 
     -- Pool of unlock placeholders, one per bar (module-scope for cross-page access)
     local _tbbPlaceholders = {}
-    local function UpdateTBBPlaceholder()
+    local function SyncBuffBarPlaceholder()
         -- Same hard gate as the popout: never show (or set placeholder mode) with the
         -- panel closed or another page in front. HideTBBPlaceholder is declared below.
         if not TBBPreviewAllowed() then
@@ -606,7 +606,7 @@ local function InitBuffBarsPage(
         CloseBuffBarPopout()
     end
     mod.HideTBBPlaceholders = HideTBBPlaceholder
-    mod.ShowTBBPlaceholders = UpdateTBBPlaceholder
+    mod.ShowTBBPlaceholders = SyncBuffBarPlaceholder
     CludesUI:RegisterOnHide(HideTBBPlaceholder)
     -- Re-show placeholders when the panel re-opens on Tracking Bars. Exiting unlock mode
     -- to the SAME page skips SelectPage (currentPage == restorePage), so the page-restore
@@ -615,7 +615,7 @@ local function InitBuffBarsPage(
         local am = CludesUI:GetActiveModule()
         local ap = CludesUI:GetActivePage()
         if am == "CludesUICooldownManager" and ap == PAGE_BUFF_BARS then
-            UpdateTBBPlaceholder()
+            SyncBuffBarPlaceholder()
             SyncBuffBarPopout()
         end
     end
@@ -1826,7 +1826,7 @@ local function InitBuffBarsPage(
                 Refresh()
                 mod.BuildTrackedBuffBars()
                 SyncBuffBarPopout()
-                UpdateTBBPlaceholder()
+                SyncBuffBarPlaceholder()
             end)
         end
         -- The spec-change watcher outside uses this build's refresh, so a spec swap
@@ -3485,7 +3485,7 @@ local function InitBuffBarsPage(
             local function GlobalKey()
                 return mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupId)
             end
-            local function GlobalEntry()
+            local function GlobalGroupEntry()
                 local gk = GlobalKey()
                 return gk and mod.TBBGlobalGroup and mod.TBBGlobalGroup(gk) or nil
             end
@@ -3596,17 +3596,17 @@ local function InitBuffBarsPage(
                 text = "Shift Elements If No Bars",
                 tooltip = "When the current spec has no bars in this group, keeps elements anchored to the group in place and shifts them up or down by one bar height (tune with the cog's Extra Y Offset) to cover its empty slot.",
                 disabled = function()
-                    return GlobalEntry() == nil
+                    return GlobalGroupEntry() == nil
                 end,
                 disabledTooltip = "Global Group",
                 values = { None = "None", Up = "Up", Down = "Down" },
                 order = { "None", "Up", "Down" },
                 getValue = function()
-                    local e = GlobalEntry()
+                    local e = GlobalGroupEntry()
                     return (e and e.shiftNoBar) or "None"
                 end,
                 setValue = function(value)
-                    local e = GlobalEntry()
+                    local e = GlobalGroupEntry()
                     if e then
                         e.shiftNoBar = (value == "Up" or value == "Down") and value or nil
                         mod.BuildTrackedBuffBars()
@@ -3627,11 +3627,11 @@ local function InitBuffBarsPage(
                             max = 50,
                             step = 1,
                             get = function()
-                                local e = GlobalEntry()
+                                local e = GlobalGroupEntry()
                                 return (e and e.shiftNoBarExtraY) or 0
                             end,
                             set = function(value)
-                                local e = GlobalEntry()
+                                local e = GlobalGroupEntry()
                                 if not e then
                                     return
                                 end
@@ -3653,7 +3653,7 @@ local function InitBuffBarsPage(
 
             -- The bar frames exist before the placeholders show.
             mod.BuildTrackedBuffBars()
-            UpdateTBBPlaceholder()
+            SyncBuffBarPlaceholder()
             SyncBuffBarPopout()
             return math.abs(cursorY)
         end
@@ -5300,7 +5300,7 @@ local function InitBuffBarsPage(
 
         -- Ensure bar frames exist before showing placeholders
         mod.BuildTrackedBuffBars()
-        UpdateTBBPlaceholder()
+        SyncBuffBarPlaceholder()
         SyncBuffBarPopout()
         return math.abs(cursorY)
     end

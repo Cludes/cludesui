@@ -521,7 +521,7 @@ local function DataBarKit(hostFrame)
         end
         -- After a write: lay the bar out and refresh the page, or rebuild it
         -- when that write turned the border on (its sync links appear).
-        local function Done()
+        local function FinishToggle()
             mod.ApplyDataBarLayout(barId)
             if turnedOn then
                 turnedOn = false
@@ -574,7 +574,7 @@ local function DataBarKit(hostFrame)
                     if defTh then
                         cfg.borderThickness = defTh
                     end
-                    Done()
+                    FinishToggle()
                 end),
             },
             CludesUI.BorderPxSliderCfg({
@@ -601,7 +601,7 @@ local function DataBarKit(hostFrame)
                 setPx = function(val)
                     Wr().borderThicknessPx = val
                 end,
-                apply = Done,
+                apply = FinishToggle,
             })
         )
         cursorY = cursorY - height
@@ -641,7 +641,7 @@ local function DataBarKit(hostFrame)
                 setY = function(val)
                     Wr().borderTextureOffsetY = val
                 end,
-                apply = Done,
+                apply = FinishToggle,
             })
             _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
             cursorY = cursorY - height
@@ -652,7 +652,7 @@ local function DataBarKit(hostFrame)
             -- Border Options cog (Shift X / Shift Y / Show Behind): textured
             -- styles only, hidden (not dimmed) for Solid and under Blizzard bars.
             local lRgn = brdRow._leftRegion
-            local function ShownDefaults()
+            local function BorderDefaults()
                 local cfg = V()
                 local step, px = mod.ResolveBorderThickness(cfg)
                 return ShownBorderDefaults(cfg.borderTexture or "solid", cfg.borderThickness or "thin", step, px)
@@ -664,7 +664,7 @@ local function DataBarKit(hostFrame)
                     val = nil
                 end
                 Wr()[key] = val
-                Done()
+                FinishToggle()
             end
             local cogBtn = CludesUI.BuildInlineCog(lRgn, {
                 anchorTo = lRgn._control,
@@ -683,11 +683,11 @@ local function DataBarKit(hostFrame)
                             if val ~= nil then
                                 return val
                             end
-                            local _, _, dsx = ShownDefaults()
+                            local _, _, dsx = BorderDefaults()
                             return dsx
                         end,
                         set = function(val)
-                            local _, _, dsx = ShownDefaults()
+                            local _, _, dsx = BorderDefaults()
                             SetShift("borderTextureShiftX", val, dsx)
                         end,
                     },
@@ -702,11 +702,11 @@ local function DataBarKit(hostFrame)
                             if val ~= nil then
                                 return val
                             end
-                            local _, _, _, dsy = ShownDefaults()
+                            local _, _, _, dsy = BorderDefaults()
                             return dsy
                         end,
                         set = function(val)
-                            local _, _, _, dsy = ShownDefaults()
+                            local _, _, _, dsy = BorderDefaults()
                             SetShift("borderTextureShiftY", val, dsy)
                         end,
                     },
@@ -718,7 +718,7 @@ local function DataBarKit(hostFrame)
                         end,
                         set = function(val)
                             Wr().borderBehind = val and true or false
-                            Done()
+                            FinishToggle()
                         end,
                     },
                 },
@@ -745,7 +745,7 @@ local function DataBarKit(hostFrame)
                     end,
                     setValue = function(red, green, blue, a)
                         Wr().borderColor = { r = red, g = green, b = blue, a = a or 1 }
-                        Done()
+                        FinishToggle()
                     end,
                 },
             }, {

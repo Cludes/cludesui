@@ -3147,7 +3147,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
 
-        local function Update()
+        local function PaintThresholdNote()
             local red, green, blue = CludesUI.GetAccentColor()
             THR_NOTE_IDLE[1], THR_NOTE_IDLE[2], THR_NOTE_IDLE[3] = red, green, blue
             THR_NOTE_IDLE[4] = CludesUI.HexColor(red, green, blue):sub(5)
@@ -3174,12 +3174,12 @@ CludesUI.AtOptionsLogin(function()
             badgeTex:Show()
             BorderTint(c)
         end
-        anchorBtn:HookScript("OnShow", Update)
-        CludesUI.RegisterWidgetRefresh(Update)
+        anchorBtn:HookScript("OnShow", PaintThresholdNote)
+        CludesUI.RegisterWidgetRefresh(PaintThresholdNote)
         -- Keyed by the badge: the page pool forgets it when it resets the badge.
-        CludesUI.RegAccent({ type = "callback", obj = badgeTex, fn = Update })
-        Update()
-        return Update
+        CludesUI.RegAccent({ type = "callback", obj = badgeTex, fn = PaintThresholdNote })
+        PaintThresholdNote()
+        return PaintThresholdNote
     end
 
     -- Spec and talent watcher for the Threshold & Hash Lines editors. A spec or

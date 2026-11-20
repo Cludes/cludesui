@@ -32,7 +32,7 @@ CludesUI.AtOptionsLogin(function()
     -- retired key names on first touch, and reading the table directly here
     -- would skip that whenever the panel is the first to see a profile the user
     -- has just switched to. The db local is still kept for the reset handler.
-    local function DB()
+    local function DrawDB()
         db = db or _G._CUQD_AceDB
         if mod.Profile then
             return mod.Profile()
@@ -41,7 +41,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function ProfileGet(key)
-        local prof = DB()
+        local prof = DrawDB()
         if prof then
             return prof[key]
         end
@@ -49,7 +49,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function ProfilePut(key, val)
-        local prof = DB()
+        local prof = DrawDB()
         if not prof then
             return
         end
@@ -108,7 +108,7 @@ CludesUI.AtOptionsLogin(function()
     -- A palette as stored, for getters: nothing created or compacted (getters
     -- must not write; the panel's read trace runs them).
     local function PaletteRead(index)
-        local prof = DB()
+        local prof = DrawDB()
         local stored = prof and prof.palettes
         if type(stored) ~= "table" then
             return nil
@@ -124,7 +124,7 @@ CludesUI.AtOptionsLogin(function()
     -- tables (never through EnsurePalette, which compacts and allocates):
     -- this runs on every Refresh to notice presence flipping.
     HasAnyNest = function()
-        local prof = DB()
+        local prof = DrawDB()
         local stored = prof and prof.palettes
         if type(stored) ~= "table" then
             return false
@@ -868,7 +868,7 @@ CludesUI.AtOptionsLogin(function()
         -- WoW Forever: names that have lower ranks, and each spell's top rank.
         local ranked, tops = {}, {}
 
-        local function Add(spellId, nm, glyph, rankText)
+        local function AddSpell(spellId, nm, glyph, rankText)
             local key = rankText and ("#" .. tostring(spellId)) or spellId
             if type(spellId) ~= "number" or seen[key] or not nm then
                 return
@@ -936,11 +936,11 @@ CludesUI.AtOptionsLogin(function()
                             -- spell's row.
                             if CludesUI.IS_FOREVER and C_SpellBook.IsSpellBookItemLowRank(i, bank) then
                                 if rankText then
-                                    Add(details.actionID, details.name, details.iconID, rankText)
+                                    AddSpell(details.actionID, details.name, details.iconID, rankText)
                                     ranked[details.name] = true
                                 end
                             else
-                                Add(details.actionID, details.name, details.iconID)
+                                AddSpell(details.actionID, details.name, details.iconID)
                                 if rankText then
                                     tops[#tops + 1] =
                                         { details.actionID, details.name, details.iconID, rankText }
@@ -954,7 +954,7 @@ CludesUI.AtOptionsLogin(function()
                                 local spellId, _, isKnown, spellName = GetFlyoutSlotInfo(details.actionID, sv)
                                 if isKnown then
                                     -- One icon only: the second return would land in rankText.
-                                    Add(spellId, spellName, (C_Spell.GetSpellTexture(spellId)))
+                                    AddSpell(spellId, spellName, (C_Spell.GetSpellTexture(spellId)))
                                 end
                             end
                         end
@@ -965,7 +965,7 @@ CludesUI.AtOptionsLogin(function()
         -- The top rank of a spell with lower ones gets its own rank row too.
         for _, t in ipairs(tops) do
             if ranked[t[2]] then
-                Add(t[1], t[2], t[3], t[4])
+                AddSpell(t[1], t[2], t[3], t[4])
             end
         end
         return result
@@ -1336,26 +1336,26 @@ CludesUI.AtOptionsLogin(function()
     -- menu row it would read as the one marker this row places.
     local function TargetMarkerEntries()
         local result = {}
-        local Add = MarkerAdder(result)
-        Add("cycleraidtarget", nil, "Cycle Target Markers")
+        local AddSpell = MarkerAdder(result)
+        AddSpell("cycleraidtarget", nil, "Cycle Target Markers")
         for i = 1, 8 do
-            Add("raidtarget", i)
+            AddSpell("raidtarget", i)
         end
-        Add("raidtarget", 0)
+        AddSpell("raidtarget", 0)
         -- The all-units counterpart of the /tm 0 row above; the world markers
         -- need none because their 0 row already clears them all.
-        Add("clearmarkers")
+        AddSpell("clearmarkers")
         return result
     end
 
     local function WorldMarkerEntries()
         local result = {}
-        local Add = MarkerAdder(result)
-        Add("cycleworldmarker", nil, "Cycle World Markers")
+        local AddSpell = MarkerAdder(result)
+        AddSpell("cycleworldmarker", nil, "Cycle World Markers")
         for i = 1, 8 do
-            Add("worldmarker", i)
+            AddSpell("worldmarker", i)
         end
-        Add("worldmarker", 0)
+        AddSpell("worldmarker", 0)
         return result
     end
 
@@ -2427,7 +2427,7 @@ CludesUI.AtOptionsLogin(function()
     -- report for the self-refilling version and why it is not this.
     local function QuestItemSlots()
         local result, seen, spill = {}, {}, 0
-        local function Add(itemId)
+        local function AddSpell(itemId)
             if not itemId or seen[itemId] then
                 return
             end
@@ -2448,7 +2448,7 @@ CludesUI.AtOptionsLogin(function()
                 if itemId and not seen[itemId] then
                     local classID = select(6, C_Item.GetItemInfoInstant(itemId))
                     if classID == Enum.ItemClass.Questitem then
-                        Add(itemId)
+                        AddSpell(itemId)
                     end
                 end
             end
@@ -2466,7 +2466,7 @@ CludesUI.AtOptionsLogin(function()
                 -- and hands back the itemID first.
                 local itemLink = GetQuestLogSpecialItemInfo(i)
                 if itemLink then
-                    Add((C_Item.GetItemInfoInstant(itemLink)))
+                    AddSpell((C_Item.GetItemInfoInstant(itemLink)))
                 end
             end
         end
@@ -2647,7 +2647,7 @@ CludesUI.AtOptionsLogin(function()
     -- index, entries that opened the deleted palette are removed, and each
     -- shifted palette's keybind moves with it.
     local function DeletePalette(index)
-        local profile = DB()
+        local profile = DrawDB()
         local total = MenuCount()
         if not profile or total <= 1 or index < 1 or index > total then
             return

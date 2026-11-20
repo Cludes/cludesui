@@ -288,10 +288,10 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             end
         end
     end
-    local function UpdatePushedPreview(f)
+    local function PaintPushedPreview(f)
         UpdateInteractionPreview(f, "pushed")
     end
-    local function UpdateHighlightPreview(f)
+    local function PaintHighlightPreview(f)
         UpdateInteractionPreview(f, "highlight")
     end
 
@@ -500,8 +500,8 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             ABAR:ApplyCooldownEdge()
             ABAR:ApplyMiscTextures()
             ABAR:RefreshProcGlows()
-            UpdatePushedPreview(_pushedPreview)
-            UpdateHighlightPreview(_highlightPreview)
+            PaintPushedPreview(_pushedPreview)
+            PaintHighlightPreview(_highlightPreview)
             UpdateProcGlowPreview(_procGlowPreview)
         end
 
@@ -590,7 +590,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             setValue = function(val)
                 profile.pushedTextureType = val
                 ABAR:ApplyPushedTextures()
-                UpdatePushedPreview(_pushedPreview)
+                PaintPushedPreview(_pushedPreview)
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -610,7 +610,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             setValue = function(val)
                 profile.highlightTextureType = val
                 ABAR:ApplyHighlightTextures()
-                UpdateHighlightPreview(_highlightPreview)
+                PaintHighlightPreview(_highlightPreview)
                 CludesUI:RefreshPage()
             end,
         })
@@ -622,9 +622,9 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                 _pushedPreview._icon:SetTexture(GetNthActionButtonIcon(1))
                 _pushedPreview._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             end
-            UpdatePushedPreview(_pushedPreview)
+            PaintPushedPreview(_pushedPreview)
             CludesUI.RegisterWidgetRefresh(function()
-                UpdatePushedPreview(_pushedPreview)
+                PaintPushedPreview(_pushedPreview)
             end)
 
             CludesUI.BuildInlineCog(leftRegion, {
@@ -649,7 +649,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                         set = function(val)
                             profile.pushedBorderSize = val
                             ABAR:ApplyPushedTextures()
-                            UpdatePushedPreview(_pushedPreview)
+                            PaintPushedPreview(_pushedPreview)
                         end,
                     },
                     {
@@ -673,9 +673,9 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                 _highlightPreview._icon:SetTexture(GetNthActionButtonIcon(2))
                 _highlightPreview._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             end
-            UpdateHighlightPreview(_highlightPreview)
+            PaintHighlightPreview(_highlightPreview)
             CludesUI.RegisterWidgetRefresh(function()
-                UpdateHighlightPreview(_highlightPreview)
+                PaintHighlightPreview(_highlightPreview)
             end)
 
             CludesUI.BuildInlineCog(rightRegion, {
@@ -700,7 +700,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                         set = function(val)
                             profile.highlightBorderSize = val
                             ABAR:ApplyHighlightTextures()
-                            UpdateHighlightPreview(_highlightPreview)
+                            PaintHighlightPreview(_highlightPreview)
                         end,
                     },
                     {

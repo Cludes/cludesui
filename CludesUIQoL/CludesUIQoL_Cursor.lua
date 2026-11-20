@@ -461,7 +461,7 @@ end
 local gcdRoot, gcdRing
 local gcdAttached = true -- follows cursor by default
 
-local function GCD_DB()
+local function GcdCfg()
     local profile = ECL.db and ECL.db.profile
     return profile and profile.gcd or {}
 end
@@ -497,7 +497,7 @@ local function CreateGCDCircle()
     if gcdRoot then
         return
     end
-    local gcdCfg = GCD_DB()
+    local gcdCfg = GcdCfg()
     local ringRadius = (gcdCfg.radius or 30)
     local region, newG, b = ParseHex(gcdCfg.hex)
     local a = (gcdCfg.alpha or 100) / 100
@@ -521,7 +521,7 @@ local function CreateGCDCircle()
         if unitToken ~= "player" then
             return
         end
-        local g2 = GCD_DB()
+        local g2 = GcdCfg()
         if not g2.enabled then
             return
         end
@@ -561,7 +561,7 @@ local function CreateGCDCircle()
 end
 
 local function PaintGcdCircle()
-    local gcdCfg = GCD_DB()
+    local gcdCfg = GcdCfg()
     local enabled = gcdCfg.enabled
     if not enabled then
         if gcdRoot then
@@ -716,7 +716,7 @@ UpdateVisibility = function()
 
     -- GCD circle instance-only / combat-only check
     if gcdRoot then
-        local gcdCfg = GCD_DB()
+        local gcdCfg = GcdCfg()
         if gcdCfg.enabled then
             if
                 (gcdCfg.instanceOnly and not InRealInstancedContent())
@@ -1202,7 +1202,7 @@ local function RegisterUnlockElements()
     -- this registration on every Attach flip, so the mover follows the toggle
     -- inside an open unlock session too.
     local function GCDDetached()
-        local g2 = GCD_DB()
+        local g2 = GcdCfg()
         return g2.enabled and g2.attached == false
     end
     local function CastDetached()
@@ -1226,7 +1226,7 @@ local function RegisterUnlockElements()
                 return gcdRoot
             end,
             getSize = function()
-                local g2 = GCD_DB()
+                local g2 = GcdCfg()
                 local region = g2.radius or 30
                 return region * 2, region * 2
             end,
@@ -1268,7 +1268,7 @@ local function RegisterUnlockElements()
                 end
             end,
             loadPos = function()
-                local g2 = GCD_DB()
+                local g2 = GcdCfg()
                 return g2.pos
             end,
             clearPos = function()
@@ -1367,7 +1367,7 @@ _G._CUCL_ApplyGCDPosition = function()
     if anchored and gcdRoot:GetLeft() then
         return
     end
-    local gcdCfg = GCD_DB()
+    local gcdCfg = GcdCfg()
     local place = gcdCfg.pos
     if place and place.point then
         local pixel, py = place.x or 0, place.y or 0

@@ -317,7 +317,7 @@ CludesUI.AtOptionsLogin(function()
                 local cursorY = yOffset
                 local height, _
 
-                local function ResetAndRefreshBagLayout()
+                local function ResetBagLayout()
                     local bags = _G.CUI_Bags
                     if not bags then
                         return
@@ -335,7 +335,7 @@ CludesUI.AtOptionsLogin(function()
                 local relayoutQueued = false
                 local function Relayout()
                     relayoutQueued = false
-                    ResetAndRefreshBagLayout()
+                    ResetBagLayout()
                     local bank = _G.CUI_BankFrame
                     if bank and bank:IsVisible() and bank.RefreshBank then
                         bank:RefreshBank()
@@ -516,7 +516,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             saved.profile.bagAutoSize = val
-                            ResetAndRefreshBagLayout()
+                            ResetBagLayout()
                         end,
                     }
                 end
@@ -1436,7 +1436,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function(val)
                         saved.profile.bagArmoryGroupBySlot = val and true or false
-                        ResetAndRefreshBagLayout()
+                        ResetBagLayout()
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -1476,7 +1476,7 @@ CludesUI.AtOptionsLogin(function()
                                 end,
                                 set = function(val)
                                     saved.profile.bagCompactArmorySlotGroups = val and true or false
-                                    ResetAndRefreshBagLayout()
+                                    ResetBagLayout()
                                 end,
                             },
                         },

@@ -15,11 +15,11 @@ local EDM = mod.EDM
 -- Blizzard Style paints its own window colours and bar tracks, so those
 -- controls go inert under it; the Classic WoW UI box is tinted by the
 -- configured colours and its rows keep the plain track, so they stay live.
-local function DMBlizzArt()
+local function MetersBlizzArt()
     return CludesUI.BlizzStyle.Active("damagemeters") == "blizzard"
 end
 local function DMBlizzGate(rowConf, keepRow)
-    if DMBlizzArt() then
+    if MetersBlizzArt() then
         return CludesUI.BlizzStyle.Gate("damagemeters", rowConf, keepRow)
     end
     return rowConf
@@ -508,7 +508,7 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.RegisterWidgetRefresh(function()
                 bgSwatchRefresh()
             end)
-            if DMBlizzArt() then
+            if MetersBlizzArt() then
                 CludesUI.BlizzStyle.BlockInline("damagemeters", bgSwatch)
             end
         end
@@ -1763,7 +1763,7 @@ CludesUI.AtOptionsLogin(function()
                 barBgSwatchRefresh()
                 barBgClassRefresh()
                 -- Blizzard Style rows use the stock shadow track: both swatches inert.
-                if DMBlizzArt() then
+                if MetersBlizzArt() then
                     barBgSwatch:SetAlpha(0.3)
                     barBgClassSwatch:SetAlpha(0.3)
                     return
@@ -1774,7 +1774,7 @@ CludesUI.AtOptionsLogin(function()
             end
             CludesUI.RegisterWidgetRefresh(refreshBarBg)
             refreshBarBg()
-            if DMBlizzArt() then
+            if MetersBlizzArt() then
                 CludesUI.BlizzStyle.BlockInline("damagemeters", barBgSwatch)
                 CludesUI.BlizzStyle.BlockInline("damagemeters", barBgClassSwatch)
             end
@@ -2999,7 +2999,7 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
             -- Blizzard Style paints the stock window art (colour unused); the
             -- classic box is tinted by this colour.
-            if DMBlizzArt() then
+            if MetersBlizzArt() then
                 CludesUI.BlizzStyle.BlockInline("damagemeters", colorSwatch)
             end
             local block = CludesUI.NewSwatchBlocker(colorSwatch)

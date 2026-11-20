@@ -1206,7 +1206,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         return false
                     end
 
-                    local function ApplyVisual()
+                    local function PaintCell()
                         local dis = CellDisabled()
                         local on = entry.getVal()
                         if on then
@@ -1224,7 +1224,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             boxFrame:SetAlpha(1)
                         end
                     end
-                    ApplyVisual()
+                    PaintCell()
 
                     button:SetScript("OnClick", function(_, mouseButton)
                         if CellDisabled() then
@@ -1246,7 +1246,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             return
                         end
                         entry.setVal(not entry.getVal())
-                        ApplyVisual()
+                        PaintCell()
                         GridChanged()
                     end)
                     button:SetScript("OnEnter", function()
@@ -1263,11 +1263,11 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         CludesUI.ShowWidgetTooltip(cell, CludesUI.L("Right-Click to set custom alert text."))
                     end)
                     button:SetScript("OnLeave", function()
-                        ApplyVisual()
+                        PaintCell()
                         CludesUI.HideWidgetTooltip()
                     end)
 
-                    CludesUI.RegisterWidgetRefresh(ApplyVisual)
+                    CludesUI.RegisterWidgetRefresh(PaintCell)
 
                     if entry.custom then
                         local delBtn = CreateFrame("Button", nil, cell)

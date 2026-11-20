@@ -453,7 +453,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     -- lockstep) lists them all through opts.getStores, with the store opts.getStore
     -- returns first. The marker replaces the shared value, so it has to travel exactly as
     -- far as that value does, or the mirrored elements keep obeying what it took over.
-    local function OvStores()
+    local function OverrideStores()
         if options.getStores then
             return options.getStores() or {}
         end
@@ -518,7 +518,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         -- key any more and the element would be stuck on it; a real applied override
         -- simply writes it back on its next apply.
         if not OvSessionActive() and storage.visibilityOverride ~= nil then
-            local stores = OvStores()
+            local stores = OverrideStores()
             for idx = 1, #stores do
                 stores[idx].visibilityOverride = nil
             end
@@ -534,7 +534,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     -- one no map holds yet -- and never for a marker a real override still owns, which
     -- simply gets written back on its next apply. WriteSel's clear stays as the belt.
     if not CludesUI._prebuilding and not (CludesUI.SpecOverrides_EditSessionActive()) then
-        local stores, healed = OvStores(), false
+        local stores, healed = OverrideStores(), false
         for idx = 1, #stores do
             local st = stores[idx]
             if
@@ -717,7 +717,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         -- underneath can be lost or swept into the override by accident. Picking the
         -- state the override already holds clears it again.
         if (keyName == "never" or keyName == "always" or keyName == "mouseover") and OvSessionActive() then
-            local stores = OvStores()
+            local stores = OverrideStores()
             local storage = stores[1]
             if not storage then
                 return
@@ -950,7 +950,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             -- edits the shared side, exactly as every other slot does under an override.
             local ovIn = CludesUI.VisOverrideValue(cfg) and CludesUI.VisOverrideNormalize(val)
             if ovIn then
-                local stores = OvStores()
+                local stores = OverrideStores()
                 for idx = 1, #stores do
                     stores[idx].visibilityOverride = ovIn
                 end

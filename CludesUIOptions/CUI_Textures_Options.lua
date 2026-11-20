@@ -508,7 +508,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
         local profile = saved()
         return profile and profile[unit]
     end
-    local function UFReload()
+    local function ReloadUnitFrames()
         if mod.ReloadFrames then
             mod.ReloadFrames()
         end
@@ -529,7 +529,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
                     return
                 end
                 ut.healthBarTexture = value
-                UFReload()
+                ReloadUnitFrames()
             end,
         }
     end
@@ -550,7 +550,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
                 end
                 ut.absorbOpacity = (value == "clean") and 30 or 90
                 ut.showPlayerAbsorb = value
-                UFReload()
+                ReloadUnitFrames()
             end,
         }
     end
@@ -571,7 +571,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
                 end
                 ut.healAbsorbOpacity = (value == "clean") and 50 or 75
                 ut.healAbsorbStyle = value
-                UFReload()
+                ReloadUnitFrames()
             end,
         }
     end
@@ -601,7 +601,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
                 return
             end
             profile.castBarTexture = value
-            UFReload()
+            ReloadUnitFrames()
         end,
     }
     if CludesUI.BlizzStyle.Active("unitframes") == "blizzard" then
@@ -625,7 +625,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
             return environ
                 and environ.TexBgRowCfg(unit and function()
                     return unitTable(unit)
-                end, UFReload)
+                end, ReloadUnitFrames)
         end
     end
     AddTexBgCog(ptRow._leftRegion, TexRowCfg("player"))

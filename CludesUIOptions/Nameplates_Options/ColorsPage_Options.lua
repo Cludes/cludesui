@@ -128,7 +128,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
     end
     -- Every edit applies at once. The color picker writes on every frame of a
     -- drag, so while it is open the refresh waits for it to close.
-    local function Apply()
+    local function ApplyColors()
         if CludesUI._colorPickerOpen then
             CludesUI._deferredDriftChecks = CludesUI._deferredDriftChecks or {}
             CludesUI._deferredDriftChecks[mod.DebuffColors_RequestRefresh] = true
@@ -144,7 +144,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
         if region then
             CludesUI._NotifySettingWrite(region, snap)
         end
-        Apply()
+        ApplyColors()
     end
     local function Rebuild()
         CludesUI:RefreshPage(true)
@@ -464,7 +464,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
         end,
         setValue = function(val)
             mod.db.profile.debuffColorsPlayerOnly = val
-            Apply()
+            ApplyColors()
         end,
         disabled = Off,
         disabledTooltip = "Debuff Coloring",
@@ -491,7 +491,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
                     end,
                     set = function(val)
                         mod.db.profile.debuffColorsBorderExtra = val
-                        Apply()
+                        ApplyColors()
                     end,
                 },
             },
@@ -518,7 +518,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
             end,
             setValue = function(val)
                 mod.db.profile.debuffColorsTexture = val
-                Apply()
+                ApplyColors()
             end,
         }, CludesUI.BlankRowCfg())
         cursorY = cursorY - height

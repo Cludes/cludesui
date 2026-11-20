@@ -227,7 +227,7 @@ local _optsCache = nil
 -- (Character key used only locally in PLAYER_LOGIN to index per-character storage;
 --  not retained as a module variable since _dbCache is set directly.)
 
-local function DB()
+local function CalcDB()
     if _dbCache then
         return _dbCache
     end
@@ -268,7 +268,7 @@ Calc.GetOptsDB = function()
     return Opts()
 end
 Calc.GetCalcDB = function()
-    return DB()
+    return CalcDB()
 end -- exposed for Options reset helper
 
 -- Slot IDs grouped by category, used for filter settings.
@@ -555,7 +555,7 @@ function Calc:GetItemUpgradeCost(entry)
         return nil
     end
 
-    local saved = DB()
+    local saved = CalcDB()
 
     local _, expectedMax = self:GetItemUpgradeRange(entry.link, trackKey, rankNum, topRank, entry.ilvl)
     expectedMax = expectedMax or math.max(trackData.ranks[#trackData.ranks], entry.ilvl)
@@ -628,7 +628,7 @@ function Calc:ScanEquippedAtUpgrader(onDone)
         end
         return
     end
-    local saved = DB()
+    local saved = CalcDB()
     if not self:IsUpgraderOpen() then
         if onDone then
             onDone(false)
@@ -708,7 +708,7 @@ function Calc:ScanEquippedAtUpgrader(onDone)
 end
 
 function Calc:ClearCache()
-    local saved = DB()
+    local saved = CalcDB()
     saved.cache = { slots = {}, ts = 0 }
     saved.calibrated = false
 end
@@ -740,7 +740,7 @@ function Calc:RescanSlot(slotId, onDone)
     -- Guard the async window with _scanning so a second upgrade event within
     -- 0.3 s can't launch a concurrent rescan and overwrite the wrong slot.
     Calc._scanning = true
-    local saved = DB()
+    local saved = CalcDB()
     C_Timer.After(0.3, function()
         Calc._scanning = false
         if Blocked() then
@@ -1105,7 +1105,7 @@ for i = 1, 18 do
             lineList[#lineList + 1] = CUI.L("Crafted item — cannot be upgraded here")
         elseif e.trackKey then
             local trackData = Data.tracks[e.trackKey]
-            local snap = DB()
+            local snap = CalcDB()
             local scroller = snap.calibrated and snap.cache.slots[e.slotID] or nil
             -- Discard cached entry if the item in that slot has changed since the scan.
             if scroller and scroller.link and scroller.link ~= (GetInventoryItemLink("player", e.slotID) or "") then
@@ -1252,8 +1252,8 @@ for _, trackData in pairs(Data.tracks) do
 end
 
 -- Persist the current queue (slot IDs only) to the profile DB.
-local function SaveQueue()
-    local saved = DB()
+local function StoreQueue()
+    local saved = CalcDB()
     saved.queue = {}
     for i, it in ipairs(queueList) do
         saved.queue[i] = it.slotID
@@ -1262,14 +1262,14 @@ end
 
 -- Persist the current crest manual-add offsets to the profile DB.
 local function SaveCrestManualAdds()
-    local saved = DB()
+    local saved = CalcDB()
     saved.crestManualAdds = {}
     for key, val in pairs(manualCrests) do
         saved.crestManualAdds[key] = val
     end
 end
 
-local function UpdateQueueDisplay()
+local function RedrawQueue()
     local num = #queueList
     qEmptyLbl:SetText(num == 0 and CUI.L("No items queued, click tiles to add an item to queue.") or "")
     if num > 0 then
@@ -1358,8 +1358,8 @@ local function SortQueueByCrest()
     for i, it in ipairs(queueList) do
         queuedSlots[it.slotName] = i
     end
-    UpdateQueueDisplay()
-    SaveQueue()
+    RedrawQueue()
+    StoreQueue()
 end
 
 queueSortBtn:SetScript("OnClick", SortQueueByCrest)
@@ -1379,8 +1379,8 @@ ToggleTileQueue = function(record, button)
         queuedSlots[sn] = #queueList
         button.selHL:Show()
     end
-    UpdateQueueDisplay()
-    SaveQueue()
+    RedrawQueue()
+    StoreQueue()
 end
 
 qClearBtn:SetScript("OnClick", function()
@@ -1389,8 +1389,8 @@ qClearBtn:SetScript("OnClick", function()
     for _, button in ipairs(tileFrames) do
         button.selHL:Hide()
     end
-    UpdateQueueDisplay()
-    SaveQueue()
+    RedrawQueue()
+    StoreQueue()
 end)
 
 -- ── Crest section — parented to a repositionable container frame ──────────────
@@ -1548,7 +1548,7 @@ PopulateGear = function()
     -- sees a consistent view of the cache with no per-item DB reads.
     -- Link validation: skip any slot whose cached link doesn't match current gear.
     local slotCrestMap = {}
-    local dbSnap = DB()
+    local dbSnap = CalcDB()
     if dbSnap.calibrated then
         for slotId, scroller in pairs(dbSnap.cache.slots or {}) do
             local currentLink = GetInventoryItemLink("player", slotId)
@@ -1672,7 +1672,7 @@ PopulateGear = function()
     -- don't overwrite in-session queue changes the user has made.
     if not _queueLoaded then
         _queueLoaded = true
-        local savedSlots = DB().queue
+        local savedSlots = CalcDB().queue
         if savedSlots and #savedSlots > 0 then
             local slotToEntry = {}
             for _, entry in ipairs(tileEntries) do
@@ -1713,7 +1713,7 @@ PopulateGear = function()
         queuedSlots = newSet
         if pruned then
             -- At least one entry was pruned; persist the trimmed queue.
-            SaveQueue()
+            StoreQueue()
         end
     end
 
@@ -1878,7 +1878,7 @@ PopulateGear = function()
         end
     end
     local crestStr = #crestParts > 0 and table.concat(crestParts, ", ") or "None"
-    local saved = DB()
+    local saved = CalcDB()
     local accuracyTag = saved.calibrated and (" |cff20ff20" .. CUI.L("(exact)") .. "|r")
         or (" |cff888888" .. CUI.L("(est)") .. "|r")
     crestsLbl:SetText(CUI.L("Total Crests Needed") .. accuracyTag .. ": " .. CUI.L(crestStr))
@@ -1952,7 +1952,7 @@ PopulateGear = function()
     Pix.Size(queuePanel, QUEUE_W, newFrameH - CC_TOP - 10)
 
     -- Sync queue panel text to match restored/refreshed queue state.
-    UpdateQueueDisplay()
+    RedrawQueue()
 end
 
 refreshBtn:SetScript("OnClick", PopulateGear)
@@ -2038,7 +2038,7 @@ equipListener:SetScript("OnEvent", function(_, evt, slotId)
     if slotId and slotId > 0 and Calc:IsUpgraderOpen() and not Calc._scanning then
         -- Invalidate the slot's cache entry so PopulateGear won't stale-serve
         -- the old data while the rescan is in flight.
-        local saved = DB()
+        local saved = CalcDB()
         if saved.cache and saved.cache.slots then
             saved.cache.slots[slotId] = nil
         end
@@ -2075,7 +2075,7 @@ frame:SetScript("OnShow", function()
     TrySnapToCharacterFrame()
     -- Reload persisted crest manual-add offsets each time the frame opens,
     -- so that values the user set before logging out are visible immediately.
-    local dbAdds = DB().crestManualAdds
+    local dbAdds = CalcDB().crestManualAdds
     for key in pairs(manualCrests) do
         manualCrests[key] = (dbAdds and dbAdds[key]) or 0
     end

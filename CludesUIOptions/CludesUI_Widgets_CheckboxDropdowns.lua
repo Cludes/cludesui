@@ -539,7 +539,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                 local function TALocked()
                     return entry.lockedFn and entry.lockedFn() or false
                 end
-                local function TATint()
+                local function PaintApplyAll()
                     if TALocked() then
                         labelFS:SetTextColor(1, 1, 1, 0.3)
                     else
@@ -551,10 +551,10 @@ function CludesUI.BuildVisOptsCBDropdown(
                         )
                     end
                 end
-                TATint()
-                _taTints[#_taTints + 1] = TATint
+                PaintApplyAll()
+                _taTints[#_taTints + 1] = PaintApplyAll
                 row:SetScript("OnEnter", function()
-                    TATint()
+                    PaintApplyAll()
                     if TALocked() then
                         local tipText = entry.lockedTooltip
                         if tipText and CludesUI.ShowWidgetTooltip then
@@ -570,7 +570,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                 row:SetScript("OnLeave", function()
                     highlight:SetColorTexture(1, 1, 1, 0)
                     CludesUI.HideWidgetTooltip()
-                    TATint()
+                    PaintApplyAll()
                 end)
                 row:SetScript("OnClick", function()
                     if TALocked() then
@@ -1408,7 +1408,7 @@ function CludesUI.BuildVisOptsCBDropdown(
         dropdownBtn._ddMenu = dropMenu
     end
 
-    local function ApplyNormal()
+    local function PaintDropNormal()
         if PoolGen(dropdownBtn) ~= dressGen then
             return
         end
@@ -1429,7 +1429,7 @@ function CludesUI.BuildVisOptsCBDropdown(
     end)
     dropdownBtn:SetScript("OnLeave", function()
         if not (dropMenu and dropMenu:IsShown()) then
-            ApplyNormal()
+            PaintDropNormal()
         end
     end)
 
@@ -1522,7 +1522,7 @@ function CludesUI.BuildVisOptsCBDropdown(
             if dropdownBtn:IsMouseOver() then
                 PaintDropHover()
             else
-                ApplyNormal()
+                PaintDropNormal()
             end
             if onMenuClosed then
                 onMenuClosed()
@@ -2333,7 +2333,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
         dropdownBtn._ddMenu = dropMenu
     end
 
-    local function ApplyNormal()
+    local function PaintDropNormal()
         if PoolGen(dropdownBtn) ~= dressGen then
             return
         end
@@ -2352,7 +2352,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
     dropdownBtn:SetScript("OnEnter", PaintDropHover)
     dropdownBtn:SetScript("OnLeave", function()
         if not (dropMenu and dropMenu:IsShown()) then
-            ApplyNormal()
+            PaintDropNormal()
         end
     end)
 

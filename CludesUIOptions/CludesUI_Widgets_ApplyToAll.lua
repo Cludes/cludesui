@@ -680,7 +680,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         -- Size buttons to their text
         applyBtn:SetSize(80, 14) -- initial estimate, corrected below
-        local function ResizeBtn()
+        local function FitButton()
             local pw = prefixText:GetStringWidth()
             local ph = prefixText:GetStringHeight()
             if pw and pw > 0 then
@@ -714,7 +714,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local hoverGate = not CludesUI.PadCP()
         local hoverState = hoverGate and 0 or 1
 
-        local function ApplyState(s)
+        local function PaintFade(s)
             s = s * hoverState
             -- Force hidden when the parent widget is disabled
             local parentCfg = region._widgetCfg
@@ -748,15 +748,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
 
         -- Apply immediately on load (no animation)
-        ApplyState(animState)
-        ResizeBtn()
+        PaintFade(animState)
+        FitButton()
 
         -- ----------------------------------------------------------------
         --  Animate state transitions (uses a dedicated frame to avoid conflicting with the pulse OnUpdate on applyBtn)
         -- ----------------------------------------------------------------
         local animFrame = CreateFrame("Frame", nil, region)
         local animTarget = animState
-        local function AnimateTo(target)
+        local function FadeTo(target)
             if
                 target == animTarget
                 and not animFrame:GetScript("OnUpdate")
@@ -772,7 +772,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     animState = animTarget
                     self:SetScript("OnUpdate", nil)
                 end
-                ApplyState(animState)
+                PaintFade(animState)
             end)
         end
 
@@ -841,7 +841,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     hoverState = hoverTarget
                     self:SetScript("OnUpdate", nil)
                 end
-                ApplyState(animState)
+                PaintFade(animState)
             end
             local function FadeHoverTo(t)
                 hoverTarget = t
@@ -916,7 +916,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 linger.set = SetLinger
                 lingering = true
                 hoverState, hoverTarget = 1, 1
-                ApplyState(animState)
+                PaintFade(animState)
             end
         end
         CludesUI.RegisterWidgetRefresh(function()
@@ -930,7 +930,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if multiText then
                 multiText:SetTextColor(red, green, blue, 0.65)
             end
-            ResizeBtn()
+            FitButton()
 
             local synced = opts.isSynced()
             local target = synced and 0 or 1
@@ -939,7 +939,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if CludesUI._sliderDragging then
                 if target == 1 then
                     -- Value diverged mid-drag: show right away
-                    AnimateTo(1)
+                    FadeTo(1)
                 else
                     -- Values re-converged mid-drag: don't hide yet, defer to drag end
                     if not CludesUI._deferredDriftChecks then
@@ -955,8 +955,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         if multiText then
                             multiText:SetTextColor(r2, g2, b2, 0.65)
                         end
-                        ResizeBtn()
-                        AnimateTo(opts.isSynced() and 0 or 1)
+                        FitButton()
+                        FadeTo(opts.isSynced() and 0 or 1)
                     end] =
                         true
                 end
@@ -978,14 +978,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     if multiText then
                         multiText:SetTextColor(r2, g2, b2, 0.65)
                     end
-                    ResizeBtn()
-                    AnimateTo(opts.isSynced() and 0 or 1)
+                    FitButton()
+                    FadeTo(opts.isSynced() and 0 or 1)
                 end] =
                     true
                 return
             end
 
-            AnimateTo(target)
+            FadeTo(target)
         end)
 
         return applyBtn

@@ -443,7 +443,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
 
         -- Rows: checkbox (enable/disable the entry without deleting it) + spell icon + name with the spell ID in gray parentheses + delete X. Disabled entries stay stored (false) and dim the whole row; only true entries reach the engine.
         local rowList = {}
-        local function RefreshList()
+        local function RedrawList()
             if PoolGen(shade) ~= dressGen then
                 return
             end
@@ -510,7 +510,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
                             if options.onChanged then
                                 options.onChanged()
                             end
-                            RefreshList()
+                            RedrawList()
                         end)
                         row.mine:SetScript("OnEnter", function(self)
                             local tipText
@@ -582,7 +582,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
                         if options.onChanged then
                             options.onChanged()
                         end
-                        RefreshList()
+                        RedrawList()
                     end
                 end)
                 row.x:SetScript("OnClick", function()
@@ -599,7 +599,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
                     if options.onChanged then
                         options.onChanged()
                     end
-                    RefreshList()
+                    RedrawList()
                 end)
                 row:Show()
             end
@@ -634,7 +634,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
                 end,
             })
         end)
-        return RefreshList
+        return RedrawList
     end
 
     local refreshInc = MakeSpellColumn(

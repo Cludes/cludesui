@@ -653,7 +653,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         end
     end
     -- The party preview draws its own target frames (the real ones are dimmed under it).
-    local function Preview()
+    local function ShowActivePreview()
         if mod.partyPvActive() then
             mod.ShowPartyPreview()
         end
@@ -662,7 +662,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     local function PtSet(keyName, value)
         db.profile[keyName] = value
         mod.PT_Refresh()
-        Preview()
+        ShowActivePreview()
     end
     -- Row setters over PtSet: the key written with the row's value.
     local function PtSetRow(key)
@@ -674,7 +674,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     local function LaySet(keyName, value)
         db.profile[keyName] = value
         mod._PT_Layout()
-        Preview()
+        ShowActivePreview()
     end
     local DARK_TIP =
         "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors."
@@ -704,7 +704,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
             end
             db.profile.partyShowTargets = value
             mod.PT_SetEnabled(value)
-            Preview()
+            ShowActivePreview()
         end),
     }, on and {
         type = "toggle",
@@ -722,7 +722,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         setValue = function(value)
             db.profile.partyTargetIncludeSelf = value
             mod.PT_SetIncludeSelf(value)
-            Preview()
+            ShowActivePreview()
         end,
     } or BLANK())
     cursorY = cursorY - height

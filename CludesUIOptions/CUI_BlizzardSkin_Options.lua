@@ -3524,7 +3524,7 @@ CludesUI.AtOptionsLogin(function()
     local _wsExpanded = {}
     local _wsApplyAllStyle = "cui" -- set-all dropdown pick (session-only)
 
-    local function WSReloadPopup(message)
+    local function AskSkinReload(message)
         CludesUI:ShowConfirmPopup({
             title = "Reload Required",
             message = message,
@@ -4210,7 +4210,7 @@ CludesUI.AtOptionsLogin(function()
             CludesUI._WSkinRefreshStyles()
         end
         if crossed and not suppressPopup then
-            WSReloadPopup(window.reloadMsg)
+            AskSkinReload(window.reloadMsg)
         end
         return crossed
     end
@@ -4518,7 +4518,7 @@ CludesUI.AtOptionsLogin(function()
         -- Structural change (settings <-> hero takeover): force a rebuild,
         -- a plain refresh only re-reads widget values on the cached page.
         CludesUI:RefreshPage(true)
-        WSReloadPopup(
+        AskSkinReload(
             disabled
                     and "Window skins are now disabled for this profile. A UI reload is required to restore the stock Blizzard windows."
                 or "Window skins are now enabled for this profile. A UI reload is required to apply them."
@@ -4694,7 +4694,7 @@ CludesUI.AtOptionsLogin(function()
             local fired = mod.TryDispatchThirdPartySkins and mod.TryDispatchThirdPartySkins()
             CludesUI:RefreshPage()
             if not fired then
-                WSReloadPopup("Some addon skins could not apply live. A UI reload will fully apply them.")
+                AskSkinReload("Some addon skins could not apply live. A UI reload will fully apply them.")
             end
         end
 
@@ -4712,7 +4712,7 @@ CludesUI.AtOptionsLogin(function()
                     TurnedOn()
                 else
                     CludesUI:RefreshPage()
-                    WSReloadPopup("Removing third-party addon skins requires a UI reload.")
+                    AskSkinReload("Removing third-party addon skins requires a UI reload.")
                 end
             end,
         }
@@ -4745,7 +4745,7 @@ CludesUI.AtOptionsLogin(function()
                     if val then
                         TurnedOn()
                     else
-                        WSReloadPopup("Removing " .. name .. "'s skin requires a UI reload.")
+                        AskSkinReload("Removing " .. name .. "'s skin requires a UI reload.")
                     end
                 end,
             }
@@ -4850,7 +4850,7 @@ CludesUI.AtOptionsLogin(function()
             end
             CludesUI:RefreshPage()
             if crossed then
-                WSReloadPopup("Changing window skin styles requires a UI reload to fully apply.")
+                AskSkinReload("Changing window skin styles requires a UI reload to fully apply.")
             end
         end)
         cursorY = cursorY - 30 - 26

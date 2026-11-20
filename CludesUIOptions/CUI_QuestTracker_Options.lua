@@ -1059,7 +1059,7 @@ CludesUI.AtOptionsLogin(function()
             -- it on or off rebuilds the page. The progress rows always show.
             -- The custom tracker needs no switch: it never edits the watch list.
             local toolsOn = CUSTOM or TrackerGet("questWatchExperimental") == true
-            local function FilterRow(key, labelText)
+            local function FilterToggle(key, labelText)
                 return {
                     type = "toggle",
                     label = labelText,
@@ -1246,11 +1246,11 @@ CludesUI.AtOptionsLogin(function()
                     disabledTooltip = "Filter Quests",
                     title = "Filter Settings",
                     rows = {
-                        FilterRow("filterZone", "Current Zone Only"),
-                        FilterRow("filterCompleted", "Hide Completed Quests"),
-                        FilterRow("filterTrivial", "Hide Low Level Quests"),
-                        FilterRow("filterRepeatable", "Hide Daily & Weekly Quests"),
-                        FilterRow("filterHeaderToggle", "Show Toggle on Quests Header"),
+                        FilterToggle("filterZone", "Current Zone Only"),
+                        FilterToggle("filterCompleted", "Hide Completed Quests"),
+                        FilterToggle("filterTrivial", "Hide Low Level Quests"),
+                        FilterToggle("filterRepeatable", "Hide Daily & Weekly Quests"),
+                        FilterToggle("filterHeaderToggle", "Show Toggle on Quests Header"),
                     },
                 })
                 cursorY = cursorY - height

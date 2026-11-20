@@ -1418,7 +1418,7 @@ CludesUI.AtOptionsLogin(function()
                 return real
             end
         end
-        local function EnsureBuilt()
+        local function BuildRowOnce()
             if PoolGen(parentRow) ~= rowGen then
                 return nil
             end
@@ -1432,10 +1432,10 @@ CludesUI.AtOptionsLogin(function()
             return real
         end
         proxy.GetFrame = function()
-            return EnsureBuilt()
+            return BuildRowOnce()
         end
         proxy.UpdateColor = function()
-            local r = EnsureBuilt()
+            local r = BuildRowOnce()
             if r and r.UpdateColor then
                 if _colorOverrideFn then
                     local cr, cg, checkBtn = _colorOverrideFn()
@@ -1448,7 +1448,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         proxy.UpdateOverlay = function()
-            local r = EnsureBuilt()
+            local r = BuildRowOnce()
             if r and r.UpdateOverlay then
                 r.UpdateOverlay()
             end
@@ -1489,7 +1489,7 @@ CludesUI.AtOptionsLogin(function()
         end
         parentRow:HookScript("OnShow", function()
             if not real then
-                EnsureBuilt()
+                BuildRowOnce()
                 -- Listed once: page reuse can hand the same bar frame to a later build.
                 local entries = _G._CUI_ColorPreviews
                 local listed = false
@@ -1508,7 +1508,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end)
         if parentRow:IsVisible() then
-            EnsureBuilt()
+            BuildRowOnce()
         end
         local slot = colorType .. ":" .. tostring(colorKey)
         local position = _colorPreviewSlot[slot]

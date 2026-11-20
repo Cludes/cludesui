@@ -306,7 +306,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     local function BarCfg()
         return ABAR.db.profile.bars[XP]
     end
-    local function Vertical()
+    local function IsVertical()
         return BarCfg().orientation == "VERTICAL"
     end
     -- Row chrome (frames: never on the search pre-build's absorber rows).
@@ -675,7 +675,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- then true for the old Default text, then the value when the bar still
     -- draws it as it was. The bar text reads a value it does not know as
     -- Default, as the bar does.
-    local function SlotItems(stem, i, result)
+    local function SlotChoices(stem, i, result)
         local val = SlotRaw(stem, i)
         local kind, legacy, render = mod.XPTextItems(val, BarCfg(), result)
         if not kind and IsBarText(stem, i) and val ~= "none" then
@@ -685,7 +685,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     end
     local scratch = {}
     local function Shows(stem, i)
-        return SlotItems(stem, i, scratch) ~= nil
+        return SlotChoices(stem, i, scratch) ~= nil
     end
     local function FreeIndex(stem)
         for i = 1, TEXTS_PER_POS do
@@ -705,7 +705,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             s[key], s[key .. "Size"], s[key .. "XOffset"], s[key .. "YOffset"] = nil, nil, nil, nil
         end
     end
-    local function Rebuild()
+    local function RelayoutBar()
         mod.ApplyDataBarLayout(XP)
         CludesUI:RefreshPage(true)
     end
@@ -736,7 +736,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             s[to .. "XOffset"] = carry and ox or nil
             s[to .. "YOffset"] = carry and oy or nil
         end
-        Rebuild()
+        RelayoutBar()
     end
     -- Add Text Slot: a fresh text at the first free place of the position the
     -- player picked from the button's list, showing Current % with Show
@@ -753,13 +753,13 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         s[key] = "pct"
         s[key .. "Rested"] = true
         addedKey = key
-        Rebuild()
+        RelayoutBar()
         addedKey = nil
     end
     -- Room for another text: any free place, or on a vertical bar the bar
     -- text's own place (the only text a vertical bar draws).
     local function AddRoom()
-        if Vertical() then
+        if IsVertical() then
             return not Shows("Center", 1)
         end
         for _, p in ipairs(POSITIONS) do
@@ -788,7 +788,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     end
     -- Every text but the bar text draws on a horizontal bar only.
     local function EntryLocked(e)
-        return _blizzDis() or (not IsBarText(e.pos.stem, e.i) and Vertical())
+        return _blizzDis() or (not IsBarText(e.pos.stem, e.i) and IsVertical())
     end
     local function SlotLockTip()
         if _blizzDis() then
@@ -855,7 +855,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     local function WriteSlot(stem, i, val, region)
         local snap = region and CludesUI._SOAttribution(region)
         local s, key = BarCfg(), SlotKey(stem, i)
-        local _, legacy = SlotItems(stem, i, scratch)
+        local _, legacy = SlotChoices(stem, i, scratch)
         if legacy and s[key .. "Rested"] == nil then
             s[key .. "Rested"] = true
         end
@@ -871,7 +871,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     local function RestedRow(stem, i)
         local key = SlotKey(stem, i) .. "Rested"
         local function Eligible()
-            if SlotItems(stem, i, scratch) ~= "top" then
+            if SlotChoices(stem, i, scratch) ~= "top" then
                 return false
             end
             for num = 1, #scratch do
@@ -889,13 +889,13 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             end,
             disabledTooltip = "This option requires Current %, Current or Current / Max",
             get = function()
-                local _, legacy = SlotItems(stem, i, scratch)
+                local _, legacy = SlotChoices(stem, i, scratch)
                 return mod.XPTextRested(BarCfg(), key, legacy)
             end,
             set = function(val)
                 -- An old value the bar still draws as it was (the old Default
                 -- aside, whose rested part follows this) becomes its items.
-                local _, _, render = SlotItems(stem, i, scratch)
+                local _, _, render = SlotChoices(stem, i, scratch)
                 if render and render ~= "classic" then
                     BarCfg()[SlotKey(stem, i)] = table.concat(scratch, ",")
                 end
@@ -920,7 +920,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             rowList[num] = { key = it.key, label = it.label }
         end
         local function Checked(keyName)
-            if SlotItems(stem, i, own) ~= "top" then
+            if SlotChoices(stem, i, own) ~= "top" then
                 return false
             end
             for num = 1, #own do
@@ -933,7 +933,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         -- The checked items in the list's order (k turned on or off first).
         local function WriteChecked(sequence, keyName, on)
             local set = {}
-            if SlotItems(stem, i, own) == "top" then
+            if SlotChoices(stem, i, own) == "top" then
                 for num = 1, #own do
                     set[own[num]] = true
                 end
@@ -974,11 +974,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     local snap = CludesUI._SOAttribution(region)
                     ClearSlot(stem, i)
                     CludesUI._NotifySettingWrite(region, snap)
-                    Rebuild()
+                    RelayoutBar()
                 end,
                 tail = SOLO_ITEMS,
                 tailSelected = function(keyName)
-                    return SlotItems(stem, i, own) == "solo" and own[1] == keyName
+                    return SlotChoices(stem, i, own) == "solo" and own[1] == keyName
                 end,
                 onTail = function(keyName)
                     emptied = nil
@@ -986,7 +986,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     CludesUI:RefreshPage()
                 end,
                 openOrder = function()
-                    if SlotItems(stem, i, own) ~= "top" then
+                    if SlotChoices(stem, i, own) ~= "top" then
                         return nil
                     end
                     local keyList = {}
@@ -996,7 +996,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     return keyList
                 end,
                 setOrder = function(sequence)
-                    if SlotItems(stem, i, own) == "top" then
+                    if SlotChoices(stem, i, own) == "top" then
                         WriteChecked(sequence)
                     end
                 end,
@@ -1007,7 +1007,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                         local snap = CludesUI._SOAttribution(region)
                         ClearSlot(stem, i)
                         CludesUI._NotifySettingWrite(region, snap)
-                        Rebuild()
+                        RelayoutBar()
                     end
                 end,
                 summaryLabel = function()
@@ -1144,7 +1144,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         button:SetPoint("BOTTOMRIGHT", arrow, "BOTTOMRIGHT", 2, -2)
         local dropMenu
         -- The name takes the chevron's colour while lit (its own white back).
-        local function Lit(on)
+        local function PaintChevron(on)
             if on then
                 local red, green, blue = ChevronHoverColor()
                 arrow:SetVertexColor(red, green, blue)
@@ -1154,7 +1154,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 labelText:SetTextColor(CludesUI.TEXT_WHITE_R, CludesUI.TEXT_WHITE_G, CludesUI.TEXT_WHITE_B)
             end
         end
-        Lit(false)
+        PaintChevron(false)
         local function OnEnter()
             if EntryLocked(e) then
                 local tipText = SlotLockTip()
@@ -1164,14 +1164,14 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 )
                 return
             end
-            Lit(true)
+            PaintChevron(true)
             if not (dropMenu and dropMenu:IsShown()) then
                 CludesUI.ShowWidgetTooltip(button, MOVE_TIP)
             end
         end
         local function OnLeave()
             if not (dropMenu and dropMenu:IsShown()) then
-                Lit(false)
+                PaintChevron(false)
             end
             CludesUI.HideWidgetTooltip()
         end
@@ -1203,7 +1203,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     if val == e.pos.stem then
                         return nil
                     end
-                    if val ~= "Center" and Vertical() then
+                    if val ~= "Center" and IsVertical() then
                         return CludesUI.DisabledTooltip("Horizontal Orientation")
                     end
                     if not FreeIndex(val) then
@@ -1226,10 +1226,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             button:HookScript("OnEnter", OnEnter)
             button:HookScript("OnLeave", OnLeave)
             dropMenu:HookScript("OnShow", function()
-                Lit(true)
+                PaintChevron(true)
             end)
             dropMenu:HookScript("OnHide", function()
-                Lit(button:IsMouseOver())
+                PaintChevron(button:IsMouseOver())
             end)
             return dropMenu
         end
@@ -1289,7 +1289,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 proxyLbl,
                 "regular",
                 function(val)
-                    if Vertical() then
+                    if IsVertical() then
                         if val ~= "Center" then
                             return CludesUI.DisabledTooltip("Horizontal Orientation")
                         end
@@ -1358,13 +1358,13 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             if _blizzDis() then
                 return BLIZZ_DIS_TIP
             end
-            if Vertical() then
+            if IsVertical() then
                 return "Horizontal Orientation"
             end
             return "Every text position is full."
         end,
         rawTooltip = function()
-            return _blizzDis() or not Vertical()
+            return _blizzDis() or not IsVertical()
         end,
     }
     local cells = {}
@@ -1490,7 +1490,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- kind rebuilds the page for its inline control.
     local fillVals = { custom = "Custom Color", gradH = "Horizontal Gradient", gradV = "Vertical Gradient" }
     local fillOrder = { "custom", "gradH", "gradV" }
-    if not Vertical() then
+    if not IsVertical() then
         for _, c in ipairs(FLIP_CANDS) do
             if C_Texture.GetAtlasInfo(c[1]) then
                 if #fillOrder == 3 then

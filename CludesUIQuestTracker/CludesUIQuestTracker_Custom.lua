@@ -1815,7 +1815,7 @@ end
 -- when the profile has none. Until that tracker is placed (it is not yet at
 -- login) the frame sits at the fallback spot; Edit Mode's layout event, heard
 -- only while a spot is still to be taken, moves it once (SeedSoon).
-local function ApplySpot()
+local function PlaceAtSpot()
     local wait = TrackerCfg("customPos") == nil and not TakeBlizzardSpot()
     if wait ~= seedWait then
         seedWait = wait
@@ -1849,7 +1849,7 @@ local function SeedSoon()
         if not seedWait then
             return
         end
-        ApplySpot()
+        PlaceAtSpot()
         if seedWait and BlizzardPlaced() then
             seedTries = seedTries + 1
             if seedTries >= SEED_TRIES then
@@ -1968,7 +1968,7 @@ local function BuildFrame()
         SyncHover()
     end)
 
-    ApplySpot()
+    PlaceAtSpot()
     ApplyBackground()
     RefreshFonts()
 end
@@ -2148,7 +2148,7 @@ function EQT.InitCustom()
     EQT.ResizeBGToContent = Noop
     -- Profile swap, and the options page's Width and Max Height: the
     -- profile's width, height and spot.
-    EQT.SyncPosition = ApplySpot
+    EQT.SyncPosition = PlaceAtSpot
 
     for _, event in ipairs(EVENTS) do
         eventTag:RegisterEvent(event)
@@ -2217,7 +2217,7 @@ function EQT.InitCustom()
             -- Back to its starting place: where Blizzard's tracker sits.
             clearPos = function()
                 EQT.Set("customPos", nil)
-                ApplySpot()
+                PlaceAtSpot()
                 PlaceTracker()
             end,
             applyPos = PlaceTracker,
@@ -2260,6 +2260,6 @@ function EQT.SetCustomGrowUp(up)
         EQT.Set("customPos", Anchored(p))
     end
     if widget then
-        ApplySpot()
+        PlaceAtSpot()
     end
 end

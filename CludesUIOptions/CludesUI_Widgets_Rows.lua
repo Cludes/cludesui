@@ -1011,7 +1011,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     boxBg:SetColorTexture(0.12, 0.12, 0.12, 0.85)
                     CludesUI.RoundBody(boxFrame, boxBg)
                 end
-                local function RefreshInput()
+                local function SyncInputText()
                     if boxFrame:HasFocus() then
                         return
                     end
@@ -1033,7 +1033,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         rowConf.setValue(boxFrame:GetText())
                     end
                     if PoolGen(boxFrame) == gen then
-                        RefreshInput()
+                        SyncInputText()
                     end
                     committing = false
                 end
@@ -1043,15 +1043,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     local gen = PoolGen(self)
                     self:ClearFocus()
                     if PoolGen(self) == gen then
-                        RefreshInput()
+                        SyncInputText()
                     end
                 end)
-                RefreshInput()
+                SyncInputText()
                 controlFrame = boxFrame
                 controlAnchor = boxFrame
                 AddControlDisabledTooltip(boxFrame, rowConf)
                 RegisterWidgetRefresh(function()
-                    RefreshInput()
+                    SyncInputText()
                     SyncDisabled()
                 end)
                 SyncDisabled()

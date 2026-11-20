@@ -336,7 +336,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         })
         if tbl.kind ~= "level" then
             local modeKey = tbl.cm
-            local function AddSwatch(getColor, setColor, mode, opensPicker, tooltip)
+            local function AddColorSwatch(getColor, setColor, mode, opensPicker, tooltip)
                 local sw = CludesUI.BuildColorSwatch(
                     region,
                     region:GetFrameLevel() + 5,
@@ -373,7 +373,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 CludesUI.RegisterWidgetRefresh(vis)
                 vis()
             end
-            AddSwatch(function()
+            AddColorSwatch(function()
                 local color = SVal(tbl.col)
                 if color then
                     return color.r or 1, color.g or 1, color.b or 1, 1
@@ -383,7 +383,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 SWrite(tbl.col, { r = red, g = green, b = blue })
                 ReloadAndUpdate()
             end, "custom", true, "Custom Color")
-            AddSwatch(function()
+            AddColorSwatch(function()
                 local _, classTok = UnitClass("player")
                 local classColor = classTok and CludesUI.GetClassColor(classTok)
                 if classColor then
@@ -391,12 +391,12 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 end
                 return 1, 1, 1, 1
             end, function() end, "class", false, "Class Color")
-            AddSwatch(function()
+            AddColorSwatch(function()
                 local red, green, blue = CludesUI.ResolveActiveAccent()
                 return red or 1, green or 1, blue or 1, 1
             end, function() end, "accent", false, "Accent Color")
             if AllowsPower(tbl) then
-                AddSwatch(function()
+                AddColorSwatch(function()
                     local _, pToken = UnitPowerType("player")
                     local details = CludesUI.GetPowerColor(pToken or "MANA")
                     if details then

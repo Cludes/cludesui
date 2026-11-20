@@ -2331,7 +2331,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             local SH, SLEFT, SPAD = p._SLIDER_H, p._SLIDER_LEFT, p._SIDE_PAD
             local TRH = p._TOGGLE_ROW_H
             local DS = p._DD_SCALE or 1
-            local function rowY(idx)
+            local function rowTop(idx)
                 return p._ROW0 - (idx - 1) * p._ROW_STEP
             end
             local function anchorRow(labelFS, track, valBox, ry)
@@ -2360,16 +2360,16 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 end
             end
             for idx, r in ipairs(seq) do
-                anchorRow(r[1], r[2], r[3], rowY(idx))
+                anchorRow(r[1], r[2], r[3], rowTop(idx))
             end
             -- The toggle row sits directly after the data rows.
-            local toggleY = rowY(#seq + 1)
+            local toggleY = rowTop(#seq + 1)
             p._tLabel:ClearAllPoints()
             p._tLabel:SetPoint("LEFT", p, "TOPLEFT", SPAD, toggleY - TRH / 2)
             p._tToggle:ClearAllPoints()
             p._tToggle:SetPoint("RIGHT", p, "TOPRIGHT", -SPAD, toggleY - TRH / 2)
             -- Strata dropdown row: below the toggle row. Right-aligned like standard cog dropdowns; offsets divided by the control's scale so the scaled frame lands flush-right and vertically centered.
-            local strataY = rowY(#seq + 1 + (hasToggle and 1 or 0))
+            local strataY = rowTop(#seq + 1 + (hasToggle and 1 or 0))
             p._stLabel:ClearAllPoints()
             p._stLabel:SetPoint("LEFT", p, "TOPLEFT", SPAD, strataY - TRH / 2)
             if p._stDD then
@@ -2379,14 +2379,14 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             -- Rows consumed by the toggle and Strata rows (0-2).
             local extraRows = (hasToggle and 1 or 0) + (hasStrata and 1 or 0)
             -- Wrap sits in its own row, below the toggle and Strata rows when present, else after the data rows.
-            local wrapY = rowY(#seq + 1 + extraRows)
+            local wrapY = rowTop(#seq + 1 + extraRows)
             p._wrapLabel:ClearAllPoints()
             p._wrapLabel:SetPoint("LEFT", p, "TOPLEFT", SPAD, wrapY - TRH / 2)
             p._wrapToggle:ClearAllPoints()
             p._wrapToggle:SetPoint("RIGHT", p, "TOPRIGHT", -SPAD, wrapY - TRH / 2)
             -- Name Format dropdown: its own row below Wrap.
             local d2RowIndex = #seq + 1 + extraRows + (hasWrap and 1 or 0)
-            local d2Y = rowY(d2RowIndex)
+            local d2Y = rowTop(d2RowIndex)
             p._d2Label:ClearAllPoints()
             p._d2Label:SetPoint("LEFT", p, "TOPLEFT", SPAD, d2Y - TRH / 2)
             if p._d2DD then
@@ -2395,7 +2395,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end
             -- Width % is the very last row, below Wrap and Name Format; stays a slider row, so anchorRow handles label+track+box.
             if hasWidth then
-                anchorRow(p._wLabel, p._wTrack, p._wValBox, rowY(d2RowIndex + (hasDropdown2 and 1 or 0)))
+                anchorRow(p._wLabel, p._wTrack, p._wValBox, rowTop(d2RowIndex + (hasDropdown2 and 1 or 0)))
             end
         end
 

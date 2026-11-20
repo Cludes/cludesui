@@ -530,7 +530,7 @@ do
     -- palette builds no gates, and this module costs nothing while switched off.
     local PASS_BUTTONS
 
-    local function GateMouse(gate)
+    local function ArmGateMouse(gate)
         gate:SetMouseMotionEnabled(true)
         if gate.SetPassThroughButtons then
             if not PASS_BUTTONS then
@@ -591,7 +591,7 @@ do
             fgate:SetAllPoints(UIParent)
             fgate:SetFrameStrata(LIVE_STRATA)
             fgate:SetFrameLevel(5)
-            GateMouse(fgate)
+            ArmGateMouse(fgate)
             fgate:Hide()
 
             SecureHandlerSetFrameRef(fgate, "btn", button)
@@ -618,7 +618,7 @@ do
             )
             pgate:SetFrameStrata(LIVE_STRATA)
             pgate:SetFrameLevel(20)
-            GateMouse(pgate)
+            ArmGateMouse(pgate)
             pgate:Hide()
 
             SecureHandlerSetFrameRef(pgate, "btn", button)
@@ -658,7 +658,7 @@ do
                 )
                 rgate:SetFrameStrata(LIVE_STRATA)
                 rgate:SetFrameLevel(10)
-                GateMouse(rgate)
+                ArmGateMouse(rgate)
                 rgate:Hide()
 
                 SecureHandlerSetFrameRef(rgate, "btn", button)
@@ -735,7 +735,7 @@ do
             )
             g:SetFrameStrata(LIVE_STRATA)
             g:SetFrameLevel(20)
-            GateMouse(g)
+            ArmGateMouse(g)
             g:Hide()
             SecureHandlerSetFrameRef(g, "btn", button)
             SecureHandlerSetFrameRef(g, "catcher", EnsureScrollCatcher())

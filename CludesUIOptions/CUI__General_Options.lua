@@ -985,7 +985,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline color swatch on CUI Options Theme (left region)
         if not CludesUI._prebuilding then
             local rightRegion = themeRow._leftRegion -- the theme dropdown's slot
-            local function isCustomColorOff()
+            local function customColorOff()
                 return CludesUI.GetActiveTheme() ~= "Custom Color"
             end
 
@@ -1009,15 +1009,15 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(tcSwatch, "RIGHT", rightRegion._control, "LEFT", -12, 0)
             rightRegion._lastInline = tcSwatch
             CludesUI.RegisterWidgetRefresh(function()
-                local off = isCustomColorOff()
+                local off = customColorOff()
                 tcSwatch:SetAlpha(off and 0.15 or 1)
                 tcSwatch:EnableMouse(not off)
                 tcUpdateSwatch()
             end)
-            tcSwatch:SetAlpha(isCustomColorOff() and 0.15 or 1)
-            tcSwatch:EnableMouse(not isCustomColorOff())
+            tcSwatch:SetAlpha(customColorOff() and 0.15 or 1)
+            tcSwatch:EnableMouse(not customColorOff())
             tcSwatch:SetScript("OnEnter", function(self)
-                if isCustomColorOff() then
+                if customColorOff() then
                     CludesUI.ShowWidgetTooltip(
                         self,
                         "This option is only available for the Custom Color Theme"

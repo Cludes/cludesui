@@ -2715,7 +2715,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 order = timerPosOrder,
             }
         end
-        local function RefreshDuration()
+        local function ApplyDurationText()
             LiveApplyAuraText()
             UpdatePreview()
         end
@@ -2727,7 +2727,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             end
             local colorSet = function(red, green, blue)
                 DB()[kind .. "DurationTextColor"] = { r = red, g = green, b = blue }
-                RefreshDuration()
+                ApplyDurationText()
             end
 
             CludesUI.BuildInlineCog(regionFrame, {
@@ -2744,7 +2744,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             DB()[kind .. "DurationTextSize"] = val
-                            RefreshDuration()
+                            ApplyDurationText()
                         end,
                     },
                     {
@@ -2758,7 +2758,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             DB()[kind .. "DurationTextX"] = val
-                            RefreshDuration()
+                            ApplyDurationText()
                         end,
                     },
                     {
@@ -2772,7 +2772,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             DB()[kind .. "DurationTextY"] = val
-                            RefreshDuration()
+                            ApplyDurationText()
                         end,
                     },
                 },

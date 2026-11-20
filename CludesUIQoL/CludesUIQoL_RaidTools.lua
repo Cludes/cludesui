@@ -1621,7 +1621,7 @@ local function BuildCollapsedIcon()
     iconButton:SetAttribute("_onclick", EXPAND_SNIPPET)
 end
 
-local function BuildAll()
+local function BuildSections()
     if sectionList.Group then
         return
     end
@@ -2344,7 +2344,7 @@ local function RegisterUnlock()
                 if toolKey == "Markers" and displayAs ~= "two" and displayAs ~= "markers" then
                     return nil
                 end
-                BuildAll()
+                BuildSections()
                 return sectionList[toolKey]
             end,
             getSize = function()
@@ -2419,7 +2419,7 @@ local function RegisterUnlock()
             if ShowMode() == "never" or AssistSuppressed() or ShowAs() ~= "compact" then
                 return nil
             end
-            BuildAll()
+            BuildSections()
             return sectionList.Group
         end,
         getSize = function()
@@ -2535,7 +2535,7 @@ function Apply()
 
     EnsureEvents()
     RegisterUnlock()
-    BuildAll()
+    BuildSections()
     -- Before ApplyLayout: it sizes the shells from GROUP_CONTENT_H, which the
     -- hidden buttons and the 0-second pull slots move.
     LayoutGroupContent()
@@ -2613,7 +2613,7 @@ SlashCmdList["CUIRAIDTOOLS"] = function()
         )
         return
     end
-    BuildAll()
+    BuildSections()
     ToggleOutOfCombat()
 end
 

@@ -269,7 +269,7 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     do
         local GO = CludesUI.GlowOptions
-        local function CdmBars()
+        local function CdmBarList()
             local p = mod.ECME and mod.ECME.db and mod.ECME.db.profile
             return p and p.cdmBars
         end
@@ -542,7 +542,7 @@ CludesUI.AtOptionsLogin(function()
             if not mod.RotationAssistAvailable() then
                 return "This option requires Blizzard's Assisted Highlight to be enabled"
             end
-            local c = CdmBars()
+            local c = CdmBarList()
             if c and c.hideRotationHelper then
                 return "Show Rotation Helper"
             end
@@ -597,7 +597,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
                 get = function(f)
-                    local c = CdmBars()
+                    local c = CdmBarList()
                     if not c then
                         return nil
                     end
@@ -623,7 +623,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
                 set = function(f, a, b2, c2)
-                    local c = CdmBars()
+                    local c = CdmBarList()
                     if not c then
                         return
                     end
@@ -804,7 +804,7 @@ CludesUI.AtOptionsLogin(function()
                 module = "CludesUICooldownManager",
                 list = function()
                     local result = {}
-                    local c = CdmBars()
+                    local c = CdmBarList()
                     -- WoW Forever: the bars' Pandemic Glow rows read Anti-Clip Glow.
                     local panLabel = mod.CDM_ANTI_CLIP and "Anti-Clip Glow" or "Pandemic Glow"
                     for _, edge in ipairs((c and c.bars) or {}) do
@@ -3052,7 +3052,7 @@ CludesUI.AtOptionsLogin(function()
     end
     -- Hidden whenever the player leaves the CDM Bars page (page switch, module
     -- switch, panel close); it returns on that page until dismissed with Okay.
-    local function HideCDMButtonTip()
+    local function HideCdmTip()
         if _cdmButtonTip then
             _cdmButtonTip:Hide()
         end
@@ -3086,7 +3086,7 @@ CludesUI.AtOptionsLogin(function()
     -- Hook: show tip when CDM Bars page first renders with a preview visible
     local _cdmButtonTipQueued = false
     CludesUI:RegisterOnHide(function()
-        HideCDMButtonTip()
+        HideCdmTip()
         -- Hide overlay and custom aura preview when panel closes
         HideBuffBarOverlay()
         mod._cdmBarsPageOpen = false
@@ -3148,7 +3148,7 @@ CludesUI.AtOptionsLogin(function()
                     mod.QueueReanchor()
                 end
                 HideBuffBarOverlay()
-                HideCDMButtonTip()
+                HideCdmTip()
             end
             if pageTitle == PAGE_CDM_BARS then
                 mod._cdmBarsPageOpen = true
@@ -3235,7 +3235,7 @@ CludesUI.AtOptionsLogin(function()
                     mod.QueueReanchor()
                 end
                 HideBuffBarOverlay()
-                HideCDMButtonTip()
+                HideCdmTip()
             end
             if pageTitle == PAGE_BUFF_BARS then
                 if mod.ShowTBBPlaceholders then
@@ -3263,7 +3263,7 @@ CludesUI.AtOptionsLogin(function()
         -- Leaving the module: the button settings tip is a child of the main
         -- frame, so nothing else would take it down with the page.
         onModuleLeave = function()
-            HideCDMButtonTip()
+            HideCdmTip()
         end,
         onReset = function()
             if _G._CUCME_AceDB then

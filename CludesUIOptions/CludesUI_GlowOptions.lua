@@ -30,7 +30,7 @@ local CreateFrame, PoolGen = CludesUI._Pool.CreateFrame, CludesUI._Pool.Gen
 -------------------------------------------------------------------------------
 --  Style value mapping
 -------------------------------------------------------------------------------
-local function NoneValue(desc)
+local function NoneOf(desc)
     if desc.noneValue ~= nil then
         return desc.noneValue
     end
@@ -39,7 +39,7 @@ end
 
 -- Saved value -> shared index, or nil for None and the extras.
 function GO.ToShared(desc, val)
-    if val == nil or val == NoneValue(desc) then
+    if val == nil or val == NoneOf(desc) then
         return nil
     end
     if desc.toShared then
@@ -116,7 +116,7 @@ end
 function GO.StyleValues(desc)
     local values, sequence = {}, {}
     if not desc.noNone then
-        local nv = NoneValue(desc)
+        local nv = NoneOf(desc)
         values[nv] = "None"
         sequence[#sequence + 1] = nv
     end
@@ -139,7 +139,7 @@ end
 local function DisplayValue(desc, values)
     local val = desc.get("style")
     if val == nil then
-        return NoneValue(desc)
+        return NoneOf(desc)
     end
     if values[val] ~= nil then
         return val
@@ -151,7 +151,7 @@ local function DisplayValue(desc, values)
             return rv
         end
     end
-    return NoneValue(desc)
+    return NoneOf(desc)
 end
 
 -------------------------------------------------------------------------------
@@ -162,7 +162,7 @@ function GO.IsOff(desc)
         return true
     end
     local val = desc.get("style")
-    return val == nil or val == NoneValue(desc)
+    return val == nil or val == NoneOf(desc)
 end
 
 -- The site's own lock (desc.disabled: every control), or a style-only lock
@@ -283,7 +283,7 @@ local NO_COLOR_TIP = "This option requires a Glow Style that can be colored"
 local function StyleGetter(desc, values)
     return function()
         if desc.isOff and desc.isOff() then
-            return NoneValue(desc)
+            return NoneOf(desc)
         end
         return DisplayValue(desc, values)
     end

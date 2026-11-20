@@ -3350,19 +3350,19 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
             eyeTex:SetAllPoints()
             eyeTex:SetTexture(EYE_VISIBLE)
-            local function RefreshPGEye()
+            local function PaintPowerGlowEye()
                 eyeTex:SetTexture(mod._pgPreview and EYE_INVISIBLE or EYE_VISIBLE)
                 eyeButton:SetEnabled(not PGOff())
                 CludesUI.SetGlyphAlpha(eyeButton, PGOff() and 0.15 or 0.4)
             end
-            EYE.refreshPGEye = RefreshPGEye
-            CludesUI.RegisterWidgetRefresh(RefreshPGEye)
-            RefreshPGEye()
+            EYE.refreshPGEye = PaintPowerGlowEye
+            CludesUI.RegisterWidgetRefresh(PaintPowerGlowEye)
+            PaintPowerGlowEye()
             eyeButton:SetScript("OnClick", function()
                 if mod.PG_SetPreview then
                     mod.PG_SetPreview(not mod._pgPreview)
                 end
-                RefreshPGEye()
+                PaintPowerGlowEye()
             end)
             eyeButton:SetScript("OnEnter", function(s)
                 CludesUI.SetGlyphAlpha(s, 0.7)

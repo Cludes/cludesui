@@ -250,7 +250,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- Live theme feedback for the preview strip (swatch drag / dim slider).
-    local function RefreshPreviewTheme()
+    local function PaintPreviewTheme()
         local rowConf = SelectedBar()
         if _edbPreviewHost and _edbPreviewHost:IsShown() and rowConf then
             mod.MakePreviewBackdrop(_edbPreviewHost, rowConf.theme, not rowConf.hideBorder)
@@ -1894,7 +1894,7 @@ CludesUI.AtOptionsLogin(function()
                 setValue = function(val)
                     rowConf.hideBorder = val and true or false
                     mod.ApplyTheme(barId)
-                    RefreshPreviewTheme()
+                    PaintPreviewTheme()
                 end,
             }
         )
@@ -2009,7 +2009,7 @@ CludesUI.AtOptionsLogin(function()
                     set = function(val)
                         skinName.cuiAlpha = val / 100
                         mod.ApplyTheme(barId)
-                        RefreshPreviewTheme()
+                        PaintPreviewTheme()
                     end,
                 },
             },
@@ -2136,7 +2136,7 @@ CludesUI.AtOptionsLogin(function()
                     skinName.cuiOpacity = val / 100
                 end
                 mod.ApplyTheme(barId)
-                RefreshPreviewTheme()
+                PaintPreviewTheme()
             end,
         }, barTexCfg)
         cursorY = cursorY - height
@@ -2173,7 +2173,7 @@ CludesUI.AtOptionsLogin(function()
                 color.g = green
                 color.b = blue
                 mod.ApplyTheme(barId)
-                RefreshPreviewTheme()
+                PaintPreviewTheme()
             end, false, 20)
             Pix.Point(colorSwatch, "RIGHT", region._control, "LEFT", -8, 0)
             if skinName.style ~= "modern" then

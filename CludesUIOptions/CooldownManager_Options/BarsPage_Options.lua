@@ -2401,7 +2401,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     }
     local ACTIVE_ANIM_ORDER = { "blizzard", "hideActive", "1", "---", "3", "4", "5", "7" }
 
-    local function IsCustomShape()
+    local function CustomShapeOn()
         local s = BarList().iconShape or "none"
         return s ~= "none" and s ~= "cropped"
     end
@@ -2719,7 +2719,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             Refresh()
         end)
         buffGlowDesc.caps = { mode = true }
-        buffGlowDesc.isOff, buffGlowDesc.disabled = IsCustomShape, IsCustomShape
+        buffGlowDesc.isOff, buffGlowDesc.disabled = CustomShapeOn, CustomShapeOn
         buffGlowDesc.disabledTooltip = "This option requires a non-custom button shape"
         local buffGlowRow
         buffGlowRow, height = W:DualRow(hostFrame, cursorY, GO.DropdownSpec(buffGlowDesc, "Buff Glow"), {
@@ -2816,20 +2816,20 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             -- Border Size: the exact-size slider, except under a custom shape, whose
             -- ring is on (Strong) or off (None): that keeps the None..Strong dropdown.
             local buffSizeCfg
-            if IsCustomShape() then
+            if CustomShapeOn() then
                 buffSizeCfg = {
                     type = "dropdown",
                     text = "Border Size",
                     values = BORDER_LABELS,
                     order = BORDER_ORDER,
                     itemDisabled = function(value)
-                        if IsCustomShape() and (value == "thin" or value == "normal" or value == "heavy") then
+                        if CustomShapeOn() and (value == "thin" or value == "normal" or value == "heavy") then
                             return true
                         end
                         return false
                     end,
                     itemDisabledTooltip = function(value)
-                        if IsCustomShape() and (value == "thin" or value == "normal" or value == "heavy") then
+                        if CustomShapeOn() and (value == "thin" or value == "normal" or value == "heavy") then
                             return "This option requires a non-custom shape to be selected"
                         end
                     end,
@@ -2873,7 +2873,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     type = "dropdown",
                     text = "Border Style",
                     disabled = function()
-                        return IsCustomShape()
+                        return CustomShapeOn()
                     end,
                     disabledTooltip = "This option requires a non-custom button shape",
                     values = texValues,
@@ -2921,7 +2921,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                         addonKey = "cdm",
                         disabled = function()
-                            return IsCustomShape()
+                            return CustomShapeOn()
                         end,
                         disabledTooltip = "This option requires a non-custom button shape",
                         getTex = function()
@@ -3298,20 +3298,20 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             -- Border Size: the exact-size slider, except under a custom shape, whose
             -- ring is on (Strong) or off (None): that keeps the None..Strong dropdown.
             local sizeCfg
-            if IsCustomShape() then
+            if CustomShapeOn() then
                 sizeCfg = {
                     type = "dropdown",
                     text = "Border Size",
                     values = BORDER_LABELS,
                     order = BORDER_ORDER,
                     itemDisabled = function(value)
-                        if IsCustomShape() and (value == "thin" or value == "normal" or value == "heavy") then
+                        if CustomShapeOn() and (value == "thin" or value == "normal" or value == "heavy") then
                             return true
                         end
                         return false
                     end,
                     itemDisabledTooltip = function(value)
-                        if IsCustomShape() and (value == "thin" or value == "normal" or value == "heavy") then
+                        if CustomShapeOn() and (value == "thin" or value == "normal" or value == "heavy") then
                             return "This option requires a non-custom shape to be selected"
                         end
                     end,
@@ -3354,7 +3354,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     type = "dropdown",
                     text = "Border Style",
                     disabled = function()
-                        return IsCustomShape()
+                        return CustomShapeOn()
                     end,
                     disabledTooltip = "This option requires a non-custom button shape",
                     values = texValues,
@@ -3403,7 +3403,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                         addonKey = "cdm",
                         disabled = function()
-                            return IsCustomShape()
+                            return CustomShapeOn()
                         end,
                         disabledTooltip = "This option requires a non-custom button shape",
                         getTex = function()

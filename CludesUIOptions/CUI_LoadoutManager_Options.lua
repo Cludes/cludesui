@@ -49,7 +49,7 @@ CludesUI.AtOptionsLogin(function()
     --  widgets draw them; the lines this page writes itself go through L/Lf.
     ---------------------------------------------------------------------------
     local DIM = CludesUI.COLOR_CODES.DIM
-    local function Grey(textValue)
+    local function Dimmed(textValue)
         return DIM .. tostring(textValue) .. "|r"
     end
 
@@ -61,15 +61,15 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local ALL_SPECS_TEXT = CludesUI.L("All Specs")
-    local TXT_NOT_SET = Grey(CludesUI.L("not set"))
-    local TXT_NO_GEAR = Grey(CludesUI.L("no gear"))
-    local TXT_NO_TALENTS = Grey(CludesUI.L("no talents"))
-    local TXT_SLASH = Grey(" / ")
-    local TXT_NOTHING_HERE = Grey(CludesUI.L("nothing assigned here"))
-    local TXT_OUTSIDE = Grey(CludesUI.L("not in an instance"))
-    local TXT_OPEN_WORLD = Grey(CludesUI.L("open world"))
-    local TXT_UNKNOWN = Grey(CludesUI.L("unknown"))
-    local TXT_PICK_SAVED = Grey(CludesUI.L("pick a saved instance"))
+    local TXT_NOT_SET = Dimmed(CludesUI.L("not set"))
+    local TXT_NO_GEAR = Dimmed(CludesUI.L("no gear"))
+    local TXT_NO_TALENTS = Dimmed(CludesUI.L("no talents"))
+    local TXT_SLASH = Dimmed(" / ")
+    local TXT_NOTHING_HERE = Dimmed(CludesUI.L("nothing assigned here"))
+    local TXT_OUTSIDE = Dimmed(CludesUI.L("not in an instance"))
+    local TXT_OPEN_WORLD = Dimmed(CludesUI.L("open world"))
+    local TXT_UNKNOWN = Dimmed(CludesUI.L("unknown"))
+    local TXT_PICK_SAVED = Dimmed(CludesUI.L("pick a saved instance"))
 
     -- One assignment slot as "gear / talents", or "not set".
     local function PairSummary(gearName, talentStored)
@@ -257,7 +257,7 @@ CludesUI.AtOptionsLogin(function()
         if context.difficultyName and context.difficultyName ~= "" then
             kind = kind .. ", " .. context.difficultyName
         end
-        return tostring(context.name) .. "  " .. Grey(kind)
+        return tostring(context.name) .. "  " .. Dimmed(kind)
     end
 
     -- The difficulty a per-difficulty assignment here covers. A running key
@@ -270,13 +270,13 @@ CludesUI.AtOptionsLogin(function()
     local function SourceText(level, key, scope)
         local layer = scope and tostring(mod.SpecName(scope)) or ALL_SPECS_TEXT
         if level == "difficulty" then
-            return Grey(CludesUI.Lf("(this instance, %1$s only, %2$s)", DifficultyName(), layer))
+            return Dimmed(CludesUI.Lf("(this instance, %1$s only, %2$s)", DifficultyName(), layer))
         elseif level == "instance" then
-            return Grey(CludesUI.Lf("(this instance, %1$s)", layer))
+            return Dimmed(CludesUI.Lf("(this instance, %1$s)", layer))
         elseif level == "type" then
             local details = TYPE_INFO[key]
             local typeName = details and CludesUI.L(details.label) or tostring(key)
-            return Grey(CludesUI.Lf("(%1$s default, %2$s)", typeName, layer))
+            return Dimmed(CludesUI.Lf("(%1$s default, %2$s)", typeName, layer))
         end
         return ""
     end
@@ -334,7 +334,7 @@ CludesUI.AtOptionsLogin(function()
     -- inline controls so a long line ellipsizes, and a half with no tooltip
     -- of its own shows the whole line on hover while it is cut. Call after
     -- those controls are built.
-    local function LiveLabel(regionFrame, prefixText, valueFn)
+    local function AddLiveLabel(regionFrame, prefixText, valueFn)
         if CludesUI._prebuilding then
             return
         end
@@ -577,8 +577,8 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Spec assignments win over All Specs.",
         })
         cursorY = cursorY - height
-        LiveLabel(whereRow._leftRegion, CludesUI.L("Location"), LocationText)
-        LiveLabel(whereRow._rightRegion, CludesUI.L("Specialization"), function()
+        AddLiveLabel(whereRow._leftRegion, CludesUI.L("Location"), LocationText)
+        AddLiveLabel(whereRow._rightRegion, CludesUI.L("Specialization"), function()
             local specID = mod.GetCurrentSpecID()
             return specID and Accent(mod.SpecName(specID)) or TXT_UNKNOWN
         end)
@@ -591,14 +591,14 @@ CludesUI.AtOptionsLogin(function()
             { type = "label", text = "Talents Here", tooltip = "The talent loadout that applies here." }
         )
         cursorY = cursorY - height
-        LiveLabel(hereRow._leftRegion, CludesUI.L("Gear Here"), function()
+        AddLiveLabel(hereRow._leftRegion, CludesUI.L("Gear Here"), function()
             local gear, level, key, scope = mod.ResolveGear(mod.GetContext())
             if not gear then
                 return TXT_NOTHING_HERE
             end
             return Accent(gear) .. "  " .. SourceText(level, key, scope)
         end)
-        LiveLabel(hereRow._rightRegion, CludesUI.L("Talents Here"), function()
+        AddLiveLabel(hereRow._rightRegion, CludesUI.L("Talents Here"), function()
             local talent, level, key, scope = mod.ResolveTalent(mod.GetContext())
             local name = mod.TalentDisplayName(talent)
             if not name then
@@ -866,7 +866,7 @@ CludesUI.AtOptionsLogin(function()
                     return Inside() and SaveBlockedTip() or NOT_IN_INSTANCE
                 end
             )
-            LiveLabel(
+            AddLiveLabel(
                 regionFrame,
                 perDiff and CludesUI.L("This Difficulty") or CludesUI.L("Any Difficulty"),
                 function()
@@ -875,7 +875,7 @@ CludesUI.AtOptionsLogin(function()
                         return TXT_OUTSIDE
                     end
                     if perDiff then
-                        return Grey("(" .. DifficultyName() .. ")") .. "  " .. PairSummary(g, t)
+                        return Dimmed("(" .. DifficultyName() .. ")") .. "  " .. PairSummary(g, t)
                     end
                     return PairSummary(g, t)
                 end
@@ -930,8 +930,8 @@ CludesUI.AtOptionsLogin(function()
             end,
             "Pick a saved instance first."
         )
-        local nothingSaved = Grey(CludesUI.Lf("nothing saved for %1$s", scopeName))
-        LiveLabel(savedRow._rightRegion, CludesUI.L("Assignment"), function()
+        local nothingSaved = Dimmed(CludesUI.Lf("nothing saved for %1$s", scopeName))
+        AddLiveLabel(savedRow._rightRegion, CludesUI.L("Assignment"), function()
             local e = PickedSavedEntry()
             if e then
                 return PairSummary(e.gear, e.talent)
@@ -991,7 +991,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 SaveBlockedTip
             )
-            LiveLabel(regionFrame, typeName, function()
+            AddLiveLabel(regionFrame, typeName, function()
                 local g, t = TypeSlot(key)
                 return PairSummary(g, t)
             end)

@@ -58,7 +58,7 @@ CludesUI.AtOptionsLogin(function()
 
     -- Square and Rectangular share the rect layout/border engine (not the circle wrap).
     -- The WoW Forever look's Forever Square is the square map whatever Shape is stored.
-    local function ShapeUsesRectLayout()
+    local function RectLayout()
         if mod.MinimapFvSquare() then
             return true
         end
@@ -501,7 +501,7 @@ CludesUI.AtOptionsLogin(function()
                 values = texValues,
                 order = texOrder,
                 disabled = function()
-                    return not ShapeUsesRectLayout()
+                    return not RectLayout()
                 end,
                 disabledTooltip = "Square or Rectangular Shape",
                 getValue = function()
@@ -556,21 +556,21 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                     getTex = function()
-                        if not ShapeUsesRectLayout() then
+                        if not RectLayout() then
                             return "solid"
                         end
                         local mapDB = MinimapDB()
                         return (mapDB and mapDB.borderTexture) or "solid"
                     end,
                     getPx = function()
-                        if not ShapeUsesRectLayout() then
+                        if not RectLayout() then
                             return nil
                         end
                         local mapDB = MinimapDB()
                         return mapDB and mapDB.borderSizePx
                     end,
                     setPx = function(value)
-                        if not ShapeUsesRectLayout() then
+                        if not RectLayout() then
                             return
                         end
                         local mapDB = MinimapDB()
@@ -592,7 +592,7 @@ CludesUI.AtOptionsLogin(function()
         do
             local mapDB = MinimapDB()
             local texture = (mapDB and mapDB.borderTexture) or "solid"
-            if ShapeUsesRectLayout() and texture ~= "" and texture ~= "solid" then
+            if RectLayout() and texture ~= "" and texture ~= "solid" then
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                     addonKey = "minimap",
                     getTex = function()
@@ -723,7 +723,7 @@ CludesUI.AtOptionsLogin(function()
                 },
             })
             local function UpdateCogVis()
-                local rect = ShapeUsesRectLayout() and not CludesUI.BlizzStyle.Get("minimap")
+                local rect = RectLayout() and not CludesUI.BlizzStyle.Get("minimap")
                 if rect and BorderTex() ~= "solid" then
                     cogBtn:Show()
                 else
@@ -1782,7 +1782,7 @@ CludesUI.AtOptionsLogin(function()
                 values = ROW_POS_VALUES,
                 order = ROW_POS_ORDER,
                 disabled = function()
-                    return not ShapeUsesRectLayout()
+                    return not RectLayout()
                 end,
                 disabledTooltip = "Square or Rectangular Shape",
                 itemDisabled = function(val)
@@ -1846,7 +1846,7 @@ CludesUI.AtOptionsLogin(function()
         if not CludesUI._prebuilding then
             local region = elRowRow._leftRegion
             local function elOff()
-                return not ShapeUsesRectLayout()
+                return not RectLayout()
             end
             local cogBtn = CludesUI.BuildInlineCog(region, {
                 disabled = elOff,
@@ -2193,7 +2193,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         -- Show FPS/MS (+ swatch + cog, mirrors QoL Show FPS Counter) | FPS/MS Position (+ offset cog)
-        local function FpsOff()
+        local function FpsHidden()
             local mapDB = MinimapDB()
             return not (mapDB and mapDB.showFPS)
         end
@@ -2213,7 +2213,7 @@ CludesUI.AtOptionsLogin(function()
             text = "FPS/MS Position",
             values = MAP_POS_VALUES,
             order = MAP_POS_ORDER,
-            disabled = FpsOff,
+            disabled = FpsHidden,
             disabledTooltip = "Show FPS/MS",
             getValue = MapGetRow("fpsPosition", "bottomLeft"),
             setValue = MapSetRow("fpsPosition"),
@@ -2227,7 +2227,7 @@ CludesUI.AtOptionsLogin(function()
 
             CludesUI.BuildInlineCog(leftRegion, {
                 gap = 9,
-                disabled = FpsOff,
+                disabled = FpsHidden,
                 disabledTooltip = "Show FPS/MS",
                 title = "FPS/MS Settings",
                 rows = {
@@ -2260,7 +2260,7 @@ CludesUI.AtOptionsLogin(function()
             local region = fpsRow._rightRegion
             CludesUI.BuildInlineCog(region, {
                 chain = false,
-                disabled = FpsOff,
+                disabled = FpsHidden,
                 disabledTooltip = "Show FPS/MS",
                 title = "FPS/MS Size and Position",
                 rows = {
@@ -2303,7 +2303,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Show on FPS/MS Hover",
             values = HOVER_TT_VALUES,
             order = HOVER_TT_ORDER,
-            disabled = FpsOff,
+            disabled = FpsHidden,
             disabledTooltip = "Show FPS/MS",
             getValue = function()
                 local mapDB = MinimapDB()

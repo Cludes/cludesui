@@ -2764,7 +2764,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         return options and options.disabled and options.disabled() or false
                     end
 
-                    local function UpdateLabelColor()
+                    local function PaintLabel()
                         if RowDisabled() then
                             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
                         elseif not isDefault() then
@@ -2777,7 +2777,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             options.onRefresh()
                         end
                     end
-                    UpdateLabelColor()
+                    PaintLabel()
                     -- The apply strip, when open, re-reads which scope holds the value.
                     local function PokeStrip()
                         local strip = dropMenu._applyStrip
@@ -2788,7 +2788,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- After a pick: the row's own cue, the icons when the value
                     -- reaches them, then the strip.
                     local function Repaint(icons)
-                        UpdateLabelColor()
+                        PaintLabel()
                         if icons then
                             if mod.RefreshCDMIconAppearance then
                                 mod.RefreshCDMIconAppearance(barId)
@@ -3093,7 +3093,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         -- the strip's owner item away mid-use.
                                         refresh = function()
                                             RefreshFlyoutSelection()
-                                            UpdateLabelColor()
+                                            PaintLabel()
                                         end,
                                     })
                                 end)
@@ -3361,7 +3361,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         if options and options.disabledTooltip then
                             CludesUI.HideWidgetTooltip()
                         end
-                        UpdateLabelColor()
+                        PaintLabel()
                         highlight:SetAlpha(0)
                         -- Don't auto-close sub here. It closes when:
                         -- 1. A different subnav row is hovered (ShowSub closes _openSub)
@@ -4533,7 +4533,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         if mod.ChainSettings then
                             mod.ChainSettings(customState, casSlot)
                         end
-                        local function EnsureCAS()
+                        local function ActiveStatesStore()
                             local storeC = mod.GetCustomActiveStates and mod.GetCustomActiveStates()
                             if storeC and not storeC[casKey] then
                                 storeC[casKey] = customState
@@ -4546,7 +4546,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- (render-equivalent to nil, but blocks the inheritance --
                         -- the per-trinket exclusion). Mirrors the family SetOwn.
                         local function SetOwnCas(key, v2)
-                            local cas = EnsureCAS()
+                            local cas = ActiveStatesStore()
                             cas[key] = v2
                             if v2 == nil and cas[key] ~= nil then
                                 cas[key] = false
@@ -4603,7 +4603,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return AB.MenuGlow(customState, true)
                             end,
                             set = function(value)
-                                mod.CdStateWriteGlow(EnsureCAS(), value)
+                                mod.CdStateWriteGlow(ActiveStatesStore(), value)
                                 if mod.FakeActive_Rearm then
                                     mod.FakeActive_Rearm()
                                 end
@@ -4729,14 +4729,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
                             local menuRow, labelFS = AB.NewMenuRow("Combat Potion Icon")
                             local acR, acG, acB = CludesUI.GetAccentColor()
-                            local function PaintRow()
+                            local function PaintPotRow()
                                 if PotIsDefault() then
                                     labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                                 else
                                     labelFS:SetTextColor(acR, acG, acB, 1)
                                 end
                             end
-                            PaintRow()
+                            PaintPotRow()
                             local arrow, highlight = AB.RowArrowAndHighlight(menuRow, 0.7)
 
                             local subMenu
@@ -4806,9 +4806,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     CludesUI.HideWidgetTooltip()
                                 end)
                                 tg:SetScript("OnClick", function()
-                                    EnsureCAS().potSwap = not PotSwapOn()
+                                    ActiveStatesStore().potSwap = not PotSwapOn()
                                     PaintToggle()
-                                    PaintRow()
+                                    PaintPotRow()
                                     PotChanged()
                                 end)
                                 flyoutH = flyoutH + ITEM_H
@@ -4931,8 +4931,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         end
                                     end,
                                     onDrop = function(keyList)
-                                        EnsureCAS().potOrder = table.concat(keyList, ",")
-                                        PaintRow()
+                                        ActiveStatesStore().potOrder = table.concat(keyList, ",")
+                                        PaintPotRow()
                                         PotChanged()
                                     end,
                                 })
@@ -4948,7 +4948,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 ShowPotSub()
                             end)
                             menuRow:SetScript("OnLeave", function()
-                                PaintRow()
+                                PaintPotRow()
                                 highlight:SetAlpha(0)
                             end)
                             menuH = menuH + ITEM_H
@@ -4964,7 +4964,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         dropMenu._cseRow = MakeSubnavRow("Cooldown State Effect", CD_STATE_ITEMS, function()
                             return mod.CdStateHideOf(customState)
                         end, function(value)
-                            mod.CdStateWriteHide(EnsureCAS(), value)
+                            mod.CdStateWriteHide(ActiveStatesStore(), value)
                             if mod.FakeActive_Rearm then
                                 mod.FakeActive_Rearm()
                             end
@@ -4980,7 +4980,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     -- Close the per-spell dropdown so only the popup shows.
                                     dropMenu:Hide()
                                     ShowAlphaPopup(current, function(percent)
-                                        local c = EnsureCAS()
+                                        local c = ActiveStatesStore()
                                         c.cdStateLowerAlpha = percent / 100
                                         mod.CdStateWriteHide(c, "lowerAlphaOnCD")
                                         if mod.FakeActive_Rearm then
@@ -5034,7 +5034,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         ShowAlphaPopup(
                                             current,
                                             function(percent)
-                                                local c = EnsureCAS()
+                                                local c = ActiveStatesStore()
                                                 c.cdStateGlowAlpha = percent / 100
                                                 c.cdStateGlowStyle = 8
                                                 if mod.FakeActive_Rearm then
@@ -5138,7 +5138,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return customState[keyName]
                             end
                             access.set = function(keyName, value)
-                                local cas = EnsureCAS()
+                                local cas = ActiveStatesStore()
                                 cas[keyName] = value
                             end
                             access.clear = function(keyName)
@@ -5301,7 +5301,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         MakeSubnavRow("Audio Effect on CD Ready", CDR_ITEMS, function()
                             return (customState and customState.cdReadySoundKey) or "none"
                         end, function(value)
-                            local cas = EnsureCAS()
+                            local cas = ActiveStatesStore()
                             cas.cdReadySoundKey = (value ~= "none" and value) or nil
                             if mod.FakeActive_Rearm then
                                 mod.FakeActive_Rearm()
@@ -5313,7 +5313,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         if not hasActive then
                             MakeActionRow("Add Active State", function()
                                 ShowDurationPopup(nil, function(seconds)
-                                    EnsureCAS().duration = seconds
+                                    ActiveStatesStore().duration = seconds
                                     if mod.FakeActive_Rearm then
                                         mod.FakeActive_Rearm()
                                     end
@@ -5331,7 +5331,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                                 return "custom"
                             end, function(value)
-                                local cas = EnsureCAS()
+                                local cas = ActiveStatesStore()
                                 if value == "class" then
                                     SetOwnCas("activeSwipeMode", nil)
                                     SetOwnCas("activeSwipeClassColor", true)
@@ -5364,7 +5364,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     end, function()
                                         return (customState and customState.activeSwipeB) or 0.376
                                     end, function(red, green, blue)
-                                        local cas = EnsureCAS()
+                                        local cas = ActiveStatesStore()
                                         cas.activeSwipeMode = "custom"
                                         SetOwnCas("activeSwipeClassColor", nil)
                                         cas.activeSwipeR = red
@@ -5466,7 +5466,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             -- Chained read: a slot-stamp color showing through
                             -- is kept as the starting custom color.
                             if value == "custom" and not customState.glowColorR then
-                                local cas = EnsureCAS()
+                                local cas = ActiveStatesStore()
                                 cas.glowColorR = 1
                                 cas.glowColorG = 0.788
                                 cas.glowColorB = 0.137
@@ -5482,7 +5482,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end, function()
                                     return (customState and customState.glowColorB) or 0.137
                                 end, function(red, green, blue)
-                                    local cas = EnsureCAS()
+                                    local cas = ActiveStatesStore()
                                     cas.glowColor = "custom"
                                     cas.glowColorR = red
                                     cas.glowColorG = green

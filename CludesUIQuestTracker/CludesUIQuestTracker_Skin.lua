@@ -38,7 +38,7 @@ local STOCK, CLASSIC = false, false
 
 -- Blizzard's native quest POI icons instead of our classified icons: the
 -- user's toggle, or forced by either stock style.
-local function NativeIcons()
+local function StockIconsOn()
     return STOCK or EQT.Cfg("showQuestIcons")
 end
 
@@ -786,7 +786,7 @@ local function ApplyQuestTypeIcon(questBlock)
 
     -- "Show Quest Icons" on: Blizzard's native icons are shown instead, so
     -- never stamp our own custom icon (hide any we already created).
-    if NativeIcons() then
+    if StockIconsOn() then
         if _blockIcons[questBlock] then
             _blockIcons[questBlock]:Hide()
         end
@@ -900,7 +900,7 @@ do
         -- Defer one frame so Blizzard's assignment lands first. Nothing to
         -- suppress while native icons show, unless the hidden tracker needs
         -- the fresh button mouse-off.
-        if event == "SUPER_TRACKING_CHANGED" and (not NativeIcons() or EQT._trackerMouseOff) then
+        if event == "SUPER_TRACKING_CHANGED" and (not StockIconsOn() or EQT._trackerMouseOff) then
             C_Timer.After(0, function()
                 if not EQT._SuppressAllPOIs then
                     return
@@ -1187,7 +1187,7 @@ local function QueuePOIRepair(progressBar)
     _poiRepair[progressBar] = true
     C_Timer.After(0.35, function()
         _poiRepair[progressBar] = nil
-        if NativeIcons() then
+        if StockIconsOn() then
             return
         end
         ApplyPOISuppression(progressBar)
@@ -1227,7 +1227,7 @@ local function SuppressPOI(questBlock)
         return
     end
 
-    if NativeIcons() then
+    if StockIconsOn() then
         -- Restore buttons we suppressed earlier in this session so flipping the
         -- setting on takes effect without waiting for the reload prompt.
         local progressBar = questBlock.poiButton
@@ -1289,7 +1289,7 @@ local _mouseOffSet = setmetatable({}, { __mode = "k" })
 -- Records WHICH half was on (1 = clicks, 2 = motion, 3 = both) so the
 -- restore puts back exactly that: an XML tooltip-only frame runs on motion
 -- alone, and handing it clicks would make it a click sink it never was.
-local function MouseOff(frame)
+local function DisableMouse(frame)
     if not (frame and frame.IsMouseEnabled) or _mouseOffSet[frame] then
         return
     end
@@ -1306,21 +1306,21 @@ local function MouseOff(frame)
     frame:EnableMouse(false)
 end
 -- For frames built while the tracker is hidden (the Forever filter toggle).
-EQT.MouseOff = MouseOff
+EQT.MouseOff = DisableMouse
 
 -- One block's click sinks: the block frame itself (bonus blocks), the header
 -- button (the quest log click), the item, group-finder and POI buttons, the
 -- objective lines (hyperlinks) and every right-edge region with its bar.
 local function ApplyBlockMouse(questBlock)
-    MouseOff(questBlock)
-    MouseOff(questBlock.HeaderButton)
-    MouseOff(questBlock.ItemButton)
-    MouseOff(questBlock.poiButton)
+    DisableMouse(questBlock)
+    DisableMouse(questBlock.HeaderButton)
+    DisableMouse(questBlock.ItemButton)
+    DisableMouse(questBlock.poiButton)
     local lines = questBlock.usedLines
     if type(lines) == "table" then
         for _, line in pairs(lines) do
             if type(line) == "table" then
-                MouseOff(line)
+                DisableMouse(line)
             end
         end
     end
@@ -1328,8 +1328,8 @@ local function ApplyBlockMouse(questBlock)
     if type(regions) == "table" then
         for regionFrame in pairs(regions) do
             if type(regionFrame) == "table" then
-                MouseOff(regionFrame)
-                MouseOff(regionFrame.Bar)
+                DisableMouse(regionFrame)
+                DisableMouse(regionFrame.Bar)
             end
         end
     end
@@ -1351,33 +1351,33 @@ local function ApplyScenarioMouse(sc)
     end
     local stage = sc.StageBlock
     if stage then
-        MouseOff(stage)
-        MouseOff(stage.findGroupButton)
+        DisableMouse(stage)
+        DisableMouse(stage.findGroupButton)
     end
     local collapseMark = sc.ChallengeModeBlock
     if collapseMark then
-        MouseOff(collapseMark)
-        MouseOff(collapseMark.StartedDepleted)
-        MouseOff(collapseMark.TimesUpLootStatus)
-        MouseOff(collapseMark.DeathCount)
+        DisableMouse(collapseMark)
+        DisableMouse(collapseMark.StartedDepleted)
+        DisableMouse(collapseMark.TimesUpLootStatus)
+        DisableMouse(collapseMark.DeathCount)
         local pool = collapseMark.affixPool
         if pool and pool.EnumerateActive then
             for affix in pool:EnumerateActive() do
-                MouseOff(affix)
+                DisableMouse(affix)
             end
         end
     end
-    MouseOff(sc.ProvingGroundsBlock)
+    DisableMouse(sc.ProvingGroundsBlock)
     if sc.MawBuffsBlock then
-        MouseOff(sc.MawBuffsBlock.Container)
+        DisableMouse(sc.MawBuffsBlock.Container)
     end
     if sc.TieredEntranceTraitsBlock then
-        MouseOff(sc.TieredEntranceTraitsBlock.Container)
+        DisableMouse(sc.TieredEntranceTraitsBlock.Container)
     end
     local spells = sc.spellFramePool
     if spells and spells.EnumerateActive then
         for scrollFrame in spells:EnumerateActive() do
-            MouseOff(scrollFrame.SpellButton)
+            DisableMouse(scrollFrame.SpellButton)
         end
     end
 end
@@ -1865,7 +1865,7 @@ end
 local function TrackerMouseOff(trackerFrame)
     local headerFrame = trackerFrame.Header
     if headerFrame then
-        MouseOff(headerFrame.MinimizeButton)
+        DisableMouse(headerFrame.MinimizeButton)
     end
     if SharesWidgetPool(trackerFrame) or not trackerFrame.usedBlocks then
         return
@@ -1925,11 +1925,11 @@ EQT.ApplyTrackerMouse = function(enabled)
     local objectiveTracker = _G.ObjectiveTrackerFrame
     local mainTracker = objectiveTracker and (objectiveTracker.HeaderMenu or objectiveTracker.Header)
     if mainTracker then
-        MouseOff(mainTracker.MinimizeButton)
-        MouseOff(mainTracker.FilterButton)
+        DisableMouse(mainTracker.MinimizeButton)
+        DisableMouse(mainTracker.FilterButton)
     end
     -- WoW Forever's filter toggle (nil on retail).
-    MouseOff(EQT.FilterToggle)
+    DisableMouse(EQT.FilterToggle)
 end
 
 -- Custom tracker (WoW Forever): Blizzard's tracker stays shown but alpha 0 and

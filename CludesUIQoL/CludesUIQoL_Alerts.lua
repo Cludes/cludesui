@@ -92,7 +92,7 @@ local function PositionAnchor()
     anchor:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x or 0, place.y or 0)
 end
 
-local function EnsureAnchor()
+local function MakeAnchor()
     if anchor then
         return
     end
@@ -185,7 +185,7 @@ local function NewLine(def)
         if preview and line.persistentShown then
             return
         end
-        EnsureAnchor()
+        MakeAnchor()
         PositionAnchor()
         Style(line)
         fontStr:SetText(textValue)
@@ -240,7 +240,7 @@ end
 -- Re-apply size, position and stacking (Text Size sliders, Unlock Mode).
 function Alerts.Refresh()
     if anchor or AnyEnabled() then
-        EnsureAnchor()
+        MakeAnchor()
         PositionAnchor()
     end
     for _, line in pairs(lines) do
@@ -280,7 +280,7 @@ local function RegisterUnlock()
                 if not AnyEnabled() then
                     return nil
                 end -- nothing is built while all are off
-                EnsureAnchor()
+                MakeAnchor()
                 return anchor
             end,
             getSize = function()
@@ -316,7 +316,7 @@ local function RegisterUnlock()
             end,
             applyPos = function()
                 if anchor or AnyEnabled() then
-                    EnsureAnchor()
+                    MakeAnchor()
                     PositionAnchor()
                     LayoutAlerts()
                 end
@@ -353,7 +353,7 @@ do
     local seen = {} -- itemID -> true (mapped potion) / false (not a potion)
     local timer, pendingItem, usedItem
 
-    local function ShowAlert(preview)
+    local function FlashAlert(preview)
         local D = Alerts.DEFAULTS.potionAlert
         local red, green, blue = Alerts.Color("potionAlert", D.color.r, D.color.g, D.color.b)
         Alerts.Line("potion").Show(DB("potionAlertText") or D.text, red, green, blue, preview)
@@ -413,7 +413,7 @@ do
             end
         end
         SyncCooldownEvent()
-        ShowAlert()
+        FlashAlert()
     end
 
     ArmTimer = function(itemId, delay)
@@ -549,7 +549,7 @@ do
     CUI._applyPotionAlert = ApplyPotionAlert
     CUI._potionAlertFrame = Alerts.Refresh
     CUI._potionAlertPreview = function()
-        ShowAlert(true)
+        FlashAlert(true)
     end
 
     local boot = CreateFrame("Frame")
@@ -602,7 +602,7 @@ do
         return line
     end
 
-    local function ShowAlert(preview)
+    local function FlashAlert(preview)
         local D = Alerts.DEFAULTS.talentAlert
         local red, green, blue = Alerts.Color("talentAlert", D.color.r, D.color.g, D.color.b)
         Line().Show(DB("talentAlertText") or D.text, red, green, blue, preview)
@@ -623,7 +623,7 @@ do
                 dismissed = false
             end -- new points: show again
             if not dismissed then
-                ShowAlert()
+                FlashAlert()
             end
         else
             dismissed = false
@@ -685,7 +685,7 @@ do
     CUI._talentAlertFrame = Alerts.Refresh
     CUI._talentAlertPreview = function()
         -- A live alert gets its text/color refreshed; otherwise a short sample.
-        ShowAlert(not Line().persistentShown)
+        FlashAlert(not Line().persistentShown)
     end
 
     local boot = CreateFrame("Frame")

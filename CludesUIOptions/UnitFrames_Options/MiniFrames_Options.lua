@@ -1961,7 +1961,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
             return P.happinessEnabled == false
         end
         -- The live icon repaints itself; the preview mirrors it.
-        local function happyApply()
+        local function applyHappiness()
             mod.UF_ApplyPetHappiness()
             UpdatePreview()
         end
@@ -1982,7 +1982,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
                     end,
                     setValue = function(value)
                         P.happinessEnabled = value
-                        happyApply()
+                        applyHappiness()
                         CludesUI:RefreshPage()
                     end,
                 }, {
@@ -1998,7 +1998,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
                     end,
                     setValue = function(value)
                         P.happinessSize = value
-                        happyApply()
+                        applyHappiness()
                     end,
                 })
                 rowY = rowY - hh
@@ -2017,7 +2017,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
                     end,
                     setValue = function(value)
                         P.happinessAlign = value
-                        happyApply()
+                        applyHappiness()
                     end,
                 }, CludesUI.BlankRowCfg())
                 rowY = rowY - hh
@@ -2038,7 +2038,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
                                 end,
                                 set = function(value)
                                     P.happinessX = value
-                                    happyApply()
+                                    applyHappiness()
                                 end,
                             },
                             {
@@ -2052,7 +2052,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
                                 end,
                                 set = function(value)
                                     P.happinessY = value
-                                    happyApply()
+                                    applyHappiness()
                                 end,
                             },
                         },

@@ -1693,7 +1693,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- Wire OnEnter/OnLeave/OnClick/OnShow/OnHide for a dropdown button + menu. s = { bg_r..a, bg_hr..ha, brd_r..a, brd_hr..ha, txt_r..a, txt_hr..ha } (24 values)
     -- ddBtn._valueDimA, when set, holds the value text at that alpha in both states (a greyed-out current value stays greyed under the cursor).
     local function WireDropdownScripts(dropdownBtn, dropCaption, backdrop, brd, dropMenu, refresh, cfg, keepClickHandler)
-        local function ApplyNormal()
+        local function PaintCaptionNormal()
             dropCaption:SetTextColor(cfg[17], cfg[18], cfg[19], dropdownBtn._valueDimA or cfg[20])
             brd:SetColor(cfg[9], cfg[10], cfg[11], cfg[12])
             backdrop:SetColorTexture(cfg[1], cfg[2], cfg[3], cfg[4])
@@ -1711,7 +1711,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end)
         dropdownBtn:SetScript("OnLeave", function()
             if not dropMenu:IsShown() then
-                ApplyNormal()
+                PaintCaptionNormal()
                 if dropdownBtn._ttText then
                     HideWidgetTooltip()
                 end
@@ -1842,7 +1842,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     ShowWidgetTooltip(dropdownBtn, dropdownBtn._ttText, dropdownBtn._ttOpts)
                 end
             else
-                ApplyNormal()
+                PaintCaptionNormal()
                 if dropdownBtn._ttText then
                     HideWidgetTooltip()
                 end
@@ -3055,7 +3055,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- (hidden), so the next click builds it again; true when there was one.
     local function WireLazyDropdown(dropdownBtn, dropCaption, backdrop, brd, cfg, build)
         local dropMenu
-        local function ApplyNormal()
+        local function PaintCaptionNormal()
             dropCaption:SetTextColor(cfg[17], cfg[18], cfg[19], dropdownBtn._valueDimA or cfg[20])
             brd:SetColor(cfg[9], cfg[10], cfg[11], cfg[12])
             backdrop:SetColorTexture(cfg[1], cfg[2], cfg[3], cfg[4])
@@ -3073,7 +3073,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end)
         dropdownBtn:SetScript("OnLeave", function()
             if not (dropMenu and dropMenu:IsShown()) then
-                ApplyNormal()
+                PaintCaptionNormal()
             end
             if dropdownBtn._ttText then
                 HideWidgetTooltip()

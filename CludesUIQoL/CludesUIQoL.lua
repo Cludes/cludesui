@@ -388,7 +388,7 @@ qolFrame:SetScript("OnEvent", function(self)
             return anyFound
         end
 
-        local function DismissCollectionAlerts()
+        local function CloseCollectionAlerts()
             if not (CludesUIDB and CludesUIDB.autoUnwrapCollections) then
                 return
             end
@@ -420,7 +420,7 @@ qolFrame:SetScript("OnEvent", function(self)
                 return
             end
             if textValue == COLLECTION_UNOPENED_PLURAL or textValue == COLLECTION_UNOPENED_SINGULAR then
-                DismissCollectionAlerts()
+                CloseCollectionAlerts()
             end
         end)
 
@@ -442,7 +442,7 @@ qolFrame:SetScript("OnEvent", function(self)
         -- The options toggle: switching on also unwraps what is already pending.
         CludesUI._applyAutoUnwrap = function()
             if SyncUnwrapEvents() then
-                DismissCollectionAlerts()
+                CloseCollectionAlerts()
             end
         end
         if SyncUnwrapEvents() then
@@ -452,10 +452,10 @@ qolFrame:SetScript("OnEvent", function(self)
             if eventName == "PLAYER_LOGIN" then
                 self:UnregisterEvent("PLAYER_LOGIN")
                 -- Defer 3s so ToyBox.fanfareToys exists (avoids a 1000+ toy full scan at login)
-                C_Timer.After(3, DismissCollectionAlerts)
+                C_Timer.After(3, CloseCollectionAlerts)
                 return
             end
-            DismissCollectionAlerts()
+            CloseCollectionAlerts()
         end)
     end
 
@@ -2604,7 +2604,7 @@ end)
 -------------------------------------------------------------------------------
 do
     local overlayFrame
-    local function ShowOverlay()
+    local function RevealOverlay()
         if not overlayFrame then
             return
         end
@@ -2648,9 +2648,9 @@ do
         end
 
         if CommunitiesFrame then
-            ShowOverlay()
+            RevealOverlay()
             if not overlayFrame._hooked then
-                CommunitiesFrame:HookScript("OnShow", ShowOverlay)
+                CommunitiesFrame:HookScript("OnShow", RevealOverlay)
                 overlayFrame._hooked = true
             end
         else
@@ -2660,9 +2660,9 @@ do
                 if addon == "Blizzard_Communities" then
                     self:UnregisterAllEvents()
                     if CludesUIDB and CludesUIDB.guildChatPrivacy then
-                        ShowOverlay()
+                        RevealOverlay()
                         if not overlayFrame._hooked then
-                            CommunitiesFrame:HookScript("OnShow", ShowOverlay)
+                            CommunitiesFrame:HookScript("OnShow", RevealOverlay)
                             overlayFrame._hooked = true
                         end
                     end
@@ -4294,12 +4294,12 @@ do
     -- the druid-form check live, so this flag is the only local state left.
     local _chHpalMelee = false
 
-    local function RefreshCrosshairCutoffRange()
+    local function ReadCrosshairRanges()
         _chHpalMelee = CrosshairGet("crosshairHpalMelee") and true or false
     end
-    RefreshCrosshairCutoffRange()
+    ReadCrosshairRanges()
     -- Exposed so the crosshair options toggle can re-resolve the cutoff live.
-    CludesUI._RefreshCrosshairCutoffRange = RefreshCrosshairCutoffRange
+    CludesUI._RefreshCrosshairCutoffRange = ReadCrosshairRanges
 
     CludesUI._getCrosshairCutoffRange = function()
         return CludesUI.Range_GetAttackCutoff(nil, _chHpalMelee)
@@ -4396,7 +4396,7 @@ do
             or eventName == "PLAYER_ENTERING_WORLD"
             or eventName == "TRAIT_CONFIG_UPDATED"
         then
-            RefreshCrosshairCutoffRange()
+            ReadCrosshairRanges()
         end
         -- _applyCrosshair self-guards: nil DB returns, "None" hides, and it runs
         -- the one-time migration once the profile DB is ready.
@@ -4415,7 +4415,7 @@ do
             visibilityWatch:RegisterEvent("PLAYER_ENTERING_WORLD")
             visibilityWatch:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
             visibilityWatch:RegisterEvent("TRAIT_CONFIG_UPDATED")
-            RefreshCrosshairCutoffRange()
+            ReadCrosshairRanges()
         else
             visibilityWatch:UnregisterAllEvents()
         end
@@ -5216,7 +5216,7 @@ do
         end
     end
 
-    local function CreateAlertOverlay()
+    local function BuildAlertOverlay()
         if alertFrame then
             return
         end
@@ -5265,7 +5265,7 @@ do
         if not label then
             return
         end
-        CreateAlertOverlay()
+        BuildAlertOverlay()
         StyleAlertOverlay()
 
         local colored = label
@@ -5438,7 +5438,7 @@ do
 
     -- Re-apply font size/position (called from the Text Size slider and from unlock mode on saved-position change).
     CludesUI._applyGroupDeathAlert = function()
-        CreateAlertOverlay()
+        BuildAlertOverlay()
         StyleAlertOverlay()
     end
 
@@ -5462,7 +5462,7 @@ do
                     return not (CludesUIDB and CludesUIDB.announceGroupDeaths)
                 end,
                 getFrame = function()
-                    CreateAlertOverlay()
+                    BuildAlertOverlay()
                     return alertFrame
                 end,
                 getSize = function()
@@ -5498,7 +5498,7 @@ do
                     end
                 end,
                 applyPos = function()
-                    CreateAlertOverlay()
+                    BuildAlertOverlay()
                     StyleAlertOverlay()
                 end,
             }),
