@@ -28,9 +28,9 @@ end
 -- Cast-bar icon "part of the bar" resolver. True = icon counts inside the cast bar's
 -- width (icon inside footprint, fill inset to its right, like Resource Bars). False =
 -- icon outside the width. Requires the icon shown; a hidden icon is never "in width".
-local function CastIconInWidth(unitToken, s)
-    s = s or GetSettingsForUnit(unitToken)
-    if not s then
+local function CastIconInWidth(unitToken, cfg)
+    cfg = cfg or GetSettingsForUnit(unitToken)
+    if not cfg then
         return true
     end
     -- The stock styles count a shown icon as part of the bar whatever the
@@ -38,18 +38,18 @@ local function CastIconInWidth(unitToken, s)
     -- match lines up with that footprint.
     if mod.UF_Blizz() then
         if unitToken == "player" then
-            return s.showPlayerCastIcon ~= false
+            return cfg.showPlayerCastIcon ~= false
         end
-        return s.showCastIcon ~= false
+        return cfg.showCastIcon ~= false
     end
     -- An icon moved onto the portrait (Show Icon on Portrait) is never in width.
-    if mod.UF_CastIconOnPortrait(unitToken, s) then
+    if mod.UF_CastIconOnPortrait(unitToken, cfg) then
         return false
     end
     if unitToken == "player" then
-        return s.showPlayerCastIcon ~= false and s.playerCastbarIconInWidth ~= false
+        return cfg.showPlayerCastIcon ~= false and cfg.playerCastbarIconInWidth ~= false
     end
-    return s.showCastIcon ~= false and s.castbarIconInWidth ~= false
+    return cfg.showCastIcon ~= false and cfg.castbarIconInWidth ~= false
 end
 -- Shared with the options preview, so it lays the icon out the same way.
 mod.UF_CastIconInWidth = CastIconInWidth
@@ -58,15 +58,15 @@ mod.UF_CastIconInWidth = CastIconInWidth
 -- bar" (CastIconInWidth folds this in already for its own purposes, but
 -- ns.UF_ApplyCastIconBorder needs the shown state on its own: a hidden icon
 -- shares no edge with the bar).
-local function CastIconShown(unitToken, s)
-    s = s or GetSettingsForUnit(unitToken)
-    if not s then
+local function CastIconShown(unitToken, cfg)
+    cfg = cfg or GetSettingsForUnit(unitToken)
+    if not cfg then
         return true
     end
     if unitToken == "player" then
-        return s.showPlayerCastIcon ~= false
+        return cfg.showPlayerCastIcon ~= false
     end
-    return s.showCastIcon ~= false
+    return cfg.showCastIcon ~= false
 end
 
 -- Show Icon on Portrait (player / target / focus, opt-in): true while the
@@ -74,59 +74,59 @@ end
 -- the icon shown and a visible portrait (Portrait Mode and Art Style not
 -- None); the stock styles own the icon. Settings only, so the options preview
 -- and the cast bar's size-match pad read the same answer. On ns (local cap).
-function mod.UF_CastIconOnPortrait(unitToken, s)
-    if not s then
+function mod.UF_CastIconOnPortrait(unitToken, cfg)
+    if not cfg then
         return false
     end
     local key = (unitToken == "player") and "playerCastbarIconOnPortrait" or "castbarIconOnPortrait"
-    if s[key] ~= true or mod.UF_Blizz() or not CastIconShown(unitToken, s) then
+    if cfg[key] ~= true or mod.UF_Blizz() or not CastIconShown(unitToken, cfg) then
         return false
     end
     local p = saved.profile
-    if (s.portraitStyle or p.portraitStyle or "attached") == "none" or s.showPortrait == false then
+    if (cfg.portraitStyle or p.portraitStyle or "attached") == "none" or cfg.showPortrait == false then
         return false
     end
-    return (s.portraitMode or p.portraitMode or "2d") ~= "none"
+    return (cfg.portraitMode or p.portraitMode or "2d") ~= "none"
 end
 
 -- Whether the cast spell icon sits on the RIGHT of the bar instead of the
 -- default left. Independent of "part of the bar"; defaults off (left).
-local function CastIconOnRight(unitToken, s)
-    s = s or GetSettingsForUnit(unitToken)
-    if not s then
+local function CastIconOnRight(unitToken, cfg)
+    cfg = cfg or GetSettingsForUnit(unitToken)
+    if not cfg then
         return false
     end
     if unitToken == "player" then
-        return s.playerCastbarIconRight == true
+        return cfg.playerCastbarIconRight == true
     end
-    return s.castbarIconRight == true
+    return cfg.castbarIconRight == true
 end
 
 -- Additive X/Y nudge for the cast spell icon. Applies to the icon frame's anchors
 -- only -- the bar fill and footprint never move.
-local function CastIconOffsets(unitToken, s)
-    s = s or GetSettingsForUnit(unitToken)
-    if not s then
+local function CastIconOffsets(unitToken, cfg)
+    cfg = cfg or GetSettingsForUnit(unitToken)
+    if not cfg then
         return 0, 0
     end
     if unitToken == "player" then
-        return s.playerCastIconOffsetX or 0, s.playerCastIconOffsetY or 0
+        return cfg.playerCastIconOffsetX or 0, cfg.playerCastIconOffsetY or 0
     end
-    return s.castIconOffsetX or 0, s.castIconOffsetY or 0
+    return cfg.castIconOffsetX or 0, cfg.castIconOffsetY or 0
 end
 
 -- Border Wraps Icon (s.castBorderWrapIcon, opt-in): the Custom Border Style
 -- takes in an integrated icon, only while it sits flush (no offset); else
 -- the border wraps the bar alone. Settings only, so the border, the shared
 -- edge pass and the size-match pad read one answer. On ns (local cap).
-function mod.UF_CastBorderWrapsIcon(unitToken, s)
-    if not (s and s.castBorderCustom == true and s.castBorderWrapIcon == true) then
+function mod.UF_CastBorderWrapsIcon(unitToken, cfg)
+    if not (cfg and cfg.castBorderCustom == true and cfg.castBorderWrapIcon == true) then
         return false
     end
-    if not CastIconInWidth(unitToken, s) then
+    if not CastIconInWidth(unitToken, cfg) then
         return false
     end
-    local offX, offY = CastIconOffsets(unitToken, s)
+    local offX, offY = CastIconOffsets(unitToken, cfg)
     return offX == 0 and offY == 0
 end
 
@@ -134,14 +134,14 @@ end
 -- Custom Border Style off) or in a style's own divider art; a textured style
 -- without that art, or a Border Size of 0, draws none. Shared with the
 -- options row's disabled state. On ns (local cap).
-function mod.UF_CastIconSeamOK(s)
-    if not (s and s.castBorderCustom == true) then
+function mod.UF_CastIconSeamOK(cfg)
+    if not (cfg and cfg.castBorderCustom == true) then
         return true
     end
-    if (s.castBorderSize or 1) <= 0 then
+    if (cfg.castBorderSize or 1) <= 0 then
         return false
     end
-    local texture = s.castBorderStyle or "solid"
+    local texture = cfg.castBorderStyle or "solid"
     return texture == "solid" or texture == "" or CludesUI.GetBorderCompanion(texture, "sepV") ~= nil
 end
 
@@ -170,7 +170,7 @@ local function LayoutCastbarIcon(
     castBar,
     inWidth,
     iconH,
-    onRight,
+    iconRight,
     offX,
     offY,
     iconShown,
@@ -192,41 +192,41 @@ local function LayoutCastbarIcon(
     if issecretvalue(side) then
         return
     end
-    local iconFrame = castBar._iconFrame
+    local iconBox = castBar._iconFrame
     offX, offY = offX or 0, offY or 0
     -- The style's own icon pass (ns.UF_BlizzCastIcon) re-lays the icon from
     -- these after the stock chrome is on.
-    castBar._icoInWidth, castBar._icoOnRight, castBar._icoSide = inWidth, onRight, side
+    castBar._icoInWidth, castBar._icoOnRight, castBar._icoSide = inWidth, iconRight, side
     castBar._icoOffX, castBar._icoOffY, castBar._icoShown = offX, offY, iconShown
-    if iconFrame and not portraitBd then
-        iconFrame:ClearAllPoints()
+    if iconBox and not portraitBd then
+        iconBox:ClearAllPoints()
         if inWidth then
             -- Icon inside the footprint, flush with the chosen edge.
-            if onRight then
-                Pix.Point(iconFrame, "TOPRIGHT", bgTex, "TOPRIGHT", offX, offY)
-                Pix.Point(iconFrame, "BOTTOMRIGHT", bgTex, "BOTTOMRIGHT", offX, offY)
+            if iconRight then
+                Pix.Point(iconBox, "TOPRIGHT", bgTex, "TOPRIGHT", offX, offY)
+                Pix.Point(iconBox, "BOTTOMRIGHT", bgTex, "BOTTOMRIGHT", offX, offY)
             else
-                Pix.Point(iconFrame, "TOPLEFT", bgTex, "TOPLEFT", offX, offY)
-                Pix.Point(iconFrame, "BOTTOMLEFT", bgTex, "BOTTOMLEFT", offX, offY)
+                Pix.Point(iconBox, "TOPLEFT", bgTex, "TOPLEFT", offX, offY)
+                Pix.Point(iconBox, "BOTTOMLEFT", bgTex, "BOTTOMLEFT", offX, offY)
             end
         else
             -- Icon hangs outside the bar, off the chosen edge.
-            if onRight then
-                Pix.Point(iconFrame, "TOPLEFT", bgTex, "TOPRIGHT", offX, offY)
-                Pix.Point(iconFrame, "BOTTOMLEFT", bgTex, "BOTTOMRIGHT", offX, offY)
+            if iconRight then
+                Pix.Point(iconBox, "TOPLEFT", bgTex, "TOPRIGHT", offX, offY)
+                Pix.Point(iconBox, "BOTTOMLEFT", bgTex, "BOTTOMRIGHT", offX, offY)
             else
-                Pix.Point(iconFrame, "TOPRIGHT", bgTex, "TOPLEFT", offX, offY)
-                Pix.Point(iconFrame, "BOTTOMRIGHT", bgTex, "BOTTOMLEFT", offX, offY)
+                Pix.Point(iconBox, "TOPRIGHT", bgTex, "TOPLEFT", offX, offY)
+                Pix.Point(iconBox, "BOTTOMRIGHT", bgTex, "BOTTOMLEFT", offX, offY)
             end
         end
-        iconFrame:SetWidth(side)
+        iconBox:SetWidth(side)
     end
     castBar:ClearAllPoints()
     if portraitBd then
         -- The icon sits on the portrait: the bar takes the whole footprint.
         Pix.Point(castBar, "TOPLEFT", bgTex, "TOPLEFT", 0, 0)
         Pix.Point(castBar, "BOTTOMRIGHT", bgTex, "BOTTOMRIGHT", 0, 0)
-    elseif inWidth and onRight then
+    elseif inWidth and iconRight then
         -- Bar occupies the left of the footprint; icon takes the right edge.
         Pix.Point(castBar, "TOPLEFT", bgTex, "TOPLEFT", 0, 0)
         Pix.Point(castBar, "BOTTOMRIGHT", bgTex, "BOTTOMRIGHT", -side, 0)
@@ -250,7 +250,7 @@ end
 -- own edgePx registration. Stands down under a stock style: stock = nil reads
 -- the session's latched style; the options preview (which shares this)
 -- passes its own and preview = true. On ns: the local cap.
-function mod.UF_ApplyCastBorder(castBar, s, stock, unitToken, iconTex, preview)
+function mod.UF_ApplyCastBorder(castBar, cfg, stock, unitToken, iconTex, preview)
     if not castBar then
         return
     end
@@ -258,7 +258,7 @@ function mod.UF_ApplyCastBorder(castBar, s, stock, unitToken, iconTex, preview)
         stock = mod.UF_Blizz()
     end
     local owner = castBar._cbBorder
-    if stock or not (s and s.castBorderCustom == true) then
+    if stock or not (cfg and cfg.castBorderCustom == true) then
         if castBar._cbHost then
             castBar._cbHost = nil
             CludesUI.HideBorderStyle(owner)
@@ -268,7 +268,7 @@ function mod.UF_ApplyCastBorder(castBar, s, stock, unitToken, iconTex, preview)
                 Pix.ShowBorder(castBar)
             end
         end
-        mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, iconTex, preview)
+        mod.UF_ApplyCastIconBorder(castBar, cfg, stock, unitToken, iconTex, preview)
         return
     end
     if not owner then
@@ -278,22 +278,22 @@ function mod.UF_ApplyCastBorder(castBar, s, stock, unitToken, iconTex, preview)
         castBar._cbBorder = owner
     end
     owner:ClearAllPoints()
-    if mod.UF_CastBorderWrapsIcon(unitToken, s) then
+    if mod.UF_CastBorderWrapsIcon(unitToken, cfg) then
         -- The fill gives up the icon's width (the configured cast bar height,
         -- as LayoutCastbarIcon insets it): reach past the fill by that much on
         -- the icon's side. Anchored to the fill so the options preview uses
         -- the same rule.
-        local side = (unitToken == "player") and (s.playerCastbarHeight or 14) or (s.castbarHeight or 14)
-        local onRight = CastIconOnRight(unitToken, s)
-        Pix.Point(owner, "TOPLEFT", castBar, "TOPLEFT", onRight and 0 or -side, 0)
-        Pix.Point(owner, "BOTTOMRIGHT", castBar, "BOTTOMRIGHT", onRight and side or 0, 0)
+        local side = (unitToken == "player") and (cfg.playerCastbarHeight or 14) or (cfg.castbarHeight or 14)
+        local iconRight = CastIconOnRight(unitToken, cfg)
+        Pix.Point(owner, "TOPLEFT", castBar, "TOPLEFT", iconRight and 0 or -side, 0)
+        Pix.Point(owner, "BOTTOMRIGHT", castBar, "BOTTOMRIGHT", iconRight and side or 0, 0)
     else
         owner:SetAllPoints(castBar)
     end
     castBar._cbHost = owner
     Pix.HideBorder(castBar)
     -- Levelled before the apply: a textured style's backdrop takes the host's.
-    if s.castBorderBehind then
+    if cfg.castBorderBehind then
         owner:SetFrameLevel(math.max(0, (castBar:GetParent() or castBar):GetFrameLevel() - 1))
     else
         -- Over the fill, shield and kick marker (bar +2), under the text overlay.
@@ -304,22 +304,22 @@ function mod.UF_ApplyCastBorder(castBar, s, stock, unitToken, iconTex, preview)
         end
         owner:SetFrameLevel(lvl)
     end
-    local texture = s.castBorderStyle or "solid"
-    local size = s.castBorderSize or 1
-    local c = s.castBorderColor
-    local px = CludesUI.BorderPx(s.castBorderSizePx, size, texture)
+    local texture = cfg.castBorderStyle or "solid"
+    local size = cfg.castBorderSize or 1
+    local edgeRGB = cfg.castBorderColor
+    local px = CludesUI.BorderPx(cfg.castBorderSizePx, size, texture)
     CludesUI.ApplyBorderStyle(
         owner,
         size,
-        c and c.r or 0,
-        c and c.g or 0,
-        c and c.b or 0,
-        s.castBorderAlpha or 1,
+        edgeRGB and edgeRGB.r or 0,
+        edgeRGB and edgeRGB.g or 0,
+        edgeRGB and edgeRGB.b or 0,
+        cfg.castBorderAlpha or 1,
         texture,
-        s.castBorderOffsetX,
-        s.castBorderOffsetY,
-        s.castBorderShiftX,
-        s.castBorderShiftY,
+        cfg.castBorderOffsetX,
+        cfg.castBorderOffsetY,
+        cfg.castBorderShiftX,
+        cfg.castBorderShiftY,
         "unitframes",
         size,
         nil,
@@ -327,31 +327,31 @@ function mod.UF_ApplyCastBorder(castBar, s, stock, unitToken, iconTex, preview)
     )
     castBar._cbSolid = (texture == "solid" or texture == "") and size > 0
     castBar._cbSize = px or size
-    mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, iconTex, preview)
+    mod.UF_ApplyCastIconBorder(castBar, cfg, stock, unitToken, iconTex, preview)
 end
 
 -- Cast icon decoration, shared by live frames and the options preview. New
 -- resources are built only on opt-in, during the existing settings pass.
 -- preview = the options preview's bar: its divider is never registered for
 -- the UI-scale re-layout (the preview re-lays it on every update).
-function mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, iconTex, preview)
+function mod.UF_ApplyCastIconBorder(castBar, cfg, stock, unitToken, iconTex, preview)
     iconTex = iconTex or castBar._iconFrame
     if not iconTex then
         return
     end
-    local isShown = CastIconShown(unitToken, s)
-    local portrait = mod.UF_CastIconOnPortrait(unitToken, s)
-    local inWidth = CastIconInWidth(unitToken, s)
-    local onRight = CastIconOnRight(unitToken, s)
-    local offX, offY = CastIconOffsets(unitToken, s)
-    local custom = s and s.castBorderCustom == true
-    local styled = not stock and isShown and not portrait and s and s.castIconBorder == true
+    local isShown = CastIconShown(unitToken, cfg)
+    local portrait = mod.UF_CastIconOnPortrait(unitToken, cfg)
+    local inWidth = CastIconInWidth(unitToken, cfg)
+    local iconRight = CastIconOnRight(unitToken, cfg)
+    local offX, offY = CastIconOffsets(unitToken, cfg)
+    local custom = cfg and cfg.castBorderCustom == true
+    local styled = not stock and isShown and not portrait and cfg and cfg.castIconBorder == true
     local owner = iconTex._castBorder
-    local texture = custom and (s.castBorderStyle or "solid") or "solid"
-    local size = custom and (s.castBorderSize or 1) or 1
-    local c = custom and s.castBorderColor
-    local alpha = custom and (s.castBorderAlpha or 1) or 1
-    local px = custom and CludesUI.BorderPx(s.castBorderSizePx, size, texture) or nil
+    local texture = custom and (cfg.castBorderStyle or "solid") or "solid"
+    local size = custom and (cfg.castBorderSize or 1) or 1
+    local edgeRGB = custom and cfg.castBorderColor
+    local alpha = custom and (cfg.castBorderAlpha or 1) or 1
+    local px = custom and CludesUI.BorderPx(cfg.castBorderSizePx, size, texture) or nil
     if styled then
         if not owner then
             -- Options frame pool: a real frame for a live bar (as above).
@@ -360,22 +360,22 @@ function mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, iconTex, previ
             iconTex._castBorder = owner
         end
         owner:SetFrameLevel(
-            custom and s.castBorderBehind and math.max(0, iconTex:GetFrameLevel() - 1)
+            custom and cfg.castBorderBehind and math.max(0, iconTex:GetFrameLevel() - 1)
                 or iconTex:GetFrameLevel() + 1
         )
         Pix.HideBorder(iconTex)
         CludesUI.ApplyBorderStyle(
             owner,
             size,
-            c and c.r or 0,
-            c and c.g or 0,
-            c and c.b or 0,
+            edgeRGB and edgeRGB.r or 0,
+            edgeRGB and edgeRGB.g or 0,
+            edgeRGB and edgeRGB.b or 0,
             alpha,
             texture,
-            custom and s.castBorderOffsetX or nil,
-            custom and s.castBorderOffsetY or nil,
-            custom and s.castBorderShiftX or nil,
-            custom and s.castBorderShiftY or nil,
+            custom and cfg.castBorderOffsetX or nil,
+            custom and cfg.castBorderOffsetY or nil,
+            custom and cfg.castBorderShiftX or nil,
+            custom and cfg.castBorderShiftY or nil,
             "unitframes",
             size,
             nil,
@@ -402,82 +402,82 @@ function mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, iconTex, previ
         local barEdges = Pix.GetBorders(barFrame)
         local barDrawn = barEdges and (barFrame == castBar or castBar._cbSolid)
         local share = isShown and not portrait and offX == 0 and offY == 0 and not styled
-        local outer = castBar._cbHost and mod.UF_CastBorderWrapsIcon(unitToken, s)
+        local outer = castBar._cbHost and mod.UF_CastBorderWrapsIcon(unitToken, cfg)
         if iconEdges then
             local hide = share and (barDrawn or outer)
-            iconEdges._hideLeft = hide and onRight or nil
-            iconEdges._hideRight = hide and not onRight or nil
+            iconEdges._hideLeft = hide and iconRight or nil
+            iconEdges._hideRight = hide and not iconRight or nil
             Pix.SetBorderSize(iconTex, 1)
         end
         if barEdges then
             local hide = share and barDrawn and not outer
-            barEdges._hideLeft = hide and not onRight or nil
-            barEdges._hideRight = hide and onRight or nil
+            barEdges._hideLeft = hide and not iconRight or nil
+            barEdges._hideRight = hide and iconRight or nil
             if barDrawn then
                 Pix.SetBorderSize(barFrame, barFrame == castBar and 1 or castBar._cbSize)
             end
         end
     end
 
-    local seam = castBar._iconSeam
+    local iconSeam = castBar._iconSeam
     if
         not (
-            s
-            and s.castIconSeparator == true
+            cfg
+            and cfg.castIconSeparator == true
             and not stock
             and isShown
             and inWidth
             and not portrait
-            and mod.UF_CastIconSeamOK(s)
+            and mod.UF_CastIconSeamOK(cfg)
         )
     then
-        if seam then
-            seam:Hide()
-            CludesUI.RegisterPxReapply(seam, nil)
+        if iconSeam then
+            iconSeam:Hide()
+            CludesUI.RegisterPxReapply(iconSeam, nil)
         end
         return
     end
-    if not seam then
+    if not iconSeam then
         -- Options frame pool: a real frame for a live bar (as above).
-        seam = POOL.CreateFrame("Frame", nil, castBar)
-        seam:SetAllPoints(castBar)
-        seam._tex = seam:CreateTexture(nil, "OVERLAY")
-        castBar._iconSeam = seam
+        iconSeam = POOL.CreateFrame("Frame", nil, castBar)
+        iconSeam:SetAllPoints(castBar)
+        iconSeam._tex = iconSeam:CreateTexture(nil, "OVERLAY")
+        castBar._iconSeam = iconSeam
     end
     -- Above the cast border, including Solid's child at border level +1.
     local borderFrame = castBar._cbHost or castBar
-    seam:SetFrameLevel(math.max(castBar:GetFrameLevel(), borderFrame:GetFrameLevel()) + 2)
-    seam._key, seam._size, seam._px, seam._right = texture, size, px, onRight
-    seam._path = CludesUI.GetBorderCompanion(texture, "sepV")
-    seam._tex:SetVertexColor(c and c.r or 0, c and c.g or 0, c and c.b or 0, alpha)
-    mod.UF_LayoutCastIconSeam(seam)
-    seam:Show()
-    CludesUI.RegisterPxReapply(seam, (not preview) and mod.UF_LayoutCastIconSeam or nil)
+    iconSeam:SetFrameLevel(math.max(castBar:GetFrameLevel(), borderFrame:GetFrameLevel()) + 2)
+    iconSeam._key, iconSeam._size, iconSeam._px, iconSeam._right = texture, size, px, iconRight
+    iconSeam._path = CludesUI.GetBorderCompanion(texture, "sepV")
+    iconSeam._tex:SetVertexColor(edgeRGB and edgeRGB.r or 0, edgeRGB and edgeRGB.g or 0, edgeRGB and edgeRGB.b or 0, alpha)
+    mod.UF_LayoutCastIconSeam(iconSeam)
+    iconSeam:Show()
+    CludesUI.RegisterPxReapply(iconSeam, (not preview) and mod.UF_LayoutCastIconSeam or nil)
 end
 
 -- Lays the divider from the values the pass above stamped (also the UI-scale
 -- re-layout). A style's divider art goes through the shared placement, its
 -- lead hanging past the bar's edge over the icon; Solid draws a flat line on
 -- the bar's edge at the border's exact size.
-function mod.UF_LayoutCastIconSeam(seam)
-    local t = seam._tex
-    local es = seam:GetEffectiveScale()
-    if seam._path then
-        CludesUI.PlaceBorderDividerV(t, seam, seam._right, false, seam._key, seam._size, seam._px, es)
+function mod.UF_LayoutCastIconSeam(iconSeam)
+    local t = iconSeam._tex
+    local es = iconSeam:GetEffectiveScale()
+    if iconSeam._path then
+        CludesUI.PlaceBorderDividerV(t, iconSeam, iconSeam._right, false, iconSeam._key, iconSeam._size, iconSeam._px, es)
         return
     end
     local onePixel = es > 0 and Pix.perfect / es or Pix.mult
     t:SetColorTexture(1, 1, 1, 1)
     t:SetTexCoord(0, 1, 0, 1)
     t:ClearAllPoints()
-    if seam._right then
-        t:SetPoint("TOPRIGHT", seam, "TOPRIGHT", 0, 0)
-        t:SetPoint("BOTTOMRIGHT", seam, "BOTTOMRIGHT", 0, 0)
+    if iconSeam._right then
+        t:SetPoint("TOPRIGHT", iconSeam, "TOPRIGHT", 0, 0)
+        t:SetPoint("BOTTOMRIGHT", iconSeam, "BOTTOMRIGHT", 0, 0)
     else
-        t:SetPoint("TOPLEFT", seam, "TOPLEFT", 0, 0)
-        t:SetPoint("BOTTOMLEFT", seam, "BOTTOMLEFT", 0, 0)
+        t:SetPoint("TOPLEFT", iconSeam, "TOPLEFT", 0, 0)
+        t:SetPoint("BOTTOMLEFT", iconSeam, "BOTTOMLEFT", 0, 0)
     end
-    t:SetWidth(math.max(1, math.floor((seam._px or seam._size) + 0.5)) * onePixel)
+    t:SetWidth(math.max(1, math.floor((iconSeam._px or iconSeam._size) + 0.5)) * onePixel)
     t:Show()
 end
 
@@ -490,31 +490,31 @@ end
 -- shrinks by it. Under Border Wraps Icon (ns.UF_CastBorderWrapsIcon) it
 -- wraps the whole holder instead. Each side clamps at 0 before the sum.
 -- Settings only.
-function mod.UF_CastBorderPad(unitToken, s)
-    if not (s and s.castBorderCustom == true) or mod.UF_Blizz() then
+function mod.UF_CastBorderPad(unitToken, cfg)
+    if not (cfg and cfg.castBorderCustom == true) or mod.UF_Blizz() then
         return nil
     end
-    local texture = s.castBorderStyle or "solid"
-    local size = s.castBorderSize or 1
+    local texture = cfg.castBorderStyle or "solid"
+    local size = cfg.castBorderSize or 1
     local l, region, t, b = CludesUI.BorderReach(
         size,
         texture,
-        s.castBorderOffsetX,
-        s.castBorderOffsetY,
-        s.castBorderShiftX,
-        s.castBorderShiftY,
+        cfg.castBorderOffsetX,
+        cfg.castBorderOffsetY,
+        cfg.castBorderShiftX,
+        cfg.castBorderShiftY,
         "unitframes",
         size,
-        CludesUI.BorderPx(s.castBorderSizePx, size, texture),
+        CludesUI.BorderPx(cfg.castBorderSizePx, size, texture),
         nil,
-        s.castBorderAlpha or 1
+        cfg.castBorderAlpha or 1
     )
     if not l then
         return nil
     end
-    if CastIconInWidth(unitToken, s) and not mod.UF_CastBorderWrapsIcon(unitToken, s) then
-        local iw = (unitToken == "player") and (s.playerCastbarHeight or 14) or (s.castbarHeight or 14)
-        if CastIconOnRight(unitToken, s) then
+    if CastIconInWidth(unitToken, cfg) and not mod.UF_CastBorderWrapsIcon(unitToken, cfg) then
+        local iw = (unitToken == "player") and (cfg.playerCastbarHeight or 14) or (cfg.castbarHeight or 14)
+        if CastIconOnRight(unitToken, cfg) then
             region = region - iw
         else
             l = l - iw
@@ -571,75 +571,75 @@ end
 -- opening stops at the shape border's inner edge, which keeps the ring in
 -- view round the icon. Levelled over the backdrop and its 3D model.
 -- ico._pbd = the backdrop it sits on.
-function mod.UF_CastIconPortraitLayout(ico, texture, edge, s)
-    if ico._pbd and ico._pbd ~= edge then
-        CastIconPortraitOverlay(ico._pbd, false)
+function mod.UF_CastIconPortraitLayout(iconHost, texture, edge, cfg)
+    if iconHost._pbd and iconHost._pbd ~= edge then
+        CastIconPortraitOverlay(iconHost._pbd, false)
     end
     if not edge then
-        if not ico._pbd then
+        if not iconHost._pbd then
             return
         end
-        ico._pbd = nil
-        Pix.ShowBorder(ico)
-        if ico._bg then
-            ico._bg:Show()
+        iconHost._pbd = nil
+        Pix.ShowBorder(iconHost)
+        if iconHost._bg then
+            iconHost._bg:Show()
         end
         if texture then
-            if ico._pMaskOn then
-                texture:RemoveMaskTexture(ico._pMask)
-                ico._pMaskOn = nil
+            if iconHost._pMaskOn then
+                texture:RemoveMaskTexture(iconHost._pMask)
+                iconHost._pMaskOn = nil
             end
             texture:ClearAllPoints()
-            texture:SetPoint("TOPLEFT", ico, "TOPLEFT", 1, -1)
-            texture:SetPoint("BOTTOMRIGHT", ico, "BOTTOMRIGHT", -1, 1)
+            texture:SetPoint("TOPLEFT", iconHost, "TOPLEFT", 1, -1)
+            texture:SetPoint("BOTTOMRIGHT", iconHost, "BOTTOMRIGHT", -1, 1)
         end
-        local holderFrame = ico:GetParent()
+        local holderFrame = iconHost:GetParent()
         if holderFrame then
-            ico:SetFrameStrata(holderFrame:GetFrameStrata())
-            ico:SetFrameLevel(holderFrame:GetFrameLevel() + 1)
+            iconHost:SetFrameStrata(holderFrame:GetFrameStrata())
+            iconHost:SetFrameLevel(holderFrame:GetFrameLevel() + 1)
         end
         return
     end
-    ico._pbd = edge
-    Pix.HideBorder(ico)
-    if ico._bg then
-        ico._bg:Hide()
+    iconHost._pbd = edge
+    Pix.HideBorder(iconHost)
+    if iconHost._bg then
+        iconHost._bg:Hide()
     end
-    ico:ClearAllPoints()
-    ico:SetAllPoints(edge)
+    iconHost:ClearAllPoints()
+    iconHost:SetAllPoints(edge)
     -- The portrait's strata, not the raised cast bar's: the frame border
     -- (frame +10) still closes an attached portrait's edges over the icon.
-    ico:SetFrameStrata(edge:GetFrameStrata())
-    ico:SetFrameLevel(edge:GetFrameLevel() + 2)
-    if not ico._pOverlayHooked then
-        ico:HookScript("OnShow", function(self)
+    iconHost:SetFrameStrata(edge:GetFrameStrata())
+    iconHost:SetFrameLevel(edge:GetFrameLevel() + 2)
+    if not iconHost._pOverlayHooked then
+        iconHost:HookScript("OnShow", function(self)
             if self._pbd then
                 CastIconPortraitOverlay(self._pbd, true)
             end
         end)
-        ico:HookScript("OnHide", function(self)
+        iconHost:HookScript("OnHide", function(self)
             if self._pbd then
                 CastIconPortraitOverlay(self._pbd, false)
             end
         end)
-        ico._pOverlayHooked = true
+        iconHost._pOverlayHooked = true
     end
-    CastIconPortraitOverlay(edge, ico:IsShown())
+    CastIconPortraitOverlay(edge, iconHost:IsShown())
     if not texture then
         return
     end
     texture:ClearAllPoints()
-    texture:SetAllPoints(ico)
+    texture:SetAllPoints(iconHost)
     -- A detached portrait's shape; attached and shape-less ones are square.
-    local shape = ((s.portraitStyle or saved.profile.portraitStyle or "attached") == "detached")
-            and (s.detachedPortraitShape or "portrait")
+    local shape = ((cfg.portraitStyle or saved.profile.portraitStyle or "attached") == "detached")
+            and (cfg.detachedPortraitShape or "portrait")
         or "none"
     local maskPath = shape ~= "none" and mod.PORTRAIT_MASKS[shape]
     if maskPath then
-        local m = ico._pMask
-        if not m then
-            m = ico:CreateMaskTexture()
-            ico._pMask = m
+        local portraitMask = iconHost._pMask
+        if not portraitMask then
+            portraitMask = iconHost:CreateMaskTexture()
+            iconHost._pMask = portraitMask
         end
         -- The backdrop mask's own inset, widened until the icon's opening meets
         -- the shape border's inner edge (all in backdrop px, W wide): the ring
@@ -647,7 +647,7 @@ function mod.UF_CastIconPortraitLayout(ico, texture, edge, s)
         -- ring, ns.UF_UNMASKED_RING: 9 texels into its inset rect), the ring
         -- rect grows by 7 - Size per side, and the mask's opening lies about
         -- 12 of its 128 texels in.
-        local band = s.detachedPortraitBorderSize or 7
+        local band = cfg.detachedPortraitBorderSize or 7
         local inset = (band >= 1) and 1 or 0
         if band >= 1 and mod.PORTRAIT_BORDERS[shape] then
             local W = edge:GetWidth()
@@ -668,21 +668,21 @@ function mod.UF_CastIconPortraitLayout(ico, texture, edge, s)
                 inset = need
             end
         end
-        m:ClearAllPoints()
-        m:SetPoint("TOPLEFT", edge, "TOPLEFT", inset, -inset)
-        m:SetPoint("BOTTOMRIGHT", edge, "BOTTOMRIGHT", -inset, inset)
-        if m._path ~= maskPath then
-            m:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-            m._path = maskPath
+        portraitMask:ClearAllPoints()
+        portraitMask:SetPoint("TOPLEFT", edge, "TOPLEFT", inset, -inset)
+        portraitMask:SetPoint("BOTTOMRIGHT", edge, "BOTTOMRIGHT", -inset, inset)
+        if portraitMask._path ~= maskPath then
+            portraitMask:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+            portraitMask._path = maskPath
         end
-        m:Show()
-        if not ico._pMaskOn then
-            texture:AddMaskTexture(m)
-            ico._pMaskOn = true
+        portraitMask:Show()
+        if not iconHost._pMaskOn then
+            texture:AddMaskTexture(portraitMask)
+            iconHost._pMaskOn = true
         end
-    elseif ico._pMaskOn then
-        texture:RemoveMaskTexture(ico._pMask)
-        ico._pMaskOn = nil
+    elseif iconHost._pMaskOn then
+        texture:RemoveMaskTexture(iconHost._pMask)
+        iconHost._pMaskOn = nil
     end
 end
 
@@ -695,19 +695,19 @@ function mod.UF_GetPlayerCastPortrait()
     if not p or mod.GetUnitFrameSource("player") ~= "cui" or mod.UF_Blizz() then
         return nil
     end
-    local s = GetSettingsForUnit("player")
+    local cfg = GetSettingsForUnit("player")
     if
-        s.showPortrait == false
-        or (s.portraitStyle or p.portraitStyle or "attached") == "none"
-        or (s.portraitMode or p.portraitMode or "2d") == "none"
+        cfg.showPortrait == false
+        or (cfg.portraitStyle or p.portraitStyle or "attached") == "none"
+        or (cfg.portraitMode or p.portraitMode or "2d") == "none"
     then
         return nil
     end
-    if s.showPlayerCastbar and mod.UF_CastIconOnPortrait("player", s) then
+    if cfg.showPlayerCastbar and mod.UF_CastIconOnPortrait("player", cfg) then
         return nil, nil, "uf"
     end
     local pt = frameList.player and frameList.player.Portrait
-    return pt and pt.backdrop, s
+    return pt and pt.backdrop, cfg
 end
 
 -- A module that lays something over the player portrait asks to be called back after
@@ -727,15 +727,15 @@ end
 -- portraitBd argument: returns the backdrop the icon now sits on, or nil. One
 -- settings test while off; the layout runs only while on or on the pass that
 -- turns it off.
-function mod.UF_CastIconPortrait(castBar, widget, s, unitToken)
-    local ico = castBar and castBar._iconFrame
-    if not ico then
+function mod.UF_CastIconPortrait(castBar, widget, cfg, unitToken)
+    local iconHost = castBar and castBar._iconFrame
+    if not iconHost then
         return nil
     end
     local pt = widget and widget.Portrait
-    local edge = pt and mod.UF_CastIconOnPortrait(unitToken, s) and pt.backdrop or nil
-    if edge or ico._pbd then
-        mod.UF_CastIconPortraitLayout(ico, castBar.Icon, edge, s)
+    local edge = pt and mod.UF_CastIconOnPortrait(unitToken, cfg) and pt.backdrop or nil
+    if edge or iconHost._pbd then
+        mod.UF_CastIconPortraitLayout(iconHost, castBar.Icon, edge, cfg)
     end
     return edge
 end
@@ -759,11 +759,11 @@ end
 local function GetActiveKickSpell()
     return CludesUI.GetActiveKickSpell()
 end
-local function ComputeCastBarTint(readyTint, baseTint)
+local function ComputeCastBarTint(readyTint, plainTint)
     if CludesUI and CludesUI.ComputeCastBarTint then
-        return CludesUI.ComputeCastBarTint(readyTint, baseTint)
+        return CludesUI.ComputeCastBarTint(readyTint, plainTint)
     end
-    return baseTint.r, baseTint.g, baseTint.b
+    return plainTint.r, plainTint.g, plainTint.b
 end
 local function IsKickCastbarUnit(unitToken)
     return unitToken == "target" or unitToken == "focus" or (unitToken and unitToken:match("^boss") ~= nil)
@@ -814,14 +814,14 @@ local function ApplyUnitFrameCastColor(castBar)
         return
     end
     local prefs = castBar._eufSettings
-    local ownerUnit = castBar.__owner and castBar.__owner._cuiUnit
+    local hostUnit = castBar.__owner and castBar.__owner._cuiUnit
     -- Zero-alloc: values flow as scalars instead of building up to three throwaway
     -- color tables per call (two default literals + the blended kick tint).
     local region, g, b
     -- Base fill colour (what ReloadFrames gives the StatusBar), before the kick blend.
     local br, bgTex, bb
-    if prefs and prefs.castbarClassColored and ownerUnit == "player" then
-        local _, classToken = UnitClass(ownerUnit)
+    if prefs and prefs.castbarClassColored and hostUnit == "player" then
+        local _, classToken = UnitClass(hostUnit)
         if issecretvalue(classToken) then
             classToken = nil
         end
@@ -834,11 +834,11 @@ local function ApplyUnitFrameCastColor(castBar)
         br, bgTex, bb = region, g, b
     end
     if not region then
-        local baseTint = (prefs and prefs.castbarFillColor) or GetCastbarColor()
-        br, bgTex, bb = baseTint.r, baseTint.g, baseTint.b
-        if IsKickCastbarUnit(ownerUnit) then
+        local plainTint = (prefs and prefs.castbarFillColor) or GetCastbarColor()
+        br, bgTex, bb = plainTint.r, plainTint.g, plainTint.b
+        if IsKickCastbarUnit(hostUnit) then
             local readyTint = (prefs and prefs.castbarInterruptReadyColor) or UF_KICK_READY_TINT
-            region, g, b = ComputeCastBarTint(readyTint, baseTint)
+            region, g, b = ComputeCastBarTint(readyTint, plainTint)
         else
             region, g, b = br, bgTex, bb
         end
@@ -904,8 +904,8 @@ local function UpdateUnitFrameKickTick(castBar)
         return
     end
     local prefs = castBar._eufSettings
-    local ownerUnit = castBar.__owner and castBar.__owner._cuiUnit
-    if not IsKickCastbarUnit(ownerUnit) then
+    local hostUnit = castBar.__owner and castBar.__owner._cuiUnit
+    if not IsKickCastbarUnit(hostUnit) then
         HideUnitFrameKickTick(castBar)
         return
     end
@@ -923,25 +923,25 @@ local function UpdateUnitFrameKickTick(castBar)
     castBar._kickProtected = kickProtected
     local isChannel = castBar.channeling and true or false
     local isEmpowered = false
-    if not (UnitCastingDuration and ownerUnit) then
+    if not (UnitCastingDuration and hostUnit) then
         HideUnitFrameKickTick(castBar)
         return
     end
-    local castDuration
+    local castDur
     if isChannel then
         if UnitEmpoweredChannelDuration then
-            castDuration = UnitEmpoweredChannelDuration(ownerUnit, true)
-            if castDuration then
+            castDur = UnitEmpoweredChannelDuration(hostUnit, true)
+            if castDur then
                 isEmpowered = true
             end
         end
-        if not castDuration and UnitChannelDuration then
-            castDuration = UnitChannelDuration(ownerUnit)
+        if not castDur and UnitChannelDuration then
+            castDur = UnitChannelDuration(hostUnit)
         end
     else
-        castDuration = UnitCastingDuration(ownerUnit)
+        castDur = UnitCastingDuration(hostUnit)
     end
-    if not castDuration then
+    if not castDur then
         -- Transient read miss during an ongoing cast: skip, do NOT hide (a Hide/re-Show
         -- cycle on every SPELL_UPDATE_COOLDOWN would blink the tick during rotation).
         -- Cast end is handled by the cast-stop path.
@@ -951,9 +951,9 @@ local function UpdateUnitFrameKickTick(castBar)
     -- without re-deriving channel/empower or re-minting fill geometry.
     castBar._kickIsChannel = isChannel
     castBar._kickIsEmpowered = isEmpowered
-    local totalDur = castDuration:GetTotalDuration()
-    local interruptCD = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
-    if not interruptCD then
+    local totalDur = castDur:GetTotalDuration()
+    local kickCD = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
+    if not kickCD then
         -- Transient read miss (see above): skip, do not hide.
         return
     end
@@ -974,8 +974,8 @@ local function UpdateUnitFrameKickTick(castBar)
     castBar.kickPositioner:SetMinMaxValues(0, totalDur)
     castBar.kickMarker:SetMinMaxValues(0, totalDur)
     castBar.kickMarker:SetSize(barW, barH)
-    castBar.kickPositioner:SetValue(castDuration:GetElapsedDuration())
-    castBar.kickMarker:SetValue(interruptCD:GetRemainingDuration())
+    castBar.kickPositioner:SetValue(castDur:GetElapsedDuration())
+    castBar.kickMarker:SetValue(kickCD:GetRemainingDuration())
     castBar.kickTick:SetColorTexture(1, 1, 1, 1)
     if isChannel and not isEmpowered then
         castBar.kickPositioner:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
@@ -1047,9 +1047,9 @@ local function UpdateUnitFrameKickTick(castBar)
     castBar.kickReadyFill:SetVertexColor(mc.r, mc.g, mc.b, 1)
     castBar.kickTick:SetShown(tickOn)
     castBar.kickReadyFill:SetShown(midOn)
-    if interruptCD.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
+    if kickCD.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
         local interruptible = C_CurveUtil.EvaluateColorValueFromBoolean(kickProtected, 0, 1)
-        local kickReady = interruptCD:IsZero()
+        local kickReady = kickCD:IsZero()
         local alpha = C_CurveUtil.EvaluateColorValueFromBoolean(kickReady, 0, interruptible)
         castBar.kickTick:SetAlpha(alpha)
         castBar.kickReadyFill:SetAlpha(alpha)
@@ -1061,7 +1061,7 @@ local function UpdateUnitFrameKickTick(castBar)
         castBar._kickTicker:Cancel()
     end
     castBar._kickTicker = C_Timer.NewTicker(0.1, function()
-        if not castBar:IsShown() or not ownerUnit then
+        if not castBar:IsShown() or not hostUnit then
             HideUnitFrameKickTick(castBar)
             return
         end
@@ -1092,35 +1092,35 @@ local function RefreshUnitFrameKickTick(castBar)
         HideUnitFrameKickTick(castBar)
         return
     end
-    local interruptCD = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
-    if not interruptCD then
+    local kickCD = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
+    if not kickCD then
         -- Transient read miss during an ongoing cast: skip, do not hide.
         return
     end
-    local ownerUnit = castBar.__owner and castBar.__owner._cuiUnit
-    if not (UnitCastingDuration and ownerUnit) then
+    local hostUnit = castBar.__owner and castBar.__owner._cuiUnit
+    if not (UnitCastingDuration and hostUnit) then
         return
     end
-    local castDuration
+    local castDur
     if castBar._kickIsChannel then
         if castBar._kickIsEmpowered and UnitEmpoweredChannelDuration then
-            castDuration = UnitEmpoweredChannelDuration(ownerUnit, true)
+            castDur = UnitEmpoweredChannelDuration(hostUnit, true)
         end
-        if not castDuration and UnitChannelDuration then
-            castDuration = UnitChannelDuration(ownerUnit)
+        if not castDur and UnitChannelDuration then
+            castDur = UnitChannelDuration(hostUnit)
         end
     else
-        castDuration = UnitCastingDuration(ownerUnit)
+        castDur = UnitCastingDuration(hostUnit)
     end
-    if not castDuration then
+    if not castDur then
         -- Transient read miss (see above): skip, do not hide.
         return
     end
-    castBar.kickPositioner:SetValue(castDuration:GetElapsedDuration())
-    castBar.kickMarker:SetValue(interruptCD:GetRemainingDuration())
-    if interruptCD.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
+    castBar.kickPositioner:SetValue(castDur:GetElapsedDuration())
+    castBar.kickMarker:SetValue(kickCD:GetRemainingDuration())
+    if kickCD.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
         local interruptible = C_CurveUtil.EvaluateColorValueFromBoolean(castBar._kickProtected, 0, 1)
-        local alpha = C_CurveUtil.EvaluateColorValueFromBoolean(interruptCD:IsZero(), 0, interruptible)
+        local alpha = C_CurveUtil.EvaluateColorValueFromBoolean(kickCD:IsZero(), 0, interruptible)
         castBar.kickTick:SetAlpha(alpha)
         castBar.kickReadyFill:SetAlpha(alpha)
     end
@@ -1200,9 +1200,9 @@ local function CreateCastBar(widget, unitToken, prefs)
     -- aspect so it can hang off the frame's aura block (see ns.UF_LayoutAspectOK);
     -- its pieces below are all children and inherit it.
     local aspectTemplate = mod.UF_CastbarAspectTemplate(unitToken)
-    local castbarBg = CreateFrame("Frame", nil, widget, aspectTemplate)
+    local castBack = CreateFrame("Frame", nil, widget, aspectTemplate)
     if aspectTemplate then
-        castbarBg._blizzAspect = true
+        castBack._blizzAspect = true
     end
 
     -- Width/height always come from settings; nothing is auto-derived.
@@ -1217,16 +1217,16 @@ local function CreateCastBar(widget, unitToken, prefs)
         cbWidth = cbw > 0 and cbw or 181
         cbHeight = prefs.castbarHeight or 14
     end
-    Pix.Size(castbarBg, cbWidth, cbHeight)
+    Pix.Size(castBack, cbWidth, cbHeight)
 
     -- Position is owned by the centralized unlock system; this temporary anchor
     -- just gives the frame valid bounds until ApplySavedPositions runs at login
     -- (unlock default: BOTTOM of the parent unit frame).
-    castbarBg:SetPoint("TOP", widget, "BOTTOM", 0, 0)
+    castBack:SetPoint("TOP", widget, "BOTTOM", 0, 0)
 
-    local bgTex = castbarBg:CreateTexture(nil, "BACKGROUND")
-    Pix.Point(bgTex, "TOPLEFT", castbarBg, "TOPLEFT", 0, 0)
-    Pix.Point(bgTex, "BOTTOMRIGHT", castbarBg, "BOTTOMRIGHT", 0, 0)
+    local bgTex = castBack:CreateTexture(nil, "BACKGROUND")
+    Pix.Point(bgTex, "TOPLEFT", castBack, "TOPLEFT", 0, 0)
+    Pix.Point(bgTex, "BOTTOMRIGHT", castBack, "BOTTOMRIGHT", 0, 0)
     -- Background color/alpha default to black 0.5 unless castBgColor/castBgAlpha
     -- are set.
     local _cbgC = prefs.castBgColor
@@ -1236,11 +1236,11 @@ local function CreateCastBar(widget, unitToken, prefs)
         _cbgC and _cbgC.b or 0,
         prefs.castBgAlpha or 0.5
     )
-    castbarBg._bgTex = bgTex
+    castBack._bgTex = bgTex
 
-    local castBar = CreateFrame("StatusBar", nil, castbarBg)
-    Pix.Point(castBar, "TOPLEFT", castbarBg, "TOPLEFT", 0, 0)
-    Pix.Point(castBar, "BOTTOMRIGHT", castbarBg, "BOTTOMRIGHT", 0, 0)
+    local castBar = CreateFrame("StatusBar", nil, castBack)
+    Pix.Point(castBar, "TOPLEFT", castBack, "TOPLEFT", 0, 0)
+    Pix.Point(castBar, "BOTTOMRIGHT", castBack, "BOTTOMRIGHT", 0, 0)
     castBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     castBar:GetStatusBarTexture():SetHorizTile(false)
     castBar:SetReverseFill(prefs.castReverseFill and true or false)
@@ -1265,22 +1265,22 @@ local function CreateCastBar(widget, unitToken, prefs)
     textValue:SetTextColor(1, 1, 1)
     castBar.Text = textValue
 
-    local time = textOverlay:CreateFontString(nil, "OVERLAY")
-    SetFSFont(time, prefs.castDurationSize or 10)
-    time:SetJustifyH("RIGHT")
-    time:SetWordWrap(false)
-    time:SetMaxLines(1)
-    time:SetTextColor(1, 1, 1)
-    castBar.Time = time
+    local timeText = textOverlay:CreateFontString(nil, "OVERLAY")
+    SetFSFont(timeText, prefs.castDurationSize or 10)
+    timeText:SetJustifyH("RIGHT")
+    timeText:SetWordWrap(false)
+    timeText:SetMaxLines(1)
+    timeText:SetTextColor(1, 1, 1)
+    castBar.Time = timeText
 
-    local target = textOverlay:CreateFontString(nil, "OVERLAY")
-    SetFSFont(target, prefs.castSpellTargetSize or 11)
-    target:SetJustifyH("RIGHT")
-    target:SetWordWrap(false)
-    target:SetMaxLines(1)
-    target:SetTextColor(1, 1, 1)
-    target:Hide()
-    castBar.Target = target
+    local targetText = textOverlay:CreateFontString(nil, "OVERLAY")
+    SetFSFont(targetText, prefs.castSpellTargetSize or 11)
+    targetText:SetJustifyH("RIGHT")
+    targetText:SetWordWrap(false)
+    targetText:SetMaxLines(1)
+    targetText:SetTextColor(1, 1, 1)
+    targetText:Hide()
+    castBar.Target = targetText
 
     -- Side-aware three-zone layout (mirrors the nameplate cast text system). Each
     -- element has a side; duration reserves its slot and pushes whichever non-center
@@ -1377,21 +1377,21 @@ local function CreateCastBar(widget, unitToken, prefs)
 
     -- Helper: sync all offset/size/side cache values from settings onto
     -- the castbar, then re-layout. Called from live refresh paths.
-    castBar._syncOffsetsAndLayout = function(self, s)
-        self._durationSize = s.castDurationSize or 10
-        self._nameOX = s.castSpellNameX or 0
-        self._nameOY = s.castSpellNameY or 0
-        self._durOX = s.castDurationX or 0
-        self._durOY = s.castDurationY or 0
-        self._tgtOX = s.castSpellTargetX or 0
-        self._tgtOY = s.castSpellTargetY or 0
-        self._nameSide = s.castSpellNameSide or "left"
-        self._tgtSide = s.castSpellTargetSide or "right"
-        self._durSide = s.castDurationSide or "right"
-        self._showDuration = s.showCastDuration ~= false
-        self._fullCraft = s.castFullCraftTime == true
-        self._fitName = s.castFitSpellName == true or nil
-        self._nameSize = s.castSpellNameSize or 11
+    castBar._syncOffsetsAndLayout = function(self, cfg)
+        self._durationSize = cfg.castDurationSize or 10
+        self._nameOX = cfg.castSpellNameX or 0
+        self._nameOY = cfg.castSpellNameY or 0
+        self._durOX = cfg.castDurationX or 0
+        self._durOY = cfg.castDurationY or 0
+        self._tgtOX = cfg.castSpellTargetX or 0
+        self._tgtOY = cfg.castSpellTargetY or 0
+        self._nameSide = cfg.castSpellNameSide or "left"
+        self._tgtSide = cfg.castSpellTargetSide or "right"
+        self._durSide = cfg.castDurationSide or "right"
+        self._showDuration = cfg.showCastDuration ~= false
+        self._fullCraft = cfg.castFullCraftTime == true
+        self._fitName = cfg.castFitSpellName == true or nil
+        self._nameSize = cfg.castSpellNameSize or 11
         if self._layoutTextZones then
             self:_layoutTextZones()
         end
@@ -1413,8 +1413,8 @@ local function CreateCastBar(widget, unitToken, prefs)
     castTintLayer:SetPoint("TOPLEFT", castBar:GetStatusBarTexture(), "TOPLEFT")
     castTintLayer:SetPoint("BOTTOMRIGHT", castBar:GetStatusBarTexture(), "BOTTOMRIGHT")
     castTintLayer:SetTexture("Interface\\Buttons\\WHITE8X8")
-    local c = GetCastbarColor()
-    castTintLayer:SetVertexColor(c.r, c.g, c.b)
+    local tint = GetCastbarColor()
+    castTintLayer:SetVertexColor(tint.r, tint.g, tint.b)
     castTintLayer:SetAlpha(0)
     castBar.castTintLayer = castTintLayer
     castBar._castTintOn = nil
@@ -1470,40 +1470,40 @@ local function CreateCastBar(widget, unitToken, prefs)
         kickClip:SetAllPoints(castBar)
         kickClip:SetClipsChildren(true)
         castBar.kickClip = kickClip
-        local kickPositioner = CreateFrame("StatusBar", nil, kickClip)
-        kickPositioner:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        kickPositioner:GetStatusBarTexture():SetAlpha(0)
+        local kickPos = CreateFrame("StatusBar", nil, kickClip)
+        kickPos:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        kickPos:GetStatusBarTexture():SetAlpha(0)
         -- Pixel-snap OFF on the fill texture (mirrors Nameplates). The tick sits
         -- at positioner_width + marker_width; independent per-fill snapping makes
         -- round(a) + round(b) wobble 1px even though the summed fraction is
         -- invariant. Load-bearing unsnap is after each SetFillStyle below.
-        if kickPositioner:GetStatusBarTexture().SetSnapToPixelGrid then
-            kickPositioner:GetStatusBarTexture():SetSnapToPixelGrid(false)
-            kickPositioner:GetStatusBarTexture():SetTexelSnappingBias(0)
+        if kickPos:GetStatusBarTexture().SetSnapToPixelGrid then
+            kickPos:GetStatusBarTexture():SetSnapToPixelGrid(false)
+            kickPos:GetStatusBarTexture():SetTexelSnappingBias(0)
         end
-        kickPositioner:SetPoint("CENTER", castBar)
-        kickPositioner:SetFrameLevel(castBar:GetFrameLevel() + 1)
-        kickPositioner:Hide()
-        castBar.kickPositioner = kickPositioner
-        local kickMarker = CreateFrame("StatusBar", nil, kickClip)
-        kickMarker:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        kickMarker:GetStatusBarTexture():SetAlpha(0)
-        if kickMarker:GetStatusBarTexture().SetSnapToPixelGrid then
-            kickMarker:GetStatusBarTexture():SetSnapToPixelGrid(false)
-            kickMarker:GetStatusBarTexture():SetTexelSnappingBias(0)
+        kickPos:SetPoint("CENTER", castBar)
+        kickPos:SetFrameLevel(castBar:GetFrameLevel() + 1)
+        kickPos:Hide()
+        castBar.kickPositioner = kickPos
+        local kickMark = CreateFrame("StatusBar", nil, kickClip)
+        kickMark:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        kickMark:GetStatusBarTexture():SetAlpha(0)
+        if kickMark:GetStatusBarTexture().SetSnapToPixelGrid then
+            kickMark:GetStatusBarTexture():SetSnapToPixelGrid(false)
+            kickMark:GetStatusBarTexture():SetTexelSnappingBias(0)
         end
-        kickMarker:SetPoint("LEFT", kickPositioner:GetStatusBarTexture(), "RIGHT")
-        kickMarker:SetSize(1, 1)
-        kickMarker:SetFrameLevel(castBar:GetFrameLevel() + 2)
-        kickMarker:Hide()
-        castBar.kickMarker = kickMarker
-        local kickTick = kickMarker:CreateTexture(nil, "OVERLAY", nil, 3)
-        kickTick:SetColorTexture(1, 1, 1, 1)
-        kickTick:SetWidth(2)
-        kickTick:SetPoint("TOP", kickMarker, "TOP", 0, 0)
-        kickTick:SetPoint("BOTTOM", kickMarker, "BOTTOM", 0, 0)
-        kickTick:SetPoint("LEFT", kickMarker:GetStatusBarTexture(), "RIGHT")
-        castBar.kickTick = kickTick
+        kickMark:SetPoint("LEFT", kickPos:GetStatusBarTexture(), "RIGHT")
+        kickMark:SetSize(1, 1)
+        kickMark:SetFrameLevel(castBar:GetFrameLevel() + 2)
+        kickMark:Hide()
+        castBar.kickMarker = kickMark
+        local kickLine = kickMark:CreateTexture(nil, "OVERLAY", nil, 3)
+        kickLine:SetColorTexture(1, 1, 1, 1)
+        kickLine:SetWidth(2)
+        kickLine:SetPoint("TOP", kickMark, "TOP", 0, 0)
+        kickLine:SetPoint("BOTTOM", kickMark, "BOTTOM", 0, 0)
+        kickLine:SetPoint("LEFT", kickMark:GetStatusBarTexture(), "RIGHT")
+        castBar.kickTick = kickLine
         -- Interrupt-ready mid-cast fill: colors the cast-bar segment from the "kick
         -- ready here" point to the cast end (the window during which the interrupt will
         -- be available) when the kick is on cooldown now but comes off before the cast
@@ -1522,17 +1522,17 @@ local function CreateCastBar(widget, unitToken, prefs)
     end
 
     castBar.CustomTimeText = function(self, durationObject)
-        local time = self.Time
+        local timeText = self.Time
         if self._showDuration == false then
-            if time:IsShown() then
-                time:SetText("")
-                time:Hide()
+            if timeText:IsShown() then
+                timeText:SetText("")
+                timeText:Hide()
             end
             return
         end
-        time:Show()
+        timeText:Show()
         if self._craftExtra and durationObject then
-            CludesUI.SetCraftTimerText(self, time, durationObject:GetRemainingDuration(), false)
+            CludesUI.SetCraftTimerText(self, timeText, durationObject:GetRemainingDuration(), false)
             return
         end
         if durationObject then
@@ -1541,14 +1541,14 @@ local function CreateCastBar(widget, unitToken, prefs)
             -- accepts the secret durations of other units' casts in combat.
             local duration = durationObject:GetRemainingDuration()
             if self.delay and self.delay ~= 0 then
-                time:SetFormattedText(
+                timeText:SetFormattedText(
                     "%.1f|cffff0000%s%.2f|r",
                     duration,
                     self.channeling and "-" or "+",
                     self.delay
                 )
             else
-                time:SetFormattedText("%.1f", duration)
+                timeText:SetFormattedText("%.1f", duration)
             end
         end
     end
@@ -1559,21 +1559,21 @@ local function CreateCastBar(widget, unitToken, prefs)
     -- unreliable this early; LayoutCastbarIcon anchors height to the bar regardless,
     -- this is just the initial square.
     local iconSize = cbHeight
-    local iconFrame = CreateFrame("Frame", nil, castbarBg)
-    iconFrame:SetSize(iconSize, iconSize)
-    Pix.Point(iconFrame, "TOPRIGHT", castbarBg, "TOPLEFT", 0, 0)
-    local iconBg = iconFrame:CreateTexture(nil, "BACKGROUND")
+    local iconBox = CreateFrame("Frame", nil, castBack)
+    iconBox:SetSize(iconSize, iconSize)
+    Pix.Point(iconBox, "TOPRIGHT", castBack, "TOPLEFT", 0, 0)
+    local iconBg = iconBox:CreateTexture(nil, "BACKGROUND")
     iconBg:SetAllPoints()
     iconBg:SetColorTexture(0, 0, 0, 1)
-    iconFrame._bg = iconBg
+    iconBox._bg = iconBg
     -- 1px black border via unified PP system
-    Pix.CreateBorder(iconFrame, 0, 0, 0, 1)
-    local iconTex = iconFrame:CreateTexture(nil, "ARTWORK")
-    iconTex:SetPoint("TOPLEFT", iconFrame, "TOPLEFT", 1, -1)
-    iconTex:SetPoint("BOTTOMRIGHT", iconFrame, "BOTTOMRIGHT", -1, 1)
+    Pix.CreateBorder(iconBox, 0, 0, 0, 1)
+    local iconTex = iconBox:CreateTexture(nil, "ARTWORK")
+    iconTex:SetPoint("TOPLEFT", iconBox, "TOPLEFT", 1, -1)
+    iconTex:SetPoint("BOTTOMRIGHT", iconBox, "BOTTOMRIGHT", -1, 1)
     iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     castBar.Icon = iconTex
-    castBar._iconFrame = iconFrame
+    castBar._iconFrame = iconBox
 
     -- Initial icon/fill layout (re-applied on every reload by the per-unit
     -- update paths and whenever the cast-bar height changes).
@@ -1617,9 +1617,9 @@ do
 
     -- Called from PostCastStart; the engine has already set castbar.spellID.
     mod.UpdateUnitFrameImportantGlow = function(castBar)
-        local s = castBar and castBar._eufSettings
+        local cfg = castBar and castBar._eufSettings
         local Glows = CludesUI.Glows
-        if not (s and s.castbarImportantGlow and C_Spell and C_Spell.IsSpellImportant) then
+        if not (cfg and cfg.castbarImportantGlow and C_Spell and C_Spell.IsSpellImportant) then
             mod.ClearUnitFrameImportantGlow(castBar)
             return
         end
@@ -1640,16 +1640,16 @@ do
         end
         shade:SetFrameLevel(castBar:GetFrameLevel() + 5)
 
-        local c = s.castbarImportantGlowColor or IMP_GLOW_COLOR
-        local bgc = s.castbarImportantGlowBackgroundColor or IMP_GLOW_BG_COLOR
+        local tint = cfg.castbarImportantGlowColor or IMP_GLOW_COLOR
+        local bgc = cfg.castbarImportantGlowBackgroundColor or IMP_GLOW_BG_COLOR
         local specInfo = impSpec
-        specInfo.style = s.castbarImportantGlowStyle or 1
+        specInfo.style = cfg.castbarImportantGlowStyle or 1
         specInfo.r, specInfo.g, specInfo.b =
-            Glows.ResolveColor(s.castbarImportantGlowColorMode or "custom", c.r, c.g, c.b)
-        specInfo.lines = s.castbarImportantGlowLines or 8
-        specInfo.thickness = s.castbarImportantGlowThickness or 2
-        specInfo.speed = s.castbarImportantGlowSpeed or 4
-        specInfo.bg = (s.castbarImportantGlowBackground == true) or nil
+            Glows.ResolveColor(cfg.castbarImportantGlowColorMode or "custom", tint.r, tint.g, tint.b)
+        specInfo.lines = cfg.castbarImportantGlowLines or 8
+        specInfo.thickness = cfg.castbarImportantGlowThickness or 2
+        specInfo.speed = cfg.castbarImportantGlowSpeed or 4
+        specInfo.bg = (cfg.castbarImportantGlowBackground == true) or nil
         specInfo.bgR, specInfo.bgG, specInfo.bgB = bgc.r, bgc.g, bgc.b
         local pW, pH = castBar:GetWidth(), castBar:GetHeight()
         -- Secret while the bar rides the stock-style aura block: use the last plain read
@@ -1657,9 +1657,9 @@ do
         if issecretvalue(pW) or issecretvalue(pH) then
             pW, pH = castBar._impPlainW, castBar._impPlainH
             if not pW then
-                local cbw = s.castbarWidth or 0
+                local cbw = cfg.castbarWidth or 0
                 pW = cbw > 0 and cbw or 181
-                pH = s.castbarHeight or 14
+                pH = cfg.castbarHeight or 14
             end
         else
             castBar._impPlainW, castBar._impPlainH = pW, pH
@@ -1682,18 +1682,18 @@ end
 
 local function SetupShowOnCastBar(widget, unitToken)
     local castBar = widget.Castbar
-    local castbarBg = castBar:GetParent()
-    local iconFrame = castBar._iconFrame
+    local castBack = castBar:GetParent()
+    local iconBox = castBar._iconFrame
     local impGlowUnit = IsKickCastbarUnit(unitToken)
 
     -- Read the hide-when-inactive flag dynamically so closures always reflect the
     -- current setting rather than a value captured at frame-creation time.
     local function shouldHideWhenInactive()
-        local s = GetSettingsForUnit(unitToken)
-        if not s then
+        local cfg = GetSettingsForUnit(unitToken)
+        if not cfg then
             return true
         end
-        local val = s.castbarHideWhenInactive
+        local val = cfg.castbarHideWhenInactive
         if val == nil then
             return true
         end
@@ -1701,14 +1701,14 @@ local function SetupShowOnCastBar(widget, unitToken)
     end
 
     castBar:Hide()
-    if iconFrame then
-        iconFrame:Hide()
+    if iconBox then
+        iconBox:Hide()
     end
-    if castbarBg then
+    if castBack then
         if shouldHideWhenInactive() then
-            castbarBg:Hide()
+            castBack:Hide()
         else
-            castbarBg:Show()
+            castBack:Show()
         end
     end
 
@@ -1722,12 +1722,12 @@ local function SetupShowOnCastBar(widget, unitToken)
             -- frame width) at cast start, so a live cast always shows the right width
             -- even if no settings pass ran since the frame was resized.
             if unitToken and unitToken:match("^boss") then
-                local s = saved and saved.profile and GetSettingsForUnit(unitToken)
-                local cw = (s and s.castbarWidth) or 0
+                local cfg = saved and saved.profile and GetSettingsForUnit(unitToken)
+                local cw = (cfg and cfg.castbarWidth) or 0
                 if cw > 0 and cw < 30 then
                     cw = 30
                 end
-                if s then
+                if cfg then
                     Pix.Width(bgTex, cw > 0 and cw or widget:GetWidth())
                 end
             end
@@ -1735,12 +1735,12 @@ local function SetupShowOnCastBar(widget, unitToken)
         end
         self:Show()
         if self._iconFrame then
-            local s = saved and saved.profile and GetSettingsForUnit(unitToken)
+            local cfg = saved and saved.profile and GetSettingsForUnit(unitToken)
             local showIcon
             if unitToken == "player" then
-                showIcon = (s and s.showPlayerCastIcon ~= false)
+                showIcon = (cfg and cfg.showPlayerCastIcon ~= false)
             else
-                showIcon = (not s or s.showCastIcon ~= false)
+                showIcon = (not cfg or cfg.showCastIcon ~= false)
             end
             if showIcon then
                 self._iconFrame:Show()
@@ -1750,27 +1750,27 @@ local function SetupShowOnCastBar(widget, unitToken)
         end
         -- Spell target text (who the unit is casting on)
         if self.Target then
-            local spellTarget, spellTargetClass
-            local ownerUnit = self.__owner and self.__owner._cuiUnit
+            local castTarget, castTargetClass
+            local hostUnit = self.__owner and self.__owner._cuiUnit
             -- Channels are excluded: UnitSpellTargetName tracks the last CAST
             -- and keeps returning the previous hard-cast's target for the
             -- whole channel (field-verified stale), and no channel-target API
             -- exists -- so channels show no target name rather than a wrong
             -- one. Empowered casts read correctly and keep theirs.
             if
-                ownerUnit
+                hostUnit
                 and not self.channeling
                 and UnitShouldDisplaySpellTargetName
-                and UnitShouldDisplaySpellTargetName(ownerUnit)
+                and UnitShouldDisplaySpellTargetName(hostUnit)
             then
-                local rawTarget = UnitSpellTargetName and UnitSpellTargetName(ownerUnit)
+                local rawTarget = UnitSpellTargetName and UnitSpellTargetName(hostUnit)
                 if rawTarget then
-                    spellTarget = rawTarget
-                    spellTargetClass = UnitSpellTargetClass and UnitSpellTargetClass(ownerUnit)
+                    castTarget = rawTarget
+                    castTargetClass = UnitSpellTargetClass and UnitSpellTargetClass(hostUnit)
                 end
             end
-            local hasTarget = spellTarget and true or false
-            local sOwn = ownerUnit and saved and saved.profile and GetSettingsForUnit(ownerUnit)
+            local targetShown = castTarget and true or false
+            local sOwn = hostUnit and saved and saved.profile and GetSettingsForUnit(hostUnit)
             -- Combine Spell Name and Target (target/focus): one string in the TARGET
             -- slot ("Spell Name - Target", target class colored); the separate Spell
             -- Name element is suppressed via _combineNT in LayoutCastTextZones. Color
@@ -1778,7 +1778,7 @@ local function SetupShowOnCastBar(widget, unitToken)
             -- through SetFormattedText -- never Lua-concatenated.
             local combine = sOwn
                 and sOwn.castCombineNameTarget == true
-                and (ownerUnit == "target" or ownerUnit == "focus")
+                and (hostUnit == "target" or hostUnit == "focus")
             self._combineNT = combine or nil
             -- Show Full Spell Name: the clean string the name element shows,
             -- for measuring. Secret parts are never concatenated (nil = skip).
@@ -1788,8 +1788,8 @@ local function SetupShowOnCastBar(widget, unitToken)
                     if self._craftExtra and self._craftCountSuffix then
                         num = num .. self._craftCountSuffix
                     end
-                    if combine and hasTarget then
-                        num = (not issecretvalue(spellTarget)) and (num .. " - " .. spellTarget) or nil
+                    if combine and targetShown then
+                        num = (not issecretvalue(castTarget)) and (num .. " - " .. castTarget) or nil
                     end
                 else
                     num = nil
@@ -1801,43 +1801,43 @@ local function SetupShowOnCastBar(widget, unitToken)
                 -- rides appended to the spell NAME element instead.
                 self.Target:SetText("")
                 self.Target:Hide()
-                if self.Text and hasTarget then
-                    local spellName = UnitCastingInfo(ownerUnit)
+                if self.Text and targetShown then
+                    local spellName = UnitCastingInfo(hostUnit)
                     if not spellName then
-                        spellName = UnitChannelInfo(ownerUnit)
+                        spellName = UnitChannelInfo(hostUnit)
                     end
                     local hex
-                    if spellTargetClass and C_ClassColor then
-                        local c = C_ClassColor.GetClassColor(spellTargetClass)
-                        if c and c.GenerateHexColor then
-                            hex = c:GenerateHexColor()
+                    if castTargetClass and C_ClassColor then
+                        local tint = C_ClassColor.GetClassColor(castTargetClass)
+                        if tint and tint.GenerateHexColor then
+                            hex = tint:GenerateHexColor()
                         end
                     end
                     if spellName then
                         if hex then
-                            self.Text:SetFormattedText("%s - |c" .. hex .. "%s|r", spellName, spellTarget)
+                            self.Text:SetFormattedText("%s - |c" .. hex .. "%s|r", spellName, castTarget)
                         else
-                            self.Text:SetFormattedText("%s - %s", spellName, spellTarget)
+                            self.Text:SetFormattedText("%s - %s", spellName, castTarget)
                         end
                     end
                 end
                 -- No cast target: oUF's plain spell name in the Text element
                 -- stands untouched.
             else
-                self.Target:SetText(spellTarget or "")
-                self.Target:SetShown(hasTarget and self._showTarget ~= false)
+                self.Target:SetText(castTarget or "")
+                self.Target:SetShown(targetShown and self._showTarget ~= false)
                 -- Class color the target name
-                if hasTarget and spellTargetClass and C_ClassColor then
-                    local c = C_ClassColor.GetClassColor(spellTargetClass)
-                    if c then
-                        self.Target:SetTextColor(c:GetRGB())
+                if targetShown and castTargetClass and C_ClassColor then
+                    local tint = C_ClassColor.GetClassColor(castTargetClass)
+                    if tint then
+                        self.Target:SetTextColor(tint:GetRGB())
                     else
-                        local tc = (sOwn and sOwn.castSpellTargetColor) or { r = 1, g = 1, b = 1 }
-                        self.Target:SetTextColor(tc.r, tc.g, tc.b)
+                        local targetRGB = (sOwn and sOwn.castSpellTargetColor) or { r = 1, g = 1, b = 1 }
+                        self.Target:SetTextColor(targetRGB.r, targetRGB.g, targetRGB.b)
                     end
-                elseif hasTarget then
-                    local tc = (sOwn and sOwn.castSpellTargetColor) or { r = 1, g = 1, b = 1 }
-                    self.Target:SetTextColor(tc.r, tc.g, tc.b)
+                elseif targetShown then
+                    local targetRGB = (sOwn and sOwn.castSpellTargetColor) or { r = 1, g = 1, b = 1 }
+                    self.Target:SetTextColor(targetRGB.r, targetRGB.g, targetRGB.b)
                 end
             end
             if self._layoutTextZones then
@@ -1884,33 +1884,33 @@ local function SetupShowOnCastBar(widget, unitToken)
 
     -- Guard against nil stages from UnitEmpoweredStagePercentages during
     -- empower casts where stage data isn't available yet.
-    castBar.UpdatePips = function(element, stages)
+    castBar.UpdatePips = function(pipHost, stages)
         if not stages then
             return
         end
-        local isHoriz = element:GetOrientation() == "HORIZONTAL"
-        local elementSize = isHoriz and element:GetWidth() or element:GetHeight()
+        local isHoriz = pipHost:GetOrientation() == "HORIZONTAL"
+        local elementSize = isHoriz and pipHost:GetWidth() or pipHost:GetHeight()
         local lastOffset = 0
         for stage, stageSection in next, stages do
             local off = lastOffset + (elementSize * stageSection)
             lastOffset = off
-            local pip = element.Pips[stage]
-            if not pip then
-                pip = (element.CreatePip or function(e)
+            local pipBar = pipHost.Pips[stage]
+            if not pipBar then
+                pipBar = (pipHost.CreatePip or function(e)
                     return CreateFrame("Frame", nil, e, "CastingBarFrameStagePipTemplate")
-                end)(element, stage)
-                element.Pips[stage] = pip
+                end)(pipHost, stage)
+                pipHost.Pips[stage] = pipBar
             end
-            pip:ClearAllPoints()
+            pipBar:ClearAllPoints()
             if isHoriz then
-                pip:SetPoint("CENTER", element, "LEFT", off, 0)
+                pipBar:SetPoint("CENTER", pipHost, "LEFT", off, 0)
             else
-                pip:SetPoint("CENTER", element, "BOTTOM", 0, off)
+                pipBar:SetPoint("CENTER", pipHost, "BOTTOM", 0, off)
             end
-            pip:Show()
+            pipBar:Show()
         end
-        for index = #stages + 1, #element.Pips do
-            element.Pips[index]:Hide()
+        for index = #stages + 1, #pipHost.Pips do
+            pipHost.Pips[index]:Hide()
         end
     end
 
@@ -1998,15 +1998,15 @@ end
 -- on and our player cast bar is on screen. padOn is the watcher's verdict; the
 -- login, reload and options callers pass nothing and it is read live.
 function mod.UF_ApplyGamepadCastbar(padOn)
-    local s = saved and saved.profile and saved.profile.player
+    local cfg = saved and saved.profile and saved.profile.player
     local widget = frameList.player
     local callback = widget and widget.Castbar
     local wanted = (
         callback
-        and s
-        and s.showPlayerCastbar
-        and s.castbarGamepadHide == true
-        and mod.VisEffective(s) ~= "never"
+        and cfg
+        and cfg.showPlayerCastbar
+        and cfg.castbarGamepadHide == true
+        and mod.VisEffective(cfg) ~= "never"
         and mod.GetUnitFrameSource("player") == "cui"
     )
             and true
@@ -2034,19 +2034,19 @@ function mod.UF_ApplyGamepadCastbar(padOn)
     if not callback then
         return
     end
-    local castbarBg = callback:GetParent()
+    local castBack = callback:GetParent()
     if hide then
         mod.SetCastbarElement(widget, false)
         callback:Hide()
-        if castbarBg then
-            castbarBg:Hide()
+        if castBack then
+            castBack:Hide()
         end
         return
     end
     -- Back on, mid-cast included: the enable re-derives the live cast; an idle
     -- holder follows the reload pass's hide-while-not-casting rule. A setting
     -- that turned the bar off is left to the reload pass that hides it.
-    if not (s and s.showPlayerCastbar) then
+    if not (cfg and cfg.showPlayerCastbar) then
         return
     end
     -- Enabled whether or not the frame is shown, as the reload pass does: a
@@ -2054,11 +2054,11 @@ function mod.UF_ApplyGamepadCastbar(padOn)
     -- driver shows it again, so skipping it here would leave the bar dead. The
     -- holder is a child of the frame, so a hidden frame draws nothing.
     mod.SetCastbarElement(widget, true)
-    if castbarBg then
-        if s.castbarHideWhenInactive and not callback:IsShown() then
-            castbarBg:Hide()
+    if castBack then
+        if cfg.castbarHideWhenInactive and not callback:IsShown() then
+            castBack:Hide()
         else
-            castbarBg:Show()
+            castBack:Show()
         end
     end
 end
