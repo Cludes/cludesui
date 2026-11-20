@@ -2416,15 +2416,15 @@ local STYLE_FLAGS = {
         active = "EDR_Style",
     },
 }
-local function StyleKeyOfFlags(p, f)
-    if type(p) ~= "table" then
+local function StyleKeyOfFlags(profile, f)
+    if type(profile) ~= "table" then
         return "cui"
     end
-    if p[f.classic] then
+    if profile[f.classic] then
         return "classic"
     end
-    if p[f.key] then
-        if f.forever and CludesUI.IS_FOREVER and p[f.forever] then
+    if profile[f.key] then
+        if f.forever and CludesUI.IS_FOREVER and profile[f.forever] then
             return "forever"
         end
         return "blizzard"
@@ -4247,11 +4247,11 @@ local function ReconcileImportedMedia(body)
         return hgt
     end
 
-    local function Walk(t, depth)
+    local function Walk(tbl, depth)
         if depth > 40 then
             return
         end
-        for k, v in pairs(t) do
+        for k, v in pairs(tbl) do
             if type(v) == "table" then
                 Walk(v, depth + 1)
             elseif type(v) == "string" and #v >= 9 and #v <= 26 then
@@ -4260,7 +4260,7 @@ local function ReconcileImportedMedia(body)
                 local baseTbl = v:match("^sm:(.+)") or v
                 if RECONCILE_BAR_SIGS[Signature(baseTbl)] then
                     if not LSM:Fetch("statusbar", baseTbl, true) then
-                        t[k] = "sm:" .. RECONCILE_TEX_NAME
+                        tbl[k] = "sm:" .. RECONCILE_TEX_NAME
                     end
                 end
             end
@@ -4398,13 +4398,13 @@ local function StripStrandedVisOverrides(addonMap)
         return
     end
     local seen = {}
-    local function walk(t)
-        if seen[t] then
+    local function walk(tbl)
+        if seen[tbl] then
             return
         end
-        seen[t] = true
-        t.visibilityOverride = nil
-        for _, v in pairs(t) do
+        seen[tbl] = true
+        tbl.visibilityOverride = nil
+        for _, v in pairs(tbl) do
             if type(v) == "table" then
                 walk(v)
             end

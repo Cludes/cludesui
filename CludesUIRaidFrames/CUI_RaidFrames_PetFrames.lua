@@ -1436,7 +1436,7 @@ do
     end
 
     -- Preview pet i at w x h, styled and painted (the caller places it).
-    PF.PvFrame = function(index, hostFrame, src, wid, hgt, c, grouped)
+    PF.PvFrame = function(index, hostFrame, src, wid, hgt, cfg, grouped)
         local frame = PF.pv[index]
         if not frame then
             frame = CreateFrame("Frame", nil, hostFrame)
@@ -1455,11 +1455,11 @@ do
         elseif skinData then
             skinData._petGroupedPreview = nil
         end
-        FB.StyleVisuals(frame, src, wid, hgt, c.texPath, c.bgc)
+        FB.StyleVisuals(frame, src, wid, hgt, cfg.texPath, cfg.bgc)
 
         local pet = PF.PV_PETS[index]
         local pct = pet.hp
-        local hc = c.hc
+        local hc = cfg.hc
         frame._health:SetMinMaxValues(0, 100)
         -- pet.hp is a made-up plain number (PF.PV_PETS), so it is flipped here for an
         -- inverted fill (the _cuiInv stamp FB.StyleVisuals just left).
@@ -1468,7 +1468,7 @@ do
             hc and hc.r or 23 / 255,
             hc and hc.g or 172 / 255,
             hc and hc.b or 49 / 255,
-            c.opacity
+            cfg.opacity
         )
         -- The texts with the boss/pet rules: made-up health (3000 per percent) and a heal absorb
         -- of a quarter of it, in the raid preview's proportions.

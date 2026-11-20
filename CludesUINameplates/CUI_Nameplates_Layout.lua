@@ -1058,16 +1058,16 @@ do
         return c
     end
     -- One SetFormattedText per paint; unit nil paints the schema samples.
-    function mod.NP_PaintCustom(fontStr, c, unitToken, slotName)
+    function mod.NP_PaintCustom(fontStr, cfg, unitToken, slotName)
         if not unitToken then
-            fontStr:SetText(TT.Preview(CAT, c.parsed))
+            fontStr:SetText(TT.Preview(CAT, cfg.parsed))
             return
         end
-        local num = c.n
+        local num = cfg.n
         for i = 1, num do
-            args[i] = c[i](unitToken, slotName)
+            args[i] = cfg[i](unitToken, slotName)
         end
-        fontStr:SetFormattedText(c.fmt, unpack(args, 1, num))
+        fontStr:SetFormattedText(cfg.fmt, unpack(args, 1, num))
         -- An empty Top text (no target, no shield) keeps its line: the top aura row
         -- and the range text anchor to it. GetText reads nil while empty.
         if slotName == "textSlotTop" and not fontStr:GetText() then

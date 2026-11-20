@@ -76,16 +76,16 @@ function mod.DateText(t, long)
     return (s:gsub(" 0", " "):gsub("^0", ""))
 end
 
-function mod.Hex(c)
-    return ("|cff%02x%02x%02x"):format(c[1] * 255, c[2] * 255, c[3] * 255)
+function mod.Hex(cfg)
+    return ("|cff%02x%02x%02x"):format(cfg[1] * 255, cfg[2] * 255, cfg[3] * 255)
 end
 
 -- A short coloured line, inline in text, to key a series.
-function mod.Key(c)
+function mod.Key(cfg)
     return ("|TInterface\\Buttons\\WHITE8X8:2:10:0:0:8:8:0:8:0:8:%d:%d:%d|t"):format(
-        c[1] * 255,
-        c[2] * 255,
-        c[3] * 255
+        cfg[1] * 255,
+        cfg[2] * 255,
+        cfg[3] * 255
     )
 end
 

@@ -2247,12 +2247,12 @@ end
 
 -- Whether the full-size spell icon's push on a side row moved since AnchorNPContainer last
 -- placed it (container._npcPush).
-local function SidePushMoved(c, kindName, auraKey, backing, edgeSide)
-    if not c then
+local function SidePushMoved(cfg, kindName, auraKey, backing, edgeSide)
+    if not cfg then
         return false
     end
     local _, yOff = mod.GetAuraSlotOffsets(auraKey)
-    return mod.NP_FullIconPush(backing, edgeSide, yOff, yOff + (NPHeight(kindName, NPSize(kindName)))) ~= c._npcPush
+    return mod.NP_FullIconPush(backing, edgeSide, yOff, yOff + (NPHeight(kindName, NPSize(kindName)))) ~= cfg._npcPush
 end
 
 -- The full-size spell icon shows only during a cast, and a side row it meets steps out past it
@@ -2365,10 +2365,10 @@ end
 -- Switches an enabled group off and straight back on: off releases its buttons
 -- at once (each clears its aura and stops the animations it plays), on keeps
 -- the group live for the next attach. A group already off is left alone.
-function NPB.CycleGroup(c, auraKey)
-    local success, enabled = pcall(c.IsAuraGroupEnabled, c, auraKey)
-    if success and enabled == true and pcall(c.SetAuraGroupEnabled, c, auraKey, false) then
-        pcall(c.SetAuraGroupEnabled, c, auraKey, true)
+function NPB.CycleGroup(cfg, auraKey)
+    local success, enabled = pcall(cfg.IsAuraGroupEnabled, cfg, auraKey)
+    if success and enabled == true and pcall(cfg.SetAuraGroupEnabled, cfg, auraKey, false) then
+        pcall(cfg.SetAuraGroupEnabled, cfg, auraKey, true)
     end
 end
 

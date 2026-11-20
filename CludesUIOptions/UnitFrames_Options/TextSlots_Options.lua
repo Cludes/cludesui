@@ -349,11 +349,11 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         disabledTooltip = "Every text position is full.",
     }
     cells[#cells + 1] = addCfg
-    local function Config(c)
-        if not c then
+    local function Config(cfg)
+        if not cfg then
             return CludesUI.BlankRowCfg()
         end
-        return c.cfg or c
+        return cfg.cfg or cfg
     end
     local firstRow
     local function Finish(row, side, cell)

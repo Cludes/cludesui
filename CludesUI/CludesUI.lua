@@ -5336,12 +5336,12 @@ initFrame:SetScript("OnEvent", function(self, evt)
             end
         end
 
-        local function CloseOne(f)
-            local onEscape = escOpts[f].onEscape
+        local function CloseOne(frame)
+            local onEscape = escOpts[frame].onEscape
             if onEscape then
-                onEscape(f)
+                onEscape(frame)
             else
-                f:Hide()
+                frame:Hide()
             end
         end
 

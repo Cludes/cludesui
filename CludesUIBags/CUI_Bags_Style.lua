@@ -10,8 +10,8 @@ local BAG_FRAME_SCALE = 0.8
 --- (useForeverStyle true or false), else the look most of the profile's modules
 --- use (CludesUI.ForeverLookMajority over addons, nil = the active
 --- profile's), so a profile on the WoW Forever look gets it with no write.
-function mod.BagsForeverWanted(p, addons)
-    local pick = p and p.useForeverStyle
+function mod.BagsForeverWanted(profile, addons)
+    local pick = profile and profile.useForeverStyle
     if pick == nil then
         return CUI.ForeverLookMajority(addons)
     end

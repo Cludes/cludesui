@@ -434,7 +434,7 @@ do
     -- that does not load in this spec (Assign to Spec), or that would open with
     -- nothing this character can use under its own setting, is left out whatever
     -- this palette's setting says; with it off, everything else stays.
-    function UsableSlots(palette, p)
+    function UsableSlots(palette, profile)
         local slots = palette and palette.slots
         if not slots then
             return slots
@@ -443,7 +443,7 @@ do
         if memo then
             return memo
         end
-        local all = p and p.hideUnusable == false
+        local all = profile and profile.hideUnusable == false
         local result
         for index = 1, #slots do
             local slot = slots[index]
@@ -481,7 +481,7 @@ SetUsableSlots(UsableSlots)
 -- a setting rather than only on the slot (worldmarker). It is the view of the
 -- palette being PUSHED, which for a nest's cells is the owner's -- the same
 -- palette whose appearance draws them.
-local function ResolveAction(slot, p)
+local function ResolveAction(slot, profile)
     if not slot or not slot.kind then
         return nil
     end
@@ -626,7 +626,7 @@ local function ResolveAction(slot, p)
             -- gets baked -- a hardcoded "all" would fail on a localized client.
             return "macro", "macrotext", "/cwm " .. (ALL or "all"), "macro"
         end
-        if p == nil or p.worldMarkerToggle ~= false then
+        if profile == nil or profile.worldMarkerToggle ~= false then
             -- Toggle World Markers. Not a macro: /wm is PlaceRaidMarker with
             -- no test at all (SlashCommands.lua:820), and no macro conditional
             -- reports a world marker as down. SECURE_ACTIONS.worldmarker does

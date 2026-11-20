@@ -70,11 +70,11 @@ end
 
 -- The bank display ("grid" | "list" | "compact") from the bank profile keys:
 -- List View keeps its own switch and wins; bankCompactView adds Compact.
-function mod.BankDisplayMode(p)
-    if p.bankListView == true then
+function mod.BankDisplayMode(profile)
+    if profile.bankListView == true then
         return "list"
     end
-    if p.bankCompactView == true then
+    if profile.bankCompactView == true then
         return "compact"
     end
     return "grid"

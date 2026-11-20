@@ -37,9 +37,9 @@ local RequestUpdate
 
 -- "1.", "2.", ... built once each. The pull line takes no rank.
 local RANKS = setmetatable({}, {
-    __index = function(t, index)
+    __index = function(tbl, index)
         local s = index .. "."
-        t[index] = s
+        tbl[index] = s
         return s
     end,
 })
@@ -86,11 +86,11 @@ end
 -- One row: the fields a Damage Meters row reads, plus the threat ones
 -- (rankText, threatText, threatColor, threatPet). The value text is rebuilt only
 -- when its numbers or the unit style change.
-local function FillRow(region, e, rank, c)
+local function FillRow(region, e, rank, cfg)
     local unitToken = e.unit
     if e.pull then
         region.name, region.classFilename, region.specIconID = CludesUI.L("Pull Aggro"), nil, nil
-        region.rankText, region.threatColor = "", c.pullColor
+        region.rankText, region.threatColor = "", cfg.pullColor
     else
         local class = mod.ClassOf(unitToken)
         local name = CUI.WithSurname(UnitName(unitToken))
@@ -104,16 +104,16 @@ local function FillRow(region, e, rank, c)
             region.specIconID = class and SpecIcon(unitToken, class) or nil
         end
         region.rankText = RANKS[rank]
-        region.threatColor = (e.own and c.playerColor) or (e.tanking and c.tankColor) or nil
+        region.threatColor = (e.own and cfg.playerColor) or (e.tanking and cfg.tankColor) or nil
     end
     region.threatPet = e.isPet == true
     region.isLocalPlayer = e.own == true
     region.totalAmount = e.raw
     region.threatScaled = e.scaled
-    local raw = c.showValue and e.raw or nil
+    local raw = cfg.showValue and e.raw or nil
     local pct
-    if c.showPercent and not (e.pull and raw) then
-        if c.pullPercent then
+    if cfg.showPercent and not (e.pull and raw) then
+        if cfg.pullPercent then
             pct = e.scaled
         else
             pct = e.rawPct

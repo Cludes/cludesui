@@ -219,19 +219,19 @@ do
     -- How category `class` relates to part p: "in" when every member belongs to it;
     -- nil when no member can; else "split" under `probe`, or the (p AND class,
     -- p AND NOT class) parts.
-    local function Relate(p, class, probe)
+    local function Relate(profile, class, probe)
         if class.token then
-            if HasToken(p, class.token) then
+            if HasToken(profile, class.token) then
                 return "in"
             end
             local negTok = class.neg or ("!" .. class.token)
-            if HasToken(p, negTok) then
+            if HasToken(profile, negTok) then
                 return nil
             end
             if probe then
                 return "split"
             end
-            local a, b = CopyPart(p), CopyPart(p)
+            local a, b = CopyPart(profile), CopyPart(profile)
             a.tokens[#a.tokens + 1] = class.token
             b.tokens[#b.tokens + 1] = negTok
             return a, b
@@ -242,7 +242,7 @@ do
         end
         local set = cc.includeDispelTypes
         if set then
-            local inc, exc = p.cand.includeDispelTypes, p.cand.excludeDispelTypes
+            local inc, exc = profile.cand.includeDispelTypes, profile.cand.excludeDispelTypes
             if inc and not TypesMinus(inc, set) then
                 return "in"
             end
@@ -261,7 +261,7 @@ do
             if probe then
                 return "split"
             end
-            local a, b = CopyPart(p), CopyPart(p)
+            local a, b = CopyPart(profile), CopyPart(profile)
             a.cand.includeDispelTypes = place
             a.cand.excludeDispelTypes = nil
             if inc then
@@ -272,8 +272,8 @@ do
             return a, b
         end
         local k, v = next(cc)
-        if p.cand[k] ~= nil then
-            if p.cand[k] == v then
+        if profile.cand[k] ~= nil then
+            if profile.cand[k] == v then
                 return "in"
             end
             return nil
@@ -281,13 +281,13 @@ do
         if probe then
             return "split"
         end
-        local a, b = CopyPart(p), CopyPart(p)
+        local a, b = CopyPart(profile), CopyPart(profile)
         a.cand[k] = v
         b.cand[k] = not v
         return a, b
     end
 
-    local function MatchLink(p, cats)
+    local function MatchLink(profile, cats)
         local sorted = {}
         for index = 1, #cats do
             sorted[index] = cats[index]
@@ -295,8 +295,8 @@ do
         table.sort(sorted)
         return {
             key = "and:" .. table.concat(sorted, "+"),
-            tokens = p.tokens,
-            cand = next(p.cand) and p.cand or nil,
+            tokens = profile.tokens,
+            cand = next(profile.cand) and profile.cand or nil,
             cats = sorted,
         }
     end

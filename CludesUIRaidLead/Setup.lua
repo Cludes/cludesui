@@ -129,19 +129,19 @@ widget:SetScript("OnEvent", function(_, evt)
     end
 end)
 
-local function KindLine(c)
+local function KindLine(cfg)
     local parts = {}
-    if c.TANK > 0 then
-        parts[#parts + 1] = c.TANK .. " tank"
+    if cfg.TANK > 0 then
+        parts[#parts + 1] = cfg.TANK .. " tank"
     end
-    if c.MELEE > 0 then
-        parts[#parts + 1] = c.MELEE .. " melee"
+    if cfg.MELEE > 0 then
+        parts[#parts + 1] = cfg.MELEE .. " melee"
     end
-    if c.RANGED > 0 then
-        parts[#parts + 1] = c.RANGED .. " ranged"
+    if cfg.RANGED > 0 then
+        parts[#parts + 1] = cfg.RANGED .. " ranged"
     end
-    if c.HEALER > 0 then
-        parts[#parts + 1] = c.HEALER .. " heal"
+    if cfg.HEALER > 0 then
+        parts[#parts + 1] = cfg.HEALER .. " heal"
     end
     return table.concat(parts, ", ")
 end

@@ -337,11 +337,11 @@ local function ApplyRFDebuffText(btnFrame, d, look)
     end
 end
 
-local function ColorParts(c, dr, dg, saved)
-    if not c then
+local function ColorParts(color, dr, dg, saved)
+    if not color then
         return dr, dg, saved
     end
-    return c.r or c[1] or dr, c.g or c[2] or dg, c.b or c[3] or saved
+    return color.r or color[1] or dr, color.g or color[2] or dg, color.b or color[3] or saved
 end
 
 -- Settings fingerprints. Every engine setter (group counts, candidate filters,
@@ -1174,8 +1174,8 @@ local function DispLocCfgFP(cfg)
 end
 
 -- Color key + per-type alpha (the dispel swatches carry an opt-out alpha).
-local function CKA(c)
-    return CK(c) .. "," .. tostring((c and c.a) or 1)
+local function CKA(cfg)
+    return CK(cfg) .. "," .. tostring((cfg and cfg.a) or 1)
 end
 
 local function DispelStyleFP(cfg, keyName)
@@ -1660,11 +1660,11 @@ local function BmSegments(indicator, spellList)
     return segs
 end
 
-local function BmColor(c, dr, dg, db2)
-    if not c then
+local function BmColor(color, dr, dg, db2)
+    if not color then
         return dr, dg, db2
     end
-    return c.r or c[1] or dr, c.g or c[2] or dg, c.b or c[3] or db2
+    return color.r or color[1] or dr, color.g or color[2] or dg, color.b or color[3] or db2
 end
 
 -- Cached per config: unchanged settings return the SAME curve object, so
@@ -2377,7 +2377,7 @@ end
 -- can self-anchor inside the creation window -- the only place SetSize/SetPoint is
 -- legal while auras are secret (12.1 access restriction; BM builds run mid-instance:
 -- joiners, in-key reloads). AnchorBmSlots re-runs it OOC on geometry changes.
-local function BmAnchorOneSlot(f, m, healthBar, hugBar, iconScale)
+local function BmAnchorOneSlot(frame, m, healthBar, hugBar, iconScale)
     local indicator = m.ind
     if m.kind == "icon" or m.kind == "square" then
         local px = m.size
@@ -2398,9 +2398,9 @@ local function BmAnchorOneSlot(f, m, healthBar, hugBar, iconScale)
             gx = cursor
         end
         local place = indicator.position or "TOPLEFT"
-        f:SetSize(px, px)
-        f:ClearAllPoints()
-        f:SetPoint(place, healthBar, place, (indicator.offsetX or 0) * iconScale + gx, (indicator.offsetY or 0) * iconScale + gy)
+        frame:SetSize(px, px)
+        frame:ClearAllPoints()
+        frame:SetPoint(place, healthBar, place, (indicator.offsetX or 0) * iconScale + gx, (indicator.offsetY or 0) * iconScale + gy)
     elseif m.kind == "bar" then
         -- Mirrors the legacy BM_PlaceBar rules onto the slot button.
         local wid = (indicator.barWidth or 30) * iconScale
@@ -2412,34 +2412,34 @@ local function BmAnchorOneSlot(f, m, healthBar, hugBar, iconScale)
         else
             fullW, fullH = indicator.barFullWidth, indicator.barFullHeight
         end
-        f:ClearAllPoints()
+        frame:ClearAllPoints()
         if fullW and fullH then
-            f:SetAllPoints(hugBar)
+            frame:SetAllPoints(hugBar)
         elseif fullW then
             local place = indicator.position or "TOPLEFT"
             local vEdge = (place:find("BOTTOM", 1, true) and "BOTTOM")
                 or (place:find("TOP", 1, true) and "TOP")
                 or ""
             local oy = (indicator.offsetY or 0) * iconScale
-            f:SetPoint(vEdge .. "LEFT", healthBar, vEdge .. "LEFT", 0, oy)
-            f:SetPoint(vEdge .. "RIGHT", healthBar, vEdge .. "RIGHT", 0, oy)
-            f:SetHeight(isVert and wid or hgt)
+            frame:SetPoint(vEdge .. "LEFT", healthBar, vEdge .. "LEFT", 0, oy)
+            frame:SetPoint(vEdge .. "RIGHT", healthBar, vEdge .. "RIGHT", 0, oy)
+            frame:SetHeight(isVert and wid or hgt)
         elseif fullH then
             local place = indicator.position or "TOPLEFT"
             local hEdge = (place:find("RIGHT", 1, true) and "RIGHT")
                 or (place:find("LEFT", 1, true) and "LEFT")
                 or ""
             local ox = (indicator.offsetX or 0) * iconScale
-            f:SetPoint("TOP" .. hEdge, hugBar, "TOP" .. hEdge, ox, 0)
-            f:SetPoint("BOTTOM" .. hEdge, hugBar, "BOTTOM" .. hEdge, ox, 0)
-            f:SetWidth(isVert and hgt or wid)
+            frame:SetPoint("TOP" .. hEdge, hugBar, "TOP" .. hEdge, ox, 0)
+            frame:SetPoint("BOTTOM" .. hEdge, hugBar, "BOTTOM" .. hEdge, ox, 0)
+            frame:SetWidth(isVert and hgt or wid)
         else
             if isVert then
-                f:SetSize(hgt, wid)
+                frame:SetSize(hgt, wid)
             else
-                f:SetSize(wid, hgt)
+                frame:SetSize(wid, hgt)
             end
-            f:SetPoint(
+            frame:SetPoint(
                 indicator.position or "TOPLEFT",
                 healthBar,
                 indicator.position or "TOPLEFT",
@@ -2450,9 +2450,9 @@ local function BmAnchorOneSlot(f, m, healthBar, hugBar, iconScale)
     else
         -- Effect slots just need to exist somewhere; their regions
         -- anchor to the health bar / unit button themselves.
-        f:SetSize(1, 1)
-        f:ClearAllPoints()
-        f:SetPoint("CENTER", healthBar, "CENTER")
+        frame:SetSize(1, 1)
+        frame:ClearAllPoints()
+        frame:SetPoint("CENTER", healthBar, "CENTER")
     end
 end
 

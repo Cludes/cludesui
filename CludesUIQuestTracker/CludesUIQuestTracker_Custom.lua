@@ -1685,27 +1685,27 @@ end
 -- away from it. A spot on the other edge is that edge of the same area (the
 -- width by the max height): both directions fill one box, from opposite
 -- ends. Unlock Mode hands back CENTER points; the current size places the edge.
-local function Anchored(p)
-    local anchorPoint, rel = p.point, p.relPoint or p.point
+local function Anchored(profile)
+    local anchorPoint, rel = profile.point, profile.relPoint or profile.point
     local up = GrowsUp()
     local vy = VY[anchorPoint]
     if vy == (up and 0 or 1) or not (HX[anchorPoint] and HX[rel]) then
-        return p
+        return profile
     end
     if OTHER_EDGE[anchorPoint] then
         local maxH = Cfg("customMaxHeight") or DEF_HEIGHT
         return {
             point = OTHER_EDGE[anchorPoint],
             relPoint = rel,
-            x = p.x or 0,
-            y = (p.y or 0) + (up and -maxH or maxH),
+            x = profile.x or 0,
+            y = (profile.y or 0) + (up and -maxH or maxH),
         }
     end
     if not widget then
-        return p
+        return profile
     end
-    local px = UIParent:GetWidth() * HX[rel] + (p.x or 0)
-    local py = UIParent:GetHeight() * VY[rel] + (p.y or 0)
+    local px = UIParent:GetWidth() * HX[rel] + (profile.x or 0)
+    local py = UIParent:GetHeight() * VY[rel] + (profile.y or 0)
     local leftX = px - widget:GetWidth() * HX[anchorPoint]
     if up then
         return { point = "BOTTOMLEFT", relPoint = "BOTTOMLEFT", x = leftX, y = py - widget:GetHeight() * vy }

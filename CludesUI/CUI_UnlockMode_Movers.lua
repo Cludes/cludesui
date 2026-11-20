@@ -159,10 +159,10 @@ CUI_NS.unlockParts.Movers = function(LM)
     -- True while any part of a frame's rect reads secret: all of it when the frame
     -- rides an engine aura container, its size alone when only one edge does (a
     -- Blizzard Style unit frame's box around its aura stack). Nothing measures it then.
-    local function RectSecret(f)
+    local function RectSecret(frame)
         return issecretvalue
-                and (issecretvalue(f:GetLeft()) or issecretvalue(f:GetTop()) or issecretvalue(f:GetWidth()) or issecretvalue(
-                    f:GetHeight()
+                and (issecretvalue(frame:GetLeft()) or issecretvalue(frame:GetTop()) or issecretvalue(frame:GetWidth()) or issecretvalue(
+                    frame:GetHeight()
                 ))
             or false
     end
@@ -222,8 +222,8 @@ CUI_NS.unlockParts.Movers = function(LM)
         end
     end
 
-    function MenuPool.Font(p, fontStr, size)
-        if p.shadowed then
+    function MenuPool.Font(profile, fontStr, size)
+        if profile.shadowed then
             CludesUI.PrimeFontShadow(fontStr, true)
             fontStr:SetFont(FONT_PATH, size, "")
         else

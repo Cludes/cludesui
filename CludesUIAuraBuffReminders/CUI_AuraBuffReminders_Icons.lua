@@ -75,13 +75,13 @@ do
         return mod._iconShapeValues, mod._iconShapeOrder
     end
 
-    function mod.IconShapeMasked(p)
-        local shape = p and p.iconShape
+    function mod.IconShapeMasked(profile)
+        local shape = profile and profile.iconShape
         return shape and shape ~= "none" and shape ~= "cropped" and CludesUI.SHAPE_MASKS[shape] ~= nil
     end
 
-    function mod.CropPercent(p)
-        local pct = tonumber(p and p.iconCropPercent) or 10
+    function mod.CropPercent(profile)
+        local pct = tonumber(profile and profile.iconCropPercent) or 10
         if pct < 5 then
             pct = 5
         elseif pct > 25 then
@@ -90,29 +90,29 @@ do
         return pct
     end
 
-    function mod.IconDimensions(size, p)
-        if p and p.iconShape == "cropped" then
-            return size, math.floor(size * (1 - 2 * mod.CropPercent(p) / 100) + 0.5)
+    function mod.IconDimensions(size, profile)
+        if profile and profile.iconShape == "cropped" then
+            return size, math.floor(size * (1 - 2 * mod.CropPercent(profile) / 100) + 0.5)
         end
-        if mod.IconShapeMasked(p) then
+        if mod.IconShapeMasked(profile) then
             return size + 8, size + 8
         end
         return size, size
     end
 
     -- Only addon-owned icons reach this helper. Secure owners are gated by the caller.
-    function mod.ApplyIconShape(frame, p)
+    function mod.ApplyIconShape(frame, profile)
         if not (frame and frame._icon) then
             return
         end
-        local shape = (p and p.iconShape) or "none"
-        local masked = mod.IconShapeMasked(p)
-        local zoom = (p and p.iconZoom) or 0.07
-        local crop = shape == "cropped" and mod.CropPercent(p) or 0
-        local inset = masked and ((p and p.borderSize) or 1) > 0 and 1 or 0
+        local shape = (profile and profile.iconShape) or "none"
+        local masked = mod.IconShapeMasked(profile)
+        local zoom = (profile and profile.iconZoom) or 0.07
+        local crop = shape == "cropped" and mod.CropPercent(profile) or 0
+        local inset = masked and ((profile and profile.borderSize) or 1) > 0 and 1 or 0
         local status = frame._eabrShape
         if not status then
-            if shape == "none" and not (p and p.iconZoom) then
+            if shape == "none" and not (profile and profile.iconZoom) then
                 return
             end
             status = {}
@@ -935,17 +935,17 @@ end
 local ApplyGlow
 do
     local SPEC = {}
-    local function GlowSpec(p, result)
-        local shared = p and GLOW_VIEW.toShared[p.glowType or 0]
+    local function GlowSpec(profile, result)
+        local shared = profile and GLOW_VIEW.toShared[profile.glowType or 0]
         if not shared then
             return nil
         end
         result = result or SPEC
         result.style = shared
-        result.r, result.g, result.b = ResolveGlowTint(p)
-        result.lines, result.thickness, result.speed = p.glowLines, p.glowThickness, p.glowSpeed
-        local bgc = p.glowBackgroundColor
-        result.bg = (p.glowBackground == true) or nil
+        result.r, result.g, result.b = ResolveGlowTint(profile)
+        result.lines, result.thickness, result.speed = profile.glowLines, profile.glowThickness, profile.glowSpeed
+        local bgc = profile.glowBackgroundColor
+        result.bg = (profile.glowBackground == true) or nil
         result.bgR, result.bgG, result.bgB = bgc and bgc.r, bgc and bgc.g, bgc and bgc.b
         return result
     end
@@ -953,8 +953,8 @@ do
 
     -- Also clears the glow when it is off, so callers need no RemoveGlow first
     -- (that would reset StartSpecGlow's signature and restart every refresh).
-    ApplyGlow = function(button, p, overrideSz)
-        local specInfo = GlowSpec(p)
+    ApplyGlow = function(button, profile, overrideSz)
+        local specInfo = GlowSpec(profile)
         if not specInfo then
             local wid = button._eabrGlowWrapper
             if wid then
@@ -972,9 +972,9 @@ do
         local wrapper = button._eabrGlowWrapper
         local sz = overrideSz or button:GetWidth() or ICON_SIZE
         local hgt, extra = sz
-        if p.iconShape and p.iconShape ~= "none" then
+        if profile.iconShape and profile.iconShape ~= "none" then
             if overrideSz then
-                sz, hgt = mod.IconDimensions(sz, p)
+                sz, hgt = mod.IconDimensions(sz, profile)
             else
                 hgt = button:GetHeight()
             end

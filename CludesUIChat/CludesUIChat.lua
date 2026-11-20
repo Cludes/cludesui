@@ -274,17 +274,17 @@ end
 -- true when that profile would latch another Border Style kind than the one
 -- latched this session (the latch above, read off `c`), so the switch asks
 -- for a reload.
-function mod.ChatFvBorderChanged(c)
+function mod.ChatFvBorderChanged(cfg)
     local kind
     if
-        type(c) == "table"
-        and not c.useClassicStyle
-        and c.useBlizzardStyle
+        type(cfg) == "table"
+        and not cfg.useClassicStyle
+        and cfg.useBlizzardStyle
         and CludesUI.IS_FOREVER == true
-        and c.useForeverStyle == true
+        and cfg.useForeverStyle == true
         and CludesUI.ForeverBorderOK()
     then
-        kind = CludesUI.ForeverBorderKind(c.foreverBorder)
+        kind = CludesUI.ForeverBorderKind(cfg.foreverBorder)
     end
     return kind ~= mod.ChatFvKind()
 end

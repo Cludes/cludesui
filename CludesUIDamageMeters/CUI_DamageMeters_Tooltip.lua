@@ -231,15 +231,15 @@ end
 -- An Enemy Damage Taken attacker row (AggregateEnemyPlayers): spec icon or
 -- class art, class coloured fill, name and amount. A secret name or amount
 -- passes whole to the bar and text setters.
-local function PaintAttackerRow(b, p, maxAmount, texFile, textureKey, numFmt)
-    local specIcon = p.specIcon
+local function PaintAttackerRow(b, profile, maxAmount, texFile, textureKey, numFmt)
+    local specIcon = profile.specIcon
     if specIcon and type(specIcon) == "number" and specIcon ~= 0 then
         b.spellIcon:SetTexture(specIcon)
         b.spellIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         b.spellIcon:Show()
-    elseif p.class and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[p.class] then
+    elseif profile.class and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[profile.class] then
         b.spellIcon:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
-        b.spellIcon:SetTexCoord(unpack(CLASS_ICON_TCOORDS[p.class]))
+        b.spellIcon:SetTexCoord(unpack(CLASS_ICON_TCOORDS[profile.class]))
         b.spellIcon:Show()
     else
         b.spellIcon:Hide()
@@ -254,8 +254,8 @@ local function PaintAttackerRow(b, p, maxAmount, texFile, textureKey, numFmt)
     end
     ApplyBarTexture(b.fill, texFile, textureKey)
     b.fill:SetMinMaxValues(0, maxAmount)
-    b.fill:SetValue(p.total)
-    local cc = p.class and RAID_CLASS_COLORS[p.class] and CUI.GetClassColor(p.class)
+    b.fill:SetValue(profile.total)
+    local cc = profile.class and RAID_CLASS_COLORS[profile.class] and CUI.GetClassColor(profile.class)
     if cc then
         b.fill:SetStatusBarColor(cc.r, cc.g, cc.b)
     else
@@ -263,8 +263,8 @@ local function PaintAttackerRow(b, p, maxAmount, texFile, textureKey, numFmt)
     end
     b.label:SetTextColor(1, 1, 1)
     b.amount:SetTextColor(1, 1, 1)
-    b.label:SetText(StripRealm(p.name, nil, p))
-    b.amount:SetText(FormatBarValue(p.total, p.amountPerSecond, numFmt))
+    b.label:SetText(StripRealm(profile.name, nil, profile))
+    b.amount:SetText(FormatBarValue(profile.total, profile.amountPerSecond, numFmt))
     b.row:Show()
 end
 

@@ -46,8 +46,8 @@ local _trackedAurasDimmer
 local _trackedAurasPanel
 -- Controller Escape/Back (RegisterEscapeClose): the registration outlives the
 -- open that made it, so the close reads the frame it is handed.
-local function EscapeTrackedAuras(f)
-    f:Hide()
+local function EscapeTrackedAuras(frame)
+    frame:Hide()
     _trackedAurasDimmer = nil
 end
 local TRACKED_AURAS_ESC = { padOnly = true, onEscape = EscapeTrackedAuras }
@@ -713,8 +713,8 @@ end
 -- applier. Reused by the player-frame, Player Aura Bars and Buff Manager buff filter dropdowns ("Edit Blacklist" pinned actions).
 -- Controller Escape/Back (RegisterEscapeClose): the registration outlives the
 -- open that made it, so the close reads the frame it is handed.
-local function EscapeBlacklist(f)
-    f:Hide()
+local function EscapeBlacklist(frame)
+    frame:Hide()
     CludesUI._blacklistPopup = nil
 end
 local BLACKLIST_ESC = { padOnly = true, onEscape = EscapeBlacklist }

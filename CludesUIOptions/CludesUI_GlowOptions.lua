@@ -855,12 +855,12 @@ local function FlatKey(p, f)
     return FLAT_FIELDS[f] and G.FlatKeys(p)[f] or nil
 end
 
-function GO.FlatGet(t, p, f, defs)
+function GO.FlatGet(tbl, p, f, defs)
     local key = FlatKey(p, f)
-    if not (key and t) then
+    if not (key and tbl) then
         return nil
     end
-    local val = t[key]
+    local val = tbl[key]
     if val == nil and defs then
         val = defs[key]
     end
@@ -876,15 +876,15 @@ function GO.FlatGet(t, p, f, defs)
     return val
 end
 
-function GO.FlatSet(t, p, f, a, b, c)
+function GO.FlatSet(tbl, p, f, a, b, c)
     local key = FlatKey(p, f)
-    if not (key and t) then
+    if not (key and tbl) then
         return
     end
     if f == "color" or f == "bgColor" then
-        t[key] = { r = a, g = b, b = c }
+        tbl[key] = { r = a, g = b, b = c }
     else
-        t[key] = a
+        tbl[key] = a
     end
 end
 
@@ -980,11 +980,11 @@ end
 -- a site that takes no template: a paramsOnly site (the Pixel Glow parameters
 -- per-icon glows read, which the template never changes) or a style the site
 -- cannot map.
-function GO.TemplateValue(desc, t)
+function GO.TemplateValue(desc, tbl)
     if desc.paramsOnly then
         return nil, false
     end
-    local position, converted = GO.Resolve(desc, t.style or 1)
+    local position, converted = GO.Resolve(desc, tbl.style or 1)
     return GO.FromShared(desc, position), converted, position
 end
 
@@ -994,37 +994,37 @@ end
 -- A locked site (GO.StyleLocked) and a paramsOnly site are never written.
 -- Writes directly: a caller acting for the user routes the style through the
 -- site's own confirm first (see desc.confirm). Returns applied, converted.
-function GO.ApplyTemplate(desc, t, anyState)
+function GO.ApplyTemplate(desc, color, anyState)
     if not anyState and not GO.IsCustomGlow(desc) then
         return false, false
     end
     if GO.StyleLocked(desc) then
         return false, false
     end
-    local val, converted, position = GO.TemplateValue(desc, t)
+    local val, converted, position = GO.TemplateValue(desc, color)
     if val == nil then
         return false, false
     end
     local caps = desc.caps or {}
     desc.set("style", val)
-    local tm = t.mode or "custom"
+    local tm = color.mode or "custom"
     if caps.mode then
         desc.set("mode", tm)
     end
-    if tm == "custom" and t.r then
-        desc.set("color", t.r, t.g, t.b)
+    if tm == "custom" and color.r then
+        desc.set("color", color.r, color.g, color.b)
     end
     -- Pixel parameters only go where the result is a Pixel Glow: for any other
     -- template style they are hidden in the template and would reset the site's.
     if caps.params and position == 1 then
-        desc.set("lines", t.lines or 8)
-        desc.set("thickness", t.thickness or 2)
-        desc.set("speed", t.speed or 4)
+        desc.set("lines", color.lines or 8)
+        desc.set("thickness", color.thickness or 2)
+        desc.set("speed", color.speed or 4)
     end
     if caps.bg and position == 1 then
-        desc.set("bg", t.bg and true or nil)
-        if t.bg then
-            desc.set("bgColor", t.bgR or 0, t.bgG or 0, t.bgB or 0)
+        desc.set("bg", color.bg and true or nil)
+        if color.bg then
+            desc.set("bgColor", color.bgR or 0, color.bgG or 0, color.bgB or 0)
         end
     end
     return true, converted
@@ -1032,44 +1032,44 @@ end
 
 -- Does the site already show what ApplyTemplate would write? An off glow or
 -- an extra never does, nor a paramsOnly site (never a template target).
-function GO.MatchesTemplate(desc, t)
+function GO.MatchesTemplate(desc, color)
     if desc.paramsOnly or not GO.IsCustomGlow(desc) then
         return false
     end
     local caps = desc.caps or {}
-    local position = GO.Resolve(desc, t.style or 1)
+    local position = GO.Resolve(desc, color.style or 1)
     if GO.ToShared(desc, desc.get("style")) ~= position then
         return false
     end
     local mode = caps.mode and desc.get("mode") or "custom"
-    if mode ~= (t.mode or "custom") then
+    if mode ~= (color.mode or "custom") then
         return false
     end
-    if mode == "custom" and t.r then
+    if mode == "custom" and color.r then
         local red, green, blue = desc.get("color")
-        if red ~= t.r or green ~= t.g or blue ~= t.b then
+        if red ~= color.r or green ~= color.g or blue ~= color.b then
             return false
         end
     end
     if caps.params and position == 1 then
-        if (desc.get("lines") or 8) ~= (t.lines or 8) then
+        if (desc.get("lines") or 8) ~= (color.lines or 8) then
             return false
         end
-        if (desc.get("thickness") or 2) ~= (t.thickness or 2) then
+        if (desc.get("thickness") or 2) ~= (color.thickness or 2) then
             return false
         end
-        if (desc.get("speed") or 4) ~= (t.speed or 4) then
+        if (desc.get("speed") or 4) ~= (color.speed or 4) then
             return false
         end
     end
     if caps.bg and position == 1 then
-        if (desc.get("bg") == true) ~= (t.bg == true) then
+        if (desc.get("bg") == true) ~= (color.bg == true) then
             return false
         end
         -- ApplyTemplate writes the background color too.
-        if t.bg then
+        if color.bg then
             local br, bgg, bb = desc.get("bgColor")
-            if (br or 0) ~= (t.bgR or 0) or (bgg or 0) ~= (t.bgG or 0) or (bb or 0) ~= (t.bgB or 0) then
+            if (br or 0) ~= (color.bgR or 0) or (bgg or 0) ~= (color.bgG or 0) or (bb or 0) ~= (color.bgB or 0) then
                 return false
             end
         end

@@ -243,26 +243,26 @@ end
 -- Seats the pieces round `bar` at k (the bar's height): both plates keep
 -- the art's own proportion, the window stretches between them. Memoized;
 -- every layout pass may call it.
-function mod.NP_SeatClassicBorder(p, barFrame, key)
-    if p._k == key and p._bar == barFrame then
+function mod.NP_SeatClassicBorder(profile, barFrame, key)
+    if profile._k == key and profile._bar == barFrame then
         return
     end
-    p._k, p._bar = key, barFrame
+    profile._k, profile._bar = key, barFrame
     local C = mod.NP_CLASSIC
-    local sheet = p.sheet
+    local sheet = profile.sheet
     local l, region = sheet.reachL * key, sheet.reachR * key
     local t, b = C.top * key, C.bottom * key
     for index = 1, 3 do
-        p[index]:ClearAllPoints()
+        profile[index]:ClearAllPoints()
     end
-    p[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", -l, t)
-    p[1]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", -l, -b)
-    p[1]:SetWidth(sheet.capL * key)
-    p[3]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", region, t)
-    p[3]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", region, -b)
-    p[3]:SetWidth(sheet.capR * key)
-    p[2]:SetPoint("TOPLEFT", p[1], "TOPRIGHT", 0, 0)
-    p[2]:SetPoint("BOTTOMRIGHT", p[3], "BOTTOMLEFT", 0, 0)
+    profile[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", -l, t)
+    profile[1]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", -l, -b)
+    profile[1]:SetWidth(sheet.capL * key)
+    profile[3]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", region, t)
+    profile[3]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", region, -b)
+    profile[3]:SetWidth(sheet.capR * key)
+    profile[2]:SetPoint("TOPLEFT", profile[1], "TOPRIGHT", 0, 0)
+    profile[2]:SetPoint("BOTTOMRIGHT", profile[3], "BOTTOMLEFT", 0, 0)
 end
 -- The vanilla health border round a plate's health bar (enemy and friendly
 -- plates alike) and, where the plate has a text frame, the unit's level in
@@ -1372,7 +1372,7 @@ do
         end
         texture:SetColorTexture(red, green, blue, a)
     end
-    local function Paint(backdrop, filePath, c, a)
+    local function Paint(backdrop, filePath, color, a)
         if filePath then
             if backdrop._npTexBgPath ~= filePath then
                 backdrop:SetTexture(filePath)
@@ -1384,7 +1384,7 @@ do
             backdrop.SetColorTexture = nil
             backdrop:SetVertexColor(1, 1, 1, 1)
         end
-        backdrop:SetColorTexture(c.r, c.g, c.b, a)
+        backdrop:SetColorTexture(color.r, color.g, color.b, a)
     end
     function mod.ApplyBarBackgrounds(backing)
         if mod.NP_Style() == "blizzard" then

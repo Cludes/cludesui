@@ -800,8 +800,8 @@ end
 local function Countdown(seconds, kind)
     return ((kind == ARRIVAL) and "Arrives in %d:%02d" or "Departs in %d:%02d"):format(MS(seconds))
 end
-local function Tinted(textValue, c)
-    return ("|cff%02x%02x%02x%s|r"):format(c[1] * 255, c[2] * 255, c[3] * 255, textValue)
+local function Tinted(textValue, cfg)
+    return ("|cff%02x%02x%02x%s|r"):format(cfg[1] * 255, cfg[2] * 255, cfg[3] * 255, textValue)
 end
 
 local function TimeText(key, nowTime)

@@ -115,17 +115,17 @@ end
 -- Fills keys missing from a stored table (older or migrated data) without touching set ones.
 -- Once per table: Cfg() runs per chat line.
 local filled = setmetatable({}, { __mode = "k" })
-local function FillDefaults(t)
-    if filled[t] then
-        return t
+local function FillDefaults(tbl)
+    if filled[tbl] then
+        return tbl
     end
-    filled[t] = true
+    filled[tbl] = true
     for key, val in pairs(DEFAULTS) do
-        if t[key] == nil then
-            t[key] = type(val) == "table" and CUI.Lite.DeepCopy(val) or val
+        if tbl[key] == nil then
+            tbl[key] = type(val) == "table" and CUI.Lite.DeepCopy(val) or val
         end
     end
-    return t
+    return tbl
 end
 
 -- The active profile's settings. create=false answers nil for a profile that never touched

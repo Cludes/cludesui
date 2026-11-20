@@ -42,16 +42,16 @@ local function PNG(name)
     return { file = MEDIA .. name, w = 18, h = 18, gold = true }
 end
 -- A kit entry: the base button's fields, then the entry's own.
-local function Entry(base, t)
-    t = t or {}
+local function Entry(base, tbl)
+    tbl = tbl or {}
     if base then
         for k, val in pairs(base) do
-            if t[k] == nil then
-                t[k] = val
+            if tbl[k] == nil then
+                tbl[k] = val
             end
         end
     end
-    return t
+    return tbl
 end
 CHAT.SB_Entry = Entry -- the WoW Forever kit (CludesUIChat_Forever.lua)
 

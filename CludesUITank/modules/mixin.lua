@@ -80,14 +80,14 @@ local function SetPreviewHighlight(f, stacks)
     end
 end
 
-local function ClearIconFrame(f)
-    SetPreviewHighlight(f, 0)
-    f:SetAlpha(0)
-    f.icon:SetTexture(nil)
-    f.count:SetText("")
-    f.cd:SetCooldown(0, 0)
-    f.auraInstanceID = nil
-    f.expirationTime = 0
+local function ClearIconFrame(frame)
+    SetPreviewHighlight(frame, 0)
+    frame:SetAlpha(0)
+    frame.icon:SetTexture(nil)
+    frame.count:SetText("")
+    frame.cd:SetCooldown(0, 0)
+    frame.auraInstanceID = nil
+    frame.expirationTime = 0
 end
 
 function CoTankAuras_Mixin:ClearDebuffs()
@@ -151,12 +151,12 @@ end
 -- Debuff types given to the preview icons, so the type borders can be seen.
 local MOCK_DEBUFF_TYPES = { false, "Magic", "Poison", "Bleed", "Curse" }
 
-local function SetPreviewTypeBorder(f, i)
+local function SetPreviewTypeBorder(frame, i)
     local dispelType = MOCK_DEBUFF_TYPES[((i - 1) % #MOCK_DEBUFF_TYPES) + 1]
     if mod.DB().debuffTypeBorders and dispelType and AuraUtil and AuraUtil.GetAuraBorderColor then
-        f:SetBackdropBorderColor(AuraUtil.GetAuraBorderColor(dispelType):GetRGBA())
+        frame:SetBackdropBorderColor(AuraUtil.GetAuraBorderColor(dispelType):GetRGBA())
     else
-        f:SetBackdropBorderColor(0, 0, 0, 0.7)
+        frame:SetBackdropBorderColor(0, 0, 0, 0.7)
     end
 end
 

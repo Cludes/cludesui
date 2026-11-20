@@ -1053,7 +1053,7 @@ local function AttachPvIndHover(tile, Pix)
     tile:SetScript("OnMouseUp", PvInd_OnClick)
 end
 
-function mod.BM_CreatePreviewIndicators(f, healthBar, Pix)
+function mod.BM_CreatePreviewIndicators(frame, healthBar, Pix)
     if not healthBar then
         return
     end
@@ -1069,7 +1069,7 @@ function mod.BM_CreatePreviewIndicators(f, healthBar, Pix)
     -- is a silent vanish.
     for idx = 1, ICON_POOL_SIZE + 24 do
         local tile = CreateFrame("Frame", nil, healthBar)
-        tile:SetFrameLevel(f:GetFrameLevel() + mod.LVL_AURA)
+        tile:SetFrameLevel(frame:GetFrameLevel() + mod.LVL_AURA)
         tile:SetSize(12, 12)
         tile:Hide()
 
@@ -1129,7 +1129,7 @@ function mod.BM_CreatePreviewIndicators(f, healthBar, Pix)
     -- edited bucket's own (same union-headroom reasoning as the icon pool).
     for idx = 1, BAR_POOL_SIZE + 4 do
         local barFrame = CreateFrame("StatusBar", nil, healthBar)
-        barFrame:SetFrameLevel(f:GetFrameLevel() + mod.LVL_AURA)
+        barFrame:SetFrameLevel(frame:GetFrameLevel() + mod.LVL_AURA)
         barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
         barFrame:SetMinMaxValues(0, 1)
         barFrame:SetValue(0.6)
@@ -1161,20 +1161,20 @@ function mod.BM_CreatePreviewIndicators(f, healthBar, Pix)
     bgOverlay:SetTexture("Interface\\Buttons\\WHITE8X8")
     bgOverlay:Hide()
 
-    local effectBorder = CreateFrame("Frame", nil, f)
-    effectBorder:SetAllPoints(f)
-    effectBorder:SetFrameLevel(f:GetFrameLevel() + mod.LVL_RAISE - 1)
+    local effectBorder = CreateFrame("Frame", nil, frame)
+    effectBorder:SetAllPoints(frame)
+    effectBorder:SetFrameLevel(frame:GetFrameLevel() + mod.LVL_RAISE - 1)
     effectBorder:Hide()
     if Pix then
         Pix.CreateBorder(effectBorder, 0, 1, 0, 1, 2)
     end
 
-    f._bmIconPool = iconPool
-    f._bmBarPool = barPool
-    f._bmHCOverlay = hcOverlay
-    f._bmHCBar = healthBar
-    f._bmBGOverlay = bgOverlay
-    f._bmEffectBorder = effectBorder
+    frame._bmIconPool = iconPool
+    frame._bmBarPool = barPool
+    frame._bmHCOverlay = hcOverlay
+    frame._bmHCBar = healthBar
+    frame._bmBGOverlay = bgOverlay
+    frame._bmEffectBorder = effectBorder
 end
 
 -------------------------------------------------------------------------------
@@ -1192,19 +1192,19 @@ local function GetSpellIcon(spellId)
     return icon
 end
 
-function mod.BM_ApplyPreviewIndicators(f, index, cfg)
-    local iconPool = f._bmIconPool
-    local barPool = f._bmBarPool
+function mod.BM_ApplyPreviewIndicators(frame, index, cfg)
+    local iconPool = frame._bmIconPool
+    local barPool = frame._bmBarPool
     if not iconPool then
         return
     end
     -- A manager page replica built in party style keeps reading the party view.
-    cfg = f._bmPvS or cfg
+    cfg = frame._bmPvS or cfg
     -- Party preview passes the party proxy as `s`; use the party scale.
     local iscale = ((cfg == mod._scaledPartyProxy) and mod._partyBmScale or mod._bmScale) or 1
     -- The frames this preview stands for, which each indicator's Show In is
     -- tested against as the live frames test it (ns.BM2_SpecIndicators).
-    local pvKind = (f._bmPvS or (cfg ~= nil and cfg == mod._scaledPartyProxy)) and "party" or "raid"
+    local pvKind = (frame._bmPvS or (cfg ~= nil and cfg == mod._scaledPartyProxy)) and "party" or "raid"
 
     -- Hide all first (reset cooldowns so they re-apply fresh)
     for _, tile in ipairs(iconPool) do
@@ -1232,16 +1232,16 @@ function mod.BM_ApplyPreviewIndicators(f, index, cfg)
             b:Hide()
         end
     end
-    if f._bmHCOverlay then
-        f._bmHCOverlay:Hide()
+    if frame._bmHCOverlay then
+        frame._bmHCOverlay:Hide()
     end
-    if f._bmBGOverlay then
-        f._bmBGOverlay:Hide()
+    if frame._bmBGOverlay then
+        frame._bmBGOverlay:Hide()
     end
-    if f._bmEffectBorder then
-        f._bmEffectBorder:Hide()
+    if frame._bmEffectBorder then
+        frame._bmEffectBorder:Hide()
     end
-    f:SetAlpha(1)
+    frame:SetAlpha(1)
 
     -- Only show on slot 1 (player) for the preview
     if index ~= 1 then
@@ -1252,13 +1252,13 @@ function mod.BM_ApplyPreviewIndicators(f, index, cfg)
     if not saved or not saved.profile then
         return
     end
-    local healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(f._health, cfg) or f._health
+    local healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(frame._health, cfg) or frame._health
     if not healthBar then
         return
     end
     local Pix = CludesUI.PanelPP or CludesUI.PP
     -- Base level for the Frame Level setting (mirrors the live render).
-    local pvBaseLvl = f:GetFrameLevel()
+    local pvBaseLvl = frame:GetFrameLevel()
 
     -- Show only the selected spec's indicators
     local iPoolIdx = 0
@@ -1394,7 +1394,7 @@ function mod.BM_ApplyPreviewIndicators(f, index, cfg)
         end
         -- Party Frames kit (manager page replica in party style): the live party
         -- frames take the kit's Buff Size and one run outside the frame.
-        if f._bmPvS and mod.RF_PartyKit and mod.RF_PartyKit() and mod.RF_KitBmView then
+        if frame._bmPvS and mod.RF_PartyKit and mod.RF_PartyKit() and mod.RF_KitBmView then
             result = mod.RF_KitBmView(result, true)
         end
         -- Anchor To: stamp members with their terminal root and order them right after it, so the preview renders each set as one run.
@@ -1453,39 +1453,39 @@ function mod.BM_ApplyPreviewIndicators(f, index, cfg)
                         local isSelected = mod._bmSelectedIndId and indicator.id == mod._bmSelectedIndId
                         local wantShow = isSelected or mod._bmAllIndicatorsVisible
                         if wantShow then
-                            if indicatorType == "healthcolor" and f._bmHCOverlay then
+                            if indicatorType == "healthcolor" and frame._bmHCOverlay then
                                 local color = indicator.color or { r = 0, g = 1, b = 0 }
                                 mod.RF_TintOverBarFill(
-                                    f._bmHCOverlay,
-                                    f._bmHCBar,
+                                    frame._bmHCOverlay,
+                                    frame._bmHCBar,
                                     color.r,
                                     color.g,
                                     color.b,
                                     (indicator.opacity or 100) / 100
                                 )
-                                f._bmHCOverlay:Show()
-                            elseif indicatorType == "bgcolor" and f._bmBGOverlay then
+                                frame._bmHCOverlay:Show()
+                            elseif indicatorType == "bgcolor" and frame._bmBGOverlay then
                                 local color = indicator.color or { r = 0, g = 1, b = 0 }
                                 mod.RF_TexBgTint(
-                                    f._bmBGOverlay,
+                                    frame._bmBGOverlay,
                                     mod.RF_TexBgPath(cfg),
                                     mod.RF_IsVerticalFill(cfg)
                                 )
-                                f._bmBGOverlay:SetColorTexture(color.r, color.g, color.b, (indicator.opacity or 100) / 100)
-                                f._bmBGOverlay:Show()
-                            elseif indicatorType == "border" and f._bmEffectBorder and Pix then
+                                frame._bmBGOverlay:SetColorTexture(color.r, color.g, color.b, (indicator.opacity or 100) / 100)
+                                frame._bmBGOverlay:Show()
+                            elseif indicatorType == "border" and frame._bmEffectBorder and Pix then
                                 local color = indicator.color or { r = 0, g = 1, b = 0 }
                                 ApplyEffectBorder(
-                                    f._bmEffectBorder,
+                                    frame._bmEffectBorder,
                                     indicator,
                                     color.r,
                                     color.g,
                                     color.b,
                                     (indicator.borderOpacity or 100) / 100
                                 )
-                                f._bmEffectBorder:Show()
+                                frame._bmEffectBorder:Show()
                             elseif indicatorType == "framealpha" then
-                                f:SetAlpha(indicator.alpha or 0.4)
+                                frame:SetAlpha(indicator.alpha or 0.4)
                             end
                         end
                     end

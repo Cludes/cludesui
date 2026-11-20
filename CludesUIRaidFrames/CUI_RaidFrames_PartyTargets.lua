@@ -644,13 +644,13 @@ do
 
     -- The target frames' own style inputs after the shared ones: Fill Color and its custom colour,
     -- Background (class or custom colour, darkness) and Smooth Bars.
-    local function PT_FpExtra(t)
+    local function PT_FpExtra(tbl)
         local p, num = saved.profile, mod._PF.STYLE_N
         local fc = p.partyTargetCustomFillColor or PT.DEF_FILL
         local bc = p.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
-        t[num + 1], t[num + 2], t[num + 3], t[num + 4] = p.partyTargetHealthColorMode, fc.r, fc.g, fc.b
-        t[num + 5], t[num + 6], t[num + 7], t[num + 8] = p.partyTargetBgClassColored, bc.r, bc.g, bc.b
-        t[num + 9], t[num + 10] = p.partyTargetBgDarkness, PT_Source().smoothBars
+        tbl[num + 1], tbl[num + 2], tbl[num + 3], tbl[num + 4] = p.partyTargetHealthColorMode, fc.r, fc.g, fc.b
+        tbl[num + 5], tbl[num + 6], tbl[num + 7], tbl[num + 8] = p.partyTargetBgClassColored, bc.r, bc.g, bc.b
+        tbl[num + 9], tbl[num + 10] = p.partyTargetBgDarkness, PT_Source().smoothBars
     end
 
     -- Textured Background on a target frame, from the party settings: the fixed health

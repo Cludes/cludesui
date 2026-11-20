@@ -310,11 +310,11 @@ local function NewFlipTile(barFrame, mask)
     return t
 end
 
-local function HideFlipTile(t)
-    t.once:Stop()
-    t.loop:Stop()
-    t.flip:Hide()
-    t.idle:Hide()
+local function HideFlipTile(tbl)
+    tbl.once:Stop()
+    tbl.loop:Stop()
+    tbl.flip:Hide()
+    tbl.idle:Hide()
 end
 
 -- A tile's layer at x across the bar, tw wide, the bar's full height.

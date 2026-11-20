@@ -1446,8 +1446,8 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
             }
         end
     end
-    local function IsSetAnchor(c)
-        return c and c.isSetGear and not c.isEquipSet
+    local function IsSetAnchor(cfg)
+        return cfg and cfg.isSetGear and not cfg.isEquipSet
     end
 
     local renderedGroups = {}

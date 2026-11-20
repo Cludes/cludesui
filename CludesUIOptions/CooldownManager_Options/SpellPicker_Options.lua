@@ -909,12 +909,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     return {
                         apply = {
                             keys = { key, rKey, gKey, bKey },
-                            write = function(t, value)
-                                t[key] = value
+                            write = function(tbl, value)
+                                tbl[key] = value
                                 if value == "custom" then
-                                    t[rKey], t[gKey], t[bKey] = spellSettings[rKey] or 1, spellSettings[gKey] or g, spellSettings[bKey] or b
+                                    tbl[rKey], tbl[gKey], tbl[bKey] = spellSettings[rKey] or 1, spellSettings[gKey] or g, spellSettings[bKey] or b
                                 else
-                                    t[rKey], t[gKey], t[bKey] = nil, nil, nil
+                                    tbl[rKey], tbl[gKey], tbl[bKey] = nil, nil, nil
                                 end
                             end,
                         },
@@ -927,18 +927,18 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- false while a hide below would otherwise show through, else as
                 -- nothing. A glow reads as its menu value, a button* name moved
                 -- into cdStateGlow included. Every other key reads as stored.
-                AB.ScopeVal = function(t, keyName, raw)
-                    if not t then
+                AB.ScopeVal = function(tbl, keyName, raw)
+                    if not tbl then
                         return nil
                     end
                     local value
                     if raw then
-                        value = rawget(t, keyName)
+                        value = rawget(tbl, keyName)
                     else
-                        value = t[keyName]
+                        value = tbl[keyName]
                     end
                     if keyName == "cdStateEffect" and value and mod.CD_STATE_GLOWS[value] then
-                        local mt = getmetatable(t)
+                        local mt = getmetatable(tbl)
                         local p = mt and mt.__index
                         if type(p) == "table" and mod.CdStateHideOf(p) ~= nil then
                             return false
@@ -947,9 +947,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     elseif keyName == "cdStateGlow" then
                         if value == nil then
                             if raw then
-                                value = rawget(t, "cdStateEffect")
+                                value = rawget(tbl, "cdStateEffect")
                             else
-                                value = t.cdStateEffect
+                                value = tbl.cdStateEffect
                             end
                             if not (value and mod.CD_STATE_GLOWS[value]) then
                                 return nil
@@ -1033,49 +1033,49 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
                 -- Zero-cost feature gates: a bar-tier write can enable features
                 -- the per-spell setters normally arm -- flip the same flags.
-                AB.FlipSessionGates = function(t)
-                    if not t then
+                AB.FlipSessionGates = function(tbl)
+                    if not tbl then
                         return
                     end
-                    if t.reverseSwipe then
+                    if tbl.reverseSwipe then
                         mod._cdmAnyReverseSwipe = true
                     end
-                    if t.hideCDSwipe then
+                    if tbl.hideCDSwipe then
                         mod._cdmAnyHideCDSwipe = true
                     end
-                    if (tonumber(t.thresholdSeconds) or 0) > 0 then
+                    if (tonumber(tbl.thresholdSeconds) or 0) > 0 then
                         mod._cdmAnyThresholdText = true
                     end
-                    if t.maxStacksGlow and t.maxStacksGlow > 0 then
+                    if tbl.maxStacksGlow and tbl.maxStacksGlow > 0 then
                         mod._cdmAnyMaxStacksGlow = true
                     end
-                    if t.desatNotActive then
+                    if tbl.desatNotActive then
                         mod._cdmAnyDesatNotActive = true
                     end
-                    if t.noDesatOnCD then
+                    if tbl.noDesatOnCD then
                         mod._cdmAnyNoDesatOnCD = true
                     end
-                    if t.noResourceTint then
+                    if tbl.noResourceTint then
                         mod._cdmAnyNoResourceTint = true
                     end
-                    if t.chargeHideCdText then
+                    if tbl.chargeHideCdText then
                         mod._cdmAnyChargeHideCdText = true
                     end
-                    if t.hideChargeText then
+                    if tbl.hideChargeText then
                         mod._cdmAnyHideChargeText = true
                     end
-                    if t.suppressGCD then
+                    if tbl.suppressGCD then
                         mod._cdmAnySuppressGcd = true
                     end
-                    if t.chargeHideSwipe or t.hideRechargeEdge then
+                    if tbl.chargeHideSwipe or tbl.hideRechargeEdge then
                         mod._cdmAnyChargeStyle = true
                     end
-                    if t.cdReadySoundKey and t.cdReadySoundKey ~= "none" then
+                    if tbl.cdReadySoundKey and tbl.cdReadySoundKey ~= "none" then
                         mod._cdmAnyCdReadySound = true
                     end
                     if
-                        (t.buffActiveSoundKey and t.buffActiveSoundKey ~= "none")
-                        or (t.buffLostSoundKey and t.buffLostSoundKey ~= "none")
+                        (tbl.buffActiveSoundKey and tbl.buffActiveSoundKey ~= "none")
+                        or (tbl.buffLostSoundKey and tbl.buffLostSoundKey ~= "none")
                     then
                         mod._cdmAnyBuffSound = true
                     end
@@ -1460,12 +1460,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- every table it stamps or clears into cdStateGlow, so the half of
                     -- the pair it leaves alone keeps its look.
                     local splitCd = AB.TouchesCdState(keyList)
-                    local function stamp(t)
+                    local function stamp(tbl)
                         if splitCd then
-                            mod.CdStateSplitLegacy(t)
+                            mod.CdStateSplitLegacy(tbl)
                         end
                         for _, keyName in ipairs(keyList) do
-                            t[keyName] = temp[keyName]
+                            tbl[keyName] = temp[keyName]
                         end
                     end
                     local touchesCas = false
@@ -2334,13 +2334,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             "activeBorderB",
                             "activeBorderA",
                         },
-                        applyWrite = function(t, value)
-                            t.activeBorderEnabled = value and true or false
+                        applyWrite = function(tbl, value)
+                            tbl.activeBorderEnabled = value and true or false
                             if value then
-                                t.activeBorderR = spellSettings.activeBorderR or 1
-                                t.activeBorderG = spellSettings.activeBorderG or 0.776
-                                t.activeBorderB = spellSettings.activeBorderB or 0.376
-                                t.activeBorderA = spellSettings.activeBorderA or 1
+                                tbl.activeBorderR = spellSettings.activeBorderR or 1
+                                tbl.activeBorderG = spellSettings.activeBorderG or 0.776
+                                tbl.activeBorderB = spellSettings.activeBorderB or 0.376
+                                tbl.activeBorderA = spellSettings.activeBorderA or 1
                             end
                         end,
                     },
@@ -2414,13 +2414,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- below); Lower Alpha pushes src's current percent, read before t
                 -- (src itself for the strip's own writes) is written.
                 AB.CdHideWrite = function(source)
-                    return function(t, value)
+                    return function(tbl, value)
                         local percent = source.cdStateLowerAlpha
-                        t.cdStateEffect = value or false
+                        tbl.cdStateEffect = value or false
                         if value == "lowerAlphaOnCD" then
-                            t.cdStateLowerAlpha = percent or 0.5
+                            tbl.cdStateLowerAlpha = percent or 0.5
                         else
-                            t.cdStateLowerAlpha = nil
+                            tbl.cdStateLowerAlpha = nil
                         end
                     end
                 end
@@ -2429,9 +2429,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- button* single value keeps its Action Button Glow look, else the
                 -- glow's default; read before t is written.
                 AB.CdGlowWrite = function(source)
-                    return function(t, value)
+                    return function(tbl, value)
                         local current = mod.CdStateGlowOf(source)
-                        t.cdStateGlow = value or false
+                        tbl.cdStateGlow = value or false
                         local familyStore
                         if value then
                             if current and mod.CD_STATE_GLOWS[current] ~= current then
@@ -2440,11 +2440,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 familyStore = mod.CdReadyGlowStyle(value, source)
                             end
                         end
-                        t.cdStateGlowStyle = familyStore
+                        tbl.cdStateGlowStyle = familyStore
                         if familyStore == 8 then
-                            t.cdStateGlowAlpha = source.cdStateGlowAlpha
+                            tbl.cdStateGlowAlpha = source.cdStateGlowAlpha
                         else
-                            t.cdStateGlowAlpha = nil
+                            tbl.cdStateGlowAlpha = nil
                         end
                     end
                 end
@@ -2517,40 +2517,40 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         charge = "suppressGCD",
                         label = "+ Suppress GCD",
                         applyKeys = { "suppressGCD" },
-                        applyWrite = function(t, value)
-                            t.suppressGCD = value and true or false
+                        applyWrite = function(tbl, value)
+                            tbl.suppressGCD = value and true or false
                         end,
                     },
                     {
                         charge = "hideChargeText",
                         label = "+ Hide Charge Text",
                         applyKeys = { "hideChargeText" },
-                        applyWrite = function(t, value)
-                            t.hideChargeText = value and true or false
+                        applyWrite = function(tbl, value)
+                            tbl.hideChargeText = value and true or false
                         end,
                     },
                     {
                         charge = "chargeHideSwipe",
                         label = "+ Hide Swipe (Charges)",
                         applyKeys = { "chargeHideSwipe" },
-                        applyWrite = function(t, value)
-                            t.chargeHideSwipe = value and true or false
+                        applyWrite = function(tbl, value)
+                            tbl.chargeHideSwipe = value and true or false
                         end,
                     },
                     {
                         charge = "hideRechargeEdge",
                         label = "+ Hide Recharge Edge",
                         applyKeys = { "hideRechargeEdge" },
-                        applyWrite = function(t, value)
-                            t.hideRechargeEdge = value and true or false
+                        applyWrite = function(tbl, value)
+                            tbl.hideRechargeEdge = value and true or false
                         end,
                     },
                     {
                         charge = "chargeHideCdText",
                         label = "+ Hide Duration (Charges > 0)",
                         applyKeys = { "chargeHideCdText" },
-                        applyWrite = function(t, value)
-                            t.chargeHideCdText = value and true or false
+                        applyWrite = function(tbl, value)
+                            tbl.chargeHideCdText = value and true or false
                         end,
                     },
                     -- Charge reading for the two Hidden (CD Ready) modes only: they normally
@@ -2561,8 +2561,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         charge = "chargeHideUntilSpent",
                         label = "+ Stay Hidden While Charges Remain",
                         applyKeys = { "chargeHideUntilSpent" },
-                        applyWrite = function(t, value)
-                            t.chargeHideUntilSpent = value and true or false
+                        applyWrite = function(tbl, value)
+                            tbl.chargeHideUntilSpent = value and true or false
                         end,
                     },
                     -- The glow beside the hide effect: at most one, picked or cleared like
@@ -2661,8 +2661,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 local GLOW_VISIBLE_APPLY = {
                     apply = {
                         keys = { "glowWhenVisible" },
-                        write = function(t, value)
-                            t.glowWhenVisible = value or false
+                        write = function(tbl, value)
+                            tbl.glowWhenVisible = value or false
                         end,
                     },
                 }
@@ -3407,11 +3407,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return armedSeconds() > 0
                             end,
                             applyKeys = { "thresholdSeconds" },
-                            applyWrite = function(t, value)
+                            applyWrite = function(tbl, value)
                                 -- Push this spell's current seconds; "off" (0, or Exclude This
                                 -- Spell's false) blocks the tier below.
                                 local s = (value ~= false) and armedSeconds() or 0
-                                t.thresholdSeconds = (s > 0) and s or false
+                                tbl.thresholdSeconds = (s > 0) and s or false
                             end,
                         },
                         {
@@ -3440,18 +3440,18 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 "thresholdColorG",
                                 "thresholdColorB",
                             },
-                            applyWrite = function(t, value)
-                                t.thresholdColorEnabled = value or false
+                            applyWrite = function(tbl, value)
+                                tbl.thresholdColorEnabled = value or false
                                 if value then
                                     -- Push this spell's current color.
-                                    t.thresholdColorR = access.get("thresholdColorR") or 1
-                                    t.thresholdColorG = access.get("thresholdColorG") or 0.2
-                                    t.thresholdColorB = access.get("thresholdColorB") or 0.2
+                                    tbl.thresholdColorR = access.get("thresholdColorR") or 1
+                                    tbl.thresholdColorG = access.get("thresholdColorG") or 0.2
+                                    tbl.thresholdColorB = access.get("thresholdColorB") or 0.2
                                 else
                                     -- Colour keys belong to the enabled state only; clear them so a stale colour can't linger in the tier and make valuesMatch always fail.
-                                    t.thresholdColorR = nil
-                                    t.thresholdColorG = nil
-                                    t.thresholdColorB = nil
+                                    tbl.thresholdColorR = nil
+                                    tbl.thresholdColorG = nil
+                                    tbl.thresholdColorB = nil
                                 end
                             end,
                         },
@@ -3471,8 +3471,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 access.refresh()
                             end,
                             applyKeys = { "thresholdDecimals" },
-                            applyWrite = function(t, value)
-                                t.thresholdDecimals = value or false
+                            applyWrite = function(tbl, value)
+                                tbl.thresholdDecimals = value or false
                             end,
                         },
                     }
@@ -3601,9 +3601,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     return (tonumber(spellSettings.missingShowBelow) or 0) > 0
                                 end,
                                 applyKeys = { "missingShowBelow" },
-                                applyWrite = function(t, value)
+                                applyWrite = function(tbl, value)
                                     local s = (value ~= false) and tonumber(spellSettings.missingShowBelow) or 0
-                                    t.missingShowBelow = (s > 0) and s or false
+                                    tbl.missingShowBelow = (s > 0) and s or false
                                 end,
                             },
                         }
@@ -3672,8 +3672,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end,
                                 apply = {
                                     keys = { "alwaysShow" },
-                                    write = function(t, value)
-                                        t.alwaysShow = value
+                                    write = function(tbl, value)
+                                        tbl.alwaysShow = value
                                     end,
                                 },
                             }
@@ -3700,8 +3700,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         {
                             apply = {
                                 keys = { "buffGlow" },
-                                write = function(t, value)
-                                    t.buffGlow = value
+                                write = function(tbl, value)
+                                    tbl.buffGlow = value
                                 end,
                             },
                         }
@@ -4355,9 +4355,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 searchable = true,
                                 apply = {
                                     keys = { "buffActiveSoundKey" },
-                                    write = function(t, value)
+                                    write = function(tbl, value)
                                         -- "None" applied bar-wide = explicitly silent (false blocks the tier below).
-                                        t.buffActiveSoundKey = (value ~= "none" and value) or false
+                                        tbl.buffActiveSoundKey = (value ~= "none" and value) or false
                                     end,
                                 },
                             }
@@ -4386,8 +4386,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 searchable = true,
                                 apply = {
                                     keys = { "buffLostSoundKey" },
-                                    write = function(t, value)
-                                        t.buffLostSoundKey = (value ~= "none" and value) or false
+                                    write = function(tbl, value)
+                                        tbl.buffLostSoundKey = (value ~= "none" and value) or false
                                     end,
                                 },
                             }
@@ -4424,8 +4424,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 {
                                     apply = {
                                         keys = { "desatInactive" },
-                                        write = function(t, value)
-                                            t.desatInactive = value
+                                        write = function(tbl, value)
+                                            tbl.desatInactive = value
                                         end,
                                     },
                                 }
@@ -4465,9 +4465,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         {
                             apply = {
                                 keys = { "reverseSwipe" },
-                                write = function(t, value)
+                                write = function(tbl, value)
                                     -- "Off" applied bar-wide blocks the tier below.
-                                    t.reverseSwipe = value or false
+                                    tbl.reverseSwipe = value or false
                                 end,
                             },
                         }
@@ -5049,9 +5049,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end, {
                                 apply = {
                                     keys = { "cdStateGlowStyle", "cdStateGlowAlpha" },
-                                    write = function(t, value)
-                                        t.cdStateGlowStyle = value
-                                        t.cdStateGlowAlpha = (value == 8) and customState and customState.cdStateGlowAlpha or nil
+                                    write = function(tbl, value)
+                                        tbl.cdStateGlowStyle = value
+                                        tbl.cdStateGlowAlpha = (value == 8) and customState and customState.cdStateGlowAlpha or nil
                                     end,
                                 },
                             })
@@ -5087,8 +5087,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         end
                                     end,
                                     applyKeys = { "noResourceTint" },
-                                    applyWrite = function(t, value)
-                                        t.noResourceTint = value and true or false
+                                    applyWrite = function(tbl, value)
+                                        tbl.noResourceTint = value and true or false
                                     end,
                                 },
                             }
@@ -5122,8 +5122,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             {
                                 apply = {
                                     keys = { "noDesatOnCD" },
-                                    write = function(t, value)
-                                        t.noDesatOnCD = value or false
+                                    write = function(tbl, value)
+                                        tbl.noDesatOnCD = value or false
                                     end,
                                 },
                             }
@@ -5203,9 +5203,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             {
                                 apply = {
                                     keys = { "reverseSwipe", "hideCDSwipe" },
-                                    write = function(t, value)
-                                        t.reverseSwipe = (value == "reverse") or false
-                                        t.hideCDSwipe = (value == "hide") or false
+                                    write = function(tbl, value)
+                                        tbl.reverseSwipe = (value == "reverse") or false
+                                        tbl.hideCDSwipe = (value == "hide") or false
                                     end,
                                 },
                             }
@@ -5239,8 +5239,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 {
                                     apply = {
                                         keys = { "stanceBarHide" },
-                                        write = function(t, value)
-                                            t.stanceBarHide = value or false
+                                        write = function(tbl, value)
+                                            tbl.stanceBarHide = value or false
                                             if value then
                                                 mod._cdmAnyStanceBar = true
                                             end
@@ -5383,7 +5383,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         "activeSwipeB",
                                         "activeSwipeA",
                                     },
-                                    write = function(t, value)
+                                    write = function(tbl, value)
                                         -- Read the source colour BEFORE the clear below: a bar
                                         -- apply stamps every preset member's cas entry, this icon's included, so clearing first would wipe the colour this write then reads back.
                                         local pr, pg, pb, pa
@@ -5400,24 +5400,24 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         -- make valuesMatch always fail, so the apply never
                                         -- toggles off and re-prompts the overwrite popup
                                         -- forever without visibly changing anything.
-                                        t.activeSwipeR = nil
-                                        t.activeSwipeG = nil
-                                        t.activeSwipeB = nil
-                                        t.activeSwipeA = nil
+                                        tbl.activeSwipeR = nil
+                                        tbl.activeSwipeG = nil
+                                        tbl.activeSwipeB = nil
+                                        tbl.activeSwipeA = nil
                                         if value == "class" then
-                                            t.activeSwipeMode = false
-                                            t.activeSwipeClassColor = true
+                                            tbl.activeSwipeMode = false
+                                            tbl.activeSwipeClassColor = true
                                         elseif value == "none" then
-                                            t.activeSwipeMode = "none"
-                                            t.activeSwipeClassColor = false
+                                            tbl.activeSwipeMode = "none"
+                                            tbl.activeSwipeClassColor = false
                                         else
                                             -- Custom: push this icon's current color.
-                                            t.activeSwipeMode = "custom"
-                                            t.activeSwipeClassColor = false
-                                            t.activeSwipeR = pr or 1
-                                            t.activeSwipeG = pg or 0.776
-                                            t.activeSwipeB = pb or 0.376
-                                            t.activeSwipeA = pa or 0.7
+                                            tbl.activeSwipeMode = "custom"
+                                            tbl.activeSwipeClassColor = false
+                                            tbl.activeSwipeR = pr or 1
+                                            tbl.activeSwipeG = pg or 0.776
+                                            tbl.activeSwipeB = pb or 0.376
+                                            tbl.activeSwipeA = pa or 0.7
                                         end
                                     end,
                                 },
@@ -5444,8 +5444,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 {
                                     apply = {
                                         keys = { "activeGlow" },
-                                        write = function(t, value)
-                                            t.activeGlow = value
+                                        write = function(tbl, value)
+                                            tbl.activeGlow = value
                                         end,
                                     },
                                 }
@@ -5492,17 +5492,17 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end, {
                             apply = {
                                 keys = { "glowColor", "glowColorR", "glowColorG", "glowColorB" },
-                                write = function(t, value)
-                                    t.glowColor = value
+                                write = function(tbl, value)
+                                    tbl.glowColor = value
                                     if value == "custom" then
                                         -- Push this icon's current color.
-                                        t.glowColorR = (customState and customState.glowColorR) or 1
-                                        t.glowColorG = (customState and customState.glowColorG) or 0.788
-                                        t.glowColorB = (customState and customState.glowColorB) or 0.137
+                                        tbl.glowColorR = (customState and customState.glowColorR) or 1
+                                        tbl.glowColorG = (customState and customState.glowColorG) or 0.788
+                                        tbl.glowColorB = (customState and customState.glowColorB) or 0.137
                                     else
-                                        t.glowColorR = nil
-                                        t.glowColorG = nil
-                                        t.glowColorB = nil
+                                        tbl.glowColorR = nil
+                                        tbl.glowColorG = nil
+                                        tbl.glowColorB = nil
                                     end
                                 end,
                             },
@@ -5590,8 +5590,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             {
                                 apply = {
                                     keys = { "procGlow" },
-                                    write = function(t, value)
-                                        t.procGlow = value
+                                    write = function(tbl, value)
+                                        tbl.procGlow = value
                                     end,
                                 },
                                 -- Glow choices lock while the Cooldown State Effect has a glow
@@ -5764,31 +5764,31 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     "activeSwipeB",
                                     "activeSwipeA",
                                 },
-                                write = function(t, value)
+                                write = function(tbl, value)
                                     -- Read the source colour BEFORE the clear below: "Apply to This
                                     -- Spell" passes ss itself, so clearing first would wipe the picked colour this write then reads back, resetting it to the default.
                                     local pr, pg, pb, pa =
                                         spellSettings.activeSwipeR, spellSettings.activeSwipeG, spellSettings.activeSwipeB, spellSettings.activeSwipeA
                                     -- Colour keys belong to Custom only; clear them for class/none so a
                                     -- stale colour from an earlier Custom apply can't linger in the tier and make valuesMatch always fail (perpetual overwrite popup, no change).
-                                    t.activeSwipeR = nil
-                                    t.activeSwipeG = nil
-                                    t.activeSwipeB = nil
-                                    t.activeSwipeA = nil
+                                    tbl.activeSwipeR = nil
+                                    tbl.activeSwipeG = nil
+                                    tbl.activeSwipeB = nil
+                                    tbl.activeSwipeA = nil
                                     if value == "class" then
-                                        t.activeSwipeMode = false
-                                        t.activeSwipeClassColor = true
+                                        tbl.activeSwipeMode = false
+                                        tbl.activeSwipeClassColor = true
                                     elseif value == "none" then
-                                        t.activeSwipeMode = "none"
-                                        t.activeSwipeClassColor = false
+                                        tbl.activeSwipeMode = "none"
+                                        tbl.activeSwipeClassColor = false
                                     else
                                         -- Custom: push this spell's effective color.
-                                        t.activeSwipeMode = "custom"
-                                        t.activeSwipeClassColor = false
-                                        t.activeSwipeR = pr or 1
-                                        t.activeSwipeG = pg or 0.776
-                                        t.activeSwipeB = pb or 0.376
-                                        t.activeSwipeA = pa or 0.7
+                                        tbl.activeSwipeMode = "custom"
+                                        tbl.activeSwipeClassColor = false
+                                        tbl.activeSwipeR = pr or 1
+                                        tbl.activeSwipeG = pg or 0.776
+                                        tbl.activeSwipeB = pb or 0.376
+                                        tbl.activeSwipeA = pa or 0.7
                                     end
                                 end,
                             },
@@ -5816,8 +5816,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             {
                                 apply = {
                                     keys = { "activeGlow" },
-                                    write = function(t, value)
-                                        t.activeGlow = value
+                                    write = function(tbl, value)
+                                        tbl.activeGlow = value
                                         if value and value > 0 then
                                             mod._cdmAnyActiveGlow = true
                                         end
@@ -5849,8 +5849,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             {
                                 apply = {
                                     keys = { "maxStacksGlow" },
-                                    write = function(t, value)
-                                        t.maxStacksGlow = value
+                                    write = function(tbl, value)
+                                        tbl.maxStacksGlow = value
                                     end,
                                 },
                             }
@@ -5882,8 +5882,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             {
                                 apply = {
                                     keys = { "desatNotActive" },
-                                    write = function(t, value)
-                                        t.desatNotActive = value or false
+                                    write = function(tbl, value)
+                                        tbl.desatNotActive = value or false
                                     end,
                                 },
                             }
@@ -5915,8 +5915,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     end
                                 end,
                                 applyKeys = { "noResourceTint" },
-                                applyWrite = function(t, value)
-                                    t.noResourceTint = value and true or false
+                                applyWrite = function(tbl, value)
+                                    tbl.noResourceTint = value and true or false
                                 end,
                             },
                         }
@@ -5943,8 +5943,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             {
                                 apply = {
                                     keys = { "noDesatOnCD" },
-                                    write = function(t, value)
-                                        t.noDesatOnCD = value or false
+                                    write = function(tbl, value)
+                                        tbl.noDesatOnCD = value or false
                                     end,
                                 },
                             }
@@ -6085,9 +6085,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     payload = function(entry)
                                         return entry.val == 8
                                     end,
-                                    write = function(t, value)
-                                        t.cdStateGlowStyle = value
-                                        t.cdStateGlowAlpha = (value == 8) and spellSettings.cdStateGlowAlpha or nil
+                                    write = function(tbl, value)
+                                        tbl.cdStateGlowStyle = value
+                                        tbl.cdStateGlowAlpha = (value == 8) and spellSettings.cdStateGlowAlpha or nil
                                     end,
                                 },
                             })
@@ -6157,10 +6157,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             {
                                 apply = {
                                     keys = { "reverseSwipe", "hideCDSwipe" },
-                                    write = function(t, value)
+                                    write = function(tbl, value)
                                         -- "Off" applied bar-wide blocks the tier below.
-                                        t.reverseSwipe = (value == "reverse") or false
-                                        t.hideCDSwipe = (value == "hide") or false
+                                        tbl.reverseSwipe = (value == "reverse") or false
+                                        tbl.hideCDSwipe = (value == "hide") or false
                                     end,
                                 },
                             }
@@ -6194,8 +6194,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 {
                                     apply = {
                                         keys = { "stanceBarHide" },
-                                        write = function(t, value)
-                                            t.stanceBarHide = value or false
+                                        write = function(tbl, value)
+                                            tbl.stanceBarHide = value or false
                                             if value then
                                                 mod._cdmAnyStanceBar = true
                                             end
@@ -6236,9 +6236,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 searchable = true,
                                 apply = {
                                     keys = { "cdReadySoundKey" },
-                                    write = function(t, value)
+                                    write = function(tbl, value)
                                         -- "None" applied bar-wide = explicitly silent.
-                                        t.cdReadySoundKey = (value ~= "none" and value) or false
+                                        tbl.cdReadySoundKey = (value ~= "none" and value) or false
                                     end,
                                 },
                             }

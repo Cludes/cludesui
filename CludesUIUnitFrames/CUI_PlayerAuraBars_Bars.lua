@@ -1087,17 +1087,17 @@ function RegisterPABUnlock()
                     design = place.design,
                 }
             end,
-            saveRawPosition = function(_, p)
+            saveRawPosition = function(_, profile)
                 local pabCfg = PAB()
-                if not (pabCfg and p and p.point) then
+                if not (pabCfg and profile and profile.point) then
                     return
                 end
                 pabCfg[BarPositionKey(buffSide)] = {
-                    point = p.point,
-                    relPoint = p.relPoint or p.point,
-                    x = p.x,
-                    y = p.y,
-                    design = p.design,
+                    point = profile.point,
+                    relPoint = profile.relPoint or profile.point,
+                    x = profile.x,
+                    y = profile.y,
+                    design = profile.design,
                 }
             end,
             clearPos = function()

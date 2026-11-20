@@ -1160,9 +1160,9 @@ end
 -- An anchoring code may not read (restricted, or answered with a secret) is
 -- not followed: every value is cleared by issecretvalue before any test.
 local depBudget = 0
-local function PlacedByMoved(f, serial)
+local function PlacedByMoved(frame, serial)
     local isv = _G.issecretvalue
-    local restricted = f.IsAnchoringRestricted and f:IsAnchoringRestricted()
+    local restricted = frame.IsAnchoringRestricted and frame:IsAnchoringRestricted()
     if isv and isv(restricted) then
         return false
     end
@@ -1170,8 +1170,8 @@ local function PlacedByMoved(f, serial)
         return false
     end
     local last
-    for i = 1, f:GetNumPoints() do
-        local _, rel = f:GetPoint(i)
+    for i = 1, frame:GetNumPoints() do
+        local _, rel = frame:GetPoint(i)
         if isv and isv(rel) then
             return false
         end
@@ -1207,9 +1207,9 @@ end
 -- f pinned where it is now: to ref's top left corner, or to the screen
 -- (UIParent's bottom left, as a dropped build's orphaned anchor kept it) when
 -- ref is UIParent or has no place itself.
-local function FreezeTo(f, ref)
+local function FreezeTo(frame, ref)
     local isv = _G.issecretvalue
-    local l, b, wid, height = f:GetRect()
+    local l, b, wid, height = frame:GetRect()
     if isv and (isv(l) or isv(b) or isv(wid) or isv(height)) then
         return
     end
@@ -1217,21 +1217,21 @@ local function FreezeTo(f, ref)
         return
     end
     local UIParent = _G.UIParent
-    if ref ~= UIParent and ref ~= f then
+    if ref ~= UIParent and ref ~= frame then
         local rl, rebuild, rw, rh = ref:GetRect()
         if not (isv and (isv(rl) or isv(rebuild) or isv(rw) or isv(rh))) and rl and rebuild and rw and rh then
             -- ref's corner in f's own units (each scales its own offsets)
-            local keyName = ref:GetEffectiveScale() / f:GetEffectiveScale()
-            f:ClearAllPoints()
-            if pcall(f.SetPoint, f, "TOPLEFT", ref, "TOPLEFT", l - rl * keyName, b + height - (rebuild + rh) * keyName) then
-                f:SetSize(wid, height)
+            local keyName = ref:GetEffectiveScale() / frame:GetEffectiveScale()
+            frame:ClearAllPoints()
+            if pcall(frame.SetPoint, frame, "TOPLEFT", ref, "TOPLEFT", l - rl * keyName, b + height - (rebuild + rh) * keyName) then
+                frame:SetSize(wid, height)
                 return
             end
         end
     end
-    f:ClearAllPoints()
-    f:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", l, b)
-    f:SetSize(wid, height)
+    frame:ClearAllPoints()
+    frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", l, b)
+    frame:SetSize(wid, height)
 end
 
 local function FreezeWalk(hostFrame, hostRec, hostMoved)
@@ -1472,10 +1472,10 @@ local function ReleaseScrollChild(object, record)
 end
 
 -- A region placed as the same region of a new object is (c, from the probe).
-local function PlaceAsNew(object, registry, c)
-    registry:SetDrawLayer(c.layer, c.sub)
+local function PlaceAsNew(object, registry, cfg)
+    registry:SetDrawLayer(cfg.layer, cfg.sub)
     registry:ClearAllPoints()
-    local pts = c.points
+    local pts = cfg.points
     for jdx = 1, #pts do
         local p = pts[jdx]
         local rel = p[2]
@@ -1493,14 +1493,14 @@ end
 -- takes a new region's look and shown state. A button's text takes no look of
 -- its own: back at the engine's defaults, it gets the font object the next
 -- dress gives the button, as a new button's text does.
-local function ResetEngineRegion(object, registry, c, roleName)
+local function ResetEngineRegion(object, registry, cfg, roleName)
     local isText = registry.GetFont ~= nil
     if isText and not roleName.live then
         if registry.SetToDefaults then
             registry:SetToDefaults()
         end
-        if c then
-            PlaceAsNew(object, registry, c)
+        if cfg then
+            PlaceAsNew(object, registry, cfg)
         end
         if registry:GetFont() then
             registry:SetText("")
@@ -1508,14 +1508,14 @@ local function ResetEngineRegion(object, registry, c, roleName)
         if registry:IsShown() then
             registry:Hide()
         end
-        if c then
-            engHidden[registry] = c.shown
+        if cfg then
+            engHidden[registry] = cfg.shown
         else
             engHidden[registry] = true
         end
         return
     end
-    if c ~= nil and (c.font ~= nil or not isText) then
+    if cfg ~= nil and (cfg.font ~= nil or not isText) then
         if registry.SetToDefaults then
             registry:SetToDefaults()
         end
@@ -1528,27 +1528,27 @@ local function ResetEngineRegion(object, registry, c, roleName)
             end
         end
         ForgetPixelSnap(registry)
-        PlaceAsNew(object, registry, c)
-        if c.blend then
-            registry:SetBlendMode(c.blend)
+        PlaceAsNew(object, registry, cfg)
+        if cfg.blend then
+            registry:SetBlendMode(cfg.blend)
         end
-        if c.font then
-            if c.fontObject then
-                registry:SetFontObject(c.fontObject)
+        if cfg.font then
+            if cfg.fontObject then
+                registry:SetFontObject(cfg.fontObject)
             end
-            registry:SetFont(c.font[1], c.font[2], c.font[3])
-            local col = c.color
+            registry:SetFont(cfg.font[1], cfg.font[2], cfg.font[3])
+            local col = cfg.color
             registry:SetTextColor(col[1], col[2], col[3], col[4])
-            col = c.shadow
+            col = cfg.shadow
             registry:SetShadowColor(col[1], col[2], col[3], col[4])
-            registry:SetShadowOffset(c.shadowOff[1], c.shadowOff[2])
-            registry:SetJustifyH(c.jh)
-            registry:SetJustifyV(c.jv)
+            registry:SetShadowOffset(cfg.shadowOff[1], cfg.shadowOff[2])
+            registry:SetJustifyH(cfg.jh)
+            registry:SetJustifyV(cfg.jv)
         end
     end
     if roleName.live then
-        if c and (registry:IsShown() and true or false) ~= c.shown then
-            registry:SetShown(c.shown)
+        if cfg and (registry:IsShown() and true or false) ~= cfg.shown then
+            registry:SetShown(cfg.shown)
         end
         return
     end
@@ -1558,8 +1558,8 @@ local function ResetEngineRegion(object, registry, c, roleName)
     if registry:IsShown() then
         registry:Hide()
     end
-    if c then
-        engHidden[registry] = c.shown
+    if cfg then
+        engHidden[registry] = cfg.shown
     else
         engHidden[registry] = true
     end
@@ -2502,17 +2502,17 @@ function Pool._DevVerifyReset()
     end
     -- one change on the pooled object: the setter with values, or the opposite
     -- of the new object's flag
-    local function Mutate(a, b, c)
-        if c.key then
-            b[c.key] = true
+    local function Mutate(a, b, cfg)
+        if cfg.key then
+            b[cfg.key] = true
             return
         end
-        local set = b[c[1]]
+        local set = b[cfg[1]]
         if type(set) ~= "function" then
             return
         end
-        if c.flip then
-            local fg = a[c.flip]
+        if cfg.flip then
+            local fg = a[cfg.flip]
             if type(fg) ~= "function" then
                 return
             end
@@ -2520,10 +2520,10 @@ function Pool._DevVerifyReset()
             if success then
                 pcall(set, b, not val)
             end
-        elseif type(c.v) == "function" then
-            pcall(set, b, c.v(hostFrame))
+        elseif type(cfg.v) == "function" then
+            pcall(set, b, cfg.v(hostFrame))
         else
-            pcall(set, b, unpack(c.v or EMPTY))
+            pcall(set, b, unpack(cfg.v or EMPTY))
         end
     end
     local function Check(kindName, a, b, c)

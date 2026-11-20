@@ -103,8 +103,8 @@ local UpdateVisibility
 
 local lastUseClassColor
 
-local function CursorSize(p)
-    local size = floor((p.baseSize or DEF_BASESIZE) * (p.scale or DEF_SCALE) + 0.5)
+local function CursorSize(profile)
+    local size = floor((profile.baseSize or DEF_BASESIZE) * (profile.scale or DEF_SCALE) + 0.5)
     if size < 8 then
         return 8
     end
@@ -114,11 +114,11 @@ local function CursorSize(p)
     return size
 end
 
-local function ApplyReticle(p, size, red, green, blue, a)
+local function ApplyReticle(profile, size, red, green, blue, a)
     if not reticleTex then
         return
     end
-    if not p.reticle then
+    if not profile.reticle then
         reticleTex:Hide()
         return
     end
@@ -1516,9 +1516,9 @@ function ECL:OnInitialize()
     -- a frozen `profile = sharedDB.profile.cursor` reference would go stale after
     -- a swap and the cursor would keep applying the old profile's settings.
     self.db = setmetatable({ _shared = sharedDB }, {
-        __index = function(t, key)
+        __index = function(tbl, key)
             if key == "profile" then
-                local p = t._shared.profile
+                local p = tbl._shared.profile
                 if not p.cursor then
                     p.cursor = {}
                 end

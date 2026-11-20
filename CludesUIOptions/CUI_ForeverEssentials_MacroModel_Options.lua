@@ -840,9 +840,9 @@ local function ParseSeg(seg, value)
 end
 
 -- The order of conditions inside [...] does not matter to the game.
-local function Canon(t)
+local function Canon(text)
     return (
-        t:gsub("%[([^%]]*)%]", function(inner)
+        text:gsub("%[([^%]]*)%]", function(inner)
             local toks = {}
             for posX in inner:gmatch("[^,]+") do
                 toks[#toks + 1] = strtrim(posX)

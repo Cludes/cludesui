@@ -24,9 +24,9 @@ local BORDER_TEX_KEYS =
     { "borderTextureOffset", "borderTextureOffsetY", "borderTextureShiftX", "borderTextureShiftY" }
 
 -- A colour copied as a table of its own (r, g, b); nothing when there is none.
-local function CopyColor(t, settingKey, c)
-    if c then
-        t[settingKey] = { r = c.r, g = c.g, b = c.b }
+local function CopyColor(tbl, settingKey, color)
+    if color then
+        tbl[settingKey] = { r = color.r, g = color.g, b = color.b }
     end
 end
 
@@ -52,8 +52,8 @@ function mod.UFO_UnitSync(region, label, opts)
         local settingKey, default, unsetOnly = opts.key, opts.default, opts.unsetOnly
         -- The default stands in for an unset value, and for false unless
         -- opts.unsetOnly (a stored false is then a value of its own).
-        local function Value(t)
-            local value = t[settingKey]
+        local function Value(tbl)
+            local value = tbl[settingKey]
             if value == nil or (value == false and not unsetOnly) then
                 if type(default) == "function" then
                     return default()
@@ -62,8 +62,8 @@ function mod.UFO_UnitSync(region, label, opts)
             end
             return value
         end
-        copy = function(t, from)
-            t[settingKey] = Value(from)
+        copy = function(tbl, from)
+            tbl[settingKey] = Value(from)
         end
         same = function(t, from)
             return Value(t) == Value(from)
@@ -197,17 +197,17 @@ end
 function mod.UFO_FormatSync(region, label, content, format, default)
     mod.UFO_UnitSync(region, label, {
         self = true,
-        copy = function(t, from)
+        copy = function(tbl, from)
             local value = from[content] or default
-            t[content] = value
+            tbl[content] = value
             if value == "custom" then
-                t[format] = from[format]
+                tbl[format] = from[format]
             end
         end,
-        same = function(t, from)
+        same = function(tbl, from)
             local value = from[content] or default
-            return (t[content] or default) == value
-                and (value ~= "custom" or (t[format] or "") == (from[format] or ""))
+            return (tbl[content] or default) == value
+                and (value ~= "custom" or (tbl[format] or "") == (from[format] or ""))
         end,
     })
 end
@@ -839,26 +839,26 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     -- the look it names.
     if not CludesUI._prebuilding then
         mod.UFO_UnitSync(sharedScaleBorderRow._leftRegion, "Border Style", {
-            copy = function(t, from)
-                t.borderTexture = from.borderTexture or "solid"
+            copy = function(tbl, from)
+                tbl.borderTexture = from.borderTexture or "solid"
                 for _, keyName in ipairs(BORDER_TEX_KEYS) do
-                    t[keyName] = from[keyName]
+                    tbl[keyName] = from[keyName]
                 end
-                t.borderBehind = from.borderBehind
-                CopyColor(t, "borderColor", from.borderColor)
-                t.borderAlpha = from.borderAlpha
-                t.borderPowerSeam = from.borderPowerSeam
+                tbl.borderBehind = from.borderBehind
+                CopyColor(tbl, "borderColor", from.borderColor)
+                tbl.borderAlpha = from.borderAlpha
+                tbl.borderPowerSeam = from.borderPowerSeam
             end,
-            same = function(t, from)
+            same = function(tbl, from)
                 if
-                    (t.borderTexture or "solid") ~= (from.borderTexture or "solid")
-                    or (t.borderBehind or false) ~= (from.borderBehind or false)
-                    or (t.borderPowerSeam == true) ~= (from.borderPowerSeam == true)
+                    (tbl.borderTexture or "solid") ~= (from.borderTexture or "solid")
+                    or (tbl.borderBehind or false) ~= (from.borderBehind or false)
+                    or (tbl.borderPowerSeam == true) ~= (from.borderPowerSeam == true)
                 then
                     return false
                 end
                 for _, keyName in ipairs(BORDER_TEX_KEYS) do
-                    if t[keyName] ~= from[keyName] then
+                    if tbl[keyName] ~= from[keyName] then
                         return false
                     end
                 end
@@ -866,7 +866,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             end,
         })
         mod.UFO_UnitSync(sharedScaleBorderRow._rightRegion, "Border", {
-            copy = function(t, from)
+            copy = function(tbl, from)
                 local step, radius = from.borderSize, from.cornerRadius
                 if step == nil then
                     step = 1
@@ -874,36 +874,36 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 if radius == nil then
                     radius = 0
                 end
-                t.borderSize = step
-                t.cornerRadius = radius
+                tbl.borderSize = step
+                tbl.cornerRadius = radius
                 -- A source with all corners, or no exact size, clears a value the
                 -- target holds with 15 / false: nil would not travel through
                 -- mirror sync. Join off is false for the same reason.
                 local mask, px = from.cornerMask, from.borderSizePx
-                if mask == nil and t.cornerMask ~= nil then
+                if mask == nil and tbl.cornerMask ~= nil then
                     mask = 15
                 end
-                if px == nil and t.borderSizePx ~= nil then
+                if px == nil and tbl.borderSizePx ~= nil then
                     px = false
                 end
-                t.cornerMask = mask
-                t.cornerJoinPower = from.cornerJoinPower == true
+                tbl.cornerMask = mask
+                tbl.cornerJoinPower = from.cornerJoinPower == true
                 -- Verbatim (string / false / nil): it counts only beside the same step and texture.
-                t.borderSizePx = px
-                CopyColor(t, "borderColor", from.borderColor)
+                tbl.borderSizePx = px
+                CopyColor(tbl, "borderColor", from.borderColor)
                 if from.borderAlpha then
-                    t.borderAlpha = from.borderAlpha
+                    tbl.borderAlpha = from.borderAlpha
                 end
-                t.borderTexture = from.borderTexture or "solid"
+                tbl.borderTexture = from.borderTexture or "solid"
                 for _, keyName in ipairs(BORDER_TEX_KEYS) do
-                    t[keyName] = from[keyName]
+                    tbl[keyName] = from[keyName]
                 end
-                CopyColor(t, "highlightColor", from.highlightColor)
+                CopyColor(tbl, "highlightColor", from.highlightColor)
                 if from.highlightAlpha then
-                    t.highlightAlpha = from.highlightAlpha
+                    tbl.highlightAlpha = from.highlightAlpha
                 end
             end,
-            same = function(t, from)
+            same = function(tbl, from)
                 local step, radius = from.borderSize, from.cornerRadius
                 if step == nil then
                     step = 1
@@ -913,16 +913,16 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 end
                 local texture = from.borderTexture or "solid"
                 -- Exact sizes compare as drawn (a cleared or stale value equals none).
-                return (t.borderSize or 1) == step
-                    and (t.borderTexture or "solid") == texture
-                    and CludesUI.BorderPx(t.borderSizePx, step, texture) == CludesUI.BorderPx(
+                return (tbl.borderSize or 1) == step
+                    and (tbl.borderTexture or "solid") == texture
+                    and CludesUI.BorderPx(tbl.borderSizePx, step, texture) == CludesUI.BorderPx(
                         from.borderSizePx,
                         step,
                         texture
                     )
-                    and (t.cornerRadius or 0) == radius
-                    and (t.cornerMask or 15) == (from.cornerMask or 15)
-                    and (t.cornerJoinPower == true) == (from.cornerJoinPower == true)
+                    and (tbl.cornerRadius or 0) == radius
+                    and (tbl.cornerMask or 15) == (from.cornerMask or 15)
+                    and (tbl.cornerJoinPower == true) == (from.cornerJoinPower == true)
             end,
         })
     end
@@ -1712,13 +1712,13 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
     -- Sync icon: Portrait Mode (Style); a mode of None also hides the portrait.
     if not CludesUI._prebuilding then
         mod.UFO_UnitSync(sharedPortraitModeRow._leftRegion, "Portrait Mode", {
-            copy = function(t, from)
+            copy = function(tbl, from)
                 local styleName = from.portraitStyle or "attached"
-                t.portraitStyle = styleName
-                t.showPortrait = styleName ~= "none"
+                tbl.portraitStyle = styleName
+                tbl.showPortrait = styleName ~= "none"
             end,
-            same = function(t, from)
-                return (t.portraitStyle or "attached") == (from.portraitStyle or "attached")
+            same = function(tbl, from)
+                return (tbl.portraitStyle or "attached") == (from.portraitStyle or "attached")
             end,
         })
     end
@@ -1825,11 +1825,11 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
     -- Sync icon: Portrait Mode (Art Style), copied as stored (unset included).
     if not CludesUI._prebuilding then
         mod.UFO_UnitSync(sharedPortraitModeRow._rightRegion, "Art Style", {
-            copy = function(t, from)
-                t.portraitMode = from.portraitMode
+            copy = function(tbl, from)
+                tbl.portraitMode = from.portraitMode
             end,
-            same = function(t, from)
-                return (t.portraitMode or "none") == (from.portraitMode or "none")
+            same = function(tbl, from)
+                return (tbl.portraitMode or "none") == (from.portraitMode or "none")
             end,
         })
     end
@@ -1885,17 +1885,17 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             mod.UFO_UnitSync(nonPlayerRow._leftRegion, "Non-Player Portrait", {
                 self = true,
-                copy = function(t, from)
+                copy = function(tbl, from)
                     local choice = from.portraitNonPlayer
                     if choice == nil then
                         choice = "2d"
                     end
-                    t.portraitNonPlayerOn = from.portraitNonPlayerOn
-                    t.portraitNonPlayer = choice
+                    tbl.portraitNonPlayerOn = from.portraitNonPlayerOn
+                    tbl.portraitNonPlayer = choice
                 end,
-                same = function(t, from)
-                    return (t.portraitNonPlayerOn or false) == (from.portraitNonPlayerOn or false)
-                        and (t.portraitNonPlayer or "2d") == (from.portraitNonPlayer or "2d")
+                same = function(tbl, from)
+                    return (tbl.portraitNonPlayerOn or false) == (from.portraitNonPlayerOn or false)
+                        and (tbl.portraitNonPlayer or "2d") == (from.portraitNonPlayer or "2d")
                 end,
             })
         end
@@ -2318,26 +2318,26 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 return value
             end
             mod.UFO_UnitSync(region, "Shape Border", {
-                copy = function(t, from)
+                copy = function(tbl, from)
                     local color = from.detachedPortraitBorderColor
-                    t.detachedPortraitBorderColor = color and { r = color.r, g = color.g, b = color.b } or nil
-                    t.detachedPortraitBorderOpacity = from.detachedPortraitBorderOpacity
-                    t.detachedPortraitBorderSize = from.detachedPortraitBorderSize
-                    t.detachedPortraitClassColor = from.detachedPortraitClassColor
+                    tbl.detachedPortraitBorderColor = color and { r = color.r, g = color.g, b = color.b } or nil
+                    tbl.detachedPortraitBorderOpacity = from.detachedPortraitBorderOpacity
+                    tbl.detachedPortraitBorderSize = from.detachedPortraitBorderSize
+                    tbl.detachedPortraitClassColor = from.detachedPortraitClassColor
                     for keyName in pairs(SB_EXTRAS) do
-                        t[keyName] = from[keyName]
+                        tbl[keyName] = from[keyName]
                     end
                 end,
-                same = function(t, from)
+                same = function(tbl, from)
                     if
-                        Or(t.detachedPortraitClassColor, true)
+                        Or(tbl.detachedPortraitClassColor, true)
                             ~= Or(from.detachedPortraitClassColor, true)
-                        or (t.detachedPortraitBorderSize or 7) ~= (from.detachedPortraitBorderSize or 7)
+                        or (tbl.detachedPortraitBorderSize or 7) ~= (from.detachedPortraitBorderSize or 7)
                     then
                         return false
                     end
                     for keyName, def in pairs(SB_EXTRAS) do
-                        if Or(t[keyName], def) ~= Or(from[keyName], def) then
+                        if Or(tbl[keyName], def) ~= Or(from[keyName], def) then
                             return false
                         end
                     end

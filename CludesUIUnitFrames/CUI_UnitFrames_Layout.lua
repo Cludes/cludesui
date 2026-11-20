@@ -30,13 +30,13 @@ end
 -- A main frame a mini frame can take its look from: the key of a pick
 -- ("player" always; "target" / "focus" while that frame is enabled and
 -- Visibility does not keep it off screen entirely), else nil.
-local function DonorPick(p, pick)
+local function DonorPick(profile, pick)
     if pick == "player" then
         return "player"
     end
     if pick == "target" or pick == "focus" then
-        local s = p[pick]
-        if p.enabledFrames[pick] ~= false and s and mod.VisEffective(s) ~= "never" then
+        local s = profile[pick]
+        if profile.enabledFrames[pick] ~= false and s and mod.VisEffective(s) ~= "never" then
             return pick
         end
     end

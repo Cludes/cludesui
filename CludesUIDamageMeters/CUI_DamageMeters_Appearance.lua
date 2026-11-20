@@ -18,32 +18,32 @@ function mod.DMInvalidateAppearance()
     end
 end
 
-function mod.DMUseBarSeparators(c)
-    return c.barSeparators
-        and not c.borderFollowFill
+function mod.DMUseBarSeparators(cfg)
+    return cfg.barSeparators
+        and not cfg.borderFollowFill
         and not mod.DMBlizz()
-        and (c.borderSize or 0) > 0
-        and CUI.GetBorderCompanion(c.borderTexture, "sepH") ~= nil
+        and (cfg.borderSize or 0) > 0
+        and CUI.GetBorderCompanion(cfg.borderTexture, "sepH") ~= nil
 end
 
-function mod.DMUsesRowSeparators(c)
-    return mod.DMUseBarSeparators(c)
+function mod.DMUsesRowSeparators(cfg)
+    return mod.DMUseBarSeparators(cfg)
         or (
-            c.iconSeparator
-            and (c.iconStyle or "spec") ~= "none"
+            cfg.iconSeparator
+            and (cfg.iconStyle or "spec") ~= "none"
             and not mod.DMBlizz()
-            and (c.borderSize or 0) > 0
-            and CUI.GetBorderCompanion(c.borderTexture, "sepV") ~= nil
+            and (cfg.borderSize or 0) > 0
+            and CUI.GetBorderCompanion(cfg.borderTexture, "sepV") ~= nil
         )
 end
 
 -- Returns true when the window border moved to another level (the row
 -- decorations take their level from it).
-function mod.DMSetWindowBorderLayer(wid, c)
+function mod.DMSetWindowBorderLayer(wid, cfg)
     local level = wid.header:GetFrameLevel() + 4
-    if c.windowBorderBehind then
+    if cfg.windowBorderBehind then
         level = math.max(0, wid.frame:GetFrameLevel() - 1)
-    elseif mod.DMUsesRowSeparators(c) then
+    elseif mod.DMUsesRowSeparators(cfg) then
         level = wid.header:GetFrameLevel() + 10
     end
     if wid.windowBorderTarget:GetFrameLevel() ~= level then
@@ -115,18 +115,18 @@ function mod.DMPaintValueGradient(barFrame, window, source, index)
     barFrame.amount:SetTextColor(math.min(1, t), math.min(1, 2 - t), 0)
 end
 
-local function Style(c)
-    if cached and cached.cfg == c then
+local function Style(cfg)
+    if cached and cached.cfg == cfg then
         return cached
     end
     local pixels = not mod.DMBlizz()
-        and (c.borderSize or 0) > 0
-        and CUI.GetBorderCompanion(c.borderTexture, "sepH") ~= nil
+        and (cfg.borderSize or 0) > 0
+        and CUI.GetBorderCompanion(cfg.borderTexture, "sepH") ~= nil
     cached = {
-        cfg = c,
-        bars = mod.DMUseBarSeparators(c),
-        icons = c.iconSeparator and pixels and (c.iconStyle or "spec") ~= "none",
-        marker = c.showPlayerMarker,
+        cfg = cfg,
+        bars = mod.DMUseBarSeparators(cfg),
+        icons = cfg.iconSeparator and pixels and (cfg.iconStyle or "spec") ~= "none",
+        marker = cfg.showPlayerMarker,
     }
     return cached
 end

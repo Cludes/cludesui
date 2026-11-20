@@ -147,7 +147,7 @@ local function ArtOf(button, func)
     end
 end
 
-local function SkinButton(button, c)
+local function SkinButton(button, cfg)
     ArtOf(button, Fade)
     local iconTex = button.icon
     if iconTex then
@@ -162,8 +162,8 @@ local function SkinButton(button, c)
     end
     local cd = button.cooldown
     if cd then
-        cd:SetHideCountdownNumbers(not c.showTimer)
-        if c.showTimer and cd.SetCountdownFont then
+        cd:SetHideCountdownNumbers(not cfg.showTimer)
+        if cfg.showTimer and cd.SetCountdownFont then
             if homeFont[cd] == nil then
                 local fontStr = cd.GetCountdownFontString and cd:GetCountdownFontString()
                 local object = fontStr and fontStr:GetFontObject()
@@ -180,27 +180,27 @@ local function SkinButton(button, c)
         borders[button] = o
     end
     o:SetFrameLevel(
-        c.borderBehind and math.max(0, button:GetFrameLevel() - 1) or (button:GetFrameLevel() + 3)
+        cfg.borderBehind and math.max(0, button:GetFrameLevel() - 1) or (button:GetFrameLevel() + 3)
     )
     o:Show()
-    local bs = c.borderSize or 0
-    local texKey = c.borderTexture or "solid"
+    local bs = cfg.borderSize or 0
+    local texKey = cfg.borderTexture or "solid"
     CludesUI.ApplyBorderStyle(
         o,
         bs,
-        c.borderR or 0,
-        c.borderG or 0,
-        c.borderB or 0,
-        c.borderA or 1,
+        cfg.borderR or 0,
+        cfg.borderG or 0,
+        cfg.borderB or 0,
+        cfg.borderA or 1,
         texKey,
-        c.borderTextureOffset,
-        c.borderTextureOffsetY,
-        c.borderTextureShiftX,
-        c.borderTextureShiftY,
+        cfg.borderTextureOffset,
+        cfg.borderTextureOffsetY,
+        cfg.borderTextureShiftX,
+        cfg.borderTextureShiftY,
         "resourcebars",
         bs,
         nil,
-        CludesUI.BorderPx(c.borderSizePx, bs, texKey)
+        CludesUI.BorderPx(cfg.borderSizePx, bs, texKey)
     )
 end
 
@@ -231,18 +231,18 @@ local function UnskinButton(button, hideNumbers)
     end
 end
 
-local function SkinAll(c)
-    local scale = (c.iconSize or 30) / BTN
-    local size = math.max(6, math.floor((c.timerSize or 11) / scale + 0.5))
+local function SkinAll(cfg)
+    local scale = (cfg.iconSize or 30) / BTN
+    local size = math.max(6, math.floor((cfg.timerSize or 11) / scale + 0.5))
     cdFont:SetFont(mod.GetRBFont(), size, CludesUI.GetFontOutlineFlag("resourceBars"))
     if SUMMON then
-        SkinButton(SUMMON, c)
+        SkinButton(SUMMON, cfg)
     end
     if RECALL then
-        SkinButton(RECALL, c)
+        SkinButton(RECALL, cfg)
     end
     for index = 1, #ACT do
-        SkinButton(ACT[index], c)
+        SkinButton(ACT[index], cfg)
     end
     for index = 1, 4 do
         Fade(SLOT[index].overlayTex)
@@ -269,11 +269,11 @@ end
 --  Position and layout (out of combat only)
 -------------------------------------------------------------------------------
 
-local function HolderSize(c)
-    local iconSize = (c and c.iconSize) or 30
-    local spacing = (c and c.spacing) or 2
+local function HolderSize(cfg)
+    local iconSize = (cfg and cfg.iconSize) or 30
+    local spacing = (cfg and cfg.spacing) or 2
     local length = iconSize * MAX_BUTTONS + spacing * (MAX_BUTTONS - 1)
-    if c and c.orientation == "VERTICAL" then
+    if cfg and cfg.orientation == "VERTICAL" then
         return iconSize, length
     end
     return length, iconSize
@@ -296,16 +296,16 @@ end
 -- Recall by its LEFT, so those two points are the ones used here: an update
 -- that lands before our pass moves them, it never pulls them between two
 -- anchors.
-local function Layout(c)
-    local iconSize = c.iconSize or 30
+local function Layout(cfg)
+    local iconSize = cfg.iconSize or 30
     local scale = iconSize / BTN
-    local spacing = c.spacing or 2
+    local spacing = cfg.spacing or 2
     local Pix = CludesUI.PP
     if Pix and Pix.Snap then
         spacing = Pix.Snap(spacing)
     end
     local gap = spacing / scale
-    local vertical = c.orientation == "VERTICAL"
+    local vertical = cfg.orientation == "VERTICAL"
 
     wipe(sequence)
     if SUMMON and SUMMON:IsShown() then
@@ -357,7 +357,7 @@ local function Layout(c)
         barFrame:SetSize(length, BTN)
     end
     CludesUI.SetFrameScale(barFrame, scale)
-    barFrame:SetFrameStrata(c.frameStrata or "MEDIUM")
+    barFrame:SetFrameStrata(cfg.frameStrata or "MEDIUM")
     PinBar()
 end
 
@@ -396,12 +396,12 @@ end
 
 -- The holder's spot: another element's anchor, the saved Unlock Mode spot, or
 -- the default (where Blizzard's own default puts the bar's right edge).
-local function PlaceHolder(c)
+local function PlaceHolder(cfg)
     -- Unlock Mode owns a placed holder while it is open.
     if CludesUI._unlockActive and holderFrame:GetNumPoints() > 0 then
         return
     end
-    local place = c.unlockPos
+    local place = cfg.unlockPos
     if place and place.point then
         if CludesUI.IsUnlockAnchored(UNLOCK_KEY) and holderFrame:GetLeft() then
             return

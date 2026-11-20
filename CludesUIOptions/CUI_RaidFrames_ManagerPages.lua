@@ -308,7 +308,7 @@ end
 
 -- Frame Glow tile: the shared glow descriptor over the tile's own keys (always
 -- on, no None). The tile editor and the options preview (GO.Spec) share it.
-local function TileGlowDesc(t, onChange)
+local function TileGlowDesc(tbl, onChange)
     return {
         host = "engine",
         noNone = true,
@@ -320,29 +320,29 @@ local function TileGlowDesc(t, onChange)
         onChange = onChange,
         get = function(f)
             if f == "style" then
-                return t.glowType or 1
+                return tbl.glowType or 1
             elseif f == "mode" then
-                return t.glowColorMode or "default"
+                return tbl.glowColorMode or "default"
             -- The tile keeps its color under t.color, the rest under glow*.
             elseif f == "color" then
-                local color = t.color
+                local color = tbl.color
                 if color then
                     return color.r, color.g, color.b
                 end
             end
-            return CludesUI.GlowOptions.FlatGet(t, "glow", f)
+            return CludesUI.GlowOptions.FlatGet(tbl, "glow", f)
         end,
         set = function(f, a, b2, c2)
             if f == "style" then
-                t.glowType = a
+                tbl.glowType = a
             elseif f == "mode" then
-                t.glowColorMode = a
+                tbl.glowColorMode = a
             elseif f == "color" then
-                t.color = { r = a, g = b2, b = c2 }
+                tbl.color = { r = a, g = b2, b = c2 }
             elseif f == "bg" then
-                t.glowBackground = a and true or nil
+                tbl.glowBackground = a and true or nil
             else
-                CludesUI.GlowOptions.FlatSet(t, "glow", f, a, b2, c2)
+                CludesUI.GlowOptions.FlatSet(tbl, "glow", f, a, b2, c2)
             end
         end,
     }
@@ -369,25 +369,25 @@ end
 -- DEBUFF MANAGER page
 -------------------------------------------------------------------------------
 
-local function TileSubtitle(t)
+local function TileSubtitle(tbl)
     -- Every tile type routes via the catch-all flavor plus the checked filter set;
     -- Match All joins the filters the way they combine.
     local nameList = {}
-    if t.all == true then
+    if tbl.all == true then
         nameList[#nameList + 1] = L("All Debuffs")
     end
-    if t.hasDuration == true then
+    if tbl.hasDuration == true then
         nameList[#nameList + 1] = L("Has Duration")
     end
     local cats = {}
-    if t.claim then
+    if tbl.claim then
         for _, category in ipairs(CAT_ORDER) do
-            if t.claim[category] then
+            if tbl.claim[category] then
                 cats[#cats + 1] = L(CAT_VALUES[category])
             end
         end
         for _, category in ipairs(LESS_CAT_ORDER) do
-            if t.claim[category] then
+            if tbl.claim[category] then
                 cats[#cats + 1] = L(LESS_CAT_VALUES[category])
             end
         end
@@ -396,14 +396,14 @@ local function TileSubtitle(t)
         return L("No filters routed")
     end
     if #cats > 0 then
-        nameList[#nameList + 1] = table.concat(cats, mod.DM_TileMatchOn(t) and " & " or ", ")
+        nameList[#nameList + 1] = table.concat(cats, mod.DM_TileMatchOn(tbl) and " & " or ", ")
     end
     return table.concat(nameList, ", ")
 end
 
 -- An indicator's display name, as its sidebar row titles it.
-local function TileName(t)
-    return t.name or L(TYPE_NAMES[t.type] or t.type)
+local function TileName(tbl)
+    return tbl.name or L(TYPE_NAMES[tbl.type] or tbl.type)
 end
 
 -- The category a Filters row edits: the two dispel rows and the two
@@ -625,9 +625,9 @@ end
 -- Duration like the Base Icons dropdown's.
 local TILE_MATCH_ANY = "__tMatchAny"
 local TILE_MATCH_ALL = "__tMatchAll"
-local function TileLaneItems(t)
+local function TileLaneItems(tbl)
     local function Locked()
-        return t.all == true
+        return tbl.all == true
     end
     local lockTip = CludesUI.L("Uncheck All Debuffs to choose how the Show filters combine.")
     local itemList = {}
@@ -665,12 +665,12 @@ end
 -- indicators and frame effects take no hints (claims never stop them). Read
 -- once per page build (an edit elsewhere rebuilds the page); hinted rows are
 -- copies, never the shared TILE_LANE_ITEMS rows.
-local function WithOwnerHints(itemList, t)
-    if t.type ~= "icons" and t.type ~= "square" then
+local function WithOwnerHints(itemList, tbl)
+    if tbl.type ~= "icons" and tbl.type ~= "square" then
         return itemList
     end
     local claims, claimsAll, place = mod.DM_ClaimOwners(dmSpecSel)
-    local mine = place[t]
+    local mine = place[tbl]
     if not mine then
         return itemList
     end
@@ -696,7 +696,7 @@ local function WithOwnerHints(itemList, t)
                 end
             else
                 row.dimFn = function()
-                    return not mod.DM_TileMatchOn(t)
+                    return not mod.DM_TileMatchOn(tbl)
                 end
             end
             row.dimTooltip = CludesUI.Lf("Shown by %1$s, which comes first.", TileName(ownerFrame))
@@ -707,36 +707,36 @@ local function WithOwnerHints(itemList, t)
     end
     return result
 end
-local function BuildTileFiltersDD(region, t, dmConf)
+local function BuildTileFiltersDD(region, tbl, dmConf)
     local Pix = CludesUI.PP or CludesUI.PanelPP
     if region._control then
         region._control:Hide()
     end
-    if not t.claim then
-        t.claim = {}
+    if not tbl.claim then
+        tbl.claim = {}
     end
-    local claimKey = t.claim
+    local claimKey = tbl.claim
     local function NegHas(category)
-        return t.neg ~= nil and t.neg[category] == true
+        return tbl.neg ~= nil and tbl.neg[category] == true
     end
     local warnClosed
     local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
         region,
         190,
         region:GetFrameLevel() + 2,
-        WithOwnerHints(TileLaneItems(t), t),
+        WithOwnerHints(TileLaneItems(tbl), tbl),
         function(keyName, negated)
             if keyName == TILE_MATCH_ALL then
-                return t.match == "all"
+                return tbl.match == "all"
             end
             if keyName == TILE_MATCH_ANY then
-                return t.match ~= "all"
+                return tbl.match ~= "all"
             end
             if keyName == TILE_CA_ALL then
-                return t.all == true
+                return tbl.all == true
             end
             if keyName == TILE_CA_DUR then
-                return t.hasDuration == true
+                return tbl.hasDuration == true
             end
             if keyName == "dispel_you" then
                 if negated then
@@ -767,7 +767,7 @@ local function BuildTileFiltersDD(region, t, dmConf)
         function(keyName, val, negated)
             if keyName == TILE_MATCH_ANY or keyName == TILE_MATCH_ALL then
                 -- Radio pair: the clicked row wins whatever its checked state.
-                t.match = (keyName == TILE_MATCH_ALL) and "all" or nil
+                tbl.match = (keyName == TILE_MATCH_ALL) and "all" or nil
                 DmApply()
                 CludesUI:RefreshPage()
                 return
@@ -776,16 +776,16 @@ local function BuildTileFiltersDD(region, t, dmConf)
                 -- Independent bits: All Debuffs = catch-all, Has Duration =
                 -- AND-modifier (combinable with All or any claims).
                 if keyName == TILE_CA_ALL then
-                    t.all = val and true or nil
+                    tbl.all = val and true or nil
                 else
-                    t.hasDuration = val and true or nil
+                    tbl.hasDuration = val and true or nil
                 end
                 DmApply()
                 CludesUI:RefreshPage()
                 return
             end
             -- The dispel and nonplayer flavors are shared with the base grid.
-            DmSetLane(claimKey, t, dmConf, keyName, val, negated)
+            DmSetLane(claimKey, tbl, dmConf, keyName, val, negated)
             DmApply()
             -- Non-force: re-evaluates the base dropdown's empty-selection
             -- warning (tile claims count as grid content) without closing
@@ -804,7 +804,7 @@ local function BuildTileFiltersDD(region, t, dmConf)
         -- The summary joins picks the way they combine (Base Icons parity).
         {
             separatorFn = function()
-                return mod.DM_TileMatchOn(t) and " & " or ", "
+                return mod.DM_TileMatchOn(tbl) and " & " or ", "
             end,
         }
     )
@@ -821,7 +821,7 @@ local function BuildTileFiltersDD(region, t, dmConf)
         checkDrop,
         CludesUI.L("These filters can never match together."),
         function()
-            return not mod.DM_TileMatchEmpty(t)
+            return not mod.DM_TileMatchEmpty(tbl)
         end
     )
 end
@@ -1658,11 +1658,11 @@ local function BuildBaseDetailDM(widget, fontFile)
     return sy
 end
 
-local function BuildTileDetail(widget, fontFile, t)
+local function BuildTileDetail(widget, fontFile, tbl)
     -- Row accessors over t: a key read (or its default) and written.
     local function TFieldOr(filterKey, default)
         return function()
-            return t[filterKey] or default
+            return tbl[filterKey] or default
         end
     end
     local W = CludesUI.Widgets
@@ -1675,7 +1675,7 @@ local function BuildTileDetail(widget, fontFile, t)
     local _
 
     local function TSet(filterKey, val)
-        t[filterKey] = val
+        tbl[filterKey] = val
         DmApply()
     end
     -- Row setters over TSet: the key written with the row's value.
@@ -1685,15 +1685,15 @@ local function BuildTileDetail(widget, fontFile, t)
         end
     end
 
-    if t.type == "icons" or t.type == "square" then
+    if tbl.type == "icons" or tbl.type == "square" then
         -- Grid tiles (Icon / Square): the Base Icons pane layout 1:1, with
         -- per-tile style values as VIEWS over the base debuff style keys
         -- (nil = inherit; getters show the effective value).
         local p = DmProfile() or {}
         local dmConf = DmTable() or {}
         local function TEff(filterKey, baseKey, default)
-            local val = t[filterKey]
-            if filterKey == "borderSizePx" and val == nil and (t.borderSize ~= nil or t.borderTexture ~= nil) then
+            local val = tbl[filterKey]
+            if filterKey == "borderSizePx" and val == nil and (tbl.borderSize ~= nil or tbl.borderTexture ~= nil) then
                 return false
             end
             if val == nil then
@@ -1705,14 +1705,14 @@ local function BuildTileDetail(widget, fontFile, t)
             return val
         end
         local function TBoolOn(filterKey, baseKey) -- base default ON
-            if t[filterKey] ~= nil then
-                return t[filterKey] and true or false
+            if tbl[filterKey] ~= nil then
+                return tbl[filterKey] and true or false
             end
             return p[baseKey] ~= false
         end
         local function TBoolOff(filterKey, baseKey) -- base default OFF
-            if t[filterKey] ~= nil then
-                return t[filterKey] and true or false
+            if tbl[filterKey] ~= nil then
+                return tbl[filterKey] and true or false
             end
             return p[baseKey] and true or false
         end
@@ -1735,13 +1735,13 @@ local function BuildTileDetail(widget, fontFile, t)
                 setValue = function() end,
             },
             CludesUI.MaxDurationDropdown(function()
-                return t.maxDurSec
+                return tbl.maxDurSec
             end, function(val)
-                t.maxDurSec = val
+                tbl.maxDurSec = val
             end, DmApply)
         )
         sy = sy - hh
-        BuildTileFiltersDD(fRow._leftRegion, t, dmConf)
+        BuildTileFiltersDD(fRow._leftRegion, tbl, dmConf)
 
         _, hh = W:SectionHeader(widget, "CORE", sy)
         sy = sy - hh
@@ -1797,7 +1797,7 @@ local function BuildTileDetail(widget, fontFile, t)
             order = POS_ORDER,
             getValue = TFieldOr("position", "top"),
             setValue = function(val)
-                t.growDirection = DmDefaultGrow(val)
+                tbl.growDirection = DmDefaultGrow(val)
                 TSet("position", val)
                 CludesUI:RefreshPage()
             end,
@@ -1870,7 +1870,7 @@ local function BuildTileDetail(widget, fontFile, t)
         sy = mod.RFO_AuraBorderSettings(widget, sy, W, function(keyName)
             return TEff("border" .. keyName, "debuffBorder" .. keyName)
         end, function(keyName, val)
-            t["border" .. keyName] = val
+            tbl["border" .. keyName] = val
         end, DmApply, nil, true)
 
         -- Row: Show Duration Text (+ cog + swatch) | Show Stacks (+ cog + swatch)
@@ -1937,10 +1937,10 @@ local function BuildTileDetail(widget, fontFile, t)
             })
 
             local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
-                local color = t.durTextColor or p.debuffDurTextColor or { r = 1, g = 1, b = 1 }
+                local color = tbl.durTextColor or p.debuffDurTextColor or { r = 1, g = 1, b = 1 }
                 return color.r or 1, color.g or 1, color.b or 1, 1
             end, function(red, green, blue)
-                t.durTextColor = { r = red, g = green, b = blue }
+                tbl.durTextColor = { r = red, g = green, b = blue }
                 DmApply()
             end, false, 20)
             swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1988,10 +1988,10 @@ local function BuildTileDetail(widget, fontFile, t)
             })
 
             local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
-                local color = t.stacksTextColor or p.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
+                local color = tbl.stacksTextColor or p.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
                 return color.r or 1, color.g or 1, color.b or 1, 1
             end, function(red, green, blue)
-                t.stacksTextColor = { r = red, g = green, b = blue }
+                tbl.stacksTextColor = { r = red, g = green, b = blue }
                 DmApply()
             end, false, 20)
             swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -2005,7 +2005,7 @@ local function BuildTileDetail(widget, fontFile, t)
             values = TIP_VALUES,
             order = TIP_ORDER,
             getValue = function()
-                local val = t.hideTooltips
+                local val = tbl.hideTooltips
                 if val == nil then
                     val = p.debuffHideTooltips
                 end
@@ -2027,24 +2027,24 @@ local function BuildTileDetail(widget, fontFile, t)
         sy = sy - hh
 
         -- Square only: the block color the flat squares render with.
-        if t.type == "square" then
+        if tbl.type == "square" then
             _, hh = W:DualRow(widget, sy, {
                 type = "colorpicker",
                 text = "Color",
                 hasAlpha = true,
                 getValue = function()
-                    local color = t.color or { r = 1, g = 0.35, b = 0.35, a = 1 }
+                    local color = tbl.color or { r = 1, g = 0.35, b = 0.35, a = 1 }
                     return color.r or 1, color.g or 0.35, color.b or 0.35, color.a or 1
                 end,
                 setValue = function(red, green, blue, a)
-                    t.color = { r = red, g = green, b = blue, a = a or 1 }
+                    tbl.color = { r = red, g = green, b = blue, a = a or 1 }
                     DmApply()
                 end,
             }, { type = "label", text = "" })
             sy = sy - hh
         end
 
-        sy = BuildFxEffects(widget, sy, t)
+        sy = BuildFxEffects(widget, sy, tbl)
         return sy
     end
 
@@ -2054,8 +2054,8 @@ local function BuildTileDetail(widget, fontFile, t)
     -- Frame Glow: shared glow controls over the tile's own keys (always on: no None).
     local GO = CludesUI.GlowOptions
     local glowDesc
-    if t.type == "glow" then
-        glowDesc = TileGlowDesc(t, DmApply)
+    if tbl.type == "glow" then
+        glowDesc = TileGlowDesc(tbl, DmApply)
     end
     local catRow
     catRow, hh = W:DualRow(
@@ -2072,24 +2072,24 @@ local function BuildTileDetail(widget, fontFile, t)
             setValue = function() end,
         },
         glowDesc and GO.DropdownSpec(glowDesc, "Glow")
-            or { type = "label", text = (t.type == "bar" or t.type == "glow") and "" or "Color" }
+            or { type = "label", text = (tbl.type == "bar" or tbl.type == "glow") and "" or "Color" }
     )
     sy = sy - hh
-    BuildTileFiltersDD(catRow._leftRegion, t, DmTable() or {})
+    BuildTileFiltersDD(catRow._leftRegion, tbl, DmTable() or {})
     if glowDesc then
         GO.AttachInline(catRow._rightRegion, glowDesc)
-    elseif t.type ~= "bar" then
+    elseif tbl.type ~= "bar" then
         -- Health color rides a dedicated Opacity slider (BM parity), so
         -- its swatch has no alpha strip. (The bar's colors live in its
         -- DISPLAY section below, BM parity.)
         local region = catRow._rightRegion
         local swatch = CludesUI.BuildColorSwatch(region, catRow:GetFrameLevel() + 3, function()
-            local color = t.color or { r = 1, g = 1, b = 1 }
+            local color = tbl.color or { r = 1, g = 1, b = 1 }
             return color.r or 1, color.g or 1, color.b or 1, 1
         end, function(red, green, blue)
-            local color = t.color or {}
+            local color = tbl.color or {}
             color.r, color.g, color.b = red, green, blue
-            t.color = color
+            tbl.color = color
             DmApply()
         end, false, 20)
         -- Label slots have no _control: anchor to the region itself.
@@ -2097,10 +2097,10 @@ local function BuildTileDetail(widget, fontFile, t)
         region._lastInline = swatch
     end
 
-    if t.type == "bar" then
+    if tbl.type == "bar" then
         -- BM bar indicator CORE + DISPLAY 1:1 (minus Own Only and the
         -- 12.1-removed Max Duration / Threshold).
-        local isVert = (t.orientation or "HORIZONTAL") == "VERTICAL"
+        local isVert = (tbl.orientation or "HORIZONTAL") == "VERTICAL"
         _, hh = W:SectionHeader(widget, "CORE", sy)
         sy = sy - hh
         local coreRow
@@ -2186,7 +2186,7 @@ local function BuildTileDetail(widget, fontFile, t)
             max = 200,
             step = 1,
             disabled = function()
-                return t.barFullWidth
+                return tbl.barFullWidth
             end,
             disabledTooltip = isVert and "Full Height Bar" or "Full Width Bar",
             requireState = "disabled",
@@ -2199,7 +2199,7 @@ local function BuildTileDetail(widget, fontFile, t)
             max = 100,
             step = 1,
             disabled = function()
-                return t.barFullHeight
+                return tbl.barFullHeight
             end,
             disabledTooltip = isVert and "Full Width Bar" or "Full Height Bar",
             requireState = "disabled",
@@ -2250,10 +2250,10 @@ local function BuildTileDetail(widget, fontFile, t)
         do
             local region = barBgRow._leftRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, barBgRow:GetFrameLevel() + 3, function()
-                local color = t.color or { r = 0.25, g = 0.8, b = 0.45 }
+                local color = tbl.color or { r = 0.25, g = 0.8, b = 0.45 }
                 return color.r or 0.25, color.g or 0.8, color.b or 0.45, 1
             end, function(red, green, blue)
-                t.color = { r = red, g = green, b = blue }
+                tbl.color = { r = red, g = green, b = blue }
                 DmApply()
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -2262,16 +2262,16 @@ local function BuildTileDetail(widget, fontFile, t)
         do
             local region = barBgRow._rightRegion
             local bgSwatch = CludesUI.BuildColorSwatch(region, barBgRow:GetFrameLevel() + 3, function()
-                local color = t.barBgColor or { r = 0, g = 0, b = 0 }
+                local color = tbl.barBgColor or { r = 0, g = 0, b = 0 }
                 return color.r or 0, color.g or 0, color.b or 0, 1
             end, function(red, green, blue)
-                t.barBgColor = { r = red, g = green, b = blue }
+                tbl.barBgColor = { r = red, g = green, b = blue }
                 DmApply()
             end, false, 20)
             bgSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = bgSwatch
         end
-    elseif t.type == "healthcolor" then
+    elseif tbl.type == "healthcolor" then
         _, hh = W:DualRow(
             widget,
             sy,
@@ -2285,22 +2285,22 @@ local function BuildTileDetail(widget, fontFile, t)
                 setValue = TSetRow("opacity"),
             },
             CludesUI.MaxDurationDropdown(function()
-                return t.maxDurSec
+                return tbl.maxDurSec
             end, function(val)
-                t.maxDurSec = val
+                tbl.maxDurSec = val
             end, DmApply)
         )
         sy = sy - hh
-    elseif t.type == "glow" then
+    elseif tbl.type == "glow" then
         -- The runtime folds the tile's cap into its effect filter
         -- (EffectFilterForTile), as for the grid tiles.
         _, hh = W:DualRow(
             widget,
             sy,
             CludesUI.MaxDurationDropdown(function()
-                return t.maxDurSec
+                return tbl.maxDurSec
             end, function(val)
-                t.maxDurSec = val
+                tbl.maxDurSec = val
             end, DmApply),
             CludesUI.BlankRowCfg()
         )
@@ -2324,11 +2324,11 @@ local function SampleDebuffTexture(idx)
     return texture or 136243
 end
 local CAT_SAMPLE_SPELL = { cc = 118, dispel = 2818 }
-local function TileFaceTexture(t)
+local function TileFaceTexture(tbl)
     local ident
-    if t.claim then
+    if tbl.claim then
         for _, category in ipairs(CAT_ORDER) do
-            if t.claim[category] then
+            if tbl.claim[category] then
                 ident = CAT_SAMPLE_SPELL[category] or 589
                 break
             end
@@ -3102,9 +3102,9 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     end
     -- A tile's gray position suffix: the icon, square and bar containers sit
     -- at a position; the base grid at the debuff position.
-    local function TilePosText(t)
-        if t.type == "icons" or t.type == "square" or t.type == "bar" then
-            return "(" .. L(POS_VALUES[t.position or "top"] or "") .. ")"
+    local function TilePosText(tbl)
+        if tbl.type == "icons" or tbl.type == "square" or tbl.type == "bar" then
+            return "(" .. L(POS_VALUES[tbl.position or "top"] or "") .. ")"
         end
     end
     local basePosText = "(" .. L(POS_VALUES[p.debuffPosition or "bottomright"] or "") .. ")"

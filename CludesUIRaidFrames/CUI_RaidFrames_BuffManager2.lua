@@ -272,8 +272,8 @@ end
 -- fork is applied: the runtime pointer says live IS the fork, so the store
 -- must mirror it (the first harvest banks live v2 data into the fork's
 -- layer). Baseline and other forks convert lazily in _CURF_BM2ApplyLayer.
-local function ImportLegacyProfile(p, b)
-    local fork = mod.BM2_ConvertLegacySet(p.bmIndicators, p.bmDisplayMode)
+local function ImportLegacyProfile(profile, b)
+    local fork = mod.BM2_ConvertLegacySet(profile.bmIndicators, profile.bmDisplayMode)
     b.specs = fork.specs
     b.seeded = fork.seeded
 end

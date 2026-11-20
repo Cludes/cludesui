@@ -66,20 +66,20 @@ end
 -------------------------------------------------------------------------------
 mod._erbGrpMatchKeys = { "ERB_Health", "ERB_Power", "ERB_ClassResource" }
 mod._erbGrpMembers, mod._erbGrpLo, mod._erbGrpHi = {}, {}, {}
-function mod.ERB_GroupSettingOn(p)
-    p = p or (ERB.db and ERB.db.profile)
-    return (p and p.general and p.general.classicBorderAll and mod.ERB_BarsBlizz()) and true or false
+function mod.ERB_GroupSettingOn(profile)
+    profile = profile or (ERB.db and ERB.db.profile)
+    return (profile and profile.general and profile.general.classicBorderAll and mod.ERB_BarsBlizz()) and true or false
 end
 -- The bar whose Border Size the group wears: health, else power, else the
 -- class resource (settings only, so the pads never flip at runtime).
-function mod.ERB_GroupLeadCfg(p)
-    if p.health and p.health.enabled then
-        return p.health
+function mod.ERB_GroupLeadCfg(profile)
+    if profile.health and profile.health.enabled then
+        return profile.health
     end
-    if p.primary and p.primary.enabled ~= false then
-        return p.primary
+    if profile.primary and profile.primary.enabled ~= false then
+        return profile.primary
     end
-    return p.secondary
+    return profile.secondary
 end
 -- A health, power or class resource bar's frame scale: the group's while
 -- the setting is on under Classic WoW UI, the bar's own otherwise.
@@ -117,12 +117,12 @@ end
 -- neither width-matched to each other nor the same length). A bar the group
 -- could never hold does not count: one riding the cursor, shown only on
 -- mouseover (revealed on its own) or set never to show.
-function mod.ERB_GroupCheck(p)
-    if not p then
+function mod.ERB_GroupCheck(profile)
+    if not profile then
         return false, "count"
     end
-    local g = p.general or DEFAULTS.profile.general
-    local hp, pp, sp = p.health, p.primary, p.secondary
+    local g = profile.general or DEFAULTS.profile.general
+    local hp, pp, sp = profile.health, profile.primary, profile.secondary
     local hasRes = GetSecondaryResource() ~= nil
     local es = mainFrame and mainFrame:GetEffectiveScale() or 1
     local tol = ((Pix and Pix.perfect) or 1) / es + 0.01

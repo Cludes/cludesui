@@ -134,15 +134,15 @@ end
 -- Profile flags -> style key and back. The Classic flag wins a read when both
 -- are set; a write sets exactly one of them (or neither, for cui). The Forever
 -- flag (nil off the Forever client) only ever rides a set Blizzard flag.
-local function StyleKeyOf(p, flag, classicFlag, foreverFlag)
-    if not p then
+local function StyleKeyOf(profile, flag, classicFlag, foreverFlag)
+    if not profile then
         return "cui"
     end
-    if p[classicFlag] then
+    if profile[classicFlag] then
         return "classic"
     end
-    if p[flag] then
-        if foreverFlag and p[foreverFlag] then
+    if profile[flag] then
+        if foreverFlag and profile[foreverFlag] then
             return "forever"
         end
         return "blizzard"
@@ -357,27 +357,27 @@ Register(
     -- holding the zone name up top. The Border Style rows move the clock the
     -- same way when a pick changes. Classic WoW UI also centres the zone text
     -- in the banner's text slot (its X/Y offsets back to 0).
-    function(p, styleKey, isForever)
+    function(profile, styleKey, isForever)
         if not CludesUI.IS_FOREVER then
-            p.omniumFolioCorner = "BOTTOMRIGHT"
+            profile.omniumFolioCorner = "BOTTOMRIGHT"
         end
         local square
         if isForever then
-            if p.foreverBorder == "slim" then
+            if profile.foreverBorder == "slim" then
                 square = CludesUI.ForeverBorderOK()
             else
-                square = p.foreverBorder ~= "circle" and CludesUI.ForeverHeavyOK()
+                square = profile.foreverBorder ~= "circle" and CludesUI.ForeverHeavyOK()
             end
         else
-            square = styleKey == "blizzard" and CludesUI.IS_FOREVER and p.blizzBorder ~= "circle"
+            square = styleKey == "blizzard" and CludesUI.IS_FOREVER and profile.blizzBorder ~= "circle"
         end
         if square then
-            p.clockMode, p.clockPosition, p.clockOffsetY = "inside", "bottom", 0
+            profile.clockMode, profile.clockPosition, profile.clockOffsetY = "inside", "bottom", 0
         else
-            p.clockMode, p.clockPosition, p.clockOffsetY = "inside", "top", -10
+            profile.clockMode, profile.clockPosition, profile.clockOffsetY = "inside", "top", -10
         end
         if styleKey == "classic" then
-            p.locationOffsetX, p.locationOffsetY = 0, 0
+            profile.locationOffsetX, profile.locationOffsetY = 0, 0
         end
     end
 )
@@ -396,14 +396,14 @@ Register(
     -- seed (the near-black window, the quarter-black bar track; once per
     -- profile, the module also runs it at login for a profile that arrives
     -- already switched).
-    function(p, styleKey, isForever)
-        if styleKey == "blizzard" and not p.blizzBgAlphaSeeded then
-            p.blizzBgAlphaSeeded = true
-            p.bgAlpha = isForever and 0.65 or 0.4
+    function(profile, styleKey, isForever)
+        if styleKey == "blizzard" and not profile.blizzBgAlphaSeeded then
+            profile.blizzBgAlphaSeeded = true
+            profile.bgAlpha = isForever and 0.65 or 0.4
         elseif styleKey == "classic" then
             local dm = CludesUI._ModuleNS and CludesUI._ModuleNS.CludesUIDamageMeters
             if dm and dm.DMSeedClassic then
-                dm.DMSeedClassic(p)
+                dm.DMSeedClassic(profile)
             end
         end
     end
@@ -800,9 +800,9 @@ if IS_FOREVER then
     -- every visit clears it and the eye goes back onto the minimap's ring (a
     -- drag there wins until the look changes).
     SLOT_KEYS.actionbars = { keys = { "barPositions.QueueStatus" }, foreverOnly = true }
-    BY_KEY.actionbars.onEnable = function(p, _, isForever)
-        if isForever and type(p.barPositions) == "table" then
-            p.barPositions.QueueStatus = nil
+    BY_KEY.actionbars.onEnable = function(profile, _, isForever)
+        if isForever and type(profile.barPositions) == "table" then
+            profile.barPositions.QueueStatus = nil
         end
     end
 end
@@ -813,24 +813,24 @@ for key, specInfo in pairs(SLOT_KEYS) do
 end
 
 -- A missing table on the way reads nil and makes a write a no-op.
-local function PathGet(t, filePath)
+local function PathGet(tbl, filePath)
     local a, b = filePath:match("^([^.]+)%.(.+)$")
     if not a then
-        return t[filePath]
+        return tbl[filePath]
     end
-    local s = t[a]
+    local s = tbl[a]
     if type(s) ~= "table" then
         return nil
     end
     return PathGet(s, b)
 end
-local function PathSet(t, filePath, val)
+local function PathSet(tbl, filePath, val)
     local a, b = filePath:match("^([^.]+)%.(.+)$")
     if not a then
-        t[filePath] = val
+        tbl[filePath] = val
         return
     end
-    local s = t[a]
+    local s = tbl[a]
     if type(s) == "table" then
         PathSet(s, b, val)
     end
@@ -870,7 +870,7 @@ end
 -- One slot spec's swap for module `m` going `from` -> `to` on its profile
 -- `p` (see SwitchModuleStyle). Returns whether a saved slot loaded, then the
 -- keys a spec or conditional override holds and their live values.
-local function SwapSlots(m, p, specInfo, from, to)
+local function SwapSlots(m, profile, specInfo, from, to)
     -- The slots the swap reads and writes: the looks themselves, except for
     -- a foreverOnly spec, whose non-Forever looks share the "cui" slot.
     local fromK, toK = from, to
@@ -895,23 +895,23 @@ local function SwapSlots(m, p, specInfo, from, to)
     if keep then
         keepVals = {}
         for idx = 1, #keep do
-            keepVals[idx] = PathGet(p, keep[idx])
+            keepVals[idx] = PathGet(profile, keep[idx])
         end
     end
     local stamps = specInfo.stamps
     local storage = specInfo.store or "_styleSlots"
-    local slots = p[storage]
+    local slots = profile[storage]
     if type(slots) ~= "table" then
         slots = {}
-        p[storage] = slots
+        profile[storage] = slots
     end
     local result = {}
     for idx = 1, #keyList do
-        result[keyList[idx]] = PathGet(p, keyList[idx])
+        result[keyList[idx]] = PathGet(profile, keyList[idx])
     end
     if stamps then
         for idx = 1, #stamps do
-            result[stamps[idx]] = PathGet(p, stamps[idx])
+            result[stamps[idx]] = PathGet(profile, stamps[idx])
         end
     end
     if not (specInfo.foreverOnly and fromK == "forever") then
@@ -921,11 +921,11 @@ local function SwapSlots(m, p, specInfo, from, to)
     if type(saved) == "table" then
         loaded = true
         for idx = 1, #keyList do
-            PathSet(p, keyList[idx], saved[keyList[idx]])
+            PathSet(profile, keyList[idx], saved[keyList[idx]])
         end
         if stamps then
             for idx = 1, #stamps do
-                PathSet(p, stamps[idx], saved[stamps[idx]])
+                PathSet(profile, stamps[idx], saved[stamps[idx]])
             end
         end
     else
@@ -936,8 +936,8 @@ local function SwapSlots(m, p, specInfo, from, to)
             if by then
                 for idx = 1, #keyList do
                     local st = by(keyList[idx])
-                    if st == true or (st and PathGet(p, st)) then
-                        PathSet(p, keyList[idx], nil)
+                    if st == true or (st and PathGet(profile, st)) then
+                        PathSet(profile, keyList[idx], nil)
                     end
                 end
             end
@@ -958,19 +958,19 @@ local function SwapSlots(m, p, specInfo, from, to)
                 for idx = 1, #keyList do
                     local keyName = keyList[idx]
                     local st = by and by(keyName)
-                    if not (st == true or (st and PathGet(p, st))) then
-                        base[keyName] = PathGet(p, keyName)
+                    if not (st == true or (st and PathGet(profile, st))) then
+                        base[keyName] = PathGet(profile, keyName)
                     end
                 end
                 slots.cui = base
             end
             for idx = 1, #keyList do
-                PathSet(p, keyList[idx], base[keyList[idx]])
+                PathSet(profile, keyList[idx], base[keyList[idx]])
             end
         end
         if stamps then
             for idx = 1, #stamps do
-                PathSet(p, stamps[idx], nil)
+                PathSet(profile, stamps[idx], nil)
             end
         end
     end
@@ -1287,11 +1287,11 @@ end
 -- all: the widget factory builds it (callers still hang cogs and sync icons
 -- on its regions) but hides it and gives it no height. Blank slots do not
 -- count; one live control keeps the row, its gated neighbour disabled.
-function BlizzStyle.RowHidden(a, b, c)
-    if (a and a._blizzKeepRow) or (b and b._blizzKeepRow) or (c and c._blizzKeepRow) then
+function BlizzStyle.RowHidden(a, b, cfg)
+    if (a and a._blizzKeepRow) or (b and b._blizzKeepRow) or (cfg and cfg._blizzKeepRow) then
         return false
     end
-    local ga, gb, gc = SlotGated(a), SlotGated(b), SlotGated(c)
+    local ga, gb, gc = SlotGated(a), SlotGated(b), SlotGated(cfg)
     if ga == false or gb == false or gc == false then
         return false
     end

@@ -72,7 +72,7 @@ end
 
 -- Render the additive Shadow border (size 2) tinted with the threat color --
 -- identical to picking "Shadow" at size 2 from the Border Style dropdown.
-local function PT_Show(state, c)
+local function PT_Show(state, color)
     local popFrame = frameList.player
     if not popFrame then
         return
@@ -80,9 +80,9 @@ local function PT_Show(state, c)
     local b = PT_EnsureBorder(popFrame)
     if _ptShownState ~= state then
         _ptShownState = state
-        CludesUI.ApplyBorderStyle(b, 2, c.r, c.g, c.b, 1, "shadow", nil, nil, nil, nil, "unitframes", 2)
+        CludesUI.ApplyBorderStyle(b, 2, color.r, color.g, color.b, 1, "shadow", nil, nil, nil, nil, "unitframes", 2)
     else
-        CludesUI.SetBorderStyleColor(b, c.r, c.g, c.b, 1)
+        CludesUI.SetBorderStyleColor(b, color.r, color.g, color.b, 1)
     end
     b:Show()
 end

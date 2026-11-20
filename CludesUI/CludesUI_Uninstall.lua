@@ -126,11 +126,11 @@ local function CharRecord(peek)
     return c
 end
 
-local function Sub(t, key)
-    local s = t[key]
+local function Sub(tbl, key)
+    local s = tbl[key]
     if not s then
         s = {}
-        t[key] = s
+        tbl[key] = s
     end
     return s
 end

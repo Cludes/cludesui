@@ -720,19 +720,19 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         end
                         local was = mod.ERB_TexturedBars(profile)
                         local s = profile.primary
-                        local function apply(t)
-                            t.borderTexture = s.borderTexture
-                            t.borderTextureOffset = s.borderTextureOffset
-                            t.borderTextureOffsetY = s.borderTextureOffsetY
-                            t.borderTextureShiftX = s.borderTextureShiftX
-                            t.borderTextureShiftY = s.borderTextureShiftY
-                            t.borderR = s.borderR
-                            t.borderG = s.borderG
-                            t.borderB = s.borderB
-                            t.borderA = s.borderA
-                            t.borderSize = s.borderSize
-                            mod.ERB_CopyBorderPx(t, s)
-                            t.borderBehind = s.borderBehind
+                        local function apply(tbl)
+                            tbl.borderTexture = s.borderTexture
+                            tbl.borderTextureOffset = s.borderTextureOffset
+                            tbl.borderTextureOffsetY = s.borderTextureOffsetY
+                            tbl.borderTextureShiftX = s.borderTextureShiftX
+                            tbl.borderTextureShiftY = s.borderTextureShiftY
+                            tbl.borderR = s.borderR
+                            tbl.borderG = s.borderG
+                            tbl.borderB = s.borderB
+                            tbl.borderA = s.borderA
+                            tbl.borderSize = s.borderSize
+                            mod.ERB_CopyBorderPx(tbl, s)
+                            tbl.borderBehind = s.borderBehind
                         end
                         apply(profile.secondary)
                         apply(profile.health)
@@ -800,16 +800,16 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             profile.primary.borderTexture or "solid",
                             profile.primary.cornerRadius or 0,
                             profile.primary.cornerMask or 15
-                        local function eq(t)
-                            return t.borderR == sr
-                                and t.borderG == sg
-                                and t.borderB == scrollBar
-                                and t.borderA == sa
-                                and (t.borderSize or 1) == ssz
-                                and (t.borderTexture or "solid") == sbt
-                                and (t.cornerRadius or 0) == scr
-                                and (t.cornerMask or 15) == scm
-                                and mod.ERB_SameBorderPx(t, profile.primary)
+                        local function eq(tbl)
+                            return tbl.borderR == sr
+                                and tbl.borderG == sg
+                                and tbl.borderB == scrollBar
+                                and tbl.borderA == sa
+                                and (tbl.borderSize or 1) == ssz
+                                and (tbl.borderTexture or "solid") == sbt
+                                and (tbl.cornerRadius or 0) == scr
+                                and (tbl.cornerMask or 15) == scm
+                                and mod.ERB_SameBorderPx(tbl, profile.primary)
                         end
                         return eq(profile.secondary) and eq(profile.health)
                     end,
@@ -895,11 +895,11 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             -- Spender Colors paint the fill flat once a row names a spell, as the bar does
             -- (unless they recolor the text instead).
-            local function SpendersFlatten(c, tse)
+            local function SpendersFlatten(cfg, tse)
                 if not (tse and tse.spenderColorEnabled) then
                     return false
                 end
-                if tse.thresholdTextInstead and c.textFormat ~= "none" then
+                if tse.thresholdTextInstead and cfg.textFormat ~= "none" then
                     return false
                 end
                 local entries = tse.spenderColors

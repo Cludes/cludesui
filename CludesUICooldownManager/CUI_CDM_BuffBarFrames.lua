@@ -1308,16 +1308,16 @@ end
 -- "TBB_" .. index and "TBBG_" .. group key, each built once, so the per-build
 -- pad notifier builds no strings.
 mod._tbbUKey = setmetatable({}, {
-    __index = function(t, key)
+    __index = function(tbl, key)
         local val = "TBB_" .. key
-        t[key] = val
+        tbl[key] = val
         return val
     end,
 })
 mod._tbbgUKey = setmetatable({}, {
-    __index = function(t, key)
+    __index = function(tbl, key)
         local val = "TBBG_" .. key
-        t[key] = val
+        tbl[key] = val
         return val
     end,
 })

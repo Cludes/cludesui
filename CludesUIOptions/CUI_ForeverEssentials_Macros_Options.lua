@@ -1345,19 +1345,19 @@ local function LayoutGrid(g, heading, cursorY, wid, total, bind)
 end
 
 -- Fills cell i of the macro grid from gridList; past the list is the "+" cell.
-local function BindMacroCell(c, idx)
+local function BindMacroCell(cfg, idx)
     local m = gridList[idx]
-    c.m, c.newCell = m, m == nil
-    c.icon:SetShown(m ~= nil)
-    c.plus:SetShown(m == nil)
-    c.name:SetText(m and m.name or "")
+    cfg.m, cfg.newCell = m, m == nil
+    cfg.icon:SetShown(m ~= nil)
+    cfg.plus:SetShown(m == nil)
+    cfg.name:SetText(m and m.name or "")
     if m then
-        c.icon:SetTexture(IconPath(m.icon))
-        c.selected = cur.ref ~= nil and cur.ref.index == m.index
+        cfg.icon:SetTexture(IconPath(m.icon))
+        cfg.selected = cur.ref ~= nil and cur.ref.index == m.index
     else
-        c.selected = not cur.ref and cur.perChar == (mode == "char")
+        cfg.selected = not cur.ref and cur.perChar == (mode == "char")
     end
-    c.Paint(false)
+    cfg.Paint(false)
 end
 
 -- The header's list in place: the counts, the grid, and the snapshot a

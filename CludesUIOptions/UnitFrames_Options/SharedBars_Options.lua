@@ -2868,13 +2868,13 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
         -- only the on/off decides whether the frames agree.
         mod.UFO_UnitSync(sharedPowerRow4._rightRegion, "Text Color", {
             self = true,
-            copy = function(t, from)
+            copy = function(tbl, from)
                 local color = from.powerTextColor
-                t.powerPercentTextPowerColor = from.powerPercentTextPowerColor or false
-                t.powerTextColor = color and { r = color.r, g = color.g, b = color.b } or nil
+                tbl.powerPercentTextPowerColor = from.powerPercentTextPowerColor or false
+                tbl.powerTextColor = color and { r = color.r, g = color.g, b = color.b } or nil
             end,
-            same = function(t, from)
-                return (t.powerPercentTextPowerColor or false) == (from.powerPercentTextPowerColor or false)
+            same = function(tbl, from)
+                return (tbl.powerPercentTextPowerColor or false) == (from.powerPercentTextPowerColor or false)
             end,
         })
     end
@@ -3833,13 +3833,13 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
             -- A style of None also hides the bar.
             mod.UFO_UnitSync(sharedClassResRow._leftRegion, "Class Resource Style", {
                 self = true,
-                copy = function(t, from)
+                copy = function(tbl, from)
                     local style = from.classPowerStyle or "none"
-                    t.classPowerStyle = style
-                    t.showClassPowerBar = style ~= "none"
+                    tbl.classPowerStyle = style
+                    tbl.showClassPowerBar = style ~= "none"
                 end,
-                same = function(t, from)
-                    return (t.classPowerStyle or "none") == (from.classPowerStyle or "none")
+                same = function(tbl, from)
+                    return (tbl.classPowerStyle or "none") == (from.classPowerStyle or "none")
                 end,
             })
             mod.UFO_UnitSync(sharedClassResRow._rightRegion, "Class Colors", {
@@ -4020,17 +4020,17 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
             end
             if not CludesUI._prebuilding then
                 -- Unset draws black at half alpha, so it equals that colour set.
-                local function Bg(c)
-                    return c and c.r or 0, c and c.g or 0, c and c.b or 0, c and c.a or 0.5
+                local function Bg(color)
+                    return color and color.r or 0, color and color.g or 0, color and color.b or 0, color and color.a or 0.5
                 end
                 mod.UFO_UnitSync(sharedClassResRow3._rightRegion, "Class Resource Background Color", {
                     self = true,
-                    copy = function(t, from)
+                    copy = function(tbl, from)
                         local color = from.classPowerBgColor
-                        t.classPowerBgColor = color and { r = color.r, g = color.g, b = color.b, a = color.a } or nil
+                        tbl.classPowerBgColor = color and { r = color.r, g = color.g, b = color.b, a = color.a } or nil
                     end,
-                    same = function(t, from)
-                        local r1, g1, b1, a1 = Bg(t.classPowerBgColor)
+                    same = function(tbl, from)
+                        local r1, g1, b1, a1 = Bg(tbl.classPowerBgColor)
                         local r2, g2, b2, a2 = Bg(from.classPowerBgColor)
                         return r1 == r2 and g1 == g2 and b1 == b2 and a1 == a2
                     end,
@@ -4236,21 +4236,21 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
         -- The sync of an absorb setting group: each key of defs, unset reading
         -- as its default, colours copied as tables of their own.
         local function AbsorbSync(defs)
-            local function Val(t, e)
-                local value = t[e.k]
+            local function Val(tbl, e)
+                local value = tbl[e.k]
                 if value == nil then
                     return e.d
                 end
                 return value
             end
             return {
-                copy = function(t, from)
+                copy = function(tbl, from)
                     for _, entry in ipairs(defs) do
                         local value = Val(from, entry)
                         if type(value) == "table" then
                             value = { r = value.r, g = value.g, b = value.b, a = value.a }
                         end
-                        t[entry.k] = value
+                        tbl[entry.k] = value
                     end
                 end,
                 same = function(t, from)

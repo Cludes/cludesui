@@ -98,9 +98,9 @@ local function Count(into, first, last)
     end
     return into
 end
-local function Emptied(c, key)
-    c[key] = {}
-    return c[key]
+local function Emptied(cfg, key)
+    cfg[key] = {}
+    return cfg[key]
 end
 local function ScanBags()
     Count(Emptied(Me(), "bags"), BACKPACK_CONTAINER, NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS)

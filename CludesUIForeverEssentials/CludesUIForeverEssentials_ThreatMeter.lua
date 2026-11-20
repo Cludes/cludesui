@@ -172,32 +172,32 @@ end
 -- read falls through to the old key while the new one is unset; nothing is
 -- migrated and the old keys are never removed.
 local LEGACY = {
-    position = function(c)
-        return c.pos
+    position = function(cfg)
+        return cfg.pos
     end,
-    pets = function(c)
-        if c.ignorePets ~= nil then
-            return not c.ignorePets
+    pets = function(cfg)
+        if cfg.ignorePets ~= nil then
+            return not cfg.ignorePets
         end
     end,
-    fontSize = function(c)
-        return c.textSize
+    fontSize = function(cfg)
+        return cfg.textSize
     end,
-    barSpacing = function(c)
-        return c.spacing
+    barSpacing = function(cfg)
+        return cfg.spacing
     end,
-    playerColor = function(c)
-        return Triplet(c.playerR, c.playerG, c.playerB)
+    playerColor = function(cfg)
+        return Triplet(cfg.playerR, cfg.playerG, cfg.playerB)
     end,
-    tankColor = function(c)
-        return Triplet(c.tankR, c.tankG, c.tankB)
+    tankColor = function(cfg)
+        return Triplet(cfg.tankR, cfg.tankG, cfg.tankB)
     end,
-    pullColor = function(c)
-        return Triplet(c.pullR, c.pullG, c.pullB)
+    pullColor = function(cfg)
+        return Triplet(cfg.pullR, cfg.pullG, cfg.pullB)
     end,
     -- A chosen bar count becomes a window tall enough to show that many rows.
-    height = function(c)
-        local num = c.maxBars
+    height = function(cfg)
+        local num = cfg.maxBars
         if type(num) ~= "number" then
             return nil
         end
@@ -208,29 +208,29 @@ local LEGACY = {
 }
 local LEGACY_STYLE = {
     bars = {
-        barTexture = function(c)
-            return c.texture
+        barTexture = function(cfg)
+            return cfg.texture
         end,
     },
     colors = {
-        bgAlpha = function(c)
-            return c.bgA
+        bgAlpha = function(cfg)
+            return cfg.bgA
         end,
-        barFillAlpha = function(c)
-            if type(c.barOpacity) == "number" then
-                return c.barOpacity / 100
+        barFillAlpha = function(cfg)
+            if type(cfg.barOpacity) == "number" then
+                return cfg.barOpacity / 100
             end
         end,
     },
     borders = {
-        windowBorderSize = function(c)
-            return c.borderSize
+        windowBorderSize = function(cfg)
+            return cfg.borderSize
         end,
-        windowBorderColor = function(c)
-            if c.borderR == nil then
+        windowBorderColor = function(cfg)
+            if cfg.borderR == nil then
                 return nil
             end
-            return { r = c.borderR, g = c.borderG or 0, b = c.borderB or 0, a = 1 }
+            return { r = cfg.borderR, g = cfg.borderG or 0, b = cfg.borderB or 0, a = 1 }
         end,
     },
 }
@@ -348,24 +348,24 @@ end
 -- quarter-black bar track. The Style page runs them on the switch (a reload
 -- follows; isForever for the WoW Forever variant); the login runs Classic's
 -- for a table that arrived already switched.
-function module.TM_SeedStock(c, key, isForever)
+function module.TM_SeedStock(cfg, key, isForever)
     if key == "blizzard" then
-        if c.blizzBgAlphaSeeded then
+        if cfg.blizzBgAlphaSeeded then
             return
         end
-        c.blizzBgAlphaSeeded = true
+        cfg.blizzBgAlphaSeeded = true
     elseif key == "classic" then
-        if c.classicSeeded then
+        if cfg.classicSeeded then
             return
         end
-        c.classicSeeded = true
+        cfg.classicSeeded = true
     else
         return
     end
-    local ap = c.appearance
+    local ap = cfg.appearance
     if type(ap) ~= "table" then
         ap = {}
-        c.appearance = ap
+        cfg.appearance = ap
     end
     local colors = ap.colors
     if type(colors) ~= "table" then
@@ -1392,21 +1392,21 @@ local function Flag(val)
 end
 
 -- Visibility; "in combat" also counts your pet's and the watched mob's combat.
-function mod.IsVisible(c, status)
-    if c.visibilityMatch ~= "any" and CUI.CheckVisibilityOptions(c) then
+function mod.IsVisible(cfg, status)
+    if cfg.visibilityMatch ~= "any" and CUI.CheckVisibilityOptions(cfg) then
         return false
     end
-    local result = CUI.EvalVisibilityExtended(c, "visibility", status, CUI.VIS_CAPS_DEFAULT)
+    local result = CUI.EvalVisibilityExtended(cfg, "visibility", status, CUI.VIS_CAPS_DEFAULT)
     if result ~= nil then
         return result == true
     end
-    if c.visibility == "in_combat" then
+    if cfg.visibility == "in_combat" then
         return status.inCombat
     end
-    if c.visibility == "out_of_combat" then
+    if cfg.visibility == "out_of_combat" then
         return not status.inCombat
     end
-    return CUI.EvalVisibility(c) == true
+    return CUI.EvalVisibility(cfg) == true
 end
 
 -- mob is nil for the empty header (Only With Threat off).

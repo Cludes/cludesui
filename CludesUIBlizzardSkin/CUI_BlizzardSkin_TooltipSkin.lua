@@ -1874,9 +1874,9 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
     local _PV_SCORE = 2850
     local _PV_MOUNT_SPELL = 458 -- Brown Horse
 
-    local function _pvLine(tip, textValue, c)
-        if c then
-            tip:AddLine(textValue, c.r, c.g, c.b)
+    local function _pvLine(tip, textValue, color)
+        if color then
+            tip:AddLine(textValue, color.r, color.g, color.b)
         else
             tip:AddLine(textValue, 1, 1, 1)
         end

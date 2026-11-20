@@ -208,11 +208,11 @@ local function RegisterUnlockElements()
     -- pass hands every matched bar its size again after each resize burst (CDM
     -- bars resize all through combat), and a rebuild is a full ApplyAll, so an
     -- unchanged size rebuilds nothing.
-    local function SetDim(t, key, val)
-        if t[key] == val then
+    local function SetDim(tbl, key, val)
+        if tbl[key] == val then
             return
         end
-        t[key] = val
+        tbl[key] = val
         Rebuild()
     end
     local function LiveMove(key)
@@ -417,11 +417,11 @@ local function RegisterUnlockElements()
                     y = place.y,
                 }
             end,
-            saveRawPos = function(_, p)
-                if not (p and p.point) then
+            saveRawPos = function(_, profile)
+                if not (profile and profile.point) then
                     return
                 end
-                S().unlockPos = { point = p.point, relPoint = p.relPoint or p.point, x = p.x, y = p.y }
+                S().unlockPos = { point = profile.point, relPoint = profile.relPoint or profile.point, x = profile.x, y = profile.y }
                 mod.ERB_GroupDirty()
             end,
         })

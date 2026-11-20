@@ -433,12 +433,12 @@ do
         end
         return isActive
     end
-    SyncTrackingHotspot = function(p)
+    SyncTrackingHotspot = function(profile)
         local stockButton, ours = Btns()
         if not (stockButton and ours) then
             return
         end
-        local enabled = CludesUI.PadGamepadUI() and not p.hideTrackingButton and ours:IsShown() or false
+        local enabled = CludesUI.PadGamepadUI() and not profile.hideTrackingButton and ours:IsShown() or false
         if enabled then
             if not home then
                 local wid, hgt = stockButton:GetSize()
@@ -469,7 +469,7 @@ do
         end
         -- The click state is settled on every release, and on a modifier key while Free
         -- Move is on: it drags ours with Shift held, so the hotspot steps aside meanwhile.
-        local fm = enabled and p.freeMoveBtns and true or false
+        local fm = enabled and profile.freeMoveBtns and true or false
         isActive = enabled
         if enabled and not ev then
             ev = CreateFrame("Frame")
@@ -742,10 +742,10 @@ end
 
 -- Rebuild the managed-button list from profile + hide state, hook minimap/buttons
 -- (once), set initial alpha. Called at the end of every layout so it stays current.
-local function MO_Refresh(p)
+local function MO_Refresh(profile)
     wipe(_moButtons)
-    local headerEdge = (p and p.hideExtraBtns) or {}
-    if p and p.mouseoverExtraBtns then
+    local headerEdge = (profile and profile.hideExtraBtns) or {}
+    if profile and profile.mouseoverExtraBtns then
         if _greatVaultBtn and not headerEdge.greatVault then
             _moButtons[#_moButtons + 1] = _greatVaultBtn
         end
@@ -1019,7 +1019,7 @@ function SKIN._FvHeaderIndicator(button, key, s)
     highlight:SetAtlas(atlas)
 end
 
-local function LayoutIndicatorFrames(mapFrame, p, circleMode)
+local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
     local flvl = mapFrame:GetFrameLevel() + 10
     local mapAnchor = GetFFD(mapFrame).layoutFrame or mapFrame
     -- The rows' anchor: the map, or Forever Square's outer frame edge.
@@ -1032,9 +1032,9 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
 
     local indicators = _customIndicators
     local size = GetInteractableBtnSize()
-    local showBg = p.btnBackgrounds ~= false
+    local showBg = profile.btnBackgrounds ~= false
     -- Mail Position: "button" = element row; a corner pins it there (as Omnium Folio).
-    local mailIcon = MAIL_CORNER_POINTS[p.mailPosition] and p.mailPosition or nil
+    local mailIcon = MAIL_CORNER_POINTS[profile.mailPosition] and profile.mailPosition or nil
     -- Resize buttons and update icon aspect ratios
     local inset = 3
     local avail = size - inset * 2
@@ -1093,8 +1093,8 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
             flyoutBtn._bg:SetShown(showBg)
         end
         -- Reset to base anchor so free-move offsets don't accumulate across relayouts
-        local inRows = GetBtnRowMode(p)
-        local rowBaseX, rowBaseY = GetRowBase(inRows, p.btnRowDistance)
+        local inRows = GetBtnRowMode(profile)
+        local rowBaseX, rowBaseY = GetRowBase(inRows, profile.btnRowDistance)
         local resES = mapFrame:GetEffectiveScale()
         flyoutBtn:ClearAllPoints()
         flyoutBtn:SetPoint(
@@ -1107,7 +1107,7 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
     end
 
     if indicators.calendar then
-        indicators.calendar:SetShown(not p.hideGameTime)
+        indicators.calendar:SetShown(not profile.hideGameTime)
     end
 
     -- Difficulty flag (instance type/size indicator)
@@ -1120,7 +1120,7 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
         -- Text mode overrides Show Blizzard Elements: the flag is always suppressed.
         -- Alpha leaves the hit region live, so a suppressed flag still answers mouseover
         -- with Blizzard's difficulty tooltip at the top-right corner.
-        local suppressed = p.hideRaidDifficulty or p.diffTextEnabled
+        local suppressed = profile.hideRaidDifficulty or profile.diffTextEnabled
         difficultyFrame:SetAlpha(suppressed and 0 or 1)
         difficultyFrame:EnableMouseMotion(not suppressed)
         if difficultyFrame.Guild then
@@ -1145,10 +1145,10 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
         -- (a corner mail keeps that art). Corner mail and every hide toggle
         -- still apply.
         local classic = SKIN._MinimapClassic()
-        local cs = (p.mapSize or 140) / 140
+        local cs = (profile.mapSize or 140) / 140
         local foreverBar = stockHeader._fvBar
-        local hs = (p.mapSize or 140) / 198
-        if indicators.tracking and not p.hideTrackingButton then
+        local hs = (profile.mapSize or 140) / 198
+        if indicators.tracking and not profile.hideTrackingButton then
             if classic then
                 SKIN._ClassicRingButton(indicators.tracking, nil, indicators.tracking._icon)
             elseif foreverBar then
@@ -1171,7 +1171,7 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
         elseif indicators.tracking then
             indicators.tracking:Hide()
         end
-        if indicators.calendar and not p.hideGameTime then
+        if indicators.calendar and not profile.hideGameTime then
             -- Stock: the clock hangs from the bar's top-right corner.
             indicators.calendar:ClearAllPoints()
             if foreverBar then
@@ -1201,7 +1201,7 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
             end
             indicators.mail:ClearAllPoints()
             if mailIcon then
-                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, p.mailOffsetX or 0, p.mailOffsetY or 0)
+                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, profile.mailOffsetX or 0, profile.mailOffsetY or 0)
             elseif classic then
                 -- The vanilla mail frame: 33px, its TOPRIGHT 24,-37 off the map's
                 -- top-right corner, ring border hung from its top-left; placed by
@@ -1250,14 +1250,14 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
             leftAnchor = button
         end
 
-        if indicators.tracking and not p.hideTrackingButton then
+        if indicators.tracking and not profile.hideTrackingButton then
             PlaceLeft(indicators.tracking)
             indicators.tracking:Show()
         elseif indicators.tracking then
             indicators.tracking:Hide()
         end
 
-        if indicators.calendar and not p.hideGameTime then
+        if indicators.calendar and not profile.hideGameTime then
             indicators.calendar:ClearAllPoints()
             if clockBack and clockBack:IsShown() then
                 indicators.calendar:SetPoint("LEFT", clockBack, "RIGHT", 0, 0)
@@ -1269,7 +1269,7 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
         if indicators.mail and indicators.mail:IsShown() then
             if mailIcon then
                 indicators.mail:ClearAllPoints()
-                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, p.mailOffsetX or 0, p.mailOffsetY or 0)
+                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, profile.mailOffsetX or 0, profile.mailOffsetY or 0)
             else
                 PlaceLeft(indicators.mail)
             end
@@ -1281,11 +1281,11 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
     else
         -- Square layout: element row (corner + growth from Element Row Position), same running-total
         -- placement as the button row below using each element's real width so horizontal rows stay flush despite varying atlas ratios.
-        local inRows = GetElementRowMode(p)
-        local baseX, baseY = GetRowBase(inRows, p.elementRowDistance)
+        local inRows = GetElementRowMode(profile)
+        local baseX, baseY = GetRowBase(inRows, profile.elementRowDistance)
         local elES = mapFrame:GetEffectiveScale()
         local elPx = Pix.perfect / elES
-        local elGap = Pix.SnapForES(p.elementRowSpacing or 0, elES)
+        local elGap = Pix.SnapForES(profile.elementRowSpacing or 0, elES)
         local elX = Pix.SnapForES(baseX, elES)
         local elY = Pix.SnapForES(baseY, elES)
         -- Forever Square: the row wears the button row's ring dress
@@ -1314,14 +1314,14 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
             elY = elY + advancedOn * inRows.dirY
         end
 
-        if indicators.tracking and not p.hideTrackingButton then
+        if indicators.tracking and not profile.hideTrackingButton then
             PlaceElement(indicators.tracking)
             indicators.tracking:Show()
         elseif indicators.tracking then
             indicators.tracking:Hide()
         end
 
-        if indicators.calendar and not p.hideGameTime then
+        if indicators.calendar and not profile.hideGameTime then
             PlaceElement(indicators.calendar)
         end
 
@@ -1332,7 +1332,7 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
                     SKIN._ClassicRingUndress(indicators.mail, indicators.mail._icon)
                 end
                 indicators.mail:ClearAllPoints()
-                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, p.mailOffsetX or 0, p.mailOffsetY or 0)
+                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, profile.mailOffsetX or 0, profile.mailOffsetY or 0)
             else
                 PlaceElement(indicators.mail)
             end
@@ -1345,14 +1345,14 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
 
     -- Ungrouped buttons along the button row; the flyout toggle is its first slot.
     if flyoutBtn then
-        local inRows = GetBtnRowMode(p)
-        local rowBaseX, rowBaseY = GetRowBase(inRows, p.btnRowDistance)
+        local inRows = GetBtnRowMode(profile)
+        local rowBaseX, rowBaseY = GetRowBase(inRows, profile.btnRowDistance)
         local ungroupBtnSize = GetInteractableBtnSize()
         -- Running-total placement: cursor starts at snapped Distance from Map, advances per button
         -- by its size FLOORED to whole physical pixels (rounding up opens hairline seams; flooring can only overlap-flush) plus snapped Icon Spacing.
         local rowES = mapFrame:GetEffectiveScale()
         local rowPx = Pix.perfect / rowES
-        local rowGap = Pix.SnapForES(p.btnRowSpacing or 0, rowES)
+        local rowGap = Pix.SnapForES(profile.btnRowSpacing or 0, rowES)
         local rowX = Pix.SnapForES(rowBaseX, rowES)
         local rowY = Pix.SnapForES(rowBaseY, rowES)
         -- Round maps: the row follows the ring instead of the square's edge,
@@ -1367,13 +1367,13 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
         -- the row slots they were dragged from.
         local arcRadius, arcT, arcDir
         local arcGap = 0
-        if stockHeader or (circleMode and not p.freeMoveBtns) then
+        if stockHeader or (circleMode and not profile.freeMoveBtns) then
             local mapW = mapFrame:GetWidth() or 140
             if stockHeader then
-                arcRadius = mapW / 2 + 5 * (mapW / 198) + (p.btnRowDistance or 0)
+                arcRadius = mapW / 2 + 5 * (mapW / 198) + (profile.btnRowDistance or 0)
             else
-                local edge = (p.shape == "textured_circle") and 2 or (p.borderSize or 1)
-                arcRadius = mapW / 2 + edge + (p.btnRowDistance or 0)
+                local edge = (profile.shape == "textured_circle") and 2 or (profile.borderSize or 1)
+                arcRadius = mapW / 2 + edge + (profile.btnRowDistance or 0)
                 arcGap = Pix.SnapForES(4, rowES)
             end
             arcT = math.rad(inRows.arc or 225)
@@ -1535,7 +1535,7 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
             SKIN._suppressVisTrack = false
         end
 
-        local headerEdge = p.hideExtraBtns or {}
+        local headerEdge = profile.hideExtraBtns or {}
 
         -- Extra buttons: Great Vault, Friends Online, M+ Portals. Visibility from
         -- hideExtraBtns; row order from extraBtnOrder (drag-to-reorder in options; nil = fallback list below).
@@ -1594,8 +1594,8 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
             end
         end
         local placedExtra = {}
-        if type(p.extraBtnOrder) == "table" then
-            for _, key in ipairs(p.extraBtnOrder) do
+        if type(profile.extraBtnOrder) == "table" then
+            for _, key in ipairs(profile.extraBtnOrder) do
                 if not placedExtra[key] then
                     placedExtra[key] = true
                     PlaceExtraButton(key)
@@ -1617,13 +1617,13 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
     end
 
     -- Free Move: hook shift+drag on all indicator buttons and apply saved offsets
-    local headerEdge = p.hideExtraBtns or {}
-    local freeMove = p.freeMoveBtns
+    local headerEdge = profile.hideExtraBtns or {}
+    local freeMove = profile.freeMoveBtns
     local fmTargets = {}
-    if indicators.tracking and not p.hideTrackingButton then
+    if indicators.tracking and not profile.hideTrackingButton then
         fmTargets[#fmTargets + 1] = indicators.tracking
     end
-    if indicators.calendar and not p.hideGameTime then
+    if indicators.calendar and not profile.hideGameTime then
         fmTargets[#fmTargets + 1] = indicators.calendar
     end
     if indicators.mail then
@@ -1657,10 +1657,10 @@ local function LayoutIndicatorFrames(mapFrame, p, circleMode)
         end
     end
 
-    SyncTrackingHotspot(p)
+    SyncTrackingHotspot(profile)
 
     -- After layout so the managed-button list and alpha reflect the shown state.
-    MO_Refresh(p)
+    MO_Refresh(profile)
 end
 
 -------------------------------------------------------------------------------

@@ -407,26 +407,26 @@ local function DataBarKit(hostFrame)
         dst.borderThicknessPx = val
         CopyDataBarColor(dst, source)
     end
-    local function SameDataBarStyle(t, cfg)
-        return t.customBorder == true
-            and (t.borderTexture or "solid") == (cfg.borderTexture or "solid")
-            and t.borderTextureOffset == cfg.borderTextureOffset
-            and t.borderTextureOffsetY == cfg.borderTextureOffsetY
-            and t.borderTextureShiftX == cfg.borderTextureShiftX
-            and t.borderTextureShiftY == cfg.borderTextureShiftY
-            and (t.borderBehind or false) == (cfg.borderBehind or false)
+    local function SameDataBarStyle(tbl, cfg)
+        return tbl.customBorder == true
+            and (tbl.borderTexture or "solid") == (cfg.borderTexture or "solid")
+            and tbl.borderTextureOffset == cfg.borderTextureOffset
+            and tbl.borderTextureOffsetY == cfg.borderTextureOffsetY
+            and tbl.borderTextureShiftX == cfg.borderTextureShiftX
+            and tbl.borderTextureShiftY == cfg.borderTextureShiftY
+            and (tbl.borderBehind or false) == (cfg.borderBehind or false)
     end
-    local function SameDataBarSize(t, cfg)
-        if t.customBorder ~= true then
+    local function SameDataBarSize(tbl, cfg)
+        if tbl.customBorder ~= true then
             return false
         end
-        if (t.borderThickness or "thin") ~= (cfg.borderThickness or "thin") then
+        if (tbl.borderThickness or "thin") ~= (cfg.borderThickness or "thin") then
             return false
         end
-        if (t.borderThicknessPx or false) ~= (cfg.borderThicknessPx or false) then
+        if (tbl.borderThicknessPx or false) ~= (cfg.borderThicknessPx or false) then
             return false
         end -- nil and false render alike
-        local a, b = t.borderColor, cfg.borderColor
+        local a, b = tbl.borderColor, cfg.borderColor
         return (a and a.r or 0) == (b and b.r or 0)
             and (a and a.g or 0) == (b and b.g or 0)
             and (a and a.b or 0) == (b and b.b or 0)

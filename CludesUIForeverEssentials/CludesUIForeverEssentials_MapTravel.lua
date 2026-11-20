@@ -245,20 +245,20 @@ local function ZoneName(uiMapID)
     return details and details.name or ""
 end
 
-local function TransportTip(t)
+local function TransportTip(tbl)
     -- The place alone ("Orgrimmar"), its zone when the area has no name.
-    local area = C_Map.GetAreaInfo(t[5])
-    local where = area and area ~= "" and area or ZoneName(t[4])
-    if t[3] == "boat" then
+    local area = C_Map.GetAreaInfo(tbl[5])
+    local where = area and area ~= "" and area or ZoneName(tbl[4])
+    if tbl[3] == "boat" then
         return CludesUI.Lf("Boat to %s", where)
     end
-    if t[3] == "zeppelin" then
+    if tbl[3] == "zeppelin" then
         return CludesUI.Lf("Zeppelin to %s", where)
     end
-    if t[3] == "skycutter" then
+    if tbl[3] == "skycutter" then
         return CludesUI.Lf("Skycutter to %s", where)
     end
-    if t[3] == "portal" then
+    if tbl[3] == "portal" then
         return CludesUI.Lf("Portal to %s", where)
     end
     return CludesUI.Lf("Tram to %s", where)

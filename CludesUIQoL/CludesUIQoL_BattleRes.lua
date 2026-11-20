@@ -150,14 +150,14 @@ end
 -------------------------------------------------------------------------------
 local BORDER_PX = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
 
-local function _resolveBorderColor(p)
-    if p.borderUseClass then
+local function _resolveBorderColor(profile)
+    if profile.borderUseClass then
         local _, countText = UnitClass("player")
         if countText and RAID_CLASS_COLORS[countText] then
             return RAID_CLASS_COLORS[countText].r, RAID_CLASS_COLORS[countText].g, RAID_CLASS_COLORS[countText].b, 1
         end
     end
-    local color = p.borderColor
+    local color = profile.borderColor
     if color then
         return color.r or 0, color.g or 0, color.b or 0, color.a or 1
     end
@@ -364,8 +364,8 @@ end
 local _cntPfx, _timPfx = CludesUI.COLOR_CODES.WHITE, CludesUI.COLOR_CODES.WHITE
 local _txtCount, _txtTime, _txtZero
 
-local function _colorPrefix(c)
-    return CludesUI.HexColor((c and c.r) or 1, (c and c.g) or 1, (c and c.b) or 1)
+local function _colorPrefix(color)
+    return CludesUI.HexColor((color and color.r) or 1, (color and color.g) or 1, (color and color.b) or 1)
 end
 
 -- Compose the line only when a part actually changed (once per second while

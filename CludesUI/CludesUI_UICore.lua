@@ -2065,8 +2065,8 @@ do
     -- SetScript of OnShow/OnHide (the addon hooks those). Never remove one.
     local padRoots
     local POOL = CludesUI._Pool -- the core's pool table (CludesUI_PixelPerfect.lua)
-    function CludesUI.RegisterPadFrame(f)
-        if not f or not f:GetName() then
+    function CludesUI.RegisterPadFrame(frame)
+        if not frame or not frame:GetName() then
             return
         end
         -- The addon hooks OnShow/OnHide once, and so does the escape-close
@@ -2075,7 +2075,7 @@ do
         -- the code that dresses the frame sets them on its first dress only (dev
         -- mode reports a later one).
         if POOL and POOL.ExemptScripts then
-            POOL.ExemptScripts(f, "OnShow", "OnHide")
+            POOL.ExemptScripts(frame, "OnShow", "OnHide")
         end
         local cp = PadCP()
         if not cp then
@@ -2084,25 +2084,25 @@ do
         if not padRoots then
             padRoots = {}
         end
-        if padRoots[f] then
+        if padRoots[frame] then
             return
         end
-        padRoots[f] = true
-        cp:AddInterfaceCursorFrame(f)
+        padRoots[frame] = true
+        cp:AddInterfaceCursorFrame(frame)
     end
 
     -- nodeignore / nodepass / nodepriority / hidekeyboard ... (v nil = true)
-    function CludesUI.PadHint(f, attr, val)
-        if not f or not PadCP() then
+    function CludesUI.PadHint(frame, attr, val)
+        if not frame or not PadCP() then
             return
         end
-        if f:IsProtected() and InCombatLockdown() then
+        if frame:IsProtected() and InCombatLockdown() then
             return
         end
         if val == nil then
             val = true
         end
-        f:SetAttribute(attr, val)
+        frame:SetAttribute(attr, val)
     end
 
     -- A hand-built modal popup of ours (a named dimmer over its panel) joins the
@@ -2146,11 +2146,11 @@ do
     -- dropdowns SetScript their OnShow/OnHide later).
     local drawLayer, overlayOpen, overlayTracked
 
-    local function OverlaySync(f)
-        if f:IsShown() and f:GetParent() == drawLayer then
-            overlayOpen[f] = true
+    local function OverlaySync(frame)
+        if frame:IsShown() and frame:GetParent() == drawLayer then
+            overlayOpen[frame] = true
         else
-            overlayOpen[f] = nil
+            overlayOpen[frame] = nil
         end
         if next(overlayOpen) then
             if not drawLayer:IsShown() then
@@ -2180,14 +2180,14 @@ do
     -- Every frame parented to OverlayParent() must be tracked (create it
     -- hidden, then call this after its scripts are set). No-op for any frame
     -- not parented to the layer.
-    function CludesUI.TrackOverlay(f)
-        if not drawLayer or not f or overlayTracked[f] or f:GetParent() ~= drawLayer then
+    function CludesUI.TrackOverlay(frame)
+        if not drawLayer or not frame or overlayTracked[frame] or frame:GetParent() ~= drawLayer then
             return
         end
-        overlayTracked[f] = true
-        hooksecurefunc(f, "Show", OverlaySync)
-        hooksecurefunc(f, "Hide", OverlaySync)
-        hooksecurefunc(f, "SetShown", OverlaySync)
-        OverlaySync(f)
+        overlayTracked[frame] = true
+        hooksecurefunc(frame, "Show", OverlaySync)
+        hooksecurefunc(frame, "Hide", OverlaySync)
+        hooksecurefunc(frame, "SetShown", OverlaySync)
+        OverlaySync(frame)
     end
 end

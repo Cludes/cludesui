@@ -1476,15 +1476,15 @@ do
             local wanted = Untaken(WANTED[class], fixed, function(plan)
                 return plan.classes[class]
             end)
-            Pick(paladins, wanted, function(p, key)
-                plans[p.who].classes[class] = key
+            Pick(paladins, wanted, function(profile, key)
+                plans[profile.who].classes[class] = key
             end)
         end
         local auras = Untaken(AURA_ORDER, fixed, function(plan)
             return plan.aura
         end)
-        Pick(paladins, auras, function(p, key)
-            plans[p.who].aura = key
+        Pick(paladins, auras, function(profile, key)
+            plans[profile.who].aura = key
         end)
         return plans
     end

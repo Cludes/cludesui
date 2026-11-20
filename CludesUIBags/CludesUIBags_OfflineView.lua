@@ -1299,9 +1299,9 @@ if CUI_Bank then
         return b
     end
 
-    local function Used(t)
+    local function Used(tbl)
         local num = 0
-        for _ in pairs(type(t) == "table" and type(t.items) == "table" and t.items or {}) do
+        for _ in pairs(type(tbl) == "table" and type(tbl.items) == "table" and tbl.items or {}) do
             num = num + 1
         end
         return num

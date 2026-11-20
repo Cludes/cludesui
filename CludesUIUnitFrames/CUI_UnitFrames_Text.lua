@@ -489,9 +489,9 @@ local TagFns = {}
 -- unit token -> is a boss token, filled on first sight (the frames use a handful
 -- of fixed tokens), so the text pieces never slice the token per paint.
 local IS_BOSS_UNIT = setmetatable({}, {
-    __index = function(t, unitToken)
+    __index = function(tbl, unitToken)
         local val = string.sub(unitToken, 1, 4) == "boss"
-        t[unitToken] = val
+        tbl[unitToken] = val
         return val
     end,
 })

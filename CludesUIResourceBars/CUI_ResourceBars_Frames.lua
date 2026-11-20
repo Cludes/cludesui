@@ -455,18 +455,18 @@ end
 -- rows, so the stored values stay inert after a switch to Solid. Kept out of
 -- ns.ERB_EuiBorderPad: size matching ignores it (the extension is meant to
 -- overlap a neighbour). Callers pass nil under a stock style.
-function mod.ERB_BorderExtents(c)
-    if not c then
+function mod.ERB_BorderExtents(cfg)
+    if not cfg then
         return 0, 0, 0, 0
     end
-    local texture = c.borderTexture
+    local texture = cfg.borderTexture
     if not texture or texture == "" or texture == "solid" then
         return 0, 0, 0, 0
     end
-    return c.borderExtendTop or 0,
-        c.borderExtendBottom or 0,
-        c.borderExtendLeft or 0,
-        c.borderExtendRight or 0
+    return cfg.borderExtendTop or 0,
+        cfg.borderExtendBottom or 0,
+        cfg.borderExtendLeft or 0,
+        cfg.borderExtendRight or 0
 end
 
 -- Seats a border host frame we created (bf) on its bar (parent). An extent

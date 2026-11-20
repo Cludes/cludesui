@@ -291,9 +291,9 @@ local MATCH = {
     },
 }
 
-local function CountsOn(c)
+local function CountsOn(cfg)
     local num = 0
-    for _, rule in pairs(type(c.roleCounts) == "table" and c.roleCounts or {}) do
+    for _, rule in pairs(type(cfg.roleCounts) == "table" and cfg.roleCounts or {}) do
         if type(rule) == "table" and rule.on then
             num = num + 1
         end
@@ -665,9 +665,9 @@ local function Keys(line, raids)
     return line.key, line.pick
 end
 
-local function Missing(c, line, raids)
+local function Missing(cfg, line, raids)
     local _, pick = Keys(line, raids)
-    local val = c[pick]
+    local val = cfg[pick]
     if val == nil then
         return line.missingDefault == true
     end
@@ -746,9 +746,9 @@ GFNS.ExtraClassRows = function(m, posY, K)
 end
 
 -- false = drop the group. secret members don't count
-GFNS.ExtraClassKeep = function(ident, details, c, raids)
+GFNS.ExtraClassKeep = function(ident, details, cfg, raids)
     local mineKey = raids and "raidMyClass" or "extraMyClass"
-    if not (c.hasLust or c.hasBrez or c[mineKey]) then
+    if not (cfg.hasLust or cfg.hasBrez or cfg[mineKey]) then
         return true
     end
     local num = details and details.numMembers
@@ -776,7 +776,7 @@ GFNS.ExtraClassKeep = function(ident, details, c, raids)
         end
     end
     for _, line in ipairs(CLASS_ROWS) do
-        if c[Keys(line, raids)] and have[line.key] == Missing(c, line, raids) then
+        if cfg[Keys(line, raids)] and have[line.key] == Missing(cfg, line, raids) then
             return false
         end
     end
@@ -933,32 +933,32 @@ end
 mod.ROW_ART = { crop = ART_CROP, share = ART_SHARE, alpha = ART_ALPHA, mask = FADE_MASK }
 
 -- art under blizzard's text, the tag on our overlay above
-local function RowArt(record, p)
+local function RowArt(record, profile)
     local art = RowArtOn() and record.resultID
     local ai = art and Activity(record.resultID)
     art = ai and Art(ai.mapID)
     if not art then
-        if p.art then
-            p.art:Hide()
+        if profile.art then
+            profile.art:Hide()
         end
         return
     end
-    if not p.art then
-        p.art = record:CreateTexture(nil, "BACKGROUND", nil, 7)
-        p.art:SetAlpha(ART_ALPHA)
+    if not profile.art then
+        profile.art = record:CreateTexture(nil, "BACKGROUND", nil, 7)
+        profile.art:SetAlpha(ART_ALPHA)
         -- curved fade so the art's own frame never shows
         local mask = record:CreateMaskTexture()
         mask:SetTexture(FADE_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        mask:SetAllPoints(p.art)
-        p.art:AddMaskTexture(mask)
+        mask:SetAllPoints(profile.art)
+        profile.art:AddMaskTexture(mask)
     end
-    p.art:SetTexture(art)
-    p.art:SetTexCoord(unpack(ART_CROP))
-    p.art:ClearAllPoints()
-    p.art:SetPoint("TOPLEFT", record, "TOPLEFT", 3, -2)
-    p.art:SetPoint("BOTTOMLEFT", record, "BOTTOMLEFT", 3, 0)
-    p.art:SetWidth(math.max(1, math.floor((record:GetWidth() or 0) * ART_SHARE)))
-    p.art:Show()
+    profile.art:SetTexture(art)
+    profile.art:SetTexCoord(unpack(ART_CROP))
+    profile.art:ClearAllPoints()
+    profile.art:SetPoint("TOPLEFT", record, "TOPLEFT", 3, -2)
+    profile.art:SetPoint("BOTTOMLEFT", record, "BOTTOMLEFT", 3, 0)
+    profile.art:SetWidth(math.max(1, math.floor((record:GetWidth() or 0) * ART_SHARE)))
+    profile.art:Show()
 end
 
 local function TagEntry(record)

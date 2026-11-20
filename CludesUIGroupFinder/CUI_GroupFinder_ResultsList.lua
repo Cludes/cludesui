@@ -499,24 +499,24 @@ local PERSON_TEX = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-person.png"
 local PLAYERS_COLOR = { 0.4, 0.4, 0.42 }
 -- a count circle's border, the same as the member icons get (ring when round,
 -- border style when square)
-local function CircleEdge(p, round, px, cr, cg, callback, texture, key)
-    p.ring:Hide()
-    p.edge:Hide()
+local function CircleEdge(profile, round, px, cr, cg, callback, texture, key)
+    profile.ring:Hide()
+    profile.edge:Hide()
     if px <= 0 then
         return
     end
     if round then
-        p.ring:ClearAllPoints()
-        p.ring:SetPoint("TOPLEFT", p.bg, "TOPLEFT", -px, px)
-        p.ring:SetPoint("BOTTOMRIGHT", p.bg, "BOTTOMRIGHT", px, -px)
-        p.ring:SetColorTexture(cr, cg, callback, 1)
-        p.ring:Show()
+        profile.ring:ClearAllPoints()
+        profile.ring:SetPoint("TOPLEFT", profile.bg, "TOPLEFT", -px, px)
+        profile.ring:SetPoint("BOTTOMRIGHT", profile.bg, "BOTTOMRIGHT", px, -px)
+        profile.ring:SetColorTexture(cr, cg, callback, 1)
+        profile.ring:Show()
     else
-        if p.edge._key ~= key then
-            p.edge._key = key
-            CUI.ApplyBorderStyle(p.edge, px, cr, cg, callback, 1, texture)
+        if profile.edge._key ~= key then
+            profile.edge._key = key
+            CUI.ApplyBorderStyle(profile.edge, px, cr, cg, callback, 1, texture)
         end
-        p.edge:Show()
+        profile.edge:Show()
     end
 end
 -- the right side follows the activity's display type, as blizzard's rows do:
@@ -542,13 +542,13 @@ end
 -- status text + colors
 local G, R, Y = { 0.1, 1, 0.1 }, { 1, 0.25, 0.25 }, { 1, 0.82, 0 }
 -- blizzard's strings have color codes baked in, strip them
-local function Plain(t)
-    return t and (t:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+local function Plain(text)
+    return text and (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
 end
 -- blizzard has no delisted or failed string (its list shows Declined / Cancelled), so the fallback
 -- goes through L
-local function St(textValue, fallback, c)
-    return { Plain(textValue) or CludesUI.L(fallback), c[1], c[2], c[3] }
+local function St(textValue, fallback, cfg)
+    return { Plain(textValue) or CludesUI.L(fallback), cfg[1], cfg[2], cfg[3] }
 end
 local STATUS = {
     applied = St(LFG_LIST_PENDING, "Pending", G),
@@ -883,26 +883,26 @@ end
 
 -- a count circle's number: above it, or on it (its symbol hidden) when the row
 -- is too short for a line above. the width its slot takes
-local function PlaceCount(p, num, isz, fsz, inside)
+local function PlaceCount(profile, num, isz, fsz, inside)
     -- on the circle the number shrinks to fit inside it
-    SetSize(p.count, inside and math.min(fsz, math.max(6, math.floor(isz * 0.7 + 0.5))) or fsz)
-    p.count:SetText(num)
-    p.count:ClearAllPoints()
+    SetSize(profile.count, inside and math.min(fsz, math.max(6, math.floor(isz * 0.7 + 0.5))) or fsz)
+    profile.count:SetText(num)
+    profile.count:ClearAllPoints()
     -- a box even on both sides of the circle, the text centred in it
     if inside then
-        p.icon:Hide()
-        p.count:SetPoint("LEFT", p.bg, "LEFT", -isz, 0)
-        p.count:SetPoint("RIGHT", p.bg, "RIGHT", isz, 0)
+        profile.icon:Hide()
+        profile.count:SetPoint("LEFT", profile.bg, "LEFT", -isz, 0)
+        profile.count:SetPoint("RIGHT", profile.bg, "RIGHT", isz, 0)
     else
-        p.icon:Show()
-        p.count:SetPoint("BOTTOMLEFT", p.bg, "TOPLEFT", -isz, 1)
-        p.count:SetPoint("BOTTOMRIGHT", p.bg, "TOPRIGHT", isz, 1)
+        profile.icon:Show()
+        profile.count:SetPoint("BOTTOMLEFT", profile.bg, "TOPLEFT", -isz, 1)
+        profile.count:SetPoint("BOTTOMRIGHT", profile.bg, "TOPRIGHT", isz, 1)
     end
-    p.count:Show()
+    profile.count:Show()
     if inside then
         return isz
     end
-    return math.max(isz, math.ceil(p.count:GetStringWidth() or 8))
+    return math.max(isz, math.ceil(profile.count:GetStringWidth() or 8))
 end
 
 -- Texts that show other players' writing (group titles here, applicant names

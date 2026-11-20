@@ -122,9 +122,9 @@ local DEF_HEAL_ABSORB_BAR_COLOR = { r = 200 / 255, g = 29 / 255, b = 29 / 255 }
 local GATE_ZONE_TEXT = { left = "LeftText", right = "RightText", center = "CenterText", extra = "ExtraText" }
 -- Unit token -> boss frame unit; each token is matched once.
 local IS_BOSS_UNIT = setmetatable({}, {
-    __index = function(t, unitToken)
+    __index = function(tbl, unitToken)
         local isBoss = unitToken:match("^boss") ~= nil
-        t[unitToken] = isBoss
+        tbl[unitToken] = isBoss
         return isBoss
     end,
 })

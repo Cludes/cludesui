@@ -955,9 +955,9 @@ end
 -- "CDM_" .. barKey, built once per bar key, so the layout and pad paths look a
 -- bar's unlock element up without building a string each pass.
 mod._cdmUKey = setmetatable({}, {
-    __index = function(t, key)
+    __index = function(tbl, key)
         local val = "CDM_" .. key
-        t[key] = val
+        tbl[key] = val
         return val
     end,
 })

@@ -166,8 +166,8 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
             or (preset and preset[4])
             or "Interface\\Icons\\INV_Misc_QuestionMark"
     end
-    local function CopyColor(c)
-        return { r = c.r, g = c.g, b = c.b }
+    local function CopyColor(color)
+        return { r = color.r, g = color.g, b = color.b }
     end
     -- A list's chosen spells, each once, in priority order.
     local function Chosen(singles)
@@ -1091,32 +1091,32 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
         }
     end
 
-    local function CellCfg(c)
-        if c == nil then
+    local function CellCfg(cfg)
+        if cfg == nil then
             return CludesUI.BlankRowCfg()
         end
-        if c.type then
-            return c
+        if cfg.type then
+            return cfg
         end
-        return c.kind == "combo" and ComboCfg(c) or SingleCfg(c)
+        return cfg.kind == "combo" and ComboCfg(cfg) or SingleCfg(cfg)
     end
-    local function CellChrome(region, c)
-        if CludesUI._prebuilding or c == nil or c.type then
+    local function CellChrome(region, cfg)
+        if CludesUI._prebuilding or cfg == nil or cfg.type then
             return
         end
-        c.rgn = region
+        cfg.rgn = region
         if region._captureCfg then
-            region._captureCfg = setmetatable({ text = FullLabel(c) }, { __index = region._captureCfg })
+            region._captureCfg = setmetatable({ text = FullLabel(cfg) }, { __index = region._captureCfg })
         end
-        if c.kind == "combo" then
-            ComboChrome(region, c)
+        if cfg.kind == "combo" then
+            ComboChrome(region, cfg)
         else
-            SingleChrome(region, c)
+            SingleChrome(region, cfg)
         end
         -- The entry Add just made: its own row takes the write (its slot read now,
         -- while this build's row is its dress).
         local a = addedDebuff
-        if a and a.kind == c.kind and a.class == c.class and a.n == c.n then
+        if a and a.kind == cfg.kind and a.class == cfg.class and a.n == cfg.n then
             addedDebuff = nil
             local snap = CludesUI._SOAttribution(region)
             CludesUI._NotifySettingWrite(region, snap)

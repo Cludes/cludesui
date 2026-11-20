@@ -159,17 +159,17 @@ end
 -- barKey = "health" or "primary"; tex = a texture key, or false to match the
 -- main texture. Keys are stored false, not nil: profile sync copies only keys
 -- that exist.
-function mod.ERB_BarTexture(p, barId)
-    return p.splitTex == true and p[barId].barTexture or nil
+function mod.ERB_BarTexture(profile, barId)
+    return profile.splitTex == true and profile[barId].barTexture or nil
 end
-function mod.ERB_SetBarTexture(p, barId, texture)
-    if texture and p.splitTex ~= true then
-        p.health.barTexture, p.primary.barTexture = false, false
-        p.splitTex = true
+function mod.ERB_SetBarTexture(profile, barId, texture)
+    if texture and profile.splitTex ~= true then
+        profile.health.barTexture, profile.primary.barTexture = false, false
+        profile.splitTex = true
     end
-    p[barId].barTexture = texture or false
-    if not (p.health.barTexture or p.primary.barTexture) then
-        p.splitTex = false
+    profile[barId].barTexture = texture or false
+    if not (profile.health.barTexture or profile.primary.barTexture) then
+        profile.splitTex = false
     end
 end
 -- Classic WoW UI on the health, power and class resource bars, once per
@@ -179,22 +179,22 @@ end
 -- texture, and on WoW Forever's Swing Timer, under a stamp of its own). Run by
 -- the Style page on the switch and at enable for a profile that arrives
 -- already switched.
-function mod.ERB_SeedStockBars(p, styleKey)
-    local g = p and p.general
+function mod.ERB_SeedStockBars(profile, styleKey)
+    local g = profile and profile.general
     if not g or styleKey ~= "classic" then
         return
     end
     if not g.borderAllSeeded then
         g.borderAllSeeded = true
-        if mod.ERB_BarsAnchoredTight(p) then
+        if mod.ERB_BarsAnchoredTight(profile) then
             g.classicBorderAll = true
             -- One classic frame, one size: the lead bar's Border Size for all
             -- three, as the options toggle does.
-            local s = mod.ERB_GroupLeadCfg(p).stockBorderScale
-            p.health.stockBorderScale, p.primary.stockBorderScale, p.secondary.stockBorderScale = s, s, s
+            local s = mod.ERB_GroupLeadCfg(profile).stockBorderScale
+            profile.health.stockBorderScale, profile.primary.stockBorderScale, profile.secondary.stockBorderScale = s, s, s
         end
     end
-    local st = CludesUI.IS_FOREVER == true and p.swingTimer
+    local st = CludesUI.IS_FOREVER == true and profile.swingTimer
     if st and not st.classicTextureSeeded then
         st.classicTextureSeeded = true
         st.texture = "plating"
@@ -204,11 +204,11 @@ function mod.ERB_SeedStockBars(p, styleKey)
     end
     g.classicTextureSeeded = true
     g.barTexture = "plating"
-    if mod.ERB_BarTexture(p, "health") then
-        p.health.barTexture = "plating"
+    if mod.ERB_BarTexture(profile, "health") then
+        profile.health.barTexture = "plating"
     end
-    if mod.ERB_BarTexture(p, "primary") then
-        p.primary.barTexture = "plating"
+    if mod.ERB_BarTexture(profile, "primary") then
+        profile.primary.barTexture = "plating"
     end
 end
 -- The style the health, power and class resource bars render this session,
@@ -315,24 +315,24 @@ end
 -- ApplyBorderStyle (`c` = the bar's resolved settings). nil for a solid border
 -- (drawn inside the bar) or none. Screen axes: the border does not turn with
 -- a vertical bar.
-function mod.ERB_EuiBorderPad(c)
-    if not c then
+function mod.ERB_EuiBorderPad(cfg)
+    if not cfg then
         return nil
     end
-    local bs = c.borderSize or 0
-    local texture = c.borderTexture or "solid"
+    local bs = cfg.borderSize or 0
+    local texture = cfg.borderTexture or "solid"
     return CludesUI.BorderMatchPad(
         bs,
         texture,
-        c.borderTextureOffset,
-        c.borderTextureOffsetY,
-        c.borderTextureShiftX,
-        c.borderTextureShiftY,
+        cfg.borderTextureOffset,
+        cfg.borderTextureOffsetY,
+        cfg.borderTextureShiftX,
+        cfg.borderTextureShiftY,
         "resourcebars",
         bs,
-        CludesUI.BorderPx(c.borderSizePx, bs, texture),
+        CludesUI.BorderPx(cfg.borderSizePx, bs, texture),
         nil,
-        c.borderA
+        cfg.borderA
     )
 end
 -- Separator companion art for a bar (`c` = its resolved settings), for the
@@ -360,8 +360,8 @@ end
 -- 2 x f over the icon side of the seam. Tint with the bar's border colour and
 -- alpha. Anchor to the outer bar frame, never the clipped inner StatusBar.
 -- Style/build time only.
-function mod.ERB_SeparatorArt(c, pick, role)
-    local texture = c and c.borderTexture or "solid"
+function mod.ERB_SeparatorArt(cfg, pick, role)
+    local texture = cfg and cfg.borderTexture or "solid"
     local key = (pick and pick ~= "match") and pick or texture
     local filePath = CludesUI.GetBorderCompanion(key, role)
     if not filePath then
@@ -369,9 +369,9 @@ function mod.ERB_SeparatorArt(c, pick, role)
         filePath = CludesUI.GetBorderCompanion(key, role)
     end
     local size = CludesUI.GetBorderCompanion(key, "sepSize") or 16
-    local bs = c and c.borderSize or 0
+    local bs = cfg and cfg.borderSize or 0
     if bs > 0 and CludesUI.GetBorderCompanion(texture, "sepSize") then
-        local px = CludesUI.BorderPx(c.borderSizePx, bs, texture)
+        local px = CludesUI.BorderPx(cfg.borderSizePx, bs, texture)
         if px then
             return filePath, math.max(1, floor(px + 0.5)) * Pix.mult / 16, size, true
         end
@@ -383,8 +383,8 @@ end
 -- True while a bar's border style is textured (not Solid, not empty): the only
 -- state that shows its Border Options cog, so the separator and lift settings
 -- in that cog count only then.
-function mod.ERB_Textured(c)
-    local t = c and c.borderTexture
+function mod.ERB_Textured(cfg)
+    local t = cfg and cfg.borderTexture
     return (t and t ~= "" and t ~= "solid") and true or false
 end
 -- Separator pieces on one of our bars (Bottom Separator on the power, cast and
@@ -718,8 +718,8 @@ end
 -- so its line stays on the seam), full icon height, the cast border's colour
 -- and alpha as vertex colour. Returns true while sized from an exact Border
 -- Size. tex = our divider texture, icon = the icon frame.
-function mod.ERB_PlaceDividerArt(texture, iconTex, onRight, c)
-    local filePath, frame, size, exact = mod.ERB_SeparatorArt(c, "match", "sepV")
+function mod.ERB_PlaceDividerArt(texture, iconTex, onRight, cfg)
+    local filePath, frame, size, exact = mod.ERB_SeparatorArt(cfg, "match", "sepV")
     local es = texture:GetParent():GetEffectiveScale()
     local lead = Pix.SnapForES(2 * frame, es)
     texture:SetTexture(filePath)
@@ -734,7 +734,7 @@ function mod.ERB_PlaceDividerArt(texture, iconTex, onRight, c)
         texture:SetPoint("BOTTOMLEFT", iconTex, "BOTTOMRIGHT", -lead, 0)
     end
     texture:SetWidth(Pix.SnapForES(size * frame, es))
-    texture:SetVertexColor(c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1)
+    texture:SetVertexColor(cfg.borderR or 0, cfg.borderG or 0, cfg.borderB or 0, cfg.borderA or 1)
     return exact and true or false
 end
 -- Switches a cast icon divider (live bar or preview) to the art while show (the
@@ -744,12 +744,12 @@ end
 -- leaving the art: texcoords, the vertex colour back to white (SetColorTexture
 -- keeps a stale one) and the UI-scale re-place dropped. Two compares while it
 -- was never on. The state is kept on our own texture.
-function mod.ERB_CastDividerArt(texture, show, iconTex, onRight, c, stock)
-    if show and c.iconDividerArt and not stock and CludesUI.GetBorderCompanion(c.borderTexture, "sepV") then
-        texture._erbArt, texture._erbIcon, texture._erbRight, texture._erbC = true, iconTex, onRight and true or false, c
+function mod.ERB_CastDividerArt(texture, show, iconTex, onRight, cfg, stock)
+    if show and cfg.iconDividerArt and not stock and CludesUI.GetBorderCompanion(cfg.borderTexture, "sepV") then
+        texture._erbArt, texture._erbIcon, texture._erbRight, texture._erbC = true, iconTex, onRight and true or false, cfg
         CludesUI.RegisterPxReapply(
             texture,
-            mod.ERB_PlaceDividerArt(texture, iconTex, onRight, c) and mod.ERB_DividerReapply or nil
+            mod.ERB_PlaceDividerArt(texture, iconTex, onRight, cfg) and mod.ERB_DividerReapply or nil
         )
         return true
     end

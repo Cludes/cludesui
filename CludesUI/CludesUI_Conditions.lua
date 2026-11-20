@@ -47,8 +47,8 @@ end
 -- except the class resource bar's (the Dark Mode checkbox dropdown on
 -- Global Settings > Colors; users commonly dark one without the other).
 -- That is exactly what the old main "Dark Mode" toggle read.
-local function _dmMainFilter(p)
-    return p.id ~= "resourceBars"
+local function _dmMainFilter(profile)
+    return profile.id ~= "resourceBars"
 end
 local function DarkModeMasterOn()
     return (CludesUI.IsDarkModeAllOn(_dmMainFilter)) or false

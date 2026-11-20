@@ -311,14 +311,14 @@ SKIN._MinimapFvSquare = function()
 end
 -- The shape the map renders: the stock styles' round map, Forever Square's
 -- square, else the stored Shape (read live).
-SKIN._MapShape = function(p)
+SKIN._MapShape = function(profile)
     if SKIN._MinimapBlizz() then
         return "circle"
     end
     if SKIN._MinimapFvSquare() then
         return "square"
     end
-    return (p and p.shape) or "square"
+    return (profile and profile.shape) or "square"
 end
 -- SetAtlas for a stock-look texture: CludesUI.StockAtlas (retail art
 -- where the Forever client swaps the name), native under the WoW Forever

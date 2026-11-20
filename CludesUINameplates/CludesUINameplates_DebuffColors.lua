@@ -88,8 +88,8 @@ end
 local function Num(val)
     return (string.format("%.4f", val):gsub("%.?0+$", ""))
 end
-local function ColorText(c)
-    return Num(c.r) .. "," .. Num(c.g) .. "," .. Num(c.b)
+local function ColorText(color)
+    return Num(color.r) .. "," .. Num(color.g) .. "," .. Num(color.b)
 end
 
 -- A saved list as fresh tables: singles = { { spell, color, missing } },
@@ -1099,16 +1099,16 @@ end
 
 -- The rows bottom to top, as the tints rank: the single debuffs, then the
 -- combos, then the Missing ones by their sublevel (the first listed on top).
-local function NameEntries(c)
+local function NameEntries(cfg)
     local result, missing = {}, {}
-    for _, entry in ipairs(c.singles) do
+    for _, entry in ipairs(cfg.singles) do
         if entry.missing then
             missing[#missing + 1] = entry
         else
             result[#result + 1] = { spells = { entry.spell }, color = entry.color }
         end
     end
-    for _, combo in ipairs(c.combos) do
+    for _, combo in ipairs(cfg.combos) do
         result[#result + 1] = { spells = combo.spells, color = combo.color }
     end
     table.sort(missing, function(posX, posY)

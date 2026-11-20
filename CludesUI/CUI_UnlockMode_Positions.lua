@@ -948,15 +948,15 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- Automatic captures that bank live geometry into saved data skip such a bar
     -- and retry on a later pass; explicit user moves (drag, nudge, link changes)
     -- still capture it. Every other element, and a bar not yet clamped, is false.
-    CludesUI._RectHeldByClamp = function(key, f)
+    CludesUI._RectHeldByClamp = function(key, frame)
         local abKeys = CludesUI._abBarKeys
         if not (abKeys and abKeys[key]) then
             return false
         end
-        if not (f and f:IsClampedToScreen()) then
+        if not (frame and frame:IsClampedToScreen()) then
             return false
         end
-        local l, r, t, b = f:GetLeft(), f:GetRight(), f:GetTop(), f:GetBottom()
+        local l, r, t, b = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
         if not (l and r and t and b) then
             return true
         end
@@ -966,7 +966,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         then
             return true
         end
-        local s = f:GetEffectiveScale() / UIParent:GetEffectiveScale()
+        local s = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
         local wid, hgt = UIParent:GetSize()
         return l * s <= 0.5 or b * s <= 0.5 or r * s >= wid - 0.5 or t * s >= hgt - 0.5
     end

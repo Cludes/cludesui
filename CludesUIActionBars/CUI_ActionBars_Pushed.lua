@@ -154,10 +154,10 @@ mod._ixElig = {}
 
 -- Which roles are on, from the profile alone: each needs its own opt-in plus
 -- the setting it restyles (Border pushed / highlight type, cast highlight on).
-mod._ixRolesOn = function(p)
-    return (p.pushedBorderMatchBar and (p.pushedTextureType or 2) == 5) or false,
-        (p.highlightBorderMatchBar and (p.highlightTextureType or 2) == 5) or false,
-        (p.castHighlightBorder and p.showCastHighlight ~= false) or false
+mod._ixRolesOn = function(profile)
+    return (profile.pushedBorderMatchBar and (profile.pushedTextureType or 2) == 5) or false,
+        (profile.highlightBorderMatchBar and (profile.highlightTextureType or 2) == 5) or false,
+        (profile.castHighlightBorder and profile.showCastHighlight ~= false) or false
 end
 
 -- Bar eligibility: CludesUI style, square icons, a None or Cropped shape, a

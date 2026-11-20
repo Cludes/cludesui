@@ -183,28 +183,28 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             solidColor = { r = 0.973, g = 0.839, b = 0.604, a = 1 },
         },
     }
-    local function UpdateInteractionPreview(f, prefixText)
-        if not f then
+    local function UpdateInteractionPreview(frame, prefixText)
+        if not frame then
             return
         end
         local p = ABAR.db.profile
         local defs = INTERACTION_DEFAULTS[prefixText]
         local iType = p[prefixText .. "TextureType"] or defs.typeDefault
-        if not f._overlay then
-            local shade = f:CreateTexture(nil, "OVERLAY", nil, 1)
+        if not frame._overlay then
+            local shade = frame:CreateTexture(nil, "OVERLAY", nil, 1)
             shade:SetAllPoints()
-            f._overlay = shade
+            frame._overlay = shade
         end
-        if not f._borderOv then
-            f._borderOv = {}
+        if not frame._borderOv then
+            frame._borderOv = {}
             for idx = 1, 4 do
-                local t = f:CreateTexture(nil, "OVERLAY", nil, 2)
+                local t = frame:CreateTexture(nil, "OVERLAY", nil, 2)
                 t:SetColorTexture(1, 1, 1, 1)
-                f._borderOv[idx] = t
+                frame._borderOv[idx] = t
             end
         end
-        local shade = f._overlay
-        local bo = f._borderOv
+        local shade = frame._overlay
+        local bo = frame._borderOv
         if iType == 6 then
             shade:Hide()
             for idx = 1, 4 do
@@ -246,13 +246,13 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                 bo[idx]:SetVertexColor(cr, cg, checkBtn, ca)
             end
             bo[1]:ClearAllPoints()
-            bo[1]:SetPoint("TOPLEFT", f)
-            bo[1]:SetPoint("TOPRIGHT", f)
+            bo[1]:SetPoint("TOPLEFT", frame)
+            bo[1]:SetPoint("TOPRIGHT", frame)
             Pix.Height(bo[1], bsz)
             bo[1]:Show()
             bo[2]:ClearAllPoints()
-            bo[2]:SetPoint("BOTTOMLEFT", f)
-            bo[2]:SetPoint("BOTTOMRIGHT", f)
+            bo[2]:SetPoint("BOTTOMLEFT", frame)
+            bo[2]:SetPoint("BOTTOMRIGHT", frame)
             Pix.Height(bo[2], bsz)
             bo[2]:Show()
             bo[3]:ClearAllPoints()
@@ -327,33 +327,33 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
         return 136197 -- fallback: generic spell icon
     end
 
-    UpdateProcGlowPreview = function(f)
-        if not f then
+    UpdateProcGlowPreview = function(frame)
+        if not frame then
             return
         end
         local G = CludesUI.Glows
         -- The glow draws on its own child frame: on f itself it shares the
         -- border's OVERLAY sublevel and a 1px Pixel Glow can vanish under it.
-        local shade = f._glowOv
+        local shade = frame._glowOv
         if not shade then
-            shade = CreateFrame("Frame", nil, f)
-            shade:SetAllPoints(f)
+            shade = CreateFrame("Frame", nil, frame)
+            shade:SetAllPoints(frame)
             shade:EnableMouse(false)
-            f._glowOv = shade
+            frame._glowOv = shade
         end
-        shade:SetFrameLevel(f:GetFrameLevel() + 2)
+        shade:SetFrameLevel(frame:GetFrameLevel() + 2)
         G.StopAllGlows(shade)
-        f:Show()
+        frame:Show()
         -- Hidden (options closed, page left): stays stopped; OnShow restarts it.
-        if not f:IsVisible() then
+        if not frame:IsVisible() then
             return
         end
         -- If disabled (None selected), keep the icon visible but grayed out
         if not GO.IsCustomGlow(procGlowDesc) then
-            f:SetAlpha(0.15)
+            frame:SetAlpha(0.15)
             return
         end
-        f:SetAlpha(1)
+        frame:SetAlpha(1)
         G.StartSpecGlow(
             shade,
             GO.Spec(procGlowDesc),
@@ -367,8 +367,8 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
     -- Assisted Highlight preview. A custom glow runs on the shared glow engine,
     -- as on the live buttons; the ring and overlay styles draw a plain stand-in
     -- of their own, so the preview never touches a live button's glow.
-    local function UpdateAssistGlowPreview(f)
-        if not f then
+    local function UpdateAssistGlowPreview(frame)
+        if not frame then
             return
         end
         local p = ABAR.db and ABAR.db.profile or {}
@@ -376,31 +376,31 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
         local style = (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
         local G = CludesUI.Glows
 
-        if not f._assistOverlay then
-            local shade = f:CreateTexture(nil, "OVERLAY", nil, 1)
+        if not frame._assistOverlay then
+            local shade = frame:CreateTexture(nil, "OVERLAY", nil, 1)
             shade:SetAllPoints()
-            f._assistOverlay = shade
+            frame._assistOverlay = shade
         end
-        if not f._assistRing then
+        if not frame._assistRing then
             local ring = {}
             for idx = 1, 4 do
-                local t = f:CreateTexture(nil, "OVERLAY", nil, 2)
+                local t = frame:CreateTexture(nil, "OVERLAY", nil, 2)
                 t:SetColorTexture(0.15, 0.5, 1, 1)
                 ring[idx] = t
             end
-            f._assistRing = ring
+            frame._assistRing = ring
         end
-        if not f._assistGlowOv then
-            local host = CreateFrame("Frame", nil, f)
-            host:SetAllPoints(f)
+        if not frame._assistGlowOv then
+            local host = CreateFrame("Frame", nil, frame)
+            host:SetAllPoints(frame)
             host:EnableMouse(false)
-            f._assistGlowOv = host
+            frame._assistGlowOv = host
         end
 
-        local shade = f._assistOverlay
-        local ring = f._assistRing
-        local glowHost = f._assistGlowOv
-        glowHost:SetFrameLevel(f:GetFrameLevel() + 2)
+        local shade = frame._assistOverlay
+        local ring = frame._assistRing
+        local glowHost = frame._assistGlowOv
+        glowHost:SetFrameLevel(frame:GetFrameLevel() + 2)
         shade:Hide()
         for idx = 1, 4 do
             ring[idx]:Hide()
@@ -409,16 +409,16 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
         local entries = mod.LOOP_GLOW_TYPES or {}
         if customType > 0 and entries[customType] then
             local cr, cg, checkBtn = mod._AssistCustomGlowColor()
-            f:SetAlpha(1)
+            frame:SetAlpha(1)
             -- Every widget refresh lands here: the engine glow restarts only
             -- when the style or colour moved, or after a hide stopped it.
             if
-                f:IsVisible()
+                frame:IsVisible()
                 and not (
-                    f._assistPvType == customType
-                    and f._assistPvR == cr
-                    and f._assistPvG == cg
-                    and f._assistPvB == checkBtn
+                    frame._assistPvType == customType
+                    and frame._assistPvR == cr
+                    and frame._assistPvG == cg
+                    and frame._assistPvB == checkBtn
                 )
             then
                 G.StopAllGlows(glowHost)
@@ -430,24 +430,24 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                     "icon",
                     G.PANEL_EXTRA
                 )
-                f._assistPvType, f._assistPvR, f._assistPvG, f._assistPvB = customType, cr, cg, checkBtn
+                frame._assistPvType, frame._assistPvR, frame._assistPvG, frame._assistPvB = customType, cr, cg, checkBtn
             end
             return
         end
 
         G.StopAllGlows(glowHost)
-        f._assistPvType = nil
-        f:SetAlpha(1)
+        frame._assistPvType = nil
+        frame:SetAlpha(1)
 
         -- The ring and overlay styles: a plain stand-in of each.
         if style == 1 or style == 3 then
             ring[1]:ClearAllPoints()
-            ring[1]:SetPoint("TOPLEFT", f)
-            ring[1]:SetPoint("TOPRIGHT", f)
+            ring[1]:SetPoint("TOPLEFT", frame)
+            ring[1]:SetPoint("TOPRIGHT", frame)
             ring[1]:SetHeight(2)
             ring[2]:ClearAllPoints()
-            ring[2]:SetPoint("BOTTOMLEFT", f)
-            ring[2]:SetPoint("BOTTOMRIGHT", f)
+            ring[2]:SetPoint("BOTTOMLEFT", frame)
+            ring[2]:SetPoint("BOTTOMRIGHT", frame)
             ring[2]:SetHeight(2)
             ring[3]:ClearAllPoints()
             ring[3]:SetPoint("TOPLEFT", ring[1], "BOTTOMLEFT")

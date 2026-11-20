@@ -836,12 +836,12 @@ end
 -- cdmBars.bars[5] has fkey segment "5". Every path walk must convert back or
 -- numeric subtrees silently read nil / write string-key garbage. The stored
 -- string key wins when it exists (settings tables never mix "5" and 5).
-local function SegKey(t, seg)
-    if t[seg] ~= nil then
+local function SegKey(tbl, seg)
+    if tbl[seg] ~= nil then
         return seg
     end
     local num = tonumber(seg)
-    if num ~= nil and t[num] ~= nil then
+    if num ~= nil and tbl[num] ~= nil then
         return num
     end
     return seg

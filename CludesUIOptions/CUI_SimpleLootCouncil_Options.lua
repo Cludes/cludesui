@@ -377,9 +377,9 @@ CludesUI.AtLogin(function()
 
     local SUG_ROW_H = 26
     local sugPopup
-    local function SugPaint(p)
-        for idx, row in ipairs(p.rows) do
-            row.hl:SetColorTexture(1, 1, 1, idx == p.selected and 0.08 or 0)
+    local function SugPaint(profile)
+        for idx, row in ipairs(profile.rows) do
+            row.hl:SetColorTexture(1, 1, 1, idx == profile.selected and 0.08 or 0)
         end
     end
     local function SugPopup()
@@ -414,15 +414,15 @@ CludesUI.AtLogin(function()
         sugPopup = p
         return p
     end
-    local function SugRow(p, idx)
-        local row = p.rows[idx]
+    local function SugRow(profile, idx)
+        local row = profile.rows[idx]
         if row then
             return row
         end
-        row = _G.CreateFrame("Button", nil, p)
+        row = _G.CreateFrame("Button", nil, profile)
         row:SetHeight(SUG_ROW_H)
-        row:SetPoint("TOPLEFT", p, "TOPLEFT", 4, -4 - (idx - 1) * SUG_ROW_H)
-        row:SetPoint("TOPRIGHT", p, "TOPRIGHT", -4, -4 - (idx - 1) * SUG_ROW_H)
+        row:SetPoint("TOPLEFT", profile, "TOPLEFT", 4, -4 - (idx - 1) * SUG_ROW_H)
+        row:SetPoint("TOPRIGHT", profile, "TOPRIGHT", -4, -4 - (idx - 1) * SUG_ROW_H)
         row.hl = row:CreateTexture(nil, "ARTWORK")
         row.hl:SetAllPoints()
         row.hl:SetColorTexture(1, 1, 1, 0)
@@ -432,15 +432,15 @@ CludesUI.AtLogin(function()
         row.label:SetJustifyH("LEFT")
         row.label:SetWordWrap(false)
         row:SetScript("OnEnter", function()
-            p.selected = idx
-            SugPaint(p)
+            profile.selected = idx
+            SugPaint(profile)
         end)
         row:SetScript("OnClick", function()
-            if p.onPick and row.entry then
-                p.onPick(row.entry)
+            if profile.onPick and row.entry then
+                profile.onPick(row.entry)
             end
         end)
-        p.rows[idx] = row
+        profile.rows[idx] = row
         return row
     end
     local function SugOpen()

@@ -51,8 +51,8 @@ local FIRST_MODE = { hp = "percent", pp = "percent", ha = "short" }
 local ATTACH_VALUE = { name = "levelname", nameDiv = "levelnameDiv" }
 
 -- Power Colored: Power Text and Custom (whose tags may read power) only.
-local function AllowsPower(t)
-    return t.kind == "pp" or t.kind == "custom"
+local function AllowsPower(tbl)
+    return tbl.kind == "pp" or tbl.kind == "custom"
 end
 
 -------------------------------------------------------------------------------
@@ -62,11 +62,11 @@ end
 local CustomText = {}
 do
     -- The text's colour mode as the preview shows it, for the player's class and power.
-    function CustomText.Color(t)
+    function CustomText.Color(tbl)
         local SVal = mod._RFO_OptEnv.SVal
         local _, classTok = UnitClass("player")
         local _, pTok = UnitPowerType("player")
-        local red, green, blue = mod.RF_PreviewTextColor(SVal(t.cm, "custom"), SVal(t.col), classTok, 1, 1, 1, pTok)
+        local red, green, blue = mod.RF_PreviewTextColor(SVal(tbl.cm, "custom"), SVal(tbl.col), classTok, 1, 1, 1, pTok)
         return { r = red, g = green, b = blue }
     end
 
@@ -122,11 +122,11 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     local POS = CludesUI.POSITION_GRID_VALUES
     local LEVEL_DEFAULT = mod.RF_LEVEL_DEFAULT
 
-    local function PosOf(t)
-        if t.kind == "level" then
-            return SVal(t.pos, LEVEL_DEFAULT)
+    local function PosOf(tbl)
+        if tbl.kind == "level" then
+            return SVal(tbl.pos, LEVEL_DEFAULT)
         end
-        return SVal(t.pos, "center")
+        return SVal(tbl.pos, "center")
     end
     -- Shown by the engine's own rule, read through the page's (party-aware) SVal.
     local view = setmetatable({}, {
@@ -138,14 +138,14 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         return mod.RF_TextShown(t, view, SVal("levelTextPosition", LEVEL_DEFAULT)) ~= nil
     end
     -- The value the tile's dropdown shows.
-    local function ModeOf(t)
-        if t.kind == "name" then
+    local function ModeOf(tbl)
+        if tbl.kind == "name" then
             return ATTACH_VALUE[SVal("levelTextPosition", LEVEL_DEFAULT)] or "name"
         end
-        if t.mode then
-            return SVal(t.mode, "none")
+        if tbl.mode then
+            return SVal(tbl.mode, "none")
         end
-        return t.kind
+        return tbl.kind
     end
     -- The first position no shown text uses, else pref.
     local function FreePos(pref)
@@ -165,8 +165,8 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         end
         return pref
     end
-    local function Notify(t)
-        mod._rfTextNotify = { page = options.page, key = t.id }
+    local function Notify(tbl)
+        mod._rfTextNotify = { page = options.page, key = tbl.id }
     end
     local function Apply()
         ReloadAndUpdate()
@@ -174,10 +174,10 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     end
 
     -- A dropdown pick: a mode, the level format in front of the name, or Remove.
-    local function SetMode(t, val)
-        if t.kind == "name" then
+    local function SetMode(tbl, val)
+        if tbl.kind == "name" then
             if val == "none" then
-                SWrite(t.pos, "none")
+                SWrite(tbl.pos, "none")
             else
                 local lp = SVal("levelTextPosition", LEVEL_DEFAULT)
                 if val == "levelname" then
@@ -188,47 +188,47 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                     SWrite("levelTextPosition", "none")
                 end
             end
-        elseif t.kind == "level" or t.kind == "custom" then
+        elseif tbl.kind == "level" or tbl.kind == "custom" then
             if val == "none" then
-                SWrite(t.pos, "none")
+                SWrite(tbl.pos, "none")
             end
-        elseif val ~= SVal(t.mode, "none") then
-            SWrite(t.mode, val)
+        elseif val ~= SVal(tbl.mode, "none") then
+            SWrite(tbl.mode, val)
         end
         Apply()
     end
-    local function Move(t, place)
-        if place == PosOf(t) then
+    local function Move(tbl, place)
+        if place == PosOf(tbl) then
             return
         end
-        SWrite(t.pos, place)
-        Notify(t)
+        SWrite(tbl.pos, place)
+        Notify(tbl)
         Apply()
     end
     -- "+ Add Text": a hidden text comes back with its own stored settings; a
     -- Custom text asks for its template first.
-    local function Show(t)
-        if t.kind == "custom" then
-            CustomText.Edit(t.fmt, CustomText.Color(t), function()
-                SWrite(t.pos, FreePos("center"))
-                Notify(t)
+    local function Show(tbl)
+        if tbl.kind == "custom" then
+            CustomText.Edit(tbl.fmt, CustomText.Color(tbl), function()
+                SWrite(tbl.pos, FreePos("center"))
+                Notify(tbl)
                 Apply()
             end)
             return
         end
-        if t.kind == "name" then
-            SWrite(t.pos, FreePos("topleft"))
-        elseif t.kind == "level" then
-            SWrite(t.pos, FreePos("topright"))
+        if tbl.kind == "name" then
+            SWrite(tbl.pos, FreePos("topleft"))
+        elseif tbl.kind == "level" then
+            SWrite(tbl.pos, FreePos("topright"))
         else
             -- The second Health Text has no upstream spot of its own: a free one
             -- (looked up while it is still hidden).
-            if t.id == "hp2" then
-                SWrite(t.pos, FreePos(SVal(t.pos, "bottom")))
+            if tbl.id == "hp2" then
+                SWrite(tbl.pos, FreePos(SVal(tbl.pos, "bottom")))
             end
-            SWrite(t.mode, FIRST_MODE[t.kind])
+            SWrite(tbl.mode, FIRST_MODE[tbl.kind])
         end
-        Notify(t)
+        Notify(tbl)
         Apply()
     end
 
@@ -550,11 +550,11 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     }
     cells[#cells + 1] = addCfg
 
-    local function Config(c)
-        if not c then
+    local function Config(cfg)
+        if not cfg then
             return CludesUI.BlankRowCfg()
         end
-        return c.cfg or c
+        return cfg.cfg or cfg
     end
     local firstRow
     local function Finish(row, side, cell)

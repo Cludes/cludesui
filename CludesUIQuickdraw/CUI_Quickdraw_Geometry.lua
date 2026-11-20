@@ -307,9 +307,9 @@ end
 -- with no hole anywhere and no swap at all. Reaching a wrapped cell out past
 -- another claim's entry hands the claim over instead, which is the trade the carve
 -- is for; what must not happen is a nest with no way in.
-local function BlocksReach(c, hole)
-    local pb = c.parentBox
-    local side = (c.groups and c.groups[1]) or c
+local function BlocksReach(cfg, hole)
+    local pb = cfg.parentBox
+    local side = (cfg.groups and cfg.groups[1]) or cfg
     local axis, sign = side.axis, side.sign
     if not axis then
         return false
@@ -761,8 +761,8 @@ end
 -- the needle's direction; HitTest walks the rings the other way, from a
 -- radius to a ring, but lands on this same row.start/row.step to turn the
 -- local index it finds back into the child it belongs to.
-function PaletteView:ChildRingPos(c, jdx)
-    local rowList = c.rows
+function PaletteView:ChildRingPos(cfg, jdx)
+    local rowList = cfg.rows
     for region = 1, #rowList do
         local row = rowList[region]
         if jdx <= row.n then

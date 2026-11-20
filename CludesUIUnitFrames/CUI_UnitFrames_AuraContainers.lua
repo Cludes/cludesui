@@ -1822,11 +1822,11 @@ local STACK_POINTS = {
     center = { "CENTER", 0 },
 }
 
-local function CK(c)
-    if not c then
+local function CK(color)
+    if not color then
         return "-"
     end
-    return string.format("%.3f,%.3f,%.3f", c.r or c[1] or 0, c.g or c[2] or 0, c.b or c[3] or 0)
+    return string.format("%.3f,%.3f,%.3f", color.r or color[1] or 0, color.g or color[2] or 0, color.b or color[3] or 0)
 end
 
 -- Module text pass: fonts through the shared icon-text pipeline (outline slug
@@ -3928,17 +3928,17 @@ end
 
 -- Anchors the row on the Type Icon Position point, grows it, and lights each
 -- type's live group at one icon.
-function TypeIcons.LayoutRow(widget, record, p)
+function TypeIcons.LayoutRow(widget, record, profile)
     local boxHolder, health = record.dispelIcons, widget.Health
     if not (boxHolder and health) then
         return
     end
-    local anchorPoint = (p.dispelIconPosition or "right"):upper()
-    local grow = TypeIcons.GROW[p.dispelIconGrowth or "none"] or "LEFT"
-    local size = p.dispelIconSize or 16
+    local anchorPoint = (profile.dispelIconPosition or "right"):upper()
+    local grow = TypeIcons.GROW[profile.dispelIconGrowth or "none"] or "LEFT"
+    local size = profile.dispelIconSize or 16
     local gap = CludesUI.PP.FromPixels(1)
     boxHolder:ClearAllPoints()
-    boxHolder:SetPoint(anchorPoint, health, anchorPoint, p.dispelIconOffsetX or 0, p.dispelIconOffsetY or 0)
+    boxHolder:SetPoint(anchorPoint, health, anchorPoint, profile.dispelIconOffsetX or 0, profile.dispelIconOffsetY or 0)
     AK.SetContainerAnchor(boxHolder, anchorPoint)
     local vertical = grow == "UP" or grow == "DOWN"
     local gX = vertical and (anchorPoint:find("LEFT") and "RIGHT" or "LEFT") or grow
@@ -3946,7 +3946,7 @@ function TypeIcons.LayoutRow(widget, record, p)
     AK.SetContainerRowWidth(boxHolder, vertical and (size + 0.4) or nil)
     AK.SetContainerGrowth(boxHolder, FlowDir(gX), FlowDir(gY))
     local layout = { elementWidth = size, elementHeight = size, elementSpacing = gap, lineSpacing = gap }
-    local byMe = p.dispelOverlayByMe == true
+    local byMe = profile.dispelOverlayByMe == true
     for index = 1, #DISPEL_SLOTS do
         local auraKey = DISPEL_SLOTS[index].key
         local byMeLive = byMe and not TokenBlindDispelSlot(auraKey)
@@ -3965,18 +3965,18 @@ end
 -- Color Custom Borders is live: the toggle, over a custom border (runtime twin
 -- of the options gate; a saved true stands down under a stock style, a Solid
 -- Border Style or Border Size 0).
-local function DispelCustomBorderOn(p)
-    return p.dispelCustomBorder == true and mod.UF_CustomBorderOn(p.player)
+local function DispelCustomBorderOn(profile)
+    return profile.dispelCustomBorder == true and mod.UF_CustomBorderOn(profile.player)
 end
 
 -- Returns decoration shown, overlay shown. The decoration set shows while
 -- Color Custom Borders or the type icon needs it, the overlay set while an
 -- overlay mode is picked; off (the default), a container stays hidden and
 -- parses nothing.
-local function DispelSlotsShown(p)
-    local icons = p.showDispelIcons == true
-    local grow = icons and (p.dispelIconGrowth or "none") ~= "none"
-    return DispelCustomBorderOn(p) or (icons and not grow), (p.dispelOverlay or "none") ~= "none", grow
+local function DispelSlotsShown(profile)
+    local icons = profile.showDispelIcons == true
+    local grow = icons and (profile.dispelIconGrowth or "none") ~= "none"
+    return DispelCustomBorderOn(profile) or (icons and not grow), (profile.dispelOverlay or "none") ~= "none", grow
 end
 
 local function BuildDispelStyles(widget)
@@ -4177,7 +4177,7 @@ local function SyncDispelSets(widget, record, decorShown, fillShown, iconsShown)
     end
 end
 
-local function DispelFP(p, widget)
+local function DispelFP(profile, widget)
     -- The poison capability is a talent (Poison Cleansing Totem), so it rides
     -- the fingerprint; race can't change mid-session.
     -- Color Custom Borders copies the frame border, so while it is on every input
@@ -4189,18 +4189,18 @@ local function DispelFP(p, widget)
     -- Separator
     -- visibility and orientation changes must restyle their copies too; their
     -- dimensions follow the source texture anchors without a restyle.
-    local cfg = p.player
-    local callback = p.dispelCustomBorder == true and cfg ~= nil
+    local cfg = profile.player
+    local callback = profile.dispelCustomBorder == true and cfg ~= nil
     local filterPass = FP(
-        p.dispelOverlay,
-        p.dispelOverlayOpacity,
-        p.dispelOverlayByMe == true,
+        profile.dispelOverlay,
+        profile.dispelOverlayOpacity,
+        profile.dispelOverlayByMe == true,
         TokenBlindDispelSlot("poison") and 1 or 0,
-        CK(p.dispelColorMagic),
-        CK(p.dispelColorCurse),
-        CK(p.dispelColorDisease),
-        CK(p.dispelColorPoison),
-        CK(p.dispelColorBleed),
+        CK(profile.dispelColorMagic),
+        CK(profile.dispelColorCurse),
+        CK(profile.dispelColorDisease),
+        CK(profile.dispelColorPoison),
+        CK(profile.dispelColorBleed),
         callback,
         callback
                 and FP(
@@ -4212,11 +4212,11 @@ local function DispelFP(p, widget)
                     cfg.borderTextureShiftX,
                     cfg.borderTextureShiftY,
                     cfg.borderBehind,
-                    p.frameStrata,
+                    profile.frameStrata,
                     cfg.frameStrata,
                     cfg.portraitMode,
                     cfg.portraitSide,
-                    p.portraitStyle,
+                    profile.portraitStyle,
                     cfg.portraitStyle,
                     cfg.showPortrait,
                     cfg.portraitSize,
@@ -4232,15 +4232,15 @@ local function DispelFP(p, widget)
             or false
     )
     -- Type Icon Position: marked only while on, so an off print stays as it was.
-    if p.showDispelIcons == true then
+    if profile.showDispelIcons == true then
         filterPass = filterPass
             .. "|ti|"
             .. FP(
-                p.dispelIconPosition,
-                p.dispelIconSize,
-                p.dispelIconOffsetX,
-                p.dispelIconOffsetY,
-                p.dispelIconGrowth
+                profile.dispelIconPosition,
+                profile.dispelIconSize,
+                profile.dispelIconOffsetX,
+                profile.dispelIconOffsetY,
+                profile.dispelIconGrowth
             )
     end
     -- The health bar's level: the slot buttons copy it only on a restyle, and

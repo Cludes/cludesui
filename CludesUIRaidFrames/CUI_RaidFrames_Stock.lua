@@ -319,38 +319,38 @@ end
 --  works without SharedMedia. A party setting the Party page keeps unsynced
 --  (a stored party_ key) takes the same value.
 -------------------------------------------------------------------------------
-local function SeedBoth(p, key, v)
-    p[key] = v
-    if rawget(p, "party_" .. key) ~= nil then
-        p["party_" .. key] = v
+local function SeedBoth(profile, key, v)
+    profile[key] = v
+    if rawget(profile, "party_" .. key) ~= nil then
+        profile["party_" .. key] = v
     end
 end
-function mod.RF_SeedStock(p, styleKey)
-    if not p or p.stockRaidSeeded then
+function mod.RF_SeedStock(profile, styleKey)
+    if not profile or profile.stockRaidSeeded then
         return
     end
     if styleKey ~= "blizzard" and styleKey ~= "classic" then
         return
     end
-    p.stockRaidSeeded = true
+    profile.stockRaidSeeded = true
     local classicArt = styleKey == "classic"
-    SeedBoth(p, "healthBarTexture", classicArt and "blizzardRaid" or "blizzardRaidModern")
+    SeedBoth(profile, "healthBarTexture", classicArt and "blizzardRaid" or "blizzardRaidModern")
     -- Stock frames stack flush: the edges meet in one seam (the Party
     -- page's own spacing too, when it keeps one).
-    p.cellSpacing, p.groupSpacing = 0, 0
-    if rawget(p, "partyCellSpacing") ~= nil then
-        p.partyCellSpacing = 0
+    profile.cellSpacing, profile.groupSpacing = 0, 0
+    if rawget(profile, "partyCellSpacing") ~= nil then
+        profile.partyCellSpacing = 0
     end
     -- The stock raid role art, and the stock absorb looks (Classic's with
     -- the opacity its dropdown pairs with it; each with the Blizzard Glow
     -- Line its pick sets: on for Default Blizz Frames, off for Classic's).
-    SeedBoth(p, "roleIconStyle", "classicCircle")
-    SeedBoth(p, "absorbStyle", classicArt and "blizzard" or "blizzardModern")
-    SeedBoth(p, "absorbGlowLine", not classicArt)
+    SeedBoth(profile, "roleIconStyle", "classicCircle")
+    SeedBoth(profile, "absorbStyle", classicArt and "blizzard" or "blizzardModern")
+    SeedBoth(profile, "absorbGlowLine", not classicArt)
     if classicArt then
-        SeedBoth(p, "absorbOpacity", 90)
+        SeedBoth(profile, "absorbOpacity", 90)
     end
-    SeedBoth(p, "healAbsorbStyle", classicArt and "blizzard" or "healBlizzModern")
+    SeedBoth(profile, "healAbsorbStyle", classicArt and "blizzard" or "healBlizzModern")
 end
 
 -- A texture saved as the shared-media "Blizzard Raid Bar" before the native
@@ -358,17 +358,17 @@ end
 -- native key once. Runs at every enable; a no-op once nothing matches.
 local SM_RAID_BAR = "sm:Blizzard Raid Bar"
 local SM_RAID_KEYS = { "healthBarTexture", "absorbStyle", "healAbsorbStyle", "maxHealthStyle" }
-function mod.RF_MigrateSmRaidBar(p)
-    if not p then
+function mod.RF_MigrateSmRaidBar(profile)
+    if not profile then
         return
     end
     for index = 1, #SM_RAID_KEYS do
         local k = SM_RAID_KEYS[index]
-        if rawget(p, k) == SM_RAID_BAR then
-            p[k] = "blizzardRaid"
+        if rawget(profile, k) == SM_RAID_BAR then
+            profile[k] = "blizzardRaid"
         end
-        if rawget(p, "party_" .. k) == SM_RAID_BAR then
-            p["party_" .. k] = "blizzardRaid"
+        if rawget(profile, "party_" .. k) == SM_RAID_BAR then
+            profile["party_" .. k] = "blizzardRaid"
         end
     end
 end
@@ -524,8 +524,8 @@ local KIT_DEBUFF_SIZE, KIT_BUFF_SIZE = 15, 15
 -- the same row) at the kit's Debuff Size and X/Y, which Auto Resize scales
 -- like any other icon. `p` = the profile (or the preview overlay) the view
 -- reads; one table per scaled geometry, its size/offsets refreshed per call.
-function mod.RF_KitViewKeys(p)
-    local g = p and mod.RF_KitGeom(p.partyKitScale)
+function mod.RF_KitViewKeys(profile)
+    local g = profile and mod.RF_KitGeom(profile.partyKitScale)
     if not g then
         return nil
     end
@@ -542,9 +542,9 @@ function mod.RF_KitViewKeys(p)
         g.view = v
     end
     local sc = mod._partyIndicatorScale or 1
-    v.debuffSize = (p.partyKitDebuffSize or KIT_DEBUFF_SIZE) * sc
-    v.debuffOffsetX = g.auraRow.x + (p.partyKitDebuffX or 0) * sc
-    v.debuffOffsetY = g.auraRow.y + (p.partyKitDebuffY or 0) * sc
+    v.debuffSize = (profile.partyKitDebuffSize or KIT_DEBUFF_SIZE) * sc
+    v.debuffOffsetX = g.auraRow.x + (profile.partyKitDebuffX or 0) * sc
+    v.debuffOffsetY = g.auraRow.y + (profile.partyKitDebuffY or 0) * sc
     return v
 end
 
@@ -601,21 +601,21 @@ end
 -- one gap outside the frame edge (a chain's first element lands INSIDE its
 -- position corner, so its own size pushes it out); members only continue
 -- the run.
-local function PlaceRun(p, modeName, kindName, first, size, ox, oy, lead)
+local function PlaceRun(profile, modeName, kindName, first, size, ox, oy, lead)
     local anchorPoint, grow = RunSpec(modeName, kindName)
-    p.position, p.growDirection = anchorPoint, grow
+    profile.position, profile.growDirection = anchorPoint, grow
     if not first then
-        p.offsetX, p.offsetY = 0, 0
+        profile.offsetX, profile.offsetY = 0, 0
         return
     end
     lead = lead or 0
     if modeName == "ABOVE" then
-        p.offsetX = ((grow == "LEFT") and -lead or lead) + ox
-        p.offsetY = size + KIT_BUFF_GAP + oy
+        profile.offsetX = ((grow == "LEFT") and -lead or lead) + ox
+        profile.offsetY = size + KIT_BUFF_GAP + oy
     else
         local result = lead + size + KIT_BUFF_GAP
-        p.offsetX = ((modeName == "LEFT") and -result or result) + ox
-        p.offsetY = oy
+        profile.offsetX = ((modeName == "LEFT") and -result or result) + ox
+        profile.offsetY = oy
     end
 end
 -- Where the kit's buff runs sit: "RIGHT" | "LEFT" | "ABOVE" (Horizontal
@@ -850,8 +850,8 @@ end
 
 -- Profiles: true when a profile under the running style would change the
 -- latched party Frame Style (reload-gated, like the style itself).
-function mod.RF_PartyKitChanged(p)
-    local wanted = p and (p.useClassicStyle or p.useBlizzardStyle) and p.partyFrameStyle == "party"
+function mod.RF_PartyKitChanged(profile)
+    local wanted = profile and (profile.useClassicStyle or profile.useBlizzardStyle) and profile.partyFrameStyle == "party"
     return (mod.RF_PartyKit() and true or false) ~= (wanted and true or false)
 end
 

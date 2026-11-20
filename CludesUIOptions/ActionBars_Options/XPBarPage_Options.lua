@@ -143,16 +143,16 @@ end
 -- edges (frame units): texts can sit outside the bar. A rotated Center text
 -- is placed inside the bar, and its region is the unrotated string's, so it
 -- is left out. nil while the frame's rect is not resolved yet.
-local function XPPreviewOverhang(f)
-    local l, r, t, b = f:GetLeft(), f:GetRight(), f:GetTop(), f:GetBottom()
+local function XPPreviewOverhang(frame)
+    local l, r, t, b = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
     if not l then
         return nil
     end
     local oL, oR, oT, oB = 0, 0, 0, 0
-    if not f._textRotated then
-        oL, oR, oT, oB = XPPreviewReach(f._text, f._textBg, l, r, t, b, oL, oR, oT, oB)
+    if not frame._textRotated then
+        oL, oR, oT, oB = XPPreviewReach(frame._text, frame._textBg, l, r, t, b, oL, oR, oT, oB)
     end
-    local recs = f._xpAny and f._xpRecs
+    local recs = frame._xpAny and frame._xpRecs
     if recs then
         for i = 1, #recs do
             oL, oR, oT, oB = XPPreviewReach(recs[i].fs, recs[i].bg, l, r, t, b, oL, oR, oT, oB)
@@ -1381,24 +1381,24 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         end
         return EntryCfg(c)
     end
-    local function CellChrome(region, c)
-        if not chrome or c == nil then
+    local function CellChrome(region, cfg)
+        if not chrome or cfg == nil then
             return
         end
-        if c == addCfg then
+        if cfg == addCfg then
             AddPicker(region)
             return
         end
-        PositionPicker(region, c)
-        ItemsDropdown(region, c)
-        if IsBarText(c.pos.stem, c.i) then
-            K.TextCog(region, XP, { RestedRow(c.pos.stem, c.i) })
+        PositionPicker(region, cfg)
+        ItemsDropdown(region, cfg)
+        if IsBarText(cfg.pos.stem, cfg.i) then
+            K.TextCog(region, XP, { RestedRow(cfg.pos.stem, cfg.i) })
         else
-            SlotCog(region, c)
+            SlotCog(region, cfg)
         end
         -- The text Add Text Slot just made: its own row takes the write, its
         -- slot read now, while this build's row holds it.
-        if addedKey and addedKey == SlotKey(c.pos.stem, c.i) then
+        if addedKey and addedKey == SlotKey(cfg.pos.stem, cfg.i) then
             addedKey = nil
             local snap = CludesUI._SOAttribution(region)
             CludesUI._NotifySettingWrite(region, snap)

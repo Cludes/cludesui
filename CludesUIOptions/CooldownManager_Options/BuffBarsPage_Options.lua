@@ -3840,9 +3840,9 @@ local function InitBuffBarsPage(
             if not barData then
                 return
             end
-            local function Flip(c)
-                c.width, c.height = (c.height or 24), (c.width or 270)
-                c.verticalOrientation = value
+            local function Flip(cfg)
+                cfg.width, cfg.height = (cfg.height or 24), (cfg.width or 270)
+                cfg.verticalOrientation = value
             end
             Flip(barData)
             local groupId = GroupOf(barData)

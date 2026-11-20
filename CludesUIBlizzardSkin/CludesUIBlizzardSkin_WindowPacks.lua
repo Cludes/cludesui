@@ -6907,15 +6907,15 @@ do
 
     -- Collapse state comes from the row's element data; painted atlas names differ
     -- between rep/token lists and nesting levels, so they are only a fallback.
-    local function RCCollapsedIn(t)
-        if type(t) ~= "table" then
+    local function RCCollapsedIn(tbl)
+        if type(tbl) ~= "table" then
             return nil
         end
-        if t.isCollapsed ~= nil then
-            return t.isCollapsed and true or false
+        if tbl.isCollapsed ~= nil then
+            return tbl.isCollapsed and true or false
         end
-        if t.isHeaderExpanded ~= nil then
-            return (not t.isHeaderExpanded) and true or false
+        if tbl.isHeaderExpanded ~= nil then
+            return (not tbl.isHeaderExpanded) and true or false
         end
         return nil
     end
@@ -17031,8 +17031,8 @@ do
     -- pcall(function() return t[k] end), but that allocates a fresh closure per
     -- probe -- up to 25 of them per IsWidget call, on a path that runs for every
     -- option of every choice window.
-    function HP.RawGet(t, keyName)
-        return t[keyName]
+    function HP.RawGet(tbl, keyName)
+        return tbl[keyName]
     end
 
     -- Children as a TABLE, taken ONCE, and pcall-able by argument. Never

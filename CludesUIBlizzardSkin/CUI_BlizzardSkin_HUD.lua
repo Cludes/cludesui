@@ -428,8 +428,8 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- Plain indexed read, passed BY ARGUMENT to pcall (no closure allocated).
     -- Field access on a widget frame can throw, so even fetching a texture
     -- reference off one has to be guarded.
-    local function HUDGet(t, key)
-        return t[key]
+    local function HUDGet(tbl, key)
+        return tbl[key]
     end
 
     -- Anchor the COVER ITSELF out to Blizzard's border art, not to the bar's
@@ -514,9 +514,9 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
 
     -- Scale factor that lifts a plate cover to the floor; 1 = leave it alone
     -- (floor off, panel bar, or plate at readable scale).
-    local function CoverScale(barFrame, c)
+    local function CoverScale(barFrame, cfg)
         local min = HUD.minPx
-        if not (c.cuiPlate and type(min) == "number" and min > 0) then
+        if not (cfg.cuiPlate and type(min) == "number" and min > 0) then
             return 1
         end
         local okH, hgt = pcall(barFrame.GetHeight, barFrame)

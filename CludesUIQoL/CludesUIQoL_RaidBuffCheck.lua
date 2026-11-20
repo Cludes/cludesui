@@ -809,13 +809,13 @@ end
 -- totals[row][column]; columns are flask, food, rune, vantus, raid buffs.
 local totals = { {}, {}, {} }
 
-local function Tally(t, colour, val, nowTime)
+local function Tally(tbl, colour, val, nowTime)
     if val == false then
-        t[1][colour] = t[1][colour] + 1
+        tbl[1][colour] = tbl[1][colour] + 1
     elseif val == nil then
-        t[3][colour] = t[3][colour] + 1
+        tbl[3][colour] = tbl[3][colour] + 1
     elseif SoonLeft(val, nowTime) then
-        t[2][colour] = t[2][colour] + 1
+        tbl[2][colour] = tbl[2][colour] + 1
     end
 end
 

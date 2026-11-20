@@ -1880,18 +1880,18 @@ do
     end
     G.PrefixKeys = PrefixKeys
 
-    function G.SpecFromPrefix(result, t, p, defR, defG, defB)
+    function G.SpecFromPrefix(result, tbl, p, defR, defG, defB)
         local k = PrefixKeys(p)
-        local style = t and t[k.type] or 0
+        local style = tbl and tbl[k.type] or 0
         if not style or style == 0 then
             return nil
         end
         result.style = style
         result.r, result.g, result.b =
-            G.ResolveColor(G.DeriveColorMode(t[k.mode], t[k.class]), t[k.r], t[k.g], t[k.b], defR, defG, defB)
-        result.lines, result.thickness, result.speed = t[k.lines], t[k.th], t[k.speed]
-        if t[k.bg] then
-            result.bg, result.bgR, result.bgG, result.bgB = true, t[k.bgR] or 0, t[k.bgG] or 0, t[k.bgB] or 0
+            G.ResolveColor(G.DeriveColorMode(tbl[k.mode], tbl[k.class]), tbl[k.r], tbl[k.g], tbl[k.b], defR, defG, defB)
+        result.lines, result.thickness, result.speed = tbl[k.lines], tbl[k.th], tbl[k.speed]
+        if tbl[k.bg] then
+            result.bg, result.bgR, result.bgG, result.bgB = true, tbl[k.bgR] or 0, tbl[k.bgG] or 0, tbl[k.bgB] or 0
         else
             -- out is the caller's reused scratch: clear the colour too.
             result.bg, result.bgR, result.bgG, result.bgB = nil, nil, nil, nil
@@ -1926,8 +1926,8 @@ do
     -- their styles and store their color modes their own way, so the caller
     -- passes the mode and sets out.style. k: the prefix's FlatKeys table.
     -- defs: fallbacks under the same keys (a module's defaults table).
-    local function FlatVal(t, defs, key)
-        local val = t[key]
+    local function FlatVal(tbl, defs, key)
+        local val = tbl[key]
         if val == nil and defs then
             val = defs[key]
         end

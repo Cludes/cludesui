@@ -3440,13 +3440,13 @@ CludesUI.RegisterMigration({
             return
         end
 
-        local function swap(t, depth)
-            if type(t) ~= "table" or depth > 8 then
+        local function swap(tbl, depth)
+            if type(tbl) ~= "table" or depth > 8 then
                 return
             end
-            for k, val in pairs(t) do
+            for k, val in pairs(tbl) do
                 if val == "kringel-diamonds" then
-                    t[k] = "blinkii-diamonds"
+                    tbl[k] = "blinkii-diamonds"
                 elseif type(val) == "table" then
                     swap(val, depth + 1)
                 end
@@ -4277,8 +4277,8 @@ do
     -- Effective "is this section's bar shown" for a config table, matching
     -- each section's runtime truthiness over the DEFAULTS-MERGED value, with
     -- the per-spec disabledSpecs filter folded in when a spec is given.
-    local function SectionEff(section, t, defaults, specId)
-        local en = t.enabled
+    local function SectionEff(section, tbl, defaults, specId)
+        local en = tbl.enabled
         if en == nil then
             en = defaults and defaults.enabled
         end
@@ -4288,7 +4288,7 @@ do
         else
             effective = en ~= false
         end
-        if effective and specId and type(t.disabledSpecs) == "table" and t.disabledSpecs[specId] then
+        if effective and specId and type(tbl.disabledSpecs) == "table" and tbl.disabledSpecs[specId] then
             effective = false
         end
         return effective
@@ -4328,17 +4328,17 @@ do
 
     -- Walk a section table by a PS-joined relative path, falling back to the
     -- defaults subtree wherever the table side runs out (effective value).
-    local function GetPathEff(t, defaults, filePath)
+    local function GetPathEff(tbl, defaults, filePath)
         for seg in string.gmatch(filePath, "[^\30]+") do
-            local tv = (type(t) == "table") and t[seg] or nil
+            local tv = (type(tbl) == "table") and tbl[seg] or nil
             local dv = (type(defaults) == "table") and defaults[seg] or nil
-            t, defaults = tv, dv
-            if t == nil and defaults == nil then
+            tbl, defaults = tv, dv
+            if tbl == nil and defaults == nil then
                 return nil
             end
         end
-        if t ~= nil then
-            return t
+        if tbl ~= nil then
+            return tbl
         end
         return defaults
     end
@@ -5668,12 +5668,12 @@ do
     -- Every bar table under t. Only a bar carries iconShape and iconZoom, so the
     -- walk needs no map of where bars live (the default bars, the custom lists,
     -- the per-spec buckets).
-    local function FixTree(t, depth)
-        if t.iconZoom == 0 and Shaped(t.iconShape) then
-            t.iconZoom = ZOOM
+    local function FixTree(tbl, depth)
+        if tbl.iconZoom == 0 and Shaped(tbl.iconShape) then
+            tbl.iconZoom = ZOOM
         end
         if depth < 6 then
-            for _, val in pairs(t) do
+            for _, val in pairs(tbl) do
                 if type(val) == "table" then
                     FixTree(val, depth + 1)
                 end
@@ -6109,11 +6109,11 @@ do
         -- lands in the same assignment. The filter library stays (Player Aura
         -- Bars' copy buttons share it). Returns the marked store, nil when
         -- nothing was written.
-        function FvBW.ClearBM(p)
-            if type(p) ~= "table" then
+        function FvBW.ClearBM(profile)
+            if type(profile) ~= "table" then
                 return nil
             end
-            local b = p.bm2
+            local b = profile.bm2
             if type(b) == "table" and b[KEY] ~= nil then
                 return nil
             end
@@ -6129,7 +6129,7 @@ do
                 b.filters, b.specs, b.seeded, b[KEY] = filters, f.specs, f.seeded, 1
             else
                 b = { filters = { nextId = 1, list = {} }, specs = f.specs, seeded = f.seeded, [KEY] = 1 }
-                p.bm2 = b
+                profile.bm2 = b
             end
             return b
         end
@@ -6640,11 +6640,11 @@ do
             and tocVersion < 20000
     end
 
-    local function Sub(t, fieldKey)
-        if type(t[fieldKey]) ~= "table" then
-            t[fieldKey] = {}
+    local function Sub(tbl, fieldKey)
+        if type(tbl[fieldKey]) ~= "table" then
+            tbl[fieldKey] = {}
         end
-        return t[fieldKey]
+        return tbl[fieldKey]
     end
 
     -- True when the account holds data from an earlier WoW Forever session.

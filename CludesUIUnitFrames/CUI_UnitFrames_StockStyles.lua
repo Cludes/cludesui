@@ -700,46 +700,46 @@ end
 -- class resource there), once per profile. The Style page keeps these keys
 -- in a Forever-only slot (p._foreverStyleSlots): the other looks' values are
 -- banked on the way into the variant and come back on the way out.
-function mod.UF_SeedForever(p)
-    if not (p and p.player) or p.foreverClassPowerSeeded then
+function mod.UF_SeedForever(profile)
+    if not (profile and profile.player) or profile.foreverClassPowerSeeded then
         return
     end
-    p.foreverClassPowerSeeded = true
-    p.player.classPowerStyle = "blizzard"
-    p.player.showClassPowerBar = true
+    profile.foreverClassPowerSeeded = true
+    profile.player.classPowerStyle = "blizzard"
+    profile.player.showClassPowerBar = true
 end
 -- `isForever`: the WoW Forever variant of Blizzard Style, which also runs
 -- its own seed (UF_SeedForever).
-function mod.UF_SeedStock(p, styleKey, isForever)
-    if not p then
+function mod.UF_SeedStock(profile, styleKey, isForever)
+    if not profile then
         return
     end
     if isForever then
-        mod.UF_SeedForever(p)
+        mod.UF_SeedForever(profile)
     end
-    if not p.stockCastTextureSeeded then
-        p.stockCastTextureSeeded = true
-        p.castBarTexture = "blizzard"
+    if not profile.stockCastTextureSeeded then
+        profile.stockCastTextureSeeded = true
+        profile.castBarTexture = "blizzard"
     end
     -- Classic WoW UI: "Plating" as the bar texture, once per profile (the
     -- controls stay the user's afterwards): the global key, with each frame's
     -- own override cleared so every frame (and its power bar) follows it.
-    if styleKey == "classic" and not p.classicTextureSeeded then
-        p.classicTextureSeeded = true
-        p.healthBarTexture = "plating"
+    if styleKey == "classic" and not profile.classicTextureSeeded then
+        profile.classicTextureSeeded = true
+        profile.healthBarTexture = "plating"
         local units = mod.UF_TEXTURE_UNITS
         for index = 1, #units do
-            local s = p[units[index]]
+            local s = profile[units[index]]
             if type(s) == "table" then
                 s.healthBarTexture = nil
             end
         end
     end
     local iconTex = mod.UF_STOCK_COMBAT[styleKey]
-    if iconTex and p.player and p.stockCombatSeededStyle ~= styleKey then
-        p.stockCombatSeededStyle = styleKey
-        p.player.combatIndicatorStyle = iconTex
-        p.player.combatIndicatorPosition = "portrait"
+    if iconTex and profile.player and profile.stockCombatSeededStyle ~= styleKey then
+        profile.stockCombatSeededStyle = styleKey
+        profile.player.combatIndicatorStyle = iconTex
+        profile.player.combatIndicatorPosition = "portrait"
     end
 end
 function mod.UF_AtlasOK(name)

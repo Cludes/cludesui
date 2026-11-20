@@ -1281,19 +1281,19 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         local cats = CB.Categories
         for idx = 1, #cats, 2 do
-            local function Toggle(c)
-                if not c then
+            local function Toggle(cfg)
+                if not cfg then
                     return { type = "label", text = "" }
                 end
                 return {
                     type = "toggle",
-                    text = c.label,
+                    text = cfg.label,
                     disabled = cbOff,
                     getValue = function()
-                        return CB.Get(c.key)
+                        return CB.Get(cfg.key)
                     end,
                     setValue = function(val)
-                        CBSet(c.key, val and true or false)
+                        CBSet(cfg.key, val and true or false)
                     end,
                 }
             end

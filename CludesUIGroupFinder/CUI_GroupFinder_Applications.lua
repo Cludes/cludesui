@@ -117,11 +117,11 @@ local function Blank()
     return t
 end
 
-local function Fill(t)
+local function Fill(tbl)
     for _, k in ipairs(KEYS) do
-        t[k] = tonumber(t[k]) or 0
+        tbl[k] = tonumber(tbl[k]) or 0
     end
-    return t
+    return tbl
 end
 
 local myKey

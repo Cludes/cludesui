@@ -152,14 +152,14 @@ end
 -- Forever while foreverHideEndCaps is off; Blizzard Style and Classic WoW UI
 -- while showEndCaps; the CludesUI style while cuiEndCaps names art this
 -- client draws.
-function mod.AB_CapsMainDefault(p)
+function mod.AB_CapsMainDefault(profile)
     if mod.AB_Forever() then
-        return p.foreverHideEndCaps ~= true
+        return profile.foreverHideEndCaps ~= true
     end
     if mod.AB_Style() == "cui" then
-        return mod.AB_CapsArtOK(p.cuiEndCaps)
+        return mod.AB_CapsArtOK(profile.cuiEndCaps)
     end
-    return p.showEndCaps == true
+    return profile.showEndCaps == true
 end
 
 -- Which ends of a bar show caps (the End Caps checklist): the bar's own
@@ -285,15 +285,15 @@ end
 
 -- One cap's art: a file (the right cap mirrored) or an atlas (a stock
 -- look's through CludesUI.StockAtlas).
-function mod.AB_SetCapArt(texture, c, name, right)
-    if c.file then
+function mod.AB_SetCapArt(texture, cfg, name, right)
+    if cfg.file then
         texture:SetTexture(name)
         if right then
             texture:SetTexCoord(1, 0, 0, 1)
         else
             texture:SetTexCoord(0, 1, 0, 1)
         end
-    elseif c.stock then
+    elseif cfg.stock then
         -- The art can switch live on the same textures (the CludesUI style's
         -- End Caps choice): clear a previous look's mirror or sheet coords first.
         texture:SetTexCoord(0, 1, 0, 1)

@@ -46,11 +46,11 @@ local ApplyAll
 -- hiding it is Visibility's job. EBS fields, not locals.
 -- An open Farming HUD owns the reparented map, so it stays at full alpha until the
 -- HUD's hide edge hands the Opacity back.
-function SKIN._MapAlpha(p)
+function SKIN._MapAlpha(profile)
     if FarmHud and FarmHud:IsShown() then
         return 1
     end
-    local o = p and p.opacity
+    local o = profile and profile.opacity
     if type(o) ~= "number" then
         return 1
     end
@@ -147,23 +147,23 @@ end
 local _mmDriverStr
 
 -- Compile the profile's selection into macro-conditional grammar for the secure driver, or nil when it cannot be expressed as one.
-local function MinimapDriverString(p, vm)
+local function MinimapDriverString(profile, vm)
     -- An applied Visibility override replaces the whole setting: a constant, and the
     -- shared selection underneath never reaches the driver.
-    local visOv = CludesUI.VisOverrideValue(p)
+    local visOv = CludesUI.VisOverrideValue(profile)
     if visOv then
         return (visOv == "never") and "hide" or "show"
     end
     -- Any match: Lua-only lanes (instances, housing, skyriding mount) are resolved at
     -- build time (caller runs out of combat only); a later zone/mount edge re-runs the
     -- dispatcher and re-registers the string.
-    if p.visibilityMatch == "any" and CludesUI.BuildAnyMatchTail then
-        return (CludesUI.BuildAnyMatchTail(p, "visibility", vm))
+    if profile.visibilityMatch == "any" and CludesUI.BuildAnyMatchTail then
+        return (CludesUI.BuildAnyMatchTail(profile, "visibility", vm))
     end
     if vm then
         return CludesUI.BuildVisibilityDriverString("", vm)
     end
-    local mode = p.visibility
+    local mode = profile.visibility
     if mode == "in_combat" then
         return "[combat] show; hide"
     end

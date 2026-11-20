@@ -99,12 +99,12 @@ do
     }
     -- Segment-key resolution mirrors the value system's live walk: prefer
     -- the string key when the table holds it, else numeric.
-    local function SegKey(t, seg)
-        if t[seg] ~= nil then
+    local function SegKey(tbl, seg)
+        if tbl[seg] ~= nil then
             return seg
         end
         local num = tonumber(seg)
-        if num ~= nil and t[num] ~= nil then
+        if num ~= nil and tbl[num] ~= nil then
             return num
         end
         return seg

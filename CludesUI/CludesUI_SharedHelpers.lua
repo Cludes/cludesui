@@ -41,29 +41,29 @@ end
 -- restores them. `keys` = the module's slot keys (dotted paths one level
 -- deep into `p`, as the Style page's SLOT_KEYS). Callers bank only while
 -- none of the module's seed stamps is set; an existing slot is never touched.
-function CludesUI.BankEuiStyleSlot(p, keyList)
-    if type(p) ~= "table" then
+function CludesUI.BankEuiStyleSlot(profile, keyList)
+    if type(profile) ~= "table" then
         return
     end
-    local slots = p._styleSlots
+    local slots = profile._styleSlots
     if type(slots) == "table" and type(slots.cui) == "table" then
         return
     end
     if type(slots) ~= "table" then
         slots = {}
-        p._styleSlots = slots
+        profile._styleSlots = slots
     end
     local result = {}
     for idx = 1, #keyList do
         local filePath = keyList[idx]
         local a, b = filePath:match("^([^.]+)%.(.+)$")
         if a then
-            local s = p[a]
+            local s = profile[a]
             if type(s) == "table" then
                 result[filePath] = s[b]
             end
         else
-            result[filePath] = p[filePath]
+            result[filePath] = profile[filePath]
         end
     end
     slots.cui = result
@@ -130,22 +130,22 @@ end
 --  GetAlpha can read secret on some widgets in lockdown; a secret skips the
 --  compare and re-asserts.
 -------------------------------------------------------------------------------
-function CludesUI.SetEditModeChildInert(f, inert)
-    if not f then
+function CludesUI.SetEditModeChildInert(frame, inert)
+    if not frame then
         return
     end
     local alpha = inert and 0 or 1
-    local a = f:GetAlpha()
+    local a = frame:GetAlpha()
     if issecretvalue(a) or a ~= alpha then
-        f:SetAlpha(alpha)
+        frame:SetAlpha(alpha)
     end
-    if f.SetMouseClickEnabled then
+    if frame.SetMouseClickEnabled then
         local enabled = not inert
-        if f:IsMouseClickEnabled() ~= enabled then
-            f:SetMouseClickEnabled(enabled)
+        if frame:IsMouseClickEnabled() ~= enabled then
+            frame:SetMouseClickEnabled(enabled)
         end
-        if f:IsMouseMotionEnabled() ~= enabled then
-            f:SetMouseMotionEnabled(enabled)
+        if frame:IsMouseMotionEnabled() ~= enabled then
+            frame:SetMouseMotionEnabled(enabled)
         end
     end
 end
@@ -1188,19 +1188,19 @@ do
         end
     end
 
-    local function NewInternals(mod, field, t, setters, labelText)
+    local function NewInternals(mod, field, tbl, setters, labelText)
         local label = (labelText or "ns") .. "." .. field
         if setters then
             for setter, listName in pairs(setters) do
-                local entries = t[listName]
+                local entries = tbl[listName]
                 if type(entries) ~= "table" then
                     error(label .. ": " .. setter .. " has no list " .. tostring(listName), 2)
                 end
-                t[setter] = NewFanOut(entries)
+                tbl[setter] = NewFanOut(entries)
             end
         end
-        t.broken = false
-        mod[field] = setmetatable(t, {
+        tbl.broken = false
+        mod[field] = setmetatable(tbl, {
             __index = function(_, key)
                 error(label .. " has no entry " .. tostring(key), 2)
             end,

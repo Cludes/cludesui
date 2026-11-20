@@ -1170,13 +1170,13 @@ local function GetClassColor()
     return 1, 1, 1
 end
 
-local function ResolveCooldownEdgeColor(p)
-    if p.cooldownEdgeUseClassColor then
+local function ResolveCooldownEdgeColor(profile)
+    if profile.cooldownEdgeUseClassColor then
         local cr, cg, callback = GetClassColor()
-        local color = p.cooldownEdgeColor or { a = 1 }
+        local color = profile.cooldownEdgeColor or { a = 1 }
         return cr, cg, callback, color.a or 1
     end
-    local color = p.cooldownEdgeColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
+    local color = profile.cooldownEdgeColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
     return color.r, color.g, color.b, color.a
 end
 

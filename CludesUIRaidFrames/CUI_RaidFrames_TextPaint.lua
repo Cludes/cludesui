@@ -91,15 +91,15 @@ end
 -- A text's position and mode as the plan uses them; nil = not shown. s: the
 -- settings (anything indexable), lvlPos: its level position or the client default.
 -- Shared with the Text Display tiles, so a tile shows exactly what the frames draw.
-local function Shown(t, cfg, lvlPos)
-    local kind = t.kind
+local function Shown(tbl, cfg, lvlPos)
+    local kind = tbl.kind
     if kind == "level" then
         if IS_POS[lvlPos] then
             return lvlPos
         end
         return
     end
-    local place = cfg[t.pos] or "center"
+    local place = cfg[tbl.pos] or "center"
     if place == "none" then
         return
     end
@@ -108,13 +108,13 @@ local function Shown(t, cfg, lvlPos)
     end
     if kind == "custom" then
         -- No template, nothing to draw.
-        local frame = cfg[t.fmt]
+        local frame = cfg[tbl.fmt]
         if type(frame) == "string" and frame ~= "" then
             return place
         end
         return
     end
-    local mode = cfg[t.mode]
+    local mode = cfg[tbl.mode]
     if MODES[kind][mode] then
         return place, mode
     end
@@ -755,12 +755,12 @@ end
 -- restyle fingerprint: the plan's signature (positions, modes, templates), then each
 -- text's offsets and size. ns.RF_TEXT_STYLE_N values; returns the last index written.
 mod.RF_TEXT_STYLE_N = 1 + 3 * NTEXTS
-function mod.RF_TextStyleInputs(t, num, cfg)
+function mod.RF_TextStyleInputs(tbl, num, cfg)
     num = num + 1
-    t[num] = Plan(cfg).sig
+    tbl[num] = Plan(cfg).sig
     for index = 1, NTEXTS do
         local key = KEYS[index]
-        t[num + 1], t[num + 2], t[num + 3] = cfg[key.X], cfg[key.Y], cfg[key.Size]
+        tbl[num + 1], tbl[num + 2], tbl[num + 3] = cfg[key.X], cfg[key.Y], cfg[key.Size]
         num = num + 3
     end
     return num

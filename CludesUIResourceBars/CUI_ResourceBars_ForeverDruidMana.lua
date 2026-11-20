@@ -351,7 +351,7 @@ end
 -- Power Bar's fill: Inside draws over the fill, under the Power Bar's text
 -- (25), the classic frame and a lifted border; Below / Above clear every
 -- frame the Power Bar draws (reach below). Returns orientation, inside.
-local function Layout(pb, pp, g, c)
+local function Layout(pb, pp, g, cfg)
     local Pix = CludesUI.PP
     local owner, bdr = S.host, S.border
     local base = pb._sb:GetFrameLevel() + 1
@@ -363,13 +363,13 @@ local function Layout(pb, pp, g, c)
     local es = pb:GetEffectiveScale()
     local ori = pp.orientation or g.orientation or "HORIZONTAL"
     local vertical = mod.IsVerticalOrientation(ori)
-    local place = c.position
+    local place = cfg.position
     if place ~= "above" and place ~= "inside" then
         place = "below"
     end
-    local thick = Pix.SnapForES(max(c.height or 6, 1), es)
-    local ox = Pix.SnapForES(c.offsetX or 0, es)
-    local oy = Pix.SnapForES(c.offsetY or 0, es)
+    local thick = Pix.SnapForES(max(cfg.height or 6, 1), es)
+    local ox = Pix.SnapForES(cfg.offsetX or 0, es)
+    local oy = Pix.SnapForES(cfg.offsetY or 0, es)
 
     owner:ClearAllPoints()
     if place == "inside" then
@@ -403,7 +403,7 @@ local function Layout(pb, pp, g, c)
         pbSide, ownSide = above and "t" or "b", above and "b" or "t"
     end
     local skinData = Pix.SnapForES(
-        max(c.gap or 2, 0) + PowerBarReach(pp, place, pbSide, vertical, es) + Side(ownSide, ReachOf(pp, es)),
+        max(cfg.gap or 2, 0) + PowerBarReach(pp, place, pbSide, vertical, es) + Side(ownSide, ReachOf(pp, es)),
         es
     )
     if vertical then
@@ -477,7 +477,7 @@ end
 -- Orientation, the Power Bar's fill texture (the plain user texture under
 -- every style), the mana fill, the Power Bar's background and fill opacity.
 -- Returns the mana colour for the text.
-local function ApplyLook(pp, g, p, ori)
+local function ApplyLook(pp, g, profile, ori)
     local scrollBar = S.sb
     if ori == "VERTICAL_UP" or ori == "VERTICAL_DOWN" then
         scrollBar:SetOrientation("VERTICAL")
@@ -490,7 +490,7 @@ local function ApplyLook(pp, g, p, ori)
     end
     local filePath = CludesUI.ResolveTexturePath(
         _G._CURB_BarTextures,
-        (p.splitTex == true and pp.barTexture) or g.barTexture or "none",
+        (profile.splitTex == true and pp.barTexture) or g.barTexture or "none",
         WHITE
     )
     if filePath ~= S.texPath then
@@ -523,20 +523,20 @@ end
 
 -- Text style, same keys and colour rule as the Power Bar's text (custom, or
 -- the power colour: here mana's).
-local function ApplyText(c, red, green, blue)
+local function ApplyText(cfg, red, green, blue)
     local fontStr = S.text
-    mod.SetRBFont(fontStr, mod.GetRBFont(), c.textSize or 8)
+    mod.SetRBFont(fontStr, mod.GetRBFont(), cfg.textSize or 8)
     fontStr:ClearAllPoints()
-    local a = c.textAnchor or "CENTER"
-    fontStr:SetPoint(a, S.host, a, c.textXOffset or 0, c.textYOffset or 0)
-    if c.textCustomColored == false then
+    local a = cfg.textAnchor or "CENTER"
+    fontStr:SetPoint(a, S.host, a, cfg.textXOffset or 0, cfg.textYOffset or 0)
+    if cfg.textCustomColored == false then
         fontStr:SetTextColor(red, green, blue, 1)
     else
-        fontStr:SetTextColor(c.textFillR or 1, c.textFillG or 1, c.textFillB or 1, c.textFillA or 1)
+        fontStr:SetTextColor(cfg.textFillR or 1, cfg.textFillG or 1, cfg.textFillB or 1, cfg.textFillA or 1)
     end
-    local fmt = c.textFormat or "none"
+    local fmt = cfg.textFormat or "none"
     S.fmt = fmt
-    S.suffix = (c.showPercent == false) and "" or "%"
+    S.suffix = (cfg.showPercent == false) and "" or "%"
     S.textOn = fmt ~= "none"
     fontStr:SetShown(S.textOn)
 end

@@ -3172,9 +3172,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local hasW = shownW and shownW > 0
             local timeW = (s.castDurationSize or 10) * 2.2
             local zoneW = hasW and (shownW * 0.42) or 0
-            local function Tint(fs, c)
-                c = c or { r = 1, g = 1, b = 1 }
-                fs:SetTextColor(c.r, c.g, c.b)
+            local function Tint(fs, color)
+                color = color or { r = 1, g = 1, b = 1 }
+                fs:SetTextColor(color.r, color.g, color.b)
             end
             local function PlaceZone(fs, zoneSide, isTime, width, x, y)
                 local pt, xb, jh = mod.GetCastTextAnchor(

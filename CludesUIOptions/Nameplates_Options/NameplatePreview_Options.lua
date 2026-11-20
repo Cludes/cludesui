@@ -330,9 +330,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
 
     -- 1px black border helper uses Snap(), not PixelUtil (screen-pixel snap that can disagree with the preview's own grid); returns a refresh fn that re-snaps sizes on scale change.
     local _borderRefreshers = {}
-    local function AddBorder(f)
+    local function AddBorder(frame)
         local function mkB()
-            local posX = f:CreateTexture(nil, "OVERLAY", nil, 7)
+            local posX = frame:CreateTexture(nil, "OVERLAY", nil, 7)
             posX:SetColorTexture(0, 0, 0, 1)
             if posX.SetSnapToPixelGrid then
                 posX:SetSnapToPixelGrid(false)
@@ -342,12 +342,12 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
         local px = Snap(1)
         local t = mkB()
-        t:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-        t:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+        t:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+        t:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
         t:SetHeight(px)
         local b = mkB()
-        b:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
-        b:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
+        b:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+        b:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
         b:SetHeight(px)
         -- Vertical edges inset between horizontal edges to avoid corner overlap
         local l = mkB()
@@ -358,7 +358,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         r:SetPoint("TOPRIGHT", t, "BOTTOMRIGHT", 0, 0)
         r:SetPoint("BOTTOMRIGHT", b, "TOPRIGHT", 0, 0)
         r:SetWidth(px)
-        f._cuiIconEdges = { t, b, l, r }
+        frame._cuiIconEdges = { t, b, l, r }
         _borderRefreshers[#_borderRefreshers + 1] = function()
             local npx = Snap(1)
             t:SetHeight(npx)
@@ -1387,15 +1387,15 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- effective scale (the anchor snap), its frame level, or its shown state. The
         -- 1px edges and the inset are reset by every Update pass, so they are overridden
         -- on every pass.
-        local function paint(f, enabled, lvlAdd, iconTex)
-            local checkBtn = f._pvCustomBorder
+        local function paint(frame, enabled, lvlAdd, iconTex)
+            local checkBtn = frame._pvCustomBorder
             if enabled then
                 if not checkBtn then
-                    checkBtn = CreateFrame("Frame", nil, f)
-                    checkBtn:SetAllPoints(f)
-                    f._pvCustomBorder = checkBtn
+                    checkBtn = CreateFrame("Frame", nil, frame)
+                    checkBtn:SetAllPoints(frame)
+                    frame._pvCustomBorder = checkBtn
                 end
-                local lvl = f:GetFrameLevel() + lvlAdd
+                local lvl = frame:GetFrameLevel() + lvlAdd
                 local es = checkBtn:GetEffectiveScale()
                 if
                     not checkBtn:IsShown()
@@ -1438,7 +1438,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     checkBtn._sR, checkBtn._sG, checkBtn._sB, checkBtn._sA = sR, sG, sB, sA
                     checkBtn._sOX, checkBtn._sOY, checkBtn._sSX, checkBtn._sSY = sOX, sOY, sSX, sSY
                 end
-                local e = f._cuiIconEdges
+                local e = frame._cuiIconEdges
                 if e then
                     for keyName = 1, #e do
                         e[keyName]:Hide()
@@ -1446,8 +1446,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 end
                 if iconTex then
                     iconTex:ClearAllPoints()
-                    iconTex:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-                    iconTex:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
+                    iconTex:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+                    iconTex:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
                 end
             elseif checkBtn and checkBtn:IsShown() then
                 -- Off through ApplyBorderStyle(frame, 0), so no UI scale re-apply revives it.

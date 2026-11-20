@@ -25,18 +25,18 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 local function CastTextSync(region, label, sizeKey, sizeDefault, colorKey, fitKey)
     mod.UFO_UnitSync(region, label, {
         self = true,
-        copy = function(t, from)
-            t[sizeKey] = from[sizeKey] or sizeDefault
+        copy = function(tbl, from)
+            tbl[sizeKey] = from[sizeKey] or sizeDefault
             if fitKey then
-                t[fitKey] = from[fitKey] == true or nil
+                tbl[fitKey] = from[fitKey] == true or nil
             end
             local color = from[colorKey]
             if color then
-                t[colorKey] = { r = color.r, g = color.g, b = color.b }
+                tbl[colorKey] = { r = color.r, g = color.g, b = color.b }
             end
         end,
-        same = function(t, from)
-            local a, b = t[colorKey], from[colorKey]
+        same = function(tbl, from)
+            local a, b = tbl[colorKey], from[colorKey]
             if a and b then
                 if a.r ~= b.r or a.g ~= b.g or a.b ~= b.b then
                     return false
@@ -44,8 +44,8 @@ local function CastTextSync(region, label, sizeKey, sizeDefault, colorKey, fitKe
             elseif a ~= b then
                 return false
             end
-            return (t[sizeKey] or sizeDefault) == (from[sizeKey] or sizeDefault)
-                and (not fitKey or (t[fitKey] == true) == (from[fitKey] == true))
+            return (tbl[sizeKey] or sizeDefault) == (from[sizeKey] or sizeDefault)
+                and (not fitKey or (tbl[fitKey] == true) == (from[fitKey] == true))
         end,
     })
 end
@@ -513,11 +513,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         local region = sharedCastRow1._rightRegion
         mod.UFO_UnitSync(region, "Cast Bar Height", {
             self = true,
-            copy = function(t, _, unit)
-                t[unit == "player" and "playerCastbarHeight" or "castbarHeight"] = GetCastbarHeight()
+            copy = function(tbl, _, unit)
+                tbl[unit == "player" and "playerCastbarHeight" or "castbarHeight"] = GetCastbarHeight()
             end,
-            same = function(t, _, unit)
-                return (t[unit == "player" and "playerCastbarHeight" or "castbarHeight"] or 20)
+            same = function(tbl, _, unit)
+                return (tbl[unit == "player" and "playerCastbarHeight" or "castbarHeight"] or 20)
                     == GetCastbarHeight()
             end,
         })
@@ -581,11 +581,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             local region = castRow2._leftRegion
             mod.UFO_UnitSync(region, "Show Icon", {
                 self = true,
-                copy = function(t, _, unit)
-                    t[unit == "player" and "showPlayerCastIcon" or "showCastIcon"] = GetShowIcon()
+                copy = function(tbl, _, unit)
+                    tbl[unit == "player" and "showPlayerCastIcon" or "showCastIcon"] = GetShowIcon()
                 end,
-                same = function(t, _, unit)
-                    local value = t[unit == "player" and "showPlayerCastIcon" or "showCastIcon"]
+                same = function(tbl, _, unit)
+                    local value = tbl[unit == "player" and "showPlayerCastIcon" or "showCastIcon"]
                     if value == nil then
                         value = true
                     end
@@ -1337,23 +1337,23 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 mod.UFO_UnitSync(region, "Important Cast Glow", {
                     units = { "target", "focus" },
                     noMenu = true,
-                    copy = function(t, from)
+                    copy = function(tbl, from)
                         for _, keyName in ipairs(GLOW_KEYS) do
-                            t[keyName] = from[keyName]
+                            tbl[keyName] = from[keyName]
                         end
                         for _, keyName in ipairs(GLOW_COLOR_KEYS) do
                             local c = from[keyName]
-                            t[keyName] = c and { r = c.r, g = c.g, b = c.b } or nil
+                            tbl[keyName] = c and { r = c.r, g = c.g, b = c.b } or nil
                         end
                     end,
-                    same = function(t, from)
+                    same = function(tbl, from)
                         for _, keyName in ipairs(GLOW_KEYS) do
-                            if t[keyName] ~= from[keyName] then
+                            if tbl[keyName] ~= from[keyName] then
                                 return false
                             end
                         end
                         for _, keyName in ipairs(GLOW_COLOR_KEYS) do
-                            if not colEq(t[keyName], from[keyName]) then
+                            if not colEq(tbl[keyName], from[keyName]) then
                                 return false
                             end
                         end
@@ -1686,25 +1686,25 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         -- Shown (on when unset) travels with the place it shows at; hidden buffs
         -- keep each frame's own place.
-        local function Shown(t)
-            if t.showBuffs == nil then
+        local function Shown(tbl)
+            if tbl.showBuffs == nil then
                 return true
             end
-            return t.showBuffs
+            return tbl.showBuffs
         end
         mod.UFO_UnitSync(sharedAddRow2._leftRegion, "Buffs Location", {
             self = true,
-            copy = function(t, from)
+            copy = function(tbl, from)
                 local show = Shown(from)
-                t.showBuffs = show
+                tbl.showBuffs = show
                 if show then
-                    t.buffAnchor = from.buffAnchor or "topleft"
+                    tbl.buffAnchor = from.buffAnchor or "topleft"
                 end
             end,
-            same = function(t, from)
+            same = function(tbl, from)
                 local show = Shown(from)
-                return Shown(t) == show
-                    and not (show and (t.buffAnchor or "topleft") ~= (from.buffAnchor or "topleft"))
+                return Shown(tbl) == show
+                    and not (show and (tbl.buffAnchor or "topleft") ~= (from.buffAnchor or "topleft"))
             end,
         })
     end

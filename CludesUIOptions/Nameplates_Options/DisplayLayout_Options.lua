@@ -3714,13 +3714,13 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- rows: Add Text Slot's position menu, and a text's name menu, cog and
     -- Spec Overrides report.
     local textSlotCells, textFirstRow = {}, nil
-    local function FinishCell(row, side, c)
-        if c == nil then
+    local function FinishCell(row, side, cfg)
+        if cfg == nil then
             return
         end
         textFirstRow = textFirstRow or row
         local region = row[side]
-        if c == addCfg then
+        if cfg == addCfg then
             if not CludesUI._prebuilding then
                 addOpen = CludesUI.AttachButtonMenu(region._control, {
                     width = 220,
@@ -3736,7 +3736,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end
             return
         end
-        textSlotCells[c.key] = { row = row, side = side }
+        textSlotCells[cfg.key] = { row = row, side = side }
         if CludesUI._prebuilding then
             return
         end
@@ -3744,21 +3744,21 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             order = POS_ORDER,
             values = POS_VALUES,
             getValue = function()
-                return c.key
+                return cfg.key
             end,
             setValue = function(val)
-                MoveText(c.key, val)
+                MoveText(cfg.key, val)
             end,
-            itemDisabled = MoveDisabled(c.key),
+            itemDisabled = MoveDisabled(cfg.key),
             tooltip = "Choose this text's slot position.",
         })
-        MakeTextCogIcon(row, side, c.key, c.label)
+        MakeTextCogIcon(row, side, cfg.key, cfg.label)
         -- The popup writes the template directly: Spec Overrides reads it through
         -- an accessor, on a Custom text or one holding a template an override may
         -- switch back to.
-        local fk = c.key .. "CustomFormat"
-        if DBVal(c.key) == "custom" or type(DBVal(fk)) == "string" then
-            CludesUI.TextTags.AddFormatAccessor(region, c.label, function()
+        local fk = cfg.key .. "CustomFormat"
+        if DBVal(cfg.key) == "custom" or type(DBVal(fk)) == "string" then
+            CludesUI.TextTags.AddFormatAccessor(region, cfg.label, function()
                 return DBVal(fk)
             end, function(val)
                 DB()[fk] = val
@@ -3766,7 +3766,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 UpdatePreview()
             end)
         end
-        if optionState._npNotifySlot == c.key then
+        if optionState._npNotifySlot == cfg.key then
             optionState._npNotifySlot = nil
             -- The slot read now, while this build's cell is its dress.
             local snap = CludesUI._SOAttribution(region)

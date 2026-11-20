@@ -248,12 +248,12 @@ local function RegisterUnlockElements()
             loadRawPos = function()
                 return saved.profile.unlockPos
             end,
-            saveRawPos = function(_, p)
-                if not (p and p.point) then
+            saveRawPos = function(_, profile)
+                if not (profile and profile.point) then
                     return
                 end
                 saved.profile.unlockPos =
-                    { point = p.point, relPoint = p.relPoint or p.point, x = p.x, y = p.y }
+                    { point = profile.point, relPoint = profile.relPoint or profile.point, x = profile.x, y = profile.y }
                 REMIND.UpdateUnlockPosForGrowDir(saved.profile.display.growDirection)
             end,
             clearPos = function()

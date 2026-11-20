@@ -676,22 +676,22 @@ end
 
 -- Height a list of rows occupies stacked with gaps, including the frame rim
 -- (ov, from ArtOverhang).
-local function StackHeight(p, rowList, overlay)
+local function StackHeight(profile, rowList, overlay)
     if #rowList == 0 then
         return 0
     end
     local total = 2 * overlay
     for idx, key in ipairs(rowList) do
-        total = total + p[ROW_FIELD[key]] + (idx > 1 and p.gap or 0)
+        total = total + profile[ROW_FIELD[key]] + (idx > 1 and profile.gap or 0)
     end
     return total
 end
 
 -- Classic WoW UI frame scale: the Border Size percentage (nil = the shared
 -- default), as the Resource Bars' Classic WoW UI bars take it.
-local function ClassicFrameK(p)
+local function ClassicFrameK(profile)
     local CF = CludesUI.ClassicFrame
-    return CF and CF.ScaleK(p.classicFrameSize) or 1
+    return CF and CF.ScaleK(profile.classicFrameSize) or 1
 end
 
 -- Where everything goes for the current settings. The bar column stacks bottom
@@ -701,44 +701,44 @@ end
 -- unless given its own size. Classic gems replace the charge row rather than
 -- sitting in the column, and the Blizzard and Classic WoW UI bar styles frame
 -- each row, which needs room around it.
-local function ComputeLayout(p)
-    local classic = p.vigorStyle == "gems"
+local function ComputeLayout(profile)
+    local classic = profile.vigorStyle == "gems"
     local style = mod.EDR_Style()
     local chromeFrame = style ~= "cui" and style or nil
-    local keyName = chromeFrame == "classic" and ClassicFrameK(p) or 1
+    local keyName = chromeFrame == "classic" and ClassicFrameK(profile) or 1
 
     local rowList = {}
-    if p.showSpeed ~= false then
+    if profile.showSpeed ~= false then
         rowList[#rowList + 1] = "speed"
     end
     if not classic then
         rowList[#rowList + 1] = "sky"
     end
-    if p.showSecondWind ~= false then
+    if profile.showSecondWind ~= false then
         rowList[#rowList + 1] = "sw"
     end
 
     local overlay, padX = ArtOverhang(chromeFrame, keyName)
-    local colH = StackHeight(p, rowList, overlay)
-    local colW = #rowList > 0 and (p.width + 2 * padX) or 0
+    local colH = StackHeight(profile, rowList, overlay)
+    local colW = #rowList > 0 and (profile.width + 2 * padX) or 0
 
-    local iconTex = p.showWhirlingSurge ~= false
+    local iconTex = profile.showWhirlingSurge ~= false
     local iconSize = 0
     if iconTex then
-        iconSize = p.iconSize
+        iconSize = profile.iconSize
         if not iconSize then
             -- Every bar of the style, shown or not.
-            iconSize = StackHeight(p, classic and STYLE_ROWS_GEMS or STYLE_ROWS_BARS, overlay)
+            iconSize = StackHeight(profile, classic and STYLE_ROWS_GEMS or STYLE_ROWS_BARS, overlay)
         end
     end
-    local clusterW = colW + (iconTex and ((colW > 0 and p.gap or 0) + iconSize) or 0)
+    local clusterW = colW + (iconTex and ((colW > 0 and profile.gap or 0) + iconSize) or 0)
     local clusterH = max(colH, iconSize)
 
-    local scale = p.classicScale or 1
+    local scale = profile.classicScale or 1
     local classicW = classic and PPSnap(CLASSIC_W * scale) or 0
     local classicH = classic and PPSnap(CLASSIC_H * scale) or 0
     local rawW = max(clusterW, classicW)
-    local rawH = clusterH + classicH + ((classic and clusterH > 0) and p.gap or 0)
+    local rawH = clusterH + classicH + ((classic and clusterH > 0) and profile.gap or 0)
     -- The even-pixel rounding is for the stock frames and the classic gems
     -- only: the CludesUI bars keep their exact size, so their root frame
     -- and the unlock size stay what they always were.
@@ -1518,7 +1518,7 @@ function Build()
 end
 
 -- Sizes and anchors one set for the layout L.
-local function LayoutSet(S, p, L)
+local function LayoutSet(S, profile, L)
     S.root:SetSize(L.totalW, L.totalH)
 
     -- Column rows, bottom to top, the column centred on the icon. Rows not in
@@ -1537,27 +1537,27 @@ local function LayoutSet(S, p, L)
             frame:Hide()
         end
     end
-    local spacing = p.stackSpacing
+    local spacing = profile.stackSpacing
     local clusterX = PPSnap((L.totalW - L.clusterW) / 2)
     local posY = L.colY + L.ov
     local geo = {}
     for idx, key in ipairs(L.rows) do
         local frame = rowFrames[key]
-        local hgt = p[ROW_FIELD[key]]
+        local hgt = profile[ROW_FIELD[key]]
         local rx, ry = clusterX + L.padX, posY
         geo[idx] = { key = key, x = rx, y = ry, h = hgt }
         frame:Show()
         frame:ClearAllPoints()
         frame:SetPoint("BOTTOMLEFT", S.root, "BOTTOMLEFT", rx, ry)
-        frame:SetSize(p.width, hgt)
+        frame:SetSize(profile.width, hgt)
         if key == "sky" then
-            LayoutPips(S.stack, SKYRIDING_PIPS, p.width, hgt, spacing)
+            LayoutPips(S.stack, SKYRIDING_PIPS, profile.width, hgt, spacing)
         elseif key == "sw" then
-            LayoutPips(S.sw, SECONDWIND_PIPS, p.width, hgt, spacing)
+            LayoutPips(S.sw, SECONDWIND_PIPS, profile.width, hgt, spacing)
         end
-        posY = posY + hgt + p.gap
+        posY = posY + hgt + profile.gap
     end
-    ApplyColumnChrome(S, L, geo, p.width, p.gap, spacing)
+    ApplyColumnChrome(S, L, geo, profile.width, profile.gap, spacing)
 
     local iconTex = S.icon
     if L.icon then
@@ -1567,7 +1567,7 @@ local function LayoutSet(S, p, L)
             "BOTTOMLEFT",
             S.root,
             "BOTTOMLEFT",
-            clusterX + L.colW + (L.colW > 0 and p.gap or 0),
+            clusterX + L.colW + (L.colW > 0 and profile.gap or 0),
             L.iconY
         )
         iconTex:SetSize(L.iconSize, L.iconSize)
@@ -1589,11 +1589,11 @@ local function LayoutSet(S, p, L)
 end
 
 -- Textures, colours, texts, borders and bevels of one set.
-local function PaintSet(S, p, L)
+local function PaintSet(S, profile, L)
     -- Apply bar texture to all StatusBars
     local texPath = CludesUI.ResolveTexturePath(
         mod.EDR_BAR_TEXTURES,
-        p.barTexture or "none",
+        profile.barTexture or "none",
         "Interface\\Buttons\\WHITE8x8"
     )
     local speedValue, stack, sw, iconTex = S.speed, S.stack, S.sw, S.icon
@@ -1605,60 +1605,60 @@ local function PaintSet(S, p, L)
         sw.pips[idx]:SetStatusBarTexture(texPath)
     end
 
-    local color = p.normalColor
+    local color = profile.normalColor
     speedValue:SetStatusBarColor(color.r, color.g, color.b, color.a)
-    speedValue.bg:SetColorTexture(p.speedBarBg.r, p.speedBarBg.g, p.speedBarBg.b, p.speedBarBg.a)
+    speedValue.bg:SetColorTexture(profile.speedBarBg.r, profile.speedBarBg.g, profile.speedBarBg.b, profile.speedBarBg.a)
 
-    local tickFrac = (p.thrillThreshold or 0) / (p.maxSpeed > 0 and p.maxSpeed or 1)
+    local tickFrac = (profile.thrillThreshold or 0) / (profile.maxSpeed > 0 and profile.maxSpeed or 1)
     tickFrac = max(0, min(1, tickFrac))
     speedValue.tick:ClearAllPoints()
-    speedValue.tick:SetPoint("TOP", speedValue, "TOPLEFT", p.width * tickFrac, 0)
-    speedValue.tick:SetPoint("BOTTOM", speedValue, "BOTTOMLEFT", p.width * tickFrac, 0)
+    speedValue.tick:SetPoint("TOP", speedValue, "TOPLEFT", profile.width * tickFrac, 0)
+    speedValue.tick:SetPoint("BOTTOM", speedValue, "BOTTOMLEFT", profile.width * tickFrac, 0)
     speedValue.tick:SetWidth(2)
-    speedValue.tick:SetColorTexture(p.tickColor.r, p.tickColor.g, p.tickColor.b, p.tickColor.a)
+    speedValue.tick:SetColorTexture(profile.tickColor.r, profile.tickColor.g, profile.tickColor.b, profile.tickColor.a)
 
-    ApplyFont(speedValue.text, p.speedText.size)
+    ApplyFont(speedValue.text, profile.speedText.size)
     speedValue.text:ClearAllPoints()
     speedValue.text:SetPoint(
-        p.speedText.justify or "CENTER",
+        profile.speedText.justify or "CENTER",
         speedValue,
-        p.speedText.justify or "CENTER",
-        p.speedText.offsetX or 0,
-        p.speedText.offsetY or 0
+        profile.speedText.justify or "CENTER",
+        profile.speedText.offsetX or 0,
+        profile.speedText.offsetY or 0
     )
-    speedValue.text:SetJustifyH(p.speedText.justify or "CENTER")
-    speedValue.text:SetShown(p.speedText.enabled ~= false)
+    speedValue.text:SetJustifyH(profile.speedText.justify or "CENTER")
+    speedValue.text:SetShown(profile.speedText.enabled ~= false)
 
     for idx = 1, SKYRIDING_PIPS do
         local pipTex = stack.pips[idx]
-        pipTex:SetStatusBarColor(p.skyridingFilled.r, p.skyridingFilled.g, p.skyridingFilled.b, 1)
-        pipTex.bg:SetColorTexture(p.skyridingBg.r, p.skyridingBg.g, p.skyridingBg.b, p.skyridingBg.a)
+        pipTex:SetStatusBarColor(profile.skyridingFilled.r, profile.skyridingFilled.g, profile.skyridingFilled.b, 1)
+        pipTex.bg:SetColorTexture(profile.skyridingBg.r, profile.skyridingBg.g, profile.skyridingBg.b, profile.skyridingBg.a)
     end
 
     for idx = 1, SECONDWIND_PIPS do
         local pipTex = sw.pips[idx]
-        pipTex:SetStatusBarColor(p.secondWindFilled.r, p.secondWindFilled.g, p.secondWindFilled.b, 1)
-        pipTex.bg:SetColorTexture(p.secondWindBg.r, p.secondWindBg.g, p.secondWindBg.b, p.secondWindBg.a)
+        pipTex:SetStatusBarColor(profile.secondWindFilled.r, profile.secondWindFilled.g, profile.secondWindFilled.b, 1)
+        pipTex.bg:SetColorTexture(profile.secondWindBg.r, profile.secondWindBg.g, profile.secondWindBg.b, profile.secondWindBg.a)
     end
 
-    ApplyFont(iconTex.text, p.whirlingSurgeText.size)
+    ApplyFont(iconTex.text, profile.whirlingSurgeText.size)
     iconTex.text:ClearAllPoints()
     iconTex.text:SetPoint(
-        p.whirlingSurgeText.justify or "CENTER",
+        profile.whirlingSurgeText.justify or "CENTER",
         iconTex,
-        p.whirlingSurgeText.justify or "CENTER",
-        p.whirlingSurgeText.offsetX or 0,
-        p.whirlingSurgeText.offsetY or 0
+        profile.whirlingSurgeText.justify or "CENTER",
+        profile.whirlingSurgeText.offsetX or 0,
+        profile.whirlingSurgeText.offsetY or 0
     )
-    iconTex.text:SetJustifyH(p.whirlingSurgeText.justify or "CENTER")
-    iconTex.text:SetShown(p.whirlingSurgeText.enabled ~= false)
+    iconTex.text:SetJustifyH(profile.whirlingSurgeText.justify or "CENTER")
+    iconTex.text:SetShown(profile.whirlingSurgeText.enabled ~= false)
 
     ApplyBordersAll(S, L)
 
     -- Bar style bevel (the column frame is laid out by Rebuild).
-    ApplyRowChrome(speedValue, L.chrome, p.width, p.speedHeight)
-    ApplyRowChrome(stack, L.chrome, p.width, p.skyridingHeight)
-    ApplyRowChrome(sw, L.chrome, p.width, p.secondWindHeight)
+    ApplyRowChrome(speedValue, L.chrome, profile.width, profile.speedHeight)
+    ApplyRowChrome(stack, L.chrome, profile.width, profile.skyridingHeight)
+    ApplyRowChrome(sw, L.chrome, profile.width, profile.secondWindHeight)
 end
 
 local RepaintSample

@@ -1003,8 +1003,8 @@ function mod.CdStateGlowConflicts(hide, glow)
 end
 
 -- A valid Glow Style read through t's chain.
-local function ReadsGlowStyle(t)
-    local state = t.cdStateGlowStyle
+local function ReadsGlowStyle(tbl)
+    local state = tbl.cdStateGlowStyle
     return type(state) == "number" and state >= 1 and state <= #mod.GLOW_STYLES
 end
 
@@ -1014,20 +1014,20 @@ end
 -- ns.CdReadyGlowStyle, and no Glow Style is written that the tables chained
 -- over t would inherit. cdStateEffect stays false where a hide below would
 -- otherwise show through. True when t held one.
-function mod.CdStateSplitLegacy(t)
-    if type(t) ~= "table" then
+function mod.CdStateSplitLegacy(tbl)
+    if type(tbl) ~= "table" then
         return false
     end
-    local e = rawget(t, "cdStateEffect")
+    local e = rawget(tbl, "cdStateEffect")
     if not (e and mod.CD_STATE_GLOWS[e]) then
         return false
     end
-    if rawget(t, "cdStateGlow") == nil then
-        t.cdStateGlow = e
+    if rawget(tbl, "cdStateGlow") == nil then
+        tbl.cdStateGlow = e
     end
-    t.cdStateEffect = nil
-    if mod.CdStateHideOf(t) ~= nil then
-        t.cdStateEffect = false
+    tbl.cdStateEffect = nil
+    if mod.CdStateHideOf(tbl) ~= nil then
+        tbl.cdStateEffect = false
     end
     return true
 end
@@ -1035,31 +1035,31 @@ end
 -- A menu's hide pick on its own table t (v = a hide value, nil = None). The
 -- glow t resolves is kept: when the new hide shadows or exposes another glow,
 -- t pins the one it had, as saved (false for none).
-function mod.CdStateWriteHide(t, val)
-    local before = mod.CdStateGlowOf(t)
-    mod.CdStateSplitLegacy(t)
-    t.cdStateEffect = val
-    if val == nil and mod.CdStateHideOf(t) ~= nil then
-        t.cdStateEffect = false
+function mod.CdStateWriteHide(tbl, val)
+    local before = mod.CdStateGlowOf(tbl)
+    mod.CdStateSplitLegacy(tbl)
+    tbl.cdStateEffect = val
+    if val == nil and mod.CdStateHideOf(tbl) ~= nil then
+        tbl.cdStateEffect = false
     end
-    if mod.CdStateGlowOf(t) ~= before then
-        t.cdStateGlow = before or false
+    if mod.CdStateGlowOf(tbl) ~= before then
+        tbl.cdStateGlow = before or false
     end
 end
 
 -- A menu's glow pick on its own table t (g = a menu glow, nil = no glow). The
 -- hide t resolves is kept. A button* glow being replaced leaves its Action
 -- Button Glow look as the style when none is set.
-function mod.CdStateWriteGlow(t, g)
-    local current = mod.CdStateGlowOf(t)
+function mod.CdStateWriteGlow(tbl, g)
+    local current = mod.CdStateGlowOf(tbl)
     local cc = current and mod.CD_STATE_GLOWS[current]
-    if g and cc and cc ~= current and not ReadsGlowStyle(t) then
-        t.cdStateGlowStyle = 3
+    if g and cc and cc ~= current and not ReadsGlowStyle(tbl) then
+        tbl.cdStateGlowStyle = 3
     end
-    mod.CdStateSplitLegacy(t)
-    t.cdStateGlow = g
-    if g == nil and mod.CdStateGlowOf(t) ~= nil then
-        t.cdStateGlow = false
+    mod.CdStateSplitLegacy(tbl)
+    tbl.cdStateGlow = g
+    if g == nil and mod.CdStateGlowOf(tbl) ~= nil then
+        tbl.cdStateGlow = false
     end
 end
 

@@ -250,7 +250,7 @@ local GREEN_CODE = CludesUI.HexColor(ST_GREEN[1], ST_GREEN[2], ST_GREEN[3])
 
 -- Status of a site against the template: dot color, short word, tooltip text,
 -- and whether it matches (one MatchesTemplate per evaluation).
-local function SiteStatus(site, t)
+local function SiteStatus(site, tbl)
     local desc = site.desc
     if Blocked(site) then
         return ST_GREY, CludesUI.L("Blizzard"), CludesUI.L("Blizzard Style"), false
@@ -269,10 +269,10 @@ local function SiteStatus(site, t)
         end
         return ST_GREY, CludesUI.L("Not custom"), CludesUI.L("Not a custom glow"), false
     end
-    if GO.MatchesTemplate(desc, t) then
+    if GO.MatchesTemplate(desc, tbl) then
         return ST_GREEN, CludesUI.L("Matches"), CludesUI.L("Matches template"), true
     end
-    local position, converted = GO.Resolve(desc, t.style or 1)
+    local position, converted = GO.Resolve(desc, tbl.style or 1)
     if converted then
         return ST_AMBER,
             CludesUI.L("Differs"),

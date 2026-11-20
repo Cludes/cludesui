@@ -976,19 +976,19 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         end
                         local was = mod.ERB_TexturedBars(profile)
                         local s = profile.health
-                        local function apply(t)
-                            t.borderTexture = s.borderTexture
-                            t.borderTextureOffset = s.borderTextureOffset
-                            t.borderTextureOffsetY = s.borderTextureOffsetY
-                            t.borderTextureShiftX = s.borderTextureShiftX
-                            t.borderTextureShiftY = s.borderTextureShiftY
-                            t.borderR = s.borderR
-                            t.borderG = s.borderG
-                            t.borderB = s.borderB
-                            t.borderA = s.borderA
-                            t.borderSize = s.borderSize
-                            mod.ERB_CopyBorderPx(t, s)
-                            t.borderBehind = s.borderBehind
+                        local function apply(tbl)
+                            tbl.borderTexture = s.borderTexture
+                            tbl.borderTextureOffset = s.borderTextureOffset
+                            tbl.borderTextureOffsetY = s.borderTextureOffsetY
+                            tbl.borderTextureShiftX = s.borderTextureShiftX
+                            tbl.borderTextureShiftY = s.borderTextureShiftY
+                            tbl.borderR = s.borderR
+                            tbl.borderG = s.borderG
+                            tbl.borderB = s.borderB
+                            tbl.borderA = s.borderA
+                            tbl.borderSize = s.borderSize
+                            mod.ERB_CopyBorderPx(tbl, s)
+                            tbl.borderBehind = s.borderBehind
                         end
                         apply(profile.secondary)
                         apply(profile.primary)
@@ -1057,16 +1057,16 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             profile.health.borderTexture or "solid",
                             profile.health.cornerRadius or 0,
                             profile.health.cornerMask or 15
-                        local function eq(t)
-                            return t.borderR == sr
-                                and t.borderG == sg
-                                and t.borderB == scrollBar
-                                and t.borderA == sa
-                                and (t.borderSize or 1) == ssz
-                                and (t.borderTexture or "solid") == sbt
-                                and (t.cornerRadius or 0) == scr
-                                and (t.cornerMask or 15) == scm
-                                and mod.ERB_SameBorderPx(t, profile.health)
+                        local function eq(tbl)
+                            return tbl.borderR == sr
+                                and tbl.borderG == sg
+                                and tbl.borderB == scrollBar
+                                and tbl.borderA == sa
+                                and (tbl.borderSize or 1) == ssz
+                                and (tbl.borderTexture or "solid") == sbt
+                                and (tbl.cornerRadius or 0) == scr
+                                and (tbl.cornerMask or 15) == scm
+                                and mod.ERB_SameBorderPx(tbl, profile.health)
                         end
                         return eq(profile.secondary) and eq(profile.primary)
                     end,

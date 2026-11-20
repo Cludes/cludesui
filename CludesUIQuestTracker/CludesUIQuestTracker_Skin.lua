@@ -2128,9 +2128,9 @@ function EQT.InitSkin()
 
     EQT.RestyleAll = function()
         -- Clear skin stamps so the full strip+restyle runs again
-        EachTracker(function(t)
-            if t.usedBlocks then
-                for _, templateMap in pairs(t.usedBlocks) do
+        EachTracker(function(tbl)
+            if tbl.usedBlocks then
+                for _, templateMap in pairs(tbl.usedBlocks) do
                     if type(templateMap) == "table" then
                         for _, questBlock in pairs(templateMap) do
                             if type(questBlock) == "table" then
@@ -2140,10 +2140,10 @@ function EQT.InitSkin()
                     end
                 end
             end
-            if t.Header then
-                SkinHeader(t.Header)
+            if tbl.Header then
+                SkinHeader(tbl.Header)
             end
-            SkinExistingBlocks(t)
+            SkinExistingBlocks(tbl)
         end)
         -- Master "All Objectives" header isn't part of EachTracker's module
         -- list (it belongs to ObjectiveTrackerFrame itself), so re-skin it

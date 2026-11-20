@@ -597,14 +597,14 @@ end
 -------------------------------------------------------------------------------
 -- index: chars[itemID][key] = { bags, bank }, warband[itemID].n
 -- sign -1 takes a container back out (rows that hit zero go away)
-local function AddContainer(t, into, field, ownerFrame, sign)
-    if type(t) ~= "table" or type(t.items) ~= "table" then
+local function AddContainer(tbl, into, field, ownerFrame, sign)
+    if type(tbl) ~= "table" or type(tbl.items) ~= "table" then
         return
     end
-    for slot, s in pairs(t.items) do
+    for slot, s in pairs(tbl.items) do
         local ident = ItemID(s)
         if ident then
-            local num = ((t.counts and t.counts[slot]) or 1) * sign
+            local num = ((tbl.counts and tbl.counts[slot]) or 1) * sign
             local row = into[ident]
             if not row then
                 row = {}

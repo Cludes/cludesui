@@ -114,16 +114,16 @@ end
 -- true when that profile would latch another Border Style kind than the one
 -- latched this session (the latch above, read off `p`), so the switch asks
 -- for a reload.
-function mod.DMFvBorderChanged(p)
+function mod.DMFvBorderChanged(profile)
     local kind
     if
-        type(p) == "table"
-        and not p.useClassicStyle
-        and p.useBlizzardStyle
+        type(profile) == "table"
+        and not profile.useClassicStyle
+        and profile.useBlizzardStyle
         and CludesUI.IS_FOREVER == true
-        and p.useForeverStyle == true
+        and profile.useForeverStyle == true
     then
-        kind = CludesUI.ForeverBorderKind(p.foreverBorder)
+        kind = CludesUI.ForeverBorderKind(profile.foreverBorder)
     end
     return kind ~= mod.DMFvKind()
 end
@@ -133,15 +133,15 @@ end
 -- afterwards). Run by the Style page on the switch and at login for a
 -- profile that arrived with the flag already set (an import, an older
 -- build).
-function mod.DMSeedClassic(p)
-    if p.classicSeeded then
+function mod.DMSeedClassic(profile)
+    if profile.classicSeeded then
         return
     end
-    p.classicSeeded = true
-    p.bgR, p.bgG, p.bgB = 16 / 255, 16 / 255, 16 / 255
-    p.barTexture = "blizzard"
-    p.barBgR, p.barBgG, p.barBgB, p.barBgAlpha = 0, 0, 0, 0.25
-    p.barBgUseClassColor = false
+    profile.classicSeeded = true
+    profile.bgR, profile.bgG, profile.bgB = 16 / 255, 16 / 255, 16 / 255
+    profile.barTexture = "blizzard"
+    profile.barBgR, profile.barBgG, profile.barBgB, profile.barBgAlpha = 0, 0, 0, 0.25
+    profile.barBgUseClassColor = false
 end
 -------------------------------------------------------------------------------
 --  Header art by style and header key. Classic WoW UI takes vanilla button

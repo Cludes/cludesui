@@ -538,8 +538,8 @@ do
         HUE[op] = cmp
     end
 end
-local function Hex(c)
-    return string.format("|cff%02x%02x%02x", c[1] * 255, c[2] * 255, c[3] * 255)
+local function Hex(cfg)
+    return string.format("|cff%02x%02x%02x", cfg[1] * 255, cfg[2] * 255, cfg[3] * 255)
 end
 local BAD_HEX = CludesUI.COLOR_CODES.BAD
 

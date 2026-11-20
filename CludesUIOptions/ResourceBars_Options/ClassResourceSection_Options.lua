@@ -1038,19 +1038,19 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         end
                         local was = mod.ERB_TexturedBars(profile)
                         local s = profile.secondary
-                        local function apply(t)
-                            t.borderTexture = s.borderTexture
-                            t.borderTextureOffset = s.borderTextureOffset
-                            t.borderTextureOffsetY = s.borderTextureOffsetY
-                            t.borderTextureShiftX = s.borderTextureShiftX
-                            t.borderTextureShiftY = s.borderTextureShiftY
-                            t.borderR = s.borderR
-                            t.borderG = s.borderG
-                            t.borderB = s.borderB
-                            t.borderA = s.borderA
-                            t.borderSize = s.borderSize
-                            mod.ERB_CopyBorderPx(t, s)
-                            t.borderBehind = s.borderBehind
+                        local function apply(tbl)
+                            tbl.borderTexture = s.borderTexture
+                            tbl.borderTextureOffset = s.borderTextureOffset
+                            tbl.borderTextureOffsetY = s.borderTextureOffsetY
+                            tbl.borderTextureShiftX = s.borderTextureShiftX
+                            tbl.borderTextureShiftY = s.borderTextureShiftY
+                            tbl.borderR = s.borderR
+                            tbl.borderG = s.borderG
+                            tbl.borderB = s.borderB
+                            tbl.borderA = s.borderA
+                            tbl.borderSize = s.borderSize
+                            mod.ERB_CopyBorderPx(tbl, s)
+                            tbl.borderBehind = s.borderBehind
                         end
                         apply(profile.primary)
                         apply(profile.health)
@@ -1119,16 +1119,16 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             profile.secondary.borderTexture or "solid",
                             profile.secondary.cornerRadius or 0,
                             profile.secondary.cornerMask or 15
-                        local function eq(t)
-                            return t.borderR == sr
-                                and t.borderG == sg
-                                and t.borderB == scrollBar
-                                and t.borderA == sa
-                                and (t.borderSize or 1) == ssz
-                                and (t.borderTexture or "solid") == sbt
-                                and (t.cornerRadius or 0) == scr
-                                and (t.cornerMask or 15) == scm
-                                and mod.ERB_SameBorderPx(t, profile.secondary)
+                        local function eq(tbl)
+                            return tbl.borderR == sr
+                                and tbl.borderG == sg
+                                and tbl.borderB == scrollBar
+                                and tbl.borderA == sa
+                                and (tbl.borderSize or 1) == ssz
+                                and (tbl.borderTexture or "solid") == sbt
+                                and (tbl.cornerRadius or 0) == scr
+                                and (tbl.cornerMask or 15) == scm
+                                and mod.ERB_SameBorderPx(tbl, profile.secondary)
                         end
                         return eq(profile.primary) and eq(profile.health)
                     end,
@@ -1962,10 +1962,10 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 },
 
                 -- A count threshold: 30 (%) for bar-type resources, 3 for pips, 7 for the Enhance five-bar style
-                newEntry = function(ids, c)
+                newEntry = function(ids, cfg)
                     local isBar = mod.IsSpecBarType(ids[1])
                     local enhAdd = false
-                    if c.enhanceFiveBar then
+                    if cfg.enhanceFiveBar then
                         for _, spellRef in ipairs(ids) do
                             if spellRef == 263 then
                                 enhAdd = true
@@ -1984,10 +1984,10 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         thresholdEnabled = true,
                         thresholdCount = enhAdd and 7 or (isBar and 30 or 3),
                         thresholdPartialOnly = false,
-                        thresholdR = c.thresholdR or 0x0c / 255,
-                        thresholdG = c.thresholdG or 0xd2 / 255,
-                        thresholdB = c.thresholdB or 0x9d / 255,
-                        thresholdA = c.thresholdA or 1,
+                        thresholdR = cfg.thresholdR or 0x0c / 255,
+                        thresholdG = cfg.thresholdG or 0xd2 / 255,
+                        thresholdB = cfg.thresholdB or 0x9d / 255,
+                        thresholdA = cfg.thresholdA or 1,
                     }
                     -- Default for "Threshold color below value": the only bar-type spender class resource is Hunter
                     -- Focus, so it starts ON (warn when low); builders (Maelstrom/Insanity/Astral) start OFF.
@@ -2189,7 +2189,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
 
                 -- Per-entry rules, keyed off the SELECTED entry's specs rather than the live spec, so
                 -- editing another spec's entry while playing that spec stays unlocked
-                entryRules = function(ent, r, c)
+                entryRules = function(ent, r, cfg)
                     local isBar = mod.IsEntryBarType(ent)
                     local isGuardian, isIgnorePain, isVengeance, isStagger, isEnhance
                     if ent.specIDs then
@@ -2214,7 +2214,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             if spec == 268 then
                                 isStagger = true
                             end
-                            if spec == 263 and c.enhanceFiveBar == true then
+                            if spec == 263 and cfg.enhanceFiveBar == true then
                                 isEnhance = true
                             end
                         end
@@ -2241,7 +2241,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     end
                     r.bandPctCap = isStagger and 500 or nil
                     -- "Recolor text instead" no-ops for secret resources (Vengeance soul fragments, Prot Ignore Pain bar)
-                    if isVengeance or (isIgnorePain and c.protIgnorePainBar) then
+                    if isVengeance or (isIgnorePain and cfg.protIgnorePainBar) then
                         r.textBlock = CludesUI.L(TI_BLOCK_TIP)
                     end
                     r.barInput = isStagger

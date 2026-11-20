@@ -347,8 +347,8 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                     return (success and enabled) and true or false
                 end,
                 function(ident, val)
-                    CludesUI.SetDarkModeAll(val, function(p)
-                        return p.id == ident
+                    CludesUI.SetDarkModeAll(val, function(profile)
+                        return profile.id == ident
                     end)
                     CludesUI:RefreshPage()
                 end

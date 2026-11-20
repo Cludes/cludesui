@@ -2059,28 +2059,28 @@ CludesUI.AtLogin(function()
         -- off through showBuffs (their corner is kept, never "none"); None never
         -- collides.
         local AURA_FREE_CORNERS = { "topleft", "bottomleft", "topright", "bottomright" }
-        local function SwapAuraSlot(t, changedKey, newVal)
+        local function SwapAuraSlot(tbl, changedKey, newVal)
             local isBuff = (changedKey == "buffAnchor")
             local prev
             if isBuff then
-                prev = t.buffAnchor or "topleft"
+                prev = tbl.buffAnchor or "topleft"
                 if newVal == "none" then
-                    t.showBuffs = false
+                    tbl.showBuffs = false
                     return
                 end
-                t.showBuffs = true
+                tbl.showBuffs = true
             else
-                prev = t.debuffAnchor or "bottomleft"
+                prev = tbl.debuffAnchor or "bottomleft"
             end
-            t[changedKey] = newVal
+            tbl[changedKey] = newVal
             if newVal == "none" then
                 return
             end
             local other
             if isBuff then
-                other = t.debuffAnchor or "bottomleft"
+                other = tbl.debuffAnchor or "bottomleft"
             else
-                other = t.buffAnchor or "topleft"
+                other = tbl.buffAnchor or "topleft"
             end
             if other ~= newVal then
                 return
@@ -2095,9 +2095,9 @@ CludesUI.AtLogin(function()
                 end
             end
             if isBuff then
-                t.debuffAnchor = dest
+                tbl.debuffAnchor = dest
             else
-                t.buffAnchor = dest
+                tbl.buffAnchor = dest
             end
         end
 

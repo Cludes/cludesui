@@ -1849,9 +1849,9 @@ local function CellText(colour, m, c)
     return ""
 end
 
-local function SubText(colour, m, c)
+local function SubText(colour, m, cfg)
     if colour.key == "name" then
-        if c and c.colItemLevel ~= false and m.ilvl then
+        if cfg and cfg.colItemLevel ~= false and m.ilvl then
             return format("(%d)", m.ilvl)
         end
         return ""

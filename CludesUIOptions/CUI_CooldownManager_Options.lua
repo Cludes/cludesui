@@ -297,8 +297,8 @@ CludesUI.AtOptionsLogin(function()
                 mod.BuildTrackedBuffBars()
             end
         end
-        local function ColorKeys(t, key)
-            local c = t[key]
+        local function ColorKeys(tbl, key)
+            local c = tbl[key]
             if c then
                 return c.r, c.g, c.b
             end

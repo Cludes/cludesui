@@ -401,31 +401,31 @@ mod.AutoPaletteName = AutoPaletteName
 -- wholesale rather than merging it: whatever the defaults seeded under the new
 -- name is a fresh empty, never something to keep. Clearing the old key is what
 -- makes a second run a no-op.
-local function MigrateNames(p)
+local function MigrateNames(profile)
     -- The horizontal and vertical strips were once two layouts. They differed
     -- only in which axis they ran along, so they are one layout with an
     -- orientation now.
-    if p.layout == "FAN_H" or p.layout == "FAN_V" then
-        p.fanOrientation = p.layout == "FAN_V" and "VERTICAL" or "HORIZONTAL"
-        p.layout = "FAN"
+    if profile.layout == "FAN_H" or profile.layout == "FAN_V" then
+        profile.fanOrientation = profile.layout == "FAN_V" and "VERTICAL" or "HORIZONTAL"
+        profile.layout = "FAN"
     end
 
     -- RADIAL was what the arc was called while a full circle was the only thing
     -- it could draw. The layout is unchanged; only the word for it is.
-    if p.layout == "RADIAL" then
-        p.layout = "ARC"
+    if profile.layout == "RADIAL" then
+        profile.layout = "ARC"
     end
 
     -- A set of actions was a "ring" for the same reason, and stopped being one
     -- the moment it could be drawn as a strip or a grid.
-    if p.rings then
-        p.palettes, p.rings = p.rings, nil
+    if profile.rings then
+        profile.palettes, profile.rings = profile.rings, nil
     end
-    if p.ringCount then
-        p.paletteCount, p.ringCount = p.ringCount, nil
+    if profile.ringCount then
+        profile.paletteCount, profile.ringCount = profile.ringCount, nil
     end
     -- Auto-generated names only. A palette the user has named keeps its name.
-    for i, palette in pairs(p.palettes or {}) do
+    for i, palette in pairs(profile.palettes or {}) do
         if palette.name == "Ring " .. i then
             palette.name = AutoPaletteName(i)
         end
@@ -979,9 +979,9 @@ end
 
 -- p is the palette view the caller draws from (self:P()) -- the color keys
 -- are per-menu appearance. Falls back to the profile for a caller with none.
-local function SelectColor(p)
-    p = p or P()
-    if p and p.useClassColor then
+local function SelectColor(profile)
+    profile = profile or P()
+    if profile and profile.useClassColor then
         local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
         if c then
             return c.r, c.g, c.b
@@ -990,10 +990,10 @@ local function SelectColor(p)
     -- Accent unless a custom color has been chosen: the suite accent is the
     -- default, resolved live so theme and accent changes carry straight
     -- through.
-    if not (p and p.selectColorCustom) and CludesUI.ResolveActiveAccent then
+    if not (profile and profile.selectColorCustom) and CludesUI.ResolveActiveAccent then
         return CludesUI.ResolveActiveAccent()
     end
-    local sc = p and p.selectColor
+    local sc = profile and profile.selectColor
     if sc then
         return sc[1] or 1, sc[2] or 1, sc[3] or 1
     end

@@ -70,14 +70,14 @@ end
 -- past the border on the long continuous TICKS bar (SEGMENTS hid it better between
 -- per-segment borders). Solid ColorTexture bars don't need this; same inset is
 -- harmless and keeps timer/forces paths identical.
-local function GetBarBleedInset(p, forForces)
-    if not p or p.customBorderStyle ~= true then
+local function GetBarBleedInset(profile, forForces)
+    if not profile or profile.customBorderStyle ~= true then
         return 0
     end
-    if (p.borderSize or 0) <= 0 then
+    if (profile.borderSize or 0) <= 0 then
         return 0
     end
-    if forForces and p.borderApplyToForces == false then
+    if forForces and profile.borderApplyToForces == false then
         return 0
     end
     local Pix = CludesUI and CludesUI.PP
@@ -1504,7 +1504,7 @@ local unlockLayoutActive = false -- force preview layout while Unlock Mode is op
 -- textured border if the border lived inside the host. Frame level is raised
 -- above the host's tick layer every apply so the continuous TICKS fill cannot
 -- paint over the border strips.
-local function ApplyBorderTo(hostFrame, anchor, key, p, size, texKey, red, green, blue, a, px)
+local function ApplyBorderTo(hostFrame, anchor, key, profile, size, texKey, red, green, blue, a, px)
     if not hostFrame or not anchor then
         return
     end
@@ -1552,10 +1552,10 @@ local function ApplyBorderTo(hostFrame, anchor, key, p, size, texKey, red, green
         blue,
         a,
         texKey,
-        p.borderTextureOffset,
-        p.borderTextureOffsetY,
-        p.borderTextureShiftX,
-        p.borderTextureShiftY,
+        profile.borderTextureOffset,
+        profile.borderTextureOffsetY,
+        profile.borderTextureShiftX,
+        profile.borderTextureShiftY,
         "MythicPlus",
         size,
         nil,
@@ -1915,10 +1915,10 @@ do
         HidePullSegments(frame, num + 1)
     end
 
-    RenderPullSegments = function(frame, clip, runRec, enemyLine, p, wid, hgt, barR, barG, barB)
+    RenderPullSegments = function(frame, clip, runRec, enemyLine, profile, wid, hgt, barR, barG, barB)
         SyncPullEvents()
         local sum = enemyLine.rawTotalQuantity
-        if p.showPullBar ~= true or enemyLine.completed or not sum or sum <= 0 then
+        if profile.showPullBar ~= true or enemyLine.completed or not sum or sum <= 0 then
             HidePullSegments(frame)
             return
         end
@@ -1927,11 +1927,11 @@ do
         end
 
         local red, green, blue = barR, barG, barB
-        if p.pullBarUseBarColor == false then
-            red, green, blue = GetColor(p.pullBarColor, 1, 0.55, 0.1)
+        if profile.pullBarUseBarColor == false then
+            red, green, blue = GetColor(profile.pullBarColor, 1, 0.55, 0.1)
         end
-        local a = p.pullBarAlpha or 0.35
-        local texPath = CludesUI.ResolveTexturePath(barTextures, p.enemyBarTexture or "none", nil)
+        local a = profile.pullBarAlpha or 0.35
+        local texPath = CludesUI.ResolveTexturePath(barTextures, profile.enemyBarTexture or "none", nil)
             or "Interface\\Buttons\\WHITE8X8"
 
         if

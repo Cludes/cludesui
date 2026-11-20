@@ -43,8 +43,8 @@ local view -- the last render's scales and context, read by the hover
 
 -- Building blocks ------------------------------------------------------------------
 
-local function Color(regionFrame, c, a)
-    regionFrame:SetColorTexture(c[1], c[2], c[3], a or c[4] or 1)
+local function Color(regionFrame, cfg, a)
+    regionFrame:SetColorTexture(cfg[1], cfg[2], cfg[3], a or cfg[4] or 1)
 end
 
 -- The game's own face, so every locale renders, at sizes of our choosing.
@@ -58,9 +58,9 @@ local function MakeFonts()
     end
 end
 
-local function Paint(fontStr, font, c)
+local function Paint(fontStr, font, cfg)
     fontStr:SetFontObject(fonts[font])
-    fontStr:SetTextColor(c[1], c[2], c[3], c[4] or 1)
+    fontStr:SetTextColor(cfg[1], cfg[2], cfg[3], cfg[4] or 1)
 end
 
 local function FS(hostFrame, font, c, layer)
@@ -70,7 +70,7 @@ local function FS(hostFrame, font, c, layer)
     return fontStr
 end
 
-local function Hairlines(f, alpha)
+local function Hairlines(frame, alpha)
     local edges = {}
     for _, e in ipairs({
         { "TOPLEFT", "TOPRIGHT", nil, 1 },
@@ -78,7 +78,7 @@ local function Hairlines(f, alpha)
         { "TOPLEFT", "BOTTOMLEFT", 1, nil },
         { "TOPRIGHT", "BOTTOMRIGHT", 1, nil },
     }) do
-        local t = f:CreateTexture(nil, "BORDER")
+        local t = frame:CreateTexture(nil, "BORDER")
         t:SetColorTexture(1, 1, 1, alpha)
         t:SetPoint(e[1])
         t:SetPoint(e[2])
@@ -131,14 +131,14 @@ end
 
 -- `th` is the stroke as it should look. A smooth line is drawn twice as thick,
 -- because half of its texture is the fade that does the anti-aliasing.
-local function Line(pool, rel, x1, y1, x2, y2, c, a, th)
+local function Line(pool, rel, x1, y1, x2, y2, cfg, a, th)
     local l = pool:Get()
     if pool.smooth then
         l:SetThickness((th or 2) * 2)
-        l:SetVertexColor(c[1], c[2], c[3], a or 1)
+        l:SetVertexColor(cfg[1], cfg[2], cfg[3], a or 1)
     else
         l:SetThickness(th or 1)
-        Color(l, c, a)
+        Color(l, cfg, a)
     end
     l:SetStartPoint("BOTTOMLEFT", rel, x1, y1)
     l:SetEndPoint("BOTTOMLEFT", rel, x2, y2)
@@ -409,9 +409,9 @@ local function MakeClose(hostFrame)
         l:SetEndPoint("CENTER", b, d[3], d[4])
         b.lines[idx] = l
     end
-    local function tint(c)
+    local function tint(cfg)
         for _, l in ipairs(b.lines) do
-            l:SetVertexColor(c[1], c[2], c[3], 1)
+            l:SetVertexColor(cfg[1], cfg[2], cfg[3], 1)
         end
     end
     tint(C.muted)
@@ -530,9 +530,9 @@ local function Create()
     widget:EnableMouse(true)
     widget:RegisterForDrag("LeftButton")
     widget:SetScript("OnDragStart", widget.StartMoving)
-    widget:SetScript("OnDragStop", function(f)
-        f:StopMovingOrSizing()
-        local p, _, rp, posX, posY = f:GetPoint()
+    widget:SetScript("OnDragStop", function(frame)
+        frame:StopMovingOrSizing()
+        local p, _, rp, posX, posY = frame:GetPoint()
         CludesUITitleLineDB.point = { p, rp, posX, posY }
     end)
     local pt = CludesUITitleLineDB.point
@@ -1425,8 +1425,8 @@ end
 -- key levels, and the daily gain it takes against yours.
 -- Your characters this season, best first, with how far each is from the
 -- next line; says what a click on the tile does.
-function Graph.ShowChars(t)
-    local context = t.ctx
+function Graph.ShowChars(tbl)
+    local context = tbl.ctx
     if not context or #context.chars == 0 then
         return
     end
@@ -1443,7 +1443,7 @@ function Graph.ShowChars(t)
     tipText.note:ClearAllPoints()
     tipText.note:SetPoint("TOPLEFT", tipText, "TOPLEFT", 10, posY - 4)
     local note = "A character appears here once you have logged in on it this season."
-    if t.canSwitch then
+    if tbl.canSwitch then
         note = (
             context.subject.isCurrent and "Click to show your best character."
             or "Click to show the character you are playing."
@@ -1456,12 +1456,12 @@ function Graph.ShowChars(t)
     posY = posY - 4 - tipText.note:GetStringHeight()
     tipText:SetHeight(-posY + 10)
     tipText:ClearAllPoints()
-    tipText:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 0, -6)
+    tipText:SetPoint("TOPLEFT", tbl, "BOTTOMLEFT", 0, -6)
     tipText:Show()
 end
 
-function Graph.ShowTile(t)
-    local s, context = t.summary, t.ctx
+function Graph.ShowTile(tbl)
+    local s, context = tbl.summary, tbl.ctx
     if not s or CludesUITitleLineDB.hidden[s.tier.key] then
         return
     end
@@ -1508,7 +1508,7 @@ function Graph.ShowTile(t)
 
     tipText:SetHeight(-posY + 10)
     tipText:ClearAllPoints()
-    tipText:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 0, -6)
+    tipText:SetPoint("TOPLEFT", tbl, "BOTTOMLEFT", 0, -6)
     tipText:Show()
 end
 

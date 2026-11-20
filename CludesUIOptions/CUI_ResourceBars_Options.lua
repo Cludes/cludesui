@@ -61,9 +61,9 @@ end
 
 -- Writes one stockBorderScale to all three bars, then re-fits every bar's
 -- Layout Mode size matches (they read the frame's reach).
-local function ClassicScaleToAll(p, value)
+local function ClassicScaleToAll(profile, value)
     for _, barKey in ipairs(CLASSIC_SYNC_KEYS) do
-        p[barKey].stockBorderScale = value
+        profile[barKey].stockBorderScale = value
     end
 end
 local function RefitAll()
@@ -175,12 +175,12 @@ end
 -- cross-bar border sync that changes it rebuilds the page (a section's Width
 -- / Height Offset row exists only for a textured style); otherwise the quick
 -- refresh keeps the sync icon's flash.
-function mod.ERB_TexturedBars(p)
+function mod.ERB_TexturedBars(profile)
     local function Flag(barRef)
         local style = barRef and barRef.borderTexture or "solid"
         return (style ~= "solid" and style ~= "") and "1" or "0"
     end
-    return Flag(p.health) .. Flag(p.primary) .. Flag(p.secondary)
+    return Flag(profile.health) .. Flag(profile.primary) .. Flag(profile.secondary)
 end
 
 CludesUI.AtOptionsLogin(function()
@@ -468,8 +468,8 @@ CludesUI.AtOptionsLogin(function()
         classResource = "This option needs a specialization with a class resource",
         power = "This option needs a specialization with a power bar",
     }
-    function PreviewBar.Avail(p, barKey)
-        local secondaryCfg = p.secondary
+    function PreviewBar.Avail(profile, barKey)
+        local secondaryCfg = profile.secondary
         if barKey == "classResource" then
             if not secondaryCfg.enabled then
                 return CludesUI.DisabledTooltip("Class Resource")
@@ -478,14 +478,14 @@ CludesUI.AtOptionsLogin(function()
                 return CludesUI.L(NEEDS_SPEC.classResource)
             end
         elseif barKey == "power" then
-            if p.primary.enabled == false then
+            if profile.primary.enabled == false then
                 return CludesUI.DisabledTooltip("Power Bar")
             end
             if not HasPrimaryPower() then
                 return CludesUI.L(NEEDS_SPEC.power)
             end
             -- The druid per-form switch, as the live IsPowerBarHidden.
-            if _G._CURB_BarHiddenByForm and _G._CURB_BarHiddenByForm(p.primary) then
+            if _G._CURB_BarHiddenByForm and _G._CURB_BarHiddenByForm(profile.primary) then
                 return CludesUI.L("This option is turned off for the current form")
             end
             -- Power hides while the class resource takes its place, as live.
@@ -493,11 +493,11 @@ CludesUI.AtOptionsLogin(function()
                 return CludesUI.DisabledTooltip("Hide Power Bar if Resource", "disabled")
             end
         elseif barKey == "health" then
-            if not p.health.enabled then
+            if not profile.health.enabled then
                 return CludesUI.DisabledTooltip("Health Bar")
             end
         elseif barKey == "arcaneSoul" then
-            if not (p.arcaneSoul and p.arcaneSoul.enabled) then
+            if not (profile.arcaneSoul and profile.arcaneSoul.enabled) then
                 return CludesUI.DisabledTooltip("Arcane Soul Helper")
             end
         end
@@ -509,44 +509,44 @@ CludesUI.AtOptionsLogin(function()
 
     -- The border: Blizzard's bar chrome under the stock style, else ours
     -- (Extend Top / Bottom are power bar only, as live).
-    local function StyleBorder(barRef, c, isHealth, wid, height)
+    local function StyleBorder(barRef, cfg, isHealth, wid, height)
         local holder = barRef._border._frame
         if mod.ERB_BarsBlizz() then
             holder:Hide()
-            mod.ERB_ApplyBlizzBarChrome(barRef, barRef._sb, wid, height, false, mod.ERB_BarFrameK(c))
+            mod.ERB_ApplyBlizzBarChrome(barRef, barRef._sb, wid, height, false, mod.ERB_BarFrameK(cfg))
             return
         end
         local level = barRef:GetFrameLevel()
-        holder:SetFrameLevel(c.borderBehind and math.max(0, level - 1) or (level + 1))
+        holder:SetFrameLevel(cfg.borderBehind and math.max(0, level - 1) or (level + 1))
         if isHealth then
             mod.ERB_AnchorBorderHost(holder, barRef)
         else
-            mod.ERB_AnchorBorderHost(holder, barRef, mod.ERB_BorderExtents(c))
+            mod.ERB_AnchorBorderHost(holder, barRef, mod.ERB_BorderExtents(cfg))
         end
-        local size, style = c.borderSize or 0, c.borderTexture or "solid"
+        local size, style = cfg.borderSize or 0, cfg.borderTexture or "solid"
         CludesUI.ApplyBorderStyle(
             holder,
             size,
-            c.borderR or 0,
-            c.borderG or 0,
-            c.borderB or 0,
-            c.borderA or 1,
+            cfg.borderR or 0,
+            cfg.borderG or 0,
+            cfg.borderB or 0,
+            cfg.borderA or 1,
             style,
-            c.borderTextureOffset,
-            c.borderTextureOffsetY,
-            c.borderTextureShiftX,
-            c.borderTextureShiftY,
+            cfg.borderTextureOffset,
+            cfg.borderTextureOffsetY,
+            cfg.borderTextureShiftX,
+            cfg.borderTextureShiftY,
             "resourcebars",
             size,
             nil,
-            CludesUI.BorderPx(c.borderSizePx, size, style)
+            CludesUI.BorderPx(cfg.borderSizePx, size, style)
         )
         holder:Show()
     end
 
     -- The base fill colour: custom, else class colour (health) or the power
     -- type's colour (power). Also returns that type colour (text uses it).
-    local function BaseFill(c, isHealth, ptype)
+    local function BaseFill(cfg, isHealth, ptype)
         local typeColour
         if isHealth then
             local _, class = UnitClass("player")
@@ -554,8 +554,8 @@ CludesUI.AtOptionsLogin(function()
         else
             typeColour = ptype and _G._CURB_PowerColors and _G._CURB_PowerColors[ptype]
         end
-        if c.customColored then
-            return c.fillR, c.fillG, c.fillB, typeColour
+        if cfg.customColored then
+            return cfg.fillR, cfg.fillG, cfg.fillB, typeColour
         elseif typeColour then
             return typeColour[1], typeColour[2], typeColour[3], typeColour
         elseif isHealth then
@@ -567,11 +567,11 @@ CludesUI.AtOptionsLogin(function()
     -- The threshold or band colour in force at pct (nil = the base colour),
     -- from the per-spec entry the live update resolves, against maxValue.
     -- Also returns the threshold entry (its Text Instead flag matters).
-    local function AlertColour(c, isHealth, pct, maxValue)
-        local spec = _G._CURB_ResolveThresholdSpecEntry and _G._CURB_ResolveThresholdSpecEntry(c) or nil
+    local function AlertColour(cfg, isHealth, pct, maxValue)
+        local spec = _G._CURB_ResolveThresholdSpecEntry and _G._CURB_ResolveThresholdSpecEntry(cfg) or nil
         local bandsOn, bands, bandMode, reversed
         if _G._CURB_ResolveBandConfig then
-            bandsOn, bands, bandMode, reversed = _G._CURB_ResolveBandConfig(c, spec)
+            bandsOn, bands, bandMode, reversed = _G._CURB_ResolveBandConfig(cfg, spec)
         end
         local th = (spec and spec.thresholdEnabled ~= false) and spec or nil
         if bandsOn and _G._CURB_FindCountBand then
@@ -587,16 +587,16 @@ CludesUI.AtOptionsLogin(function()
             if not isHealth then
                 below = th.thresholdPartialOnly
                 if below == nil then
-                    below = c.thresholdPartialOnly
+                    below = cfg.thresholdPartialOnly
                 end
             end
-            local limit = th.thresholdPct or c.thresholdPct or 30
+            local limit = th.thresholdPct or cfg.thresholdPct or 30
             if (below and pct <= limit) or (not below and pct > limit) then
                 return spec,
                     th,
-                    th.thresholdR or c.thresholdR or 1,
-                    th.thresholdG or c.thresholdG or 0.2,
-                    th.thresholdB or c.thresholdB or 0.2,
+                    th.thresholdR or cfg.thresholdR or 1,
+                    th.thresholdG or cfg.thresholdG or 0.2,
+                    th.thresholdB or cfg.thresholdB or 0.2,
                     1
             end
         end
@@ -605,28 +605,28 @@ CludesUI.AtOptionsLogin(function()
 
     -- The background, with the bar texture behind it when "Bar Texture on
     -- Background" is on (and the fill is opaque).
-    local function StyleBackground(barRef, g, c, texKey)
+    local function StyleBackground(barRef, g, cfg, texKey)
         local backdrop = barRef._bg
-        backdrop:SetColorTexture(c.bgR or 0, c.bgG or 0, c.bgB or 0, c.bgA or 0.75)
+        backdrop:SetColorTexture(cfg.bgR or 0, cfg.bgG or 0, cfg.bgB or 0, cfg.bgA or 0.75)
         UnsnapTex(backdrop)
         if g.barTextureBg or backdrop._erbBgTex then
             local texture = g.barTextureBg
-                and (c.fillOpacity or 100) >= 100
+                and (cfg.fillOpacity or 100) >= 100
                 and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, nil)
-            mod.ERB_BgTexture(backdrop, texture, c.bgR, c.bgG, c.bgB, c.bgA)
+            mod.ERB_BgTexture(backdrop, texture, cfg.bgR, cfg.bgG, cfg.bgB, cfg.bgA)
         end
         return backdrop
     end
 
     -- Hash lines: the spec entry's own, else the bar's (ns.ApplyHashLines'
     -- rule), inside the border, in physical pixels as live.
-    local function StyleHashLines(barRef, c, spec, wid, height, maxValue)
+    local function StyleHashLines(barRef, cfg, spec, wid, height, maxValue)
         local ticks = barRef._ticks
         for i = 1, #ticks do
             ticks[i]:Hide()
         end
         local src = (spec and spec.hashValues and spec.hashValues ~= "") and spec
-            or (c.hashEnabled and c)
+            or (cfg.hashEnabled and cfg)
             or nil
         if not src then
             return
@@ -635,10 +635,10 @@ CludesUI.AtOptionsLogin(function()
         local PP = CludesUI.PP
         local lineW = (src.hashWidth or 1) * PP.mult
         -- A solid border's exact size is the inset.
-        local inset = c.borderSize or 0
-        local style = c.borderTexture
+        local inset = cfg.borderSize or 0
+        local style = cfg.borderTexture
         if not style or style == "" or style == "solid" then
-            inset = CludesUI.BorderPx(c.borderSizePx, inset, style) or inset
+            inset = CludesUI.BorderPx(cfg.borderSizePx, inset, style) or inset
         end
         inset = math.min(inset * PP.mult, math.max(0, (height - 1) / 2))
         local n = 0
@@ -691,14 +691,14 @@ CludesUI.AtOptionsLogin(function()
             return pct .. "% | " .. cur
         end,
     }
-    local function BarText(c, isHealth, fmt, pct, maxValue, ptype)
+    local function BarText(cfg, isHealth, fmt, pct, maxValue, ptype)
         local amount = math.floor(maxValue * pct / 100)
         if isHealth then
             local cur, pctText = mod.AbbreviateValue(amount, "health"), tostring(pct)
             local make = HEALTH_TEXT[fmt]
             return make and make(cur, pctText, maxValue) or (pctText .. "%")
         end
-        local pctText = tostring(pct) .. ((c.showPercent == false) and "" or "%")
+        local pctText = tostring(pct) .. ((cfg.showPercent == false) and "" or "%")
         local cur = mod.AbbreviateNumbers(amount)
         if fmt == "smart" then
             local asPercent = CludesUI.IsSmartPowerPercent and CludesUI.IsSmartPowerPercent(ptype)
@@ -713,16 +713,16 @@ CludesUI.AtOptionsLogin(function()
         return cur -- curpp, and anything else
     end
 
-    function PreviewBar.Style(barRef, p, c, kind)
-        local g = p.general
+    function PreviewBar.Style(barRef, profile, cfg, kind)
+        local g = profile.general
         local isHealth = kind == "health"
-        local wid = _previewSnap(c.width or 214)
-        local height = _previewSnap(c.height or (isHealth and 16 or 14))
+        local wid = _previewSnap(cfg.width or 214)
+        local height = _previewSnap(cfg.height or (isHealth and 16 or 14))
         barRef:SetSize(wid, height)
-        StyleBorder(barRef, c, isHealth, wid, height)
+        StyleBorder(barRef, cfg, isHealth, wid, height)
 
         -- The bar's own texture counts only while splitTex is on, as live.
-        local texKey = (p.splitTex == true and c.barTexture) or g.barTexture
+        local texKey = (profile.splitTex == true and cfg.barTexture) or g.barTexture
         local fill = barRef._sb
         fill:SetStatusBarTexture(
             CludesUI.ResolveTexturePath(
@@ -738,7 +738,7 @@ CludesUI.AtOptionsLogin(function()
         UnsnapTex(fillTex)
 
         local ptype = (not isHealth) and _G._CURB_GetPrimaryPowerType and _G._CURB_GetPrimaryPowerType()
-        local fR, fG, fB, typeColour = BaseFill(c, isHealth, ptype)
+        local fR, fG, fB, typeColour = BaseFill(cfg, isHealth, ptype)
 
         -- The player's real maximum (value-mode bands and hash lines); 500K
         -- health / 100 power when it reads secret or 0.
@@ -748,30 +748,30 @@ CludesUI.AtOptionsLogin(function()
         end
         -- The made-up fill; a threshold or band colours it when reached, as live.
         local pct = isHealth and (100 - math.floor(_previewBarFillPct / 3)) or _previewBarFillPct
-        local spec, th, aR, aG, aB, aA = AlertColour(c, isHealth, pct, maxValue)
-        local fmt = c.textFormat or "none"
+        local spec, th, aR, aG, aB, aA = AlertColour(cfg, isHealth, pct, maxValue)
+        local fmt = cfg.textFormat or "none"
         local textInstead = th and th.thresholdTextInstead and fmt ~= "none"
 
         -- Plain texture calls, not the live change-gated helpers: their memo
         -- would outlive a pool reset of this texture.
         if aR and not textInstead then
             fillTex:SetVertexColor(aR, aG, aB, aA)
-        elseif c.gradientEnabled then
+        elseif cfg.gradientEnabled then
             fillTex:SetVertexColor(1, 1, 1, 1)
             fillTex:SetGradient(
-                c.gradientDir or "HORIZONTAL",
+                cfg.gradientDir or "HORIZONTAL",
                 CreateColor(fR, fG, fB, 1),
-                CreateColor(c.gradientR or 1, c.gradientG or 1, c.gradientB or 1, c.gradientA or 1)
+                CreateColor(cfg.gradientR or 1, cfg.gradientG or 1, cfg.gradientB or 1, cfg.gradientA or 1)
             )
         else
             fillTex:SetVertexColor(fR, fG, fB, 1)
         end
 
-        local backdrop = StyleBackground(barRef, g, c, texKey)
+        local backdrop = StyleBackground(barRef, g, cfg, texKey)
         fill:SetValue(pct)
         -- Fill Opacity: a see-through fill with the background over the empty
         -- part only (as the class resource preview).
-        local opacity = (c.fillOpacity or 100) / 100
+        local opacity = (cfg.fillOpacity or 100) / 100
         fillTex:SetAlpha(opacity)
         backdrop:ClearAllPoints()
         if opacity < 1 then
@@ -781,28 +781,28 @@ CludesUI.AtOptionsLogin(function()
             backdrop:SetAllPoints(fill)
         end
 
-        StyleHashLines(barRef, c, spec, wid, height, maxValue)
-        mod.ERB_RoundBar(barRef, c)
+        StyleHashLines(barRef, cfg, spec, wid, height, maxValue)
+        mod.ERB_RoundBar(barRef, cfg)
 
         local label = barRef._text
         if fmt == "none" then
             label:Hide()
             return
         end
-        SetPVFont(label, FONT_PATH, c.textSize or 11)
+        SetPVFont(label, FONT_PATH, cfg.textSize or 11)
         label:ClearAllPoints()
-        local anchor = c.textAnchor or "CENTER"
-        label:SetPoint(anchor, barRef, anchor, c.textXOffset or 0, c.textYOffset or 0)
+        local anchor = cfg.textAnchor or "CENTER"
+        label:SetPoint(anchor, barRef, anchor, cfg.textXOffset or 0, cfg.textYOffset or 0)
         if aR and textInstead then
             label:SetTextColor(aR, aG, aB, aA)
-        elseif c.textCustomColored == false and typeColour then
+        elseif cfg.textCustomColored == false and typeColour then
             label:SetTextColor(typeColour[1], typeColour[2], typeColour[3], 1)
-        elseif c.textCustomColored == false then
+        elseif cfg.textCustomColored == false then
             label:SetTextColor(1, 1, 1, 1)
         else
-            label:SetTextColor(c.textFillR or 1, c.textFillG or 1, c.textFillB or 1, c.textFillA or 1)
+            label:SetTextColor(cfg.textFillR or 1, cfg.textFillG or 1, cfg.textFillB or 1, cfg.textFillA or 1)
         end
-        label:SetText(BarText(c, isHealth, fmt, pct, maxValue, ptype))
+        label:SetText(BarText(cfg, isHealth, fmt, pct, maxValue, ptype))
         label:Show()
     end
 
@@ -880,20 +880,20 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- The bar texture behind a background (Textured Background), as live.
-    local function TexturedBg(texture, p, secondaryCfg, allowed, red, green, blue, a)
-        if not (p.general.barTextureBg or texture._erbBgTex) then
+    local function TexturedBg(texture, profile, secondaryCfg, allowed, red, green, blue, a)
+        if not (profile.general.barTextureBg or texture._erbBgTex) then
             return
         end
-        local path = p.general.barTextureBg
+        local path = profile.general.barTextureBg
             and allowed
             and (secondaryCfg.fillOpacity or 100) >= 100
-            and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, p.general.barTexture, nil)
+            and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, profile.general.barTexture, nil)
         mod.ERB_BgTexture(texture, path, red, green, blue, a)
     end
 
-    local function FillPath(p)
+    local function FillPath(profile)
         local textures = _G._CURB_BarTextures or {}
-        return textures[p.general.barTexture or "none"] or WHITE
+        return textures[profile.general.barTexture or "none"] or WHITE
     end
 
     -- The resource's own separators on its bottom edge (and between pips:
@@ -903,20 +903,20 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- A bar-type class resource: one fill over one background, with hash lines.
-    local function StyleResourceBar(barFrame, p, secondaryCfg, height, red, green, blue)
-        local width = p.primary.width or 214
+    local function StyleResourceBar(barFrame, profile, secondaryCfg, height, red, green, blue)
+        local width = profile.primary.width or 214
         barFrame:SetSize(width, height)
         local bgTex = barFrame._barBg
         if bgTex then
             bgTex:SetColorTexture(ResourceBg(secondaryCfg, red, green, blue, 0.3))
             UnsnapTex(bgTex)
-            TexturedBg(bgTex, p, secondaryCfg, true, ResourceBg(secondaryCfg, red, green, blue, 0.3))
+            TexturedBg(bgTex, profile, secondaryCfg, true, ResourceBg(secondaryCfg, red, green, blue, 0.3))
         end
         local fill = barFrame._barFill
         if fill then
             fill:SetWidth(width * _previewBarFillPct / 100)
             fill:SetHeight(height)
-            fill:SetTexture(FillPath(p))
+            fill:SetTexture(FillPath(profile))
             fill:SetVertexColor(red, green, blue, 1)
             UnsnapTex(fill)
             fill:Show()
@@ -1464,8 +1464,8 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- The class resource row, whole.
-    local function StyleClassResource(barFrame, p, pvHidden, holder)
-        local secondaryCfg = p.secondary
+    local function StyleClassResource(barFrame, profile, pvHidden, holder)
+        local secondaryCfg = profile.secondary
         local isBar = mod.IsBarTypeSecondary()
         local _, class = UnitClass("player")
         local red, green, blue = ResourceColour(secondaryCfg, CLASS_COLORS[class])
@@ -1477,16 +1477,16 @@ CludesUI.AtOptionsLogin(function()
         end)
         local isDK = class == "DEATHKNIGHT"
         if isBar then
-            StyleResourceBar(barFrame, p, secondaryCfg, secondaryCfg.pipHeight, red, green, blue)
+            StyleResourceBar(barFrame, profile, secondaryCfg, secondaryCfg.pipHeight, red, green, blue)
         else
-            StylePips(barFrame, p, secondaryCfg, red, green, blue, isDK)
+            StylePips(barFrame, profile, secondaryCfg, red, green, blue, isDK)
         end
         ResourceChrome(barFrame, secondaryCfg, isBar)
         RoundResource(barFrame, secondaryCfg, isBar)
         PipRowBg(barFrame, secondaryCfg, isBar)
         CountText(barFrame, secondaryCfg, isBar, isDK)
         barFrame:SetShown(
-            (not pvHidden.classResource and not PreviewBar.Avail(p, "classResource")) and true or false
+            (not pvHidden.classResource and not PreviewBar.Avail(profile, "classResource")) and true or false
         )
     end
 
@@ -1675,11 +1675,11 @@ CludesUI.AtOptionsLogin(function()
     -- The class resource row's frames: a bar type's background and fill, or
     -- one frame per pip (pipWidth is the whole row, split evenly; leftover
     -- pixels widen pips, never the spacing). UpdatePreviewHeader dresses them.
-    local function BuildResourceRow(line, p, secondaryCfg, class)
+    local function BuildResourceRow(line, profile, secondaryCfg, class)
         local height = secondaryCfg.pipHeight
         if mod.IsBarTypeSecondary() then
             -- Bar type (Devourer, Elemental Shaman): a texture clipped by width.
-            line:SetSize(p.primary.width or 214, height)
+            line:SetSize(profile.primary.width or 214, height)
             local bgTex = line:CreateTexture(nil, "BACKGROUND")
             bgTex:SetAllPoints()
             UnsnapTex(bgTex)
@@ -1687,7 +1687,7 @@ CludesUI.AtOptionsLogin(function()
             local fill = line:CreateTexture(nil, "ARTWORK")
             fill:SetPoint("LEFT")
             fill:SetHeight(height)
-            fill:SetTexture(FillPath(p))
+            fill:SetTexture(FillPath(profile))
             UnsnapTex(fill)
             line._barFill = fill
             return
@@ -1722,7 +1722,7 @@ CludesUI.AtOptionsLogin(function()
             pipTex._bg = bgTex
             local fill = pipTex:CreateTexture(nil, "ARTWORK")
             fill:SetAllPoints()
-            fill:SetTexture(FillPath(p))
+            fill:SetTexture(FillPath(profile))
             fill:SetVertexColor(1, 1, 1, 1)
             UnsnapTex(fill)
             pipTex._fill = fill
@@ -5965,8 +5965,8 @@ CludesUI.AtOptionsLogin(function()
         local thresholdPane = { groups = {} }
 
         -- The Call Totem Bar group shows where its section does, while it is on.
-        local function CallTotemShown(p)
-            local c = p and p.callTotemBar
+        local function CallTotemShown(profile)
+            local c = profile and profile.callTotemBar
             return mod.ERB_HasCallTotemSection() and c and c.enabled == true
         end
 

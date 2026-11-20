@@ -1117,9 +1117,9 @@ do
     -- The target's name through the same resolver, uncapped (Name Max Length is the
     -- unit's own name, and only a clean name could be capped); a secret one passes raw.
     local targetOf = setmetatable({}, {
-        __index = function(t, unitToken)
+        __index = function(tbl, unitToken)
             local val = unitToken .. "target"
-            t[unitToken] = val
+            tbl[unitToken] = val
             return val
         end,
     })

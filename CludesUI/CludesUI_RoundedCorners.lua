@@ -94,9 +94,9 @@ local pairs, select, pcall = pairs, select, pcall
 -- Media paths by number, built on first use.
 local function Paths(fmt)
     return setmetatable({}, {
-        __index = function(t, num)
+        __index = function(tbl, num)
             local val = MEDIA .. fmt:format(num)
-            t[num] = val
+            tbl[num] = val
             return val
         end,
     })
@@ -104,11 +104,11 @@ end
 -- Masks by radius * 16 + round corners, built on first use.
 local function MaskPaths(prefixText)
     return setmetatable({}, {
-        __index = function(t, key)
+        __index = function(tbl, key)
             local num, c = floor(key / 16), key % 16
             local val = c == ALL_CORNERS and ("%s%s-%d.tga"):format(MEDIA, prefixText, num)
                 or ("%s%s-%d-%d.tga"):format(MEDIA, prefixText, num, c)
-            t[key] = val
+            tbl[key] = val
             return val
         end,
     })
@@ -1151,12 +1151,12 @@ local function ClipChildren(...)
         ClipFrame((select(idx, ...)))
     end
 end
-ClipFrame = function(f)
-    if f:GetObjectType() == "EditBox" then
+ClipFrame = function(frame)
+    if frame:GetObjectType() == "EditBox" then
         return
     end
-    ClipRegions(f:GetRegions())
-    ClipChildren(f:GetChildren())
+    ClipRegions(frame:GetRegions())
+    ClipChildren(frame:GetChildren())
 end
 local function ClipScrolls(...)
     for idx = 1, select("#", ...) do

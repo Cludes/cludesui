@@ -305,13 +305,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         self._cuiCogPulse:Stop()
     end
 
-    local function InScrollArea(f)
+    local function InScrollArea(frame)
         local scrollFrame = CludesUI._scrollFrame
-        while f do
-            if f == scrollFrame then
+        while frame do
+            if frame == scrollFrame then
                 return true
             end
-            f = f:GetParent()
+            frame = frame:GetParent()
         end
         return false
     end

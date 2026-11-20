@@ -47,9 +47,9 @@ end
 
 --- Copies the accent into an { r, g, b } array the caller keeps (for colour
 --- tables a feature passes around); returns it.
-function Kit.SyncAccent(t)
-    t[1], t[2], t[3] = Kit.Accent()
-    return t
+function Kit.SyncAccent(tbl)
+    tbl[1], tbl[2], tbl[3] = Kit.Accent()
+    return tbl
 end
 
 --- Colours a font string in the accent now and each time its frame shows.

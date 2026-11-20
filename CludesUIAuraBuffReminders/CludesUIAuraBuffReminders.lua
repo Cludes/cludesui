@@ -252,11 +252,11 @@ end
 -- Cursor, and with its Only on Cursor in Combat option only while in combat.
 -- p = the profile's display table. Every combat edge refreshes the reminders,
 -- so their placement follows the moment combat starts or ends.
-local CursorAttachActive = function(p)
-    if not (p and p.cursorAttach) then
+local CursorAttachActive = function(profile)
+    if not (profile and profile.cursorAttach) then
         return false
     end
-    return not p.cursorAttachCombatOnly or InCombat()
+    return not profile.cursorAttachCombatOnly or InCombat()
 end
 local isSecret = issecretvalue or function()
     return false
@@ -268,38 +268,38 @@ local DEFAULT_TEXT_COLOR = { r = 1, g = 1, b = 1 }
 -- Per-profile fixups; runs at the read path since profile swaps skip OnInitialize. (1) Scale outside
 -- [0.5, 3.0] (UI range) is corruption -> reset to 1.0, every call. (2) glowColorMode: one-time migration
 -- per profile, never alters the stored color.
-local function EnsureGlowModeMigrated(p)
-    if not p then
+local function EnsureGlowModeMigrated(profile)
+    if not profile then
         return
     end
-    local s = p.scale
+    local s = profile.scale
     if type(s) == "number" and (s < 0.5 or s > 3.0) then
-        p.scale = 1.0
+        profile.scale = 1.0
     end
-    if p.glowColorMode then
+    if profile.glowColorMode then
         return
     end
-    local color = p.glowColor
+    local color = profile.glowColor
     if color and not (color.r == 1 and color.g == 0.776 and color.b == 0.376) then
-        p.glowColorMode = "custom"
+        profile.glowColorMode = "custom"
     else
-        p.glowColorMode = "default"
+        profile.glowColorMode = "default"
     end
 end
 
-local function ResolveGlowTint(p)
-    if not p then
+local function ResolveGlowTint(profile)
+    if not profile then
         return nil
     end
-    EnsureGlowModeMigrated(p)
-    if p.glowColorMode == "class" then
+    EnsureGlowModeMigrated(profile)
+    if profile.glowColorMode == "class" then
         local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
         return classColor.r, classColor.g, classColor.b
     end
-    if p.glowColorMode ~= "custom" then
+    if profile.glowColorMode ~= "custom" then
         return nil
     end
-    local color = p.glowColor
+    local color = profile.glowColor
     if not color then
         return nil
     end
@@ -315,8 +315,8 @@ local TEXT_ANCHOR_POINTS = {
 }
 -- Shared read-only with the options preview via _G._EABR_* (main loads first).
 _G._CUABR_TEXT_ANCHORS = TEXT_ANCHOR_POINTS
-local function GetTextAnchorPoints(p)
-    local m = TEXT_ANCHOR_POINTS[(p and p.textAnchor) or "BOTTOM"] or TEXT_ANCHOR_POINTS.BOTTOM
+local function GetTextAnchorPoints(profile)
+    local m = TEXT_ANCHOR_POINTS[(profile and profile.textAnchor) or "BOTTOM"] or TEXT_ANCHOR_POINTS.BOTTOM
     return m[1], m[2]
 end
 
