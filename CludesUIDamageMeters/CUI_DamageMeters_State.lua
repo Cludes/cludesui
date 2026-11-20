@@ -324,7 +324,7 @@ mod.RegisterDMUnlock = function()
                     return nil
                 end
                 local color = conf.windowBorderColor
-                local l, region, t, b = CUI.BorderReach(
+                local left, right, top, b = CUI.BorderReach(
                     size,
                     texture,
                     nil,
@@ -337,19 +337,19 @@ mod.RegisterDMUnlock = function()
                     nil,
                     color and color.a or 1
                 )
-                if not l then
+                if not left then
                     return nil
                 end
                 local ox = tonumber(conf.windowBorderOffsetX) or 0
                 local oy = tonumber(conf.windowBorderOffsetY) or 0
-                l, region, b = l + ox, region + ox, b + oy
+                left, right, b = left + ox, right + ox, b + oy
                 if conf.windowBorderIncludeHeader ~= false then
-                    t = t + oy
+                    top = top + oy
                 else
-                    t = t + oy - GetHeaderH()
+                    top = top + oy - GetHeaderH()
                 end
-                local pw = (l > 0 and l or 0) + (region > 0 and region or 0)
-                local ph = (t > 0 and t or 0) + (b > 0 and b or 0)
+                local pw = (left > 0 and left or 0) + (right > 0 and right or 0)
+                local ph = (top > 0 and top or 0) + (b > 0 and b or 0)
                 if pw <= 0 and ph <= 0 then
                     return nil
                 end

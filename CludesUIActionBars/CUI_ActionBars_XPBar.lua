@@ -240,9 +240,9 @@ end
 -- sheet file: an atlas-mode texture does not take sheet coords in SetTexCoord.
 function mod._XPFlipStatic(texture, details, rowList)
     texture:SetTexture(details.file or details.filename)
-    local l, region, t, b =
+    local left, right, top, bottom =
         details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
-    texture:SetTexCoord(l, l + (region - l) / 2, t, t + (b - t) / rowList)
+    texture:SetTexCoord(left, left + (right - left) / 2, top, top + (bottom - top) / rowList)
 end
 
 -- Flipbooks whose first frames start abruptly: their pass fades in as slowly

@@ -628,21 +628,21 @@ function mod.UF_HealPredLayout(absorbBar)
     local holderFrame = absorbBar._predHolder
     if over > 0 and holderFrame then
         local ext = (absorbBar._isVert and hgt or wid) * over / 100
-        local l, region, t, b = 0, 0, 0, 0
+        local left, right, top, bottom = 0, 0, 0, 0
         if absorbBar._isVert then
             if absorbBar._isReversed then
-                b = -ext
+                bottom = -ext
             else
-                t = ext
+                top = ext
             end
         elseif absorbBar._isReversed then
-            l = -ext
+            left = -ext
         else
-            region = ext
+            right = ext
         end
         holderFrame:ClearAllPoints()
-        holderFrame:SetPoint("TOPLEFT", health, "TOPLEFT", l, t)
-        holderFrame:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", region, b)
+        holderFrame:SetPoint("TOPLEFT", health, "TOPLEFT", left, top)
+        holderFrame:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", right, bottom)
     end
 end
 

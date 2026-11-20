@@ -2218,9 +2218,9 @@ local function FillSpecCell(cellFrame, m)
     local coords = m.class and not IsSecret(m.class) and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[m.class]
     if coords then
         cellFrame.tex:SetTexture(CLASS_ICON_TEX)
-        local l, region, t, b = coords[1], coords[2], coords[3], coords[4]
-        local dx, dy = (region - l) * zoom, (b - t) * zoom
-        cellFrame.tex:SetTexCoord(l + dx, region - dx, t + dy, b - dy)
+        local left, right, top, bottom = coords[1], coords[2], coords[3], coords[4]
+        local dx, dy = (right - left) * zoom, (bottom - top) * zoom
+        cellFrame.tex:SetTexCoord(left + dx, right - dx, top + dy, bottom - dy)
         cellFrame:Show()
         return
     end

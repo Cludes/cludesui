@@ -1310,8 +1310,8 @@ local function EnsureChatClampInsets()
             wl, wr, wb = -CHAT.FV.X, CHAT.FV.X, -CHAT.FV_PanelDrop(GetEditBoxHeight())
         end
     end
-    local l, region, t, b = cf1:GetClampRectInsets()
-    if l ~= wl or region ~= wr or t ~= wt or b ~= wb then
+    local left, right, top, bottom = cf1:GetClampRectInsets()
+    if left ~= wl or right ~= wr or top ~= wt or bottom ~= wb then
         cf1:SetClampRectInsets(wl, wr, wt, wb)
         -- A rect the clamp pinned under the other insets stays pinned until
         -- the anchors are written again (they still read as ours), so the

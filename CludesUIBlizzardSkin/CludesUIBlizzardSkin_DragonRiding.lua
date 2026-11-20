@@ -1129,7 +1129,7 @@ local function ApplyColumnChrome(S, L, geo, wid, gap, spacing)
     if details then
         colour.panel = {}
         local file = details.file or details.filename
-        local l, region, t, button =
+        local left, right, top, bottom =
             details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
         for _, pc in ipairs(PANEL_PIECES) do
             local texture = pc[5] and colour:CreateTexture(nil, "BACKGROUND", nil, -2)
@@ -1138,10 +1138,10 @@ local function ApplyColumnChrome(S, L, geo, wid, gap, spacing)
             texture:SetTexelSnappingBias(0)
             texture:SetTexture(file)
             texture:SetTexCoord(
-                l + (region - l) * pc[1] / 132,
-                l + (region - l) * pc[2] / 132,
-                t + (button - t) * pc[3] / 19,
-                t + (button - t) * pc[4] / 19
+                left + (right - left) * pc[1] / 132,
+                left + (right - left) * pc[2] / 132,
+                top + (bottom - top) * pc[3] / 19,
+                top + (bottom - top) * pc[4] / 19
             )
             local p1, p2 = pc[6], pc[7]
             texture:SetPoint("TOPLEFT", colour, p1[1], p1[2], p1[3])

@@ -290,12 +290,12 @@ local function ExitRotation(zone, posX, posY, dest)
         return 0
     end
     local zl, zr, zt, zb = C_Map.GetMapRectOnMap(zone, continent)
-    local l, region, t, b = C_Map.GetMapRectOnMap(dest, continent)
-    if not (zl and l) then
+    local left, right, top, bottom = C_Map.GetMapRectOnMap(dest, continent)
+    if not (zl and left) then
         return 0
     end
     local px, py = zl + posX * (zr - zl), zt + posY * (zb - zt)
-    local dx, dy = (l + region) / 2 - px, (t + b) / 2 - py
+    local dx, dy = (left + right) / 2 - px, (top + bottom) / 2 - py
     return math.atan2(-dx, -dy) -- the atlas points up; screen y grows down
 end
 
@@ -391,11 +391,11 @@ end
 
 -- A zone's point (0..1) on a wider map that holds it, or nil.
 local function OnWiderMap(zone, map, posX, posY)
-    local l, region, t, b = C_Map.GetMapRectOnMap(zone, map)
-    if not l or region <= l or b <= t then
+    local left, right, top, bottom = C_Map.GetMapRectOnMap(zone, map)
+    if not left or right <= left or bottom <= top then
         return nil
     end
-    posX, posY = l + posX * (region - l), t + posY * (b - t)
+    posX, posY = left + posX * (right - left), top + posY * (bottom - top)
     if posX < 0 or posX > 1 or posY < 0 or posY > 1 then
         return nil
     end

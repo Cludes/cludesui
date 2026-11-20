@@ -460,10 +460,10 @@ function mod.UF_ForeverKit()
     -- (cols l..r, rows t..b of its mw x mh file) covers exactly that rect.
     -- The player art is centred half a unit down the box, so its rows fall
     -- on halves.
-    local function Fit(barFrame, posX, posY, wid, hgt, l, region, t, b, mw, mh)
-        local kx, ky = wid / (region - l + 1), hgt / (b - t + 1)
+    local function Fit(barFrame, posX, posY, wid, hgt, left, right, top, bottom, mw, mh)
+        local kx, ky = wid / (right - left + 1), hgt / (bottom - top + 1)
         barFrame.x, barFrame.y, barFrame.w, barFrame.h = posX, posY, wid, hgt
-        barFrame.mx, barFrame.my = -l * kx, t * ky
+        barFrame.mx, barFrame.my = -left * kx, top * ky
         barFrame.mw, barFrame.mh = mw * kx, mh * ky
     end
     Fit(P.health, 88, 45.5, 123, 15, 4, 123, 9, 21, 128, 32)
@@ -1065,17 +1065,17 @@ mod._ufAnchorKeys = {
 CludesUI._GetAnchorTargetExtent = function(targetKey, edgeSide)
     if mod._ufAnchorKeys[targetKey] and mod.UF_Blizz() then
         local frame = (targetKey == "boss") and frameList.boss1 or frameList[targetKey]
-        local l, region, t, b = mod.UF_BlizzVis(frame)
-        if l and frame:GetLeft() then
+        local left, right, top, bottom = mod.UF_BlizzVis(frame)
+        if left and frame:GetLeft() then
             local ratio = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
             if edgeSide == "LEFT" then
-                return (frame:GetLeft() + l) * ratio
+                return (frame:GetLeft() + left) * ratio
             elseif edgeSide == "RIGHT" then
-                return (frame:GetRight() - region) * ratio
+                return (frame:GetRight() - right) * ratio
             elseif edgeSide == "TOP" then
-                return (frame:GetTop() - t) * ratio
+                return (frame:GetTop() - top) * ratio
             elseif edgeSide == "BOTTOM" then
-                return (frame:GetBottom() + b) * ratio
+                return (frame:GetBottom() + bottom) * ratio
             end
         end
     end
@@ -1327,21 +1327,21 @@ local function PlaceArtPiece(texture, widget, file, leftX, topY, x0, x1, y0, y1,
     texture:SetSize(x1 - x0, y1 - y0)
     texture:Show()
 end
-function mod.UF_PaintArtCut(widget, artTex, pieces, file, cut, l, region, t, b, wid, hgt, ax, ay, keepLeft)
+function mod.UF_PaintArtCut(widget, artTex, pieces, file, cut, left, right, top, bottom, wid, hgt, ax, ay, keepLeft)
     -- Art-local spans (y down from the art's top) and the art's top-left off
     -- the frame's centre.
-    local y0 = (cut.t - t) / (b - t) * hgt
-    local y1 = (cut.b - t) / (b - t) * hgt
-    local xs = (cut.x - l) / (region - l) * wid
+    local y0 = (cut.t - top) / (bottom - top) * hgt
+    local y1 = (cut.b - top) / (bottom - top) * hgt
+    local xs = (cut.x - left) / (right - left) * wid
     local leftX, topY = ax - wid / 2, ay + hgt / 2
-    local du = (region - l) / wid
+    local du = (right - left) / wid
     -- The art's own texture draws the rows above the band.
-    PlaceArtPiece(artTex, widget, file, leftX, topY, 0, wid, 0, y0, l, region, t, cut.t)
-    PlaceArtPiece(pieces[1], widget, file, leftX, topY, 0, wid, y1, hgt, l, region, cut.b, b)
+    PlaceArtPiece(artTex, widget, file, leftX, topY, 0, wid, 0, y0, left, right, top, cut.t)
+    PlaceArtPiece(pieces[1], widget, file, leftX, topY, 0, wid, y1, hgt, left, right, cut.b, bottom)
     -- The sheet's columns past x lie right of xs, or left of it on an art
     -- sampled flipped (the classic player frame's).
     if keepLeft == nil then
-        keepLeft = region < l
+        keepLeft = right < left
     end
     local kx0, kx1, cx0, cx1
     if keepLeft then
@@ -1359,8 +1359,8 @@ function mod.UF_PaintArtCut(widget, artTex, pieces, file, cut, l, region, t, b, 
         kx1,
         y0,
         y1,
-        l + kx0 * du,
-        l + kx1 * du,
+        left + kx0 * du,
+        left + kx1 * du,
         cut.t,
         cut.b
     )
@@ -1374,8 +1374,8 @@ function mod.UF_PaintArtCut(widget, artTex, pieces, file, cut, l, region, t, b, 
         cx1,
         y0,
         y1,
-        l + cx0 * du,
-        l + cx1 * du,
+        left + cx0 * du,
+        left + cx1 * du,
         cut.src,
         cut.srcB or (cut.src + (cut.b - cut.t))
     )
@@ -1396,7 +1396,7 @@ function mod.UF_PaintBlizzArt(widget, atlasName)
             pieces[index]:Hide()
         end
     end
-    local file, l, region, t, b, wid, hgt, anchorPoint, posX, posY
+    local file, left, right, top, bottom, wid, hgt, anchorPoint, posX, posY
     if type(atlasName) == "table" then
         -- File descriptor: its own sheet coords and anchor (CENTER by default).
         if not mod.UF_ArtOK(atlasName) then
@@ -1404,7 +1404,7 @@ function mod.UF_PaintBlizzArt(widget, atlasName)
             return
         end
         file = atlasName.file
-        l, region, t, b = atlasName.l or 0, atlasName.r or 1, atlasName.t or 0, atlasName.b or 1
+        left, right, top, bottom = atlasName.l or 0, atlasName.r or 1, atlasName.t or 0, atlasName.b or 1
         wid, hgt = atlasName.w, atlasName.h
         anchorPoint, posX, posY = atlasName.point or "CENTER", atlasName.x or 0, atlasName.y or 0
     else
@@ -1414,7 +1414,7 @@ function mod.UF_PaintBlizzArt(widget, atlasName)
             return
         end
         file = details.file or details.filename
-        l, region, t, b = details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
+        left, right, top, bottom = details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
         wid, hgt = details.width, details.height
         anchorPoint, posX, posY = "CENTER", 0, 0
     end
@@ -1435,9 +1435,9 @@ function mod.UF_PaintBlizzArt(widget, atlasName)
                 cut = {}
                 artFrame._atlasCut = cut
             end
-            local dv, du = (b - t) / crop.h, (region - l) / crop.w
-            cut.t, cut.b, cut.src = t + crop.t * dv, t + crop.b * dv, t + crop.src * dv
-            cut.x = l + crop.x * du
+            local dv, du = (bottom - top) / crop.h, (right - left) / crop.w
+            cut.t, cut.b, cut.src = top + crop.t * dv, top + crop.b * dv, top + crop.src * dv
+            cut.x = left + crop.x * du
             keepLeft = crop.ringLeft == true
         end
     end
@@ -1451,15 +1451,15 @@ function mod.UF_PaintBlizzArt(widget, atlasName)
             end
             artFrame._artCut = pieces
         end
-        mod.UF_PaintArtCut(widget, artTex, pieces, file, cut, l, region, t, b, wid, hgt, posX, posY, keepLeft)
+        mod.UF_PaintArtCut(widget, artTex, pieces, file, cut, left, right, top, bottom, wid, hgt, posX, posY, keepLeft)
         return
     end
     if widget._blizzMirror then
-        artTex:SetTexCoord(region, l, t, b)
+        artTex:SetTexCoord(right, left, top, bottom)
         anchorPoint = mod._ufMirrorPoint[anchorPoint] or anchorPoint
         posX = -posX
     else
-        artTex:SetTexCoord(l, region, t, b)
+        artTex:SetTexCoord(left, right, top, bottom)
     end
     artTex:ClearAllPoints()
     artTex:SetPoint(anchorPoint, widget, anchorPoint, posX, posY)

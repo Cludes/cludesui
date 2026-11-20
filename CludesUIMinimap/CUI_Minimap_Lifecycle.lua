@@ -505,16 +505,16 @@ end
 local prevExtent = CludesUI._GetAnchorTargetExtent
 CludesUI._GetAnchorTargetExtent = function(targetKey, side)
     if targetKey == "EBS_Minimap" and Minimap and Minimap:GetLeft() then
-        local l, region, t, b = MoverInsets()
+        local left, right, top, bottom = MoverInsets()
         local ratio = Minimap:GetEffectiveScale() / UIParent:GetEffectiveScale()
         if side == "LEFT" then
-            return (Minimap:GetLeft() + l) * ratio
+            return (Minimap:GetLeft() + left) * ratio
         elseif side == "RIGHT" then
-            return (Minimap:GetRight() - region) * ratio
+            return (Minimap:GetRight() - right) * ratio
         elseif side == "TOP" then
-            return (Minimap:GetTop() - t) * ratio
+            return (Minimap:GetTop() - top) * ratio
         elseif side == "BOTTOM" then
-            return (Minimap:GetBottom() + b) * ratio
+            return (Minimap:GetBottom() + bottom) * ratio
         end
     end
     if prevExtent then
@@ -529,11 +529,11 @@ end
 -- minimap follow a change.
 local extL, extR, extT, extB
 function SKIN._NotifyMinimapExtent()
-    local l, region, t, b = MoverInsets()
-    if l == extL and region == extR and t == extT and b == extB then
+    local left, right, top, bottom = MoverInsets()
+    if left == extL and right == extR and top == extT and bottom == extB then
         return
     end
-    extL, extR, extT, extB = l, region, t, b
+    extL, extR, extT, extB = left, right, top, bottom
     if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
         CludesUI.PropagateAnchorChain("EBS_Minimap")
     end
@@ -658,8 +658,8 @@ function SKIN:OnEnable()
                     return Minimap
                 end,
                 getSize = function()
-                    local l, region, t, b = MoverInsets()
-                    return Minimap:GetWidth() - l - region, Minimap:GetHeight() - t - b
+                    local left, right, top, b = MoverInsets()
+                    return Minimap:GetWidth() - left - right, Minimap:GetHeight() - top - b
                 end,
                 getInsets = MoverInsets,
                 isHidden = function()

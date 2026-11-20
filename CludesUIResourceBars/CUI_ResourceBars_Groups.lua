@@ -375,19 +375,19 @@ function mod.ERB_GroupEval()
     local a1, a2, thick = nil, nil, 0
     for index = 1, num do
         local frame = m[index]
-        local l, region, t, b = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
-        if not (l and region and t and b) then
+        local left, right, top, bottom = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
+        if not (left and right and top and bottom) then
             mod.ERB_GroupRelease(sig)
             mod._erbGrpGeomDirty = true
             return
         end
-        if sec and (sec(l) or sec(region) or sec(t) or sec(b)) then
+        if sec and (sec(left) or sec(right) or sec(top) or sec(bottom)) then
             mod._erbGrpGeomDirty = true
             return
         end
-        local s1, s2, c1, c2 = l, region, b, t
+        local s1, s2, c1, c2 = left, right, bottom, top
         if vertical then
-            s1, s2, c1, c2 = b, t, l, region
+            s1, s2, c1, c2 = bottom, top, left, right
         end
         if index == 1 then
             a1, a2 = s1, s2
@@ -509,7 +509,7 @@ mod._erbGrpEdges = {
 -- vertical bar's fill rect), art from `info` (the panel atlas).
 function mod.ERB_SeatBlizzPanel9(pcs, anchor, vertical, details)
     local file = details.file or details.filename
-    local l, region, t, b =
+    local left, right, top, bottom =
         details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
     local E = mod._erbGrpEdges[vertical and true or false]
     local GRP_U, GRP_V = mod._erbGrpU, mod._erbGrpV
@@ -521,17 +521,17 @@ function mod.ERB_SeatBlizzPanel9(pcs, anchor, vertical, details)
                 -- Screen x runs down the art's rows, screen y up its
                 -- columns (right to left): column i = art row band i,
                 -- row j = art column band 4 - j.
-                local ua = l + (region - l) * GRP_U[4 - jdx]
-                local ub = l + (region - l) * GRP_U[5 - jdx]
-                local va = t + (b - t) * GRP_V[index]
-                local vb = t + (b - t) * GRP_V[index + 1]
+                local ua = left + (right - left) * GRP_U[4 - jdx]
+                local ub = left + (right - left) * GRP_U[5 - jdx]
+                local va = top + (bottom - top) * GRP_V[index]
+                local vb = top + (bottom - top) * GRP_V[index + 1]
                 texture:SetTexCoord(ub, va, ua, va, ub, vb, ua, vb)
             else
                 texture:SetTexCoord(
-                    l + (region - l) * GRP_U[index],
-                    l + (region - l) * GRP_U[index + 1],
-                    t + (b - t) * GRP_V[jdx],
-                    t + (b - t) * GRP_V[jdx + 1]
+                    left + (right - left) * GRP_U[index],
+                    left + (right - left) * GRP_U[index + 1],
+                    top + (bottom - top) * GRP_V[jdx],
+                    top + (bottom - top) * GRP_V[jdx + 1]
                 )
             end
             local x1, x2, y1, y2 = E.x[index], E.x[index + 1], E.y[jdx], E.y[jdx + 1]
@@ -669,9 +669,9 @@ function mod.ERB_SeatBlizzBarBg(backdrop, vertical)
     backdrop._blizzRot = vertical
     if vertical then
         backdrop:SetTexture(details.file or details.filename)
-        local l, region, t, b =
+        local left, right, top, bottom =
             details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
-        backdrop:SetTexCoord(region, t, l, t, region, b, l, b)
+        backdrop:SetTexCoord(right, top, left, top, right, bottom, left, bottom)
     else
         backdrop:SetAtlas(mod.ERB_BLIZZ_BAR_BG)
     end

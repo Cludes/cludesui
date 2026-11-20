@@ -944,12 +944,12 @@ function mod.CdmMatchInsetSize(targetKey, targetFrame, barFrame)
     if not (elem and elem.getInsets) then
         return nil
     end
-    local l, region, t, b = elem.getInsets(targetKey)
-    if not l then
+    local left, right, top, bottom = elem.getInsets(targetKey)
+    if not left then
         return nil
     end
     local k = targetFrame:GetEffectiveScale() / barFrame:GetEffectiveScale()
-    return (targetFrame:GetWidth() - l - region) * k, (targetFrame:GetHeight() - t - b) * k
+    return (targetFrame:GetWidth() - left - right) * k, (targetFrame:GetHeight() - top - bottom) * k
 end
 
 -- "CDM_" .. barKey, built once per bar key, so the layout and pad paths look a

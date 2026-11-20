@@ -785,12 +785,12 @@ function mod.AB_CaptureCapSpan(captured)
         if not (frame and frame.GetLeft) then
             return nil
         end
-        local l, region, t, b = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
-        if not (l and region and t and b) or region - l < 1 or t - b < 1 then
+        local left, right, top, bottom = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
+        if not (left and right and top and bottom) or right - left < 1 or top - bottom < 1 then
             return nil
         end
         local k = frame:GetEffectiveScale() / uiS
-        return { l * k, region * k, t * k, b * k }
+        return { left * k, right * k, top * k, bottom * k }
     end
     local home = Rect(main)
     if not home or home[2] - home[1] < 20 then

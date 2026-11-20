@@ -821,23 +821,23 @@ local function Closest(leftX, topY, winWidth, winHeight)
     for index = 1, #targets do
         local frame = targets[index]
         if frame:GetParent() == UIParent and frame:IsShown() then
-            local l, region, t, b = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
-            if Plain(l) and Plain(region) and Plain(t) and Plain(b) then
+            local left, region, top, b = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
+            if Plain(left) and Plain(region) and Plain(top) and Plain(b) then
                 local gx, gy = 0, 0
-                if right < l then
-                    gx = l - right
+                if right < left then
+                    gx = left - right
                 elseif leftX > region then
                     gx = leftX - region
                 end
-                if bottom > t then
-                    gy = bottom - t
+                if bottom > top then
+                    gy = bottom - top
                 elseif topY < b then
                     gy = b - topY
                 end
                 local dist = gx * gx + gy * gy
                 if not bestDist or dist < bestDist then
                     best, bestDist = frame, dist
-                    nearL, nearR, nearT, nearB = l, region, t, b
+                    nearL, nearR, nearT, nearB = left, region, top, b
                 end
             end
         end

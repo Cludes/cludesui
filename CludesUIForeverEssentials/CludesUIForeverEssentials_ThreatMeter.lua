@@ -2002,7 +2002,7 @@ local function WindowBorderPad()
         return nil
     end
     local color = mod.GetStyleValue("borders", "windowBorderColor")
-    local l, region, t, b = CUI.BorderReach(
+    local left, right, top, bottom = CUI.BorderReach(
         dim,
         texture,
         nil,
@@ -2015,14 +2015,14 @@ local function WindowBorderPad()
         nil,
         color and color.a or 1
     )
-    if not l then
+    if not left then
         return nil
     end
     if mod.GetStyleValue("borders", "windowBorderIncludeHeader") == false and Get("showHeader") then
-        t = t - mod.GetStyleValue("header", "hdrHeight")
+        top = top - mod.GetStyleValue("header", "hdrHeight")
     end
-    local pw = (l > 0 and l or 0) + (region > 0 and region or 0)
-    local ph = (t > 0 and t or 0) + (b > 0 and b or 0)
+    local pw = (left > 0 and left or 0) + (right > 0 and right or 0)
+    local ph = (top > 0 and top or 0) + (bottom > 0 and bottom or 0)
     if pw <= 0 and ph <= 0 then
         return nil
     end

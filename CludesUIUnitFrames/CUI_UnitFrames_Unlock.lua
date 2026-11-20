@@ -114,9 +114,9 @@ local function RegisterUFUnlockElements()
                     -- Blizzard Style: sizes (and so size matches) are the
                     -- visible art, not the stock box's transparent padding.
                     if mod.UF_Blizz() then
-                        local l, region, t, b = mod.UF_BlizzVis((key == "boss") and frameList.boss1 or frameList[key])
-                        if l then
-                            return wid - l - region, hgt - t - b
+                        local left, right, top, b = mod.UF_BlizzVis((key == "boss") and frameList.boss1 or frameList[key])
+                        if left then
+                            return wid - left - right, hgt - top - b
                         end
                     end
                     return wid, hgt

@@ -522,11 +522,11 @@ end
 
 local function ScreenRect(frame)
     local s = frame:GetEffectiveScale()
-    local l, region, t, button = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
-    if not (l and region and t and button) or IsSecret(l) or IsSecret(region) or IsSecret(t) or IsSecret(button) then
+    local left, right, top, bottom = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
+    if not (left and right and top and bottom) or IsSecret(left) or IsSecret(right) or IsSecret(top) or IsSecret(bottom) then
         return nil
     end
-    return l * s, region * s, t * s, button * s
+    return left * s, right * s, top * s, bottom * s
 end
 
 local function Anchor(to, side)

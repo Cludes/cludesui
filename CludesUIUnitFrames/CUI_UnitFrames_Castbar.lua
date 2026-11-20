@@ -496,7 +496,7 @@ function mod.UF_CastBorderPad(unitToken, cfg)
     end
     local texture = cfg.castBorderStyle or "solid"
     local size = cfg.castBorderSize or 1
-    local l, region, t, b = CludesUI.BorderReach(
+    local left, right, top, bottom = CludesUI.BorderReach(
         size,
         texture,
         cfg.castBorderOffsetX,
@@ -509,19 +509,19 @@ function mod.UF_CastBorderPad(unitToken, cfg)
         nil,
         cfg.castBorderAlpha or 1
     )
-    if not l then
+    if not left then
         return nil
     end
     if CastIconInWidth(unitToken, cfg) and not mod.UF_CastBorderWrapsIcon(unitToken, cfg) then
         local iw = (unitToken == "player") and (cfg.playerCastbarHeight or 14) or (cfg.castbarHeight or 14)
         if CastIconOnRight(unitToken, cfg) then
-            region = region - iw
+            right = right - iw
         else
-            l = l - iw
+            left = left - iw
         end
     end
-    local wid = (l > 0 and l or 0) + (region > 0 and region or 0)
-    local hgt = (t > 0 and t or 0) + (b > 0 and b or 0)
+    local wid = (left > 0 and left or 0) + (right > 0 and right or 0)
+    local hgt = (top > 0 and top or 0) + (bottom > 0 and bottom or 0)
     if wid <= 0 and hgt <= 0 then
         return nil
     end

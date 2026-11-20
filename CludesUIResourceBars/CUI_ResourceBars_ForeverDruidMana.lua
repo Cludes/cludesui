@@ -122,19 +122,19 @@ local function ReachOf(pp, es)
 end
 
 -- One side ("l" / "r" / "t" / "b") of a reach, 0 when drawn inside.
-local function Side(side, l, region, t, b)
-    if not l then
+local function Side(side, left, right, top, bottom)
+    if not left then
         return 0
     end
     local val
     if side == "l" then
-        val = l
+        val = left
     elseif side == "r" then
-        val = region
+        val = right
     elseif side == "t" then
-        val = t
+        val = top
     else
-        val = b
+        val = bottom
     end
     return (val > 0) and val or 0
 end
