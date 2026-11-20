@@ -4545,7 +4545,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- change the effective value, store explicit false instead
                         -- (render-equivalent to nil, but blocks the inheritance --
                         -- the per-trinket exclusion). Mirrors the family SetOwn.
-                        local function SetCasOwn(key, v2)
+                        local function SetOwnCas(key, v2)
                             local cas = EnsureCAS()
                             cas[key] = v2
                             if v2 == nil and cas[key] ~= nil then
@@ -5009,7 +5009,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             MakeSubnavRow("Glow Style", CD_READY_STYLE_ITEMS, function()
                                 return mod.CdReadyGlowStyle(mod.CdStateGlowOf(customState), customState)
                             end, function(value)
-                                SetCasOwn("cdStateGlowStyle", value)
+                                SetOwnCas("cdStateGlowStyle", value)
                                 if mod.FakeActive_Rearm then
                                     mod.FakeActive_Rearm()
                                 end
@@ -5078,7 +5078,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return customState.noResourceTint == true
                                     end,
                                     toggleSet = function(value)
-                                        SetCasOwn("noResourceTint", value or nil)
+                                        SetOwnCas("noResourceTint", value or nil)
                                         if value then
                                             mod._cdmAnyNoResourceTint = true
                                         end
@@ -5104,7 +5104,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return value and true or nil
                             end,
                             function(value)
-                                SetCasOwn("noDesatOnCD", value or nil)
+                                SetOwnCas("noDesatOnCD", value or nil)
                                 if value then
                                     mod._cdmAnyNoDesatOnCD = true
                                 end
@@ -5146,7 +5146,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 -- through the chain, store the blocking false.
                                 customState[keyName] = nil
                                 if customState[keyName] ~= nil then
-                                    SetCasOwn(keyName, false)
+                                    SetOwnCas(keyName, false)
                                 end
                             end
                             access.refresh = function()
@@ -5181,8 +5181,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return nil
                             end,
                             function(value)
-                                SetCasOwn("reverseSwipe", (value == "reverse") or nil)
-                                SetCasOwn("hideCDSwipe", (value == "hide") or nil)
+                                SetOwnCas("reverseSwipe", (value == "reverse") or nil)
+                                SetOwnCas("hideCDSwipe", (value == "hide") or nil)
                                 if value == "reverse" then
                                     mod._cdmAnyReverseSwipe = true
                                 end
@@ -5221,7 +5221,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     return customState.stanceBarHide or nil
                                 end,
                                 function(value)
-                                    SetCasOwn("stanceBarHide", value)
+                                    SetOwnCas("stanceBarHide", value)
                                     if value then
                                         mod._cdmAnyStanceBar = true
                                     end
@@ -5268,7 +5268,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     return customState.outOfRangeColoring and true or nil
                                 end,
                                 function(value)
-                                    SetCasOwn("outOfRangeColoring", value or nil)
+                                    SetOwnCas("outOfRangeColoring", value or nil)
                                     if value then
                                         mod._cdmAnyCustomRangeColor = true
                                     end
@@ -5333,14 +5333,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end, function(value)
                                 local cas = EnsureCAS()
                                 if value == "class" then
-                                    SetCasOwn("activeSwipeMode", nil)
-                                    SetCasOwn("activeSwipeClassColor", true)
+                                    SetOwnCas("activeSwipeMode", nil)
+                                    SetOwnCas("activeSwipeClassColor", true)
                                 elseif value == "none" then
-                                    SetCasOwn("activeSwipeMode", "none")
-                                    SetCasOwn("activeSwipeClassColor", nil)
+                                    SetOwnCas("activeSwipeMode", "none")
+                                    SetOwnCas("activeSwipeClassColor", nil)
                                 else
-                                    SetCasOwn("activeSwipeMode", "custom")
-                                    SetCasOwn("activeSwipeClassColor", nil)
+                                    SetOwnCas("activeSwipeMode", "custom")
+                                    SetOwnCas("activeSwipeClassColor", nil)
                                     -- Chained read: a slot-stamp color showing
                                     -- through is kept as the starting custom color.
                                     if not cas.activeSwipeR then
@@ -5366,7 +5366,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     end, function(red, green, blue)
                                         local cas = EnsureCAS()
                                         cas.activeSwipeMode = "custom"
-                                        SetCasOwn("activeSwipeClassColor", nil)
+                                        SetOwnCas("activeSwipeClassColor", nil)
                                         cas.activeSwipeR = red
                                         cas.activeSwipeG = green
                                         cas.activeSwipeB = blue
@@ -5435,7 +5435,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     return value
                                 end,
                                 function(value)
-                                    SetCasOwn("activeGlow", value)
+                                    SetOwnCas("activeGlow", value)
                                 end,
                                 function()
                                     return not customState.activeGlow
@@ -5462,7 +5462,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
                             return nil
                         end, function(value)
-                            SetCasOwn("glowColor", value)
+                            SetOwnCas("glowColor", value)
                             -- Chained read: a slot-stamp color showing through
                             -- is kept as the starting custom color.
                             if value == "custom" and not customState.glowColorR then

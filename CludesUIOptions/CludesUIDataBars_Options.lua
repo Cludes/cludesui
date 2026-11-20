@@ -3214,7 +3214,7 @@ CludesUI.AtOptionsLogin(function()
 
             -- Type-specific rows (sequential DualRow fill; odd tail gets a
             -- blank label in the remaining slot)
-            local function MkToggle(labelText, barKey, tipText)
+            local function ToggleRow(labelText, barKey, tipText)
                 return {
                     type = "toggle",
                     text = labelText,
@@ -3285,8 +3285,8 @@ CludesUI.AtOptionsLogin(function()
                             ApplyBar()
                         end,
                     },
-                    MkToggle("Mail Alert", "showMail", "Shows an envelope icon when you have unread mail."),
-                    MkToggle(
+                    ToggleRow("Mail Alert", "showMail", "Shows an envelope icon when you have unread mail."),
+                    ToggleRow(
                         "Resting Icon",
                         "showResting",
                         "Shows a rest icon while your character is resting."
@@ -3294,7 +3294,7 @@ CludesUI.AtOptionsLogin(function()
                 }
             elseif block.type == "combat" then
                 typeRowList = {
-                    MkToggle(
+                    ToggleRow(
                         "Show Only In Combat",
                         "onlyInCombat",
                         "Shows the combat status text only while your character is in combat."
@@ -3448,11 +3448,11 @@ CludesUI.AtOptionsLogin(function()
                 }
             elseif block.type == "gold" then
                 typeRowList = {
-                    MkToggle("Show Icon", "showIcons", "Shows the coin icon next to the amount."),
-                    MkToggle("Show Bag Space", "showBagSpace", "Shows your free bag slots."),
+                    ToggleRow("Show Icon", "showIcons", "Shows the coin icon next to the amount."),
+                    ToggleRow("Show Bag Space", "showBagSpace", "Shows your free bag slots."),
                     -- Off (default) = the letter suffixes; on = coin textures.
                     -- Independent of Coin Colored, which tints those letters.
-                    MkToggle(
+                    ToggleRow(
                         "Coin Icons",
                         "coinIcons",
                         "Uses Blizzard's coin textures instead of the letter suffixes."
@@ -3470,7 +3470,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function() end,
                     },
-                    MkToggle(
+                    ToggleRow(
                         "Abbreviate Amount",
                         "abbreviate",
                         "Shows large amounts using K/M suffixes (284,208g becomes 284.2Kg) instead of the full grouped number. The tooltip always shows the exact amount."
@@ -3496,7 +3496,7 @@ CludesUI.AtOptionsLogin(function()
                 -- locale already gets K/M/B, so the toggle would be a no-op.
                 -- Mirrors the Damage Meters options row (CUI_DamageMeters_Options.lua).
                 if CludesUI.LocaleHasNumberAbbreviation() then
-                    typeRowList[#typeRowList + 1] = MkToggle(
+                    typeRowList[#typeRowList + 1] = ToggleRow(
                         "Force English Units (K/M/B)",
                         "forceEnglishUnits",
                         "Always use K/M/B instead of localized units."
@@ -3554,8 +3554,8 @@ CludesUI.AtOptionsLogin(function()
                 }
             elseif block.type == "spec" then
                 typeRowList = {
-                    MkToggle("Show Loadout Name", "showLoadout", "Shows the active talent loadout name."),
-                    MkToggle("Uppercase Text", "useUppercase", "Renders the spec text in uppercase."),
+                    ToggleRow("Show Loadout Name", "showLoadout", "Shows the active talent loadout name."),
+                    ToggleRow("Uppercase Text", "useUppercase", "Renders the spec text in uppercase."),
                 }
             elseif block.type == "travel" then
                 local function ChoiceOf(button)
@@ -3697,7 +3697,7 @@ CludesUI.AtOptionsLogin(function()
                 if travelIconCfg then
                     typeRowList[#typeRowList + 1] = travelIconCfg
                 end
-                typeRowList[#typeRowList + 1] = MkToggle(
+                typeRowList[#typeRowList + 1] = ToggleRow(
                     "Show Other Characters",
                     "altHearths",
                     "Lists your other characters' hearthstones in the tooltip, once each has logged in with this on."
@@ -3750,7 +3750,7 @@ CludesUI.AtOptionsLogin(function()
                             ApplyBar()
                         end,
                     },
-                    MkToggle(
+                    ToggleRow(
                         "Hide Blizzard Micro Menu",
                         "disableBlizzardMicroMenu",
                         "Hides Blizzard's own micro menu while any bar has this on."
@@ -3804,7 +3804,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function() end,
                     },
-                    MkToggle("Show Label", "showLabel"),
+                    ToggleRow("Show Label", "showLabel"),
                 }
             elseif block.type == "currency" then
                 local cValues, cOrder = mod.BuildCurrencyList()
@@ -3835,7 +3835,7 @@ CludesUI.AtOptionsLogin(function()
                             ApplyBar()
                         end,
                     },
-                    MkToggle("Show Icon", "showIcon", "Shows the currency icon next to the amount."),
+                    ToggleRow("Show Icon", "showIcon", "Shows the currency icon next to the amount."),
                     MkToggleOn(
                         "Show Description",
                         "showDescription",
@@ -3882,12 +3882,12 @@ CludesUI.AtOptionsLogin(function()
                     -- Not an addition but a SWAP: the leading number stops
                     -- being the spendable amount and becomes the season total.
                     -- The tooltip always shows both, so it stays the reference.
-                    MkToggle(
+                    ToggleRow(
                         "Show Season Progress",
                         "showSeasonProgress",
                         "Replaces the spendable amount with the crests you have earned this season, out of the season cap. The tooltip lists both numbers side by side."
                     ),
-                    MkToggle(
+                    ToggleRow(
                         "Hide Empty Crests",
                         "hideEmpty",
                         "Drops crests you own none of, keeping the block short early in a season. They stay listed in the tooltip."
@@ -3927,7 +3927,7 @@ CludesUI.AtOptionsLogin(function()
                         getValue = SFieldOr("value", "free"),
                         setValue = SFieldThen("value"),
                     },
-                    MkToggle(
+                    ToggleRow(
                         "Include Reagent Bag",
                         "reagent",
                         "Counts the reagent bag's slots along with your regular bags."
@@ -3954,7 +3954,7 @@ CludesUI.AtOptionsLogin(function()
                 }
             elseif block.type == "mplussummary" then
                 typeRowList = {
-                    MkToggle(
+                    ToggleRow(
                         "Hide When Empty",
                         "hideWhenEmpty",
                         "Removes the block from the bar until a Mythic+ run has been recorded."
@@ -3962,7 +3962,7 @@ CludesUI.AtOptionsLogin(function()
                 }
             elseif block.type == "timeplayed" then
                 typeRowList = {
-                    MkToggle(
+                    ToggleRow(
                         "Always Show Total",
                         "alwaysTotal",
                         "Shows this character's total time played instead of the time played at the current level."
@@ -4042,7 +4042,7 @@ CludesUI.AtOptionsLogin(function()
                         "showText",
                         "Shows the plugin's text. Off leaves an icon-only block that still carries the plugin's tooltip and clicks."
                     ),
-                    MkToggle("Show Label", "showLabel", "Prefixes the plugin's own name to its text."),
+                    ToggleRow("Show Label", "showLabel", "Prefixes the plugin's own name to its text."),
                     -- Default ON: broker text arrives carrying the plugin's color
                     -- codes, which would otherwise silently beat the Text Color
                     -- row above and the accent hover.

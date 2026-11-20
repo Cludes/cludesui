@@ -109,7 +109,7 @@ local function TexturePath()
     return CM.ResolveTexturePath((mod.BarTextureTables()), key)
 end
 
-local function Blank()
+local function ZeroCounts()
     local tbl = {}
     for _, k in ipairs(KEYS) do
         tbl[k] = 0
@@ -128,13 +128,13 @@ local myKey
 local function Store()
     local a = mod.AppCountsStore()
     if type(a.account) ~= "table" then
-        a.account = Blank()
+        a.account = ZeroCounts()
     end
     if type(a.chars) ~= "table" then
         a.chars = {}
     end
     if type(a.session) ~= "table" then
-        a.session = Blank()
+        a.session = ZeroCounts()
     end
     return a
 end
@@ -148,9 +148,9 @@ local function Counts(scope)
         return Fill(a.session)
     end
     if not myKey then
-        return Blank()
+        return ZeroCounts()
     end
-    a.chars[myKey] = Fill(a.chars[myKey] or Blank())
+    a.chars[myKey] = Fill(a.chars[myKey] or ZeroCounts())
     return a.chars[myKey]
 end
 
@@ -502,11 +502,11 @@ function mod.ResetApplications(scope)
     end
     local a = Store()
     if scope == "account" then
-        a.account = Blank()
+        a.account = ZeroCounts()
     elseif scope == "session" then
-        a.session = Blank()
+        a.session = ZeroCounts()
     elseif myKey then
-        a.chars[myKey] = Blank()
+        a.chars[myKey] = ZeroCounts()
     end
     Refresh()
 end
@@ -542,7 +542,7 @@ function mod.Apps_Enable()
     end
     local a = Store()
     if time() - (tonumber(a.session.t) or 0) > SESSION_GAP then
-        a.session = Blank()
+        a.session = ZeroCounts()
     end
     -- Follow the search rows when they resize.
     if mod.Search_Layout then

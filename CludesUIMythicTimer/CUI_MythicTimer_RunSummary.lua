@@ -57,7 +57,7 @@ end
 
 local IsSecret, PlainString = CludesUI.IsSecret, CludesUI.PlainString
 
-local function PlainNumber(v)
+local function PlainNum(v)
     if type(v) == "number" and not IsSecret(v) then
         return v
     end
@@ -259,9 +259,9 @@ local function WalkSources(session, totals, perSec, identityRoster, countRows, o
     for _, source in ipairs(session.combatSources) do
         num = num + 1
         local unitGuid = PlainString(source.sourceGUID)
-        local sum = PlainNumber(source.totalAmount)
+        local sum = PlainNum(source.totalAmount)
         if countRows then
-            local rid = PlainNumber(source.deathRecapID)
+            local rid = PlainNum(source.deathRecapID)
             if unitGuid and rid and rid > 0 then
                 totals[unitGuid] = (totals[unitGuid] or 0) + 1
             end
@@ -273,13 +273,13 @@ local function WalkSources(session, totals, perSec, identityRoster, countRows, o
             if into then
                 totals[into] = (totals[into] or 0) + sum
                 if perSec then
-                    perSec[into] = PlainNumber(source.amountPerSecond)
+                    perSec[into] = PlainNum(source.amountPerSecond)
                 end
             end
         end
         if identityRoster and unitGuid and identityRoster[unitGuid] then
             local runRec = identityRoster[unitGuid]
-            runRec.specIcon = runRec.specIcon or PlainNumber(source.specIconID)
+            runRec.specIcon = runRec.specIcon or PlainNum(source.specIconID)
             runRec.class = runRec.class or PlainString(source.classFilename)
         end
     end
@@ -321,7 +321,7 @@ local function SessionDuration()
     if not success then
         return nil
     end
-    return PlainNumber(dur)
+    return PlainNum(dur)
 end
 
 --------------------------------------------------------------------------------
@@ -465,7 +465,7 @@ local function IsWarboundLoot(details)
         return true
     end
     if ITEM_BIND and GetFullInfo then
-        local bind = PlainNumber(select(14, GetFullInfo(details)))
+        local bind = PlainNum(select(14, GetFullInfo(details)))
         if
             bind
             and (
@@ -500,7 +500,7 @@ local function IsExcludedLootID(ident, itemLink)
     end
     if GetInstant then
         local _, _, _, equipLoc, _, classID = GetInstant(ident)
-        classID = PlainNumber(classID)
+        classID = PlainNum(classID)
         if ITEM_CLASS and (classID == ITEM_CLASS.Questitem or classID == ITEM_CLASS.Housing) then
             return true
         end
@@ -510,7 +510,7 @@ local function IsExcludedLootID(ident, itemLink)
         end
     end
     if ITEM_QUALITY and C_Item and C_Item.GetItemQualityByID then
-        local q = PlainNumber(C_Item.GetItemQualityByID(itemLink or ident))
+        local q = PlainNum(C_Item.GetItemQualityByID(itemLink or ident))
         if q and q < ITEM_QUALITY.Epic then
             return true
         end
@@ -571,7 +571,7 @@ local function ScoreFor(unitToken)
     if not success or type(summary) ~= "table" then
         return nil
     end
-    return PlainNumber(summary.currentSeasonScore)
+    return PlainNum(summary.currentSeasonScore)
 end
 
 -- Walks Blizzard's own five token list. Fills anything still missing; never
@@ -590,7 +590,7 @@ local function ScanRoster(withStartScore)
                     runRec.class = PlainString(classFile)
                 end
                 if UnitGroupRolesAssignedEnum then
-                    runRec.role = PlainNumber(UnitGroupRolesAssignedEnum(unitToken)) or runRec.role
+                    runRec.role = PlainNum(UnitGroupRolesAssignedEnum(unitToken)) or runRec.role
                 end
                 if withStartScore and runRec.scoreStart == nil then
                     runRec.scoreStart = ScoreFor(unitToken)
@@ -617,7 +617,7 @@ local function OwnSpecIcon()
         return nil
     end
     local _, _, _, iconTex = CSI.GetSpecializationInfo(index)
-    return PlainNumber(iconTex)
+    return PlainNum(iconTex)
 end
 
 -- GetSpecializationInfoForSpecID is the documented name; the ByID global is
@@ -631,7 +631,7 @@ local function SpecIconForSpecID(specID)
     if not func then
         return nil
     end
-    return PlainNumber(select(4, func(specID)))
+    return PlainNum(select(4, func(specID)))
 end
 
 local function InspectSpecIcon(unitToken)
@@ -639,19 +639,19 @@ local function InspectSpecIcon(unitToken)
     if not (CSI and CSI.GetInspectSpecialization) then
         return nil
     end
-    return SpecIconForSpecID(PlainNumber(CSI.GetInspectSpecialization(unitToken)))
+    return SpecIconForSpecID(PlainNum(CSI.GetInspectSpecialization(unitToken)))
 end
 
 local function OwnItemLevel()
     if GetAverageItemLevel then
         local _, equipped = GetAverageItemLevel()
-        local v = PlainNumber(equipped)
+        local v = PlainNum(equipped)
         if v and v > 0 then
             return math.floor(v)
         end
     end
     if C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
-        local v = PlainNumber(C_PaperDollInfo.GetInspectItemLevel("player"))
+        local v = PlainNum(C_PaperDollInfo.GetInspectItemLevel("player"))
         if v and v > 0 then
             return math.floor(v)
         end
@@ -752,7 +752,7 @@ local function OnInspectReady(unitGuid)
     end
     local changed = false
     if not runRec.ilvl and C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
-        local val = PlainNumber(C_PaperDollInfo.GetInspectItemLevel(unitToken))
+        local val = PlainNum(C_PaperDollInfo.GetInspectItemLevel(unitToken))
         if val and val > 0 then
             runRec.ilvl = math.floor(val)
             changed = true
@@ -808,7 +808,7 @@ end
 -- 5/6 are itemName/fileName; BossBannerToast binds playerName/className) and
 -- CHAT_MSG_LOOT (looter GUID in arg 12). Bonus roll loot is dropped: from the
 -- chat line for everyone, and from BONUS_ROLL_RESULT for our own roll.
-local function SyncEvents()
+local function SyncSummaryEvents()
     if not widget then
         return
     end
@@ -872,7 +872,7 @@ local function StartCollecting(skipBaseline)
         end
         segRec.snapDur = baseDuration
     end
-    SyncEvents()
+    SyncSummaryEvents()
     InspectSweep()
 end
 
@@ -882,7 +882,7 @@ end
 -- below cannot reach it.
 local function StopCollecting()
     ResetCollector()
-    SyncEvents()
+    SyncSummaryEvents()
 end
 
 -- Reads the four meter types, subtracts the key start baseline, adds what was
@@ -1216,7 +1216,7 @@ local function TryFinishHarvest()
     end
     if (lastSummary.record._matched or 0) > 0 then
         lastSummary.awaitingMeter = false
-        SyncEvents()
+        SyncSummaryEvents()
     end
 end
 
@@ -1271,7 +1271,7 @@ local function FinishRun()
         end
     end
 
-    local mapID = PlainNumber(details.mapChallengeModeID)
+    local mapID = PlainNum(details.mapChallengeModeID)
     local mapName, _, timeLimit
     if mapID and C_ChallengeMode.GetMapUIInfo then
         mapName, _, timeLimit = C_ChallengeMode.GetMapUIInfo(mapID)
@@ -1284,17 +1284,17 @@ local function FinishRun()
     local runRecord = {
         mapID = mapID,
         mapName = PlainString(mapName),
-        timeLimit = PlainNumber(timeLimit),
-        level = PlainNumber(details.level),
-        timeMS = PlainNumber(details.time), -- milliseconds
+        timeLimit = PlainNum(timeLimit),
+        level = PlainNum(details.level),
+        timeMS = PlainNum(details.time), -- milliseconds
         onTime = details.onTime == true,
-        upgrades = PlainNumber(details.keystoneUpgradeLevels) or 0,
+        upgrades = PlainNum(details.keystoneUpgradeLevels) or 0,
         practice = details.practiceRun == true,
         mapRecord = details.isMapRecord == true,
-        deaths = PlainNumber(deaths) or 0,
-        timeLost = PlainNumber(timeLost) or 0,
-        scoreOld = PlainNumber(details.oldOverallDungeonScore),
-        scoreNew = PlainNumber(details.newOverallDungeonScore),
+        deaths = PlainNum(deaths) or 0,
+        timeLost = PlainNum(timeLost) or 0,
+        scoreOld = PlainNum(details.oldOverallDungeonScore),
+        scoreNew = PlainNum(details.newOverallDungeonScore),
         finishedAt = time(),
     }
 
@@ -1318,7 +1318,7 @@ local function FinishRun()
     -- If the rows are still classified, the restriction lift, the next pull
     -- ending, the loot window closing or leaving the instance each retry.
     lastSummary.awaitingMeter = (runRecord._matched or 0) == 0
-    SyncEvents()
+    SyncSummaryEvents()
 end
 
 local function ShowPending()
@@ -1333,7 +1333,7 @@ local function ShowPending()
     end
     -- The roster scan is done; the settling watch, inspects included, runs on.
     collectingNow = false
-    SyncEvents()
+    SyncSummaryEvents()
     InspectSweep()
 end
 
@@ -1352,7 +1352,7 @@ local function EndSettling()
     end
     lastSummary.awaitingMeter = false
     lastSummary.settled = true
-    SyncEvents()
+    SyncSummaryEvents()
     if RefreshWindowIfOpen then
         RefreshWindowIfOpen()
     end
@@ -1437,7 +1437,7 @@ local function OnEvent(_, evt, ...)
             local own = ownGUID and lastSummary.rst[ownGUID]
             if own and type(rewards) == "table" then
                 for _, reward in ipairs(rewards) do
-                    local ident = PlainNumber(reward.rewardID)
+                    local ident = PlainNum(reward.rewardID)
                     if ident and reward.isCurrency ~= true and not IsExcludedLootID(ident) then
                         -- Kept as an ID: the item is often not in the client's
                         -- cache yet here, so icon and tooltip resolve from the
@@ -1520,7 +1520,7 @@ local function OnEvent(_, evt, ...)
         -- The combat restriction's edges (see ResetScope): switching on means
         -- a pull began (its gains are unbanked until the next checkpoint);
         -- switching off is the checkpoint itself.
-        local rtype, rstate = PlainNumber((select(1, ...))), PlainNumber((select(2, ...)))
+        local rtype, rstate = PlainNum((select(1, ...))), PlainNum((select(2, ...)))
         local R, S = Enum.AddOnRestrictionType, Enum.AddOnRestrictionState
         local segment, lastSummary = ResetScope()
         if segment and rtype and R and S and rtype == R.Combat then
@@ -1580,7 +1580,7 @@ function mod.RS_Apply()
             widget = CreateFrame("Frame")
             widget:SetScript("OnEvent", OnEvent)
         end
-        SyncEvents()
+        SyncSummaryEvents()
         -- Enabling mid key still picks the run up from here on. Guarded on
         -- lastRun because IsChallengeModeActive stays true after completion
         -- until the key resets, and every options change calls back in here:

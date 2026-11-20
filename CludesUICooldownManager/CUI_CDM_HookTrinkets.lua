@@ -133,7 +133,7 @@ local function GetOrCreateTrinketFrame(slotID)
     return frame
 end
 
-local function UpdateTrinketFrame(slotID)
+local function SyncTrinketFrame(slotID)
     local frame = _trinketFrames[slotID]
     if not frame then
         return
@@ -304,7 +304,7 @@ local function UpdateTrinketFrame(slotID)
         frame._trinketIsOnUse = isRealOnUse
     end
 end
-mod.UpdateTrinketFrame = UpdateTrinketFrame
+mod.UpdateTrinketFrame = SyncTrinketFrame
 
 -- Keep Colored (On CD) for PRESET frames (trinket slots, racials, potions and
 -- user-injected custom spells). Those never run Blizzard's cooldown desaturation
@@ -410,7 +410,7 @@ _trinketEventFrame:SetScript("OnEvent", function(_, evt, arg1, arg2)
                 end
                 if key == arg1 then
                     if success then
-                        UpdateTrinketFrame(slot)
+                        SyncTrinketFrame(slot)
                     else
                         frame._slotScanPending = nil
                     end
@@ -430,7 +430,7 @@ _trinketEventFrame:SetScript("OnEvent", function(_, evt, arg1, arg2)
         end
     elseif evt == "PLAYER_EQUIPMENT_CHANGED" then
         if arg1 == 13 or arg1 == 14 or _trinketFrames[arg1] then
-            UpdateTrinketFrame(arg1)
+            SyncTrinketFrame(arg1)
             if mod.QueueReanchor then
                 mod.QueueReanchor()
             end
@@ -438,7 +438,7 @@ _trinketEventFrame:SetScript("OnEvent", function(_, evt, arg1, arg2)
             if frame and SlotScanIncomplete(frame) then
                 local slot = arg1
                 C_Timer.After(1, function()
-                    UpdateTrinketFrame(slot)
+                    SyncTrinketFrame(slot)
                     if mod.QueueReanchor then
                         mod.QueueReanchor()
                     end
@@ -446,11 +446,11 @@ _trinketEventFrame:SetScript("OnEvent", function(_, evt, arg1, arg2)
             end
         end
     elseif evt == "PLAYER_ENTERING_WORLD" then
-        UpdateTrinketFrame(13)
-        UpdateTrinketFrame(14)
+        SyncTrinketFrame(13)
+        SyncTrinketFrame(14)
         for slot in pairs(_trinketFrames) do
             if slot ~= 13 and slot ~= 14 then
-                UpdateTrinketFrame(slot)
+                SyncTrinketFrame(slot)
             end
         end
         -- Tooltip data may not be cached yet on login, causing on-use detection to
@@ -464,7 +464,7 @@ _trinketEventFrame:SetScript("OnEvent", function(_, evt, arg1, arg2)
         if needsRetry then
             C_Timer.After(2, function()
                 for slot in pairs(_trinketFrames) do
-                    UpdateTrinketFrame(slot)
+                    SyncTrinketFrame(slot)
                 end
                 if mod.QueueReanchor then
                     mod.QueueReanchor()
@@ -783,5 +783,5 @@ end
 Inner._trinketFrames, Inner._trinketItemCache = _trinketFrames, _trinketItemCache
 Inner.ApplySpellDesaturation = ApplySpellDesaturation
 Inner.GetOrCreateTrinketFrame, Inner.PresetKeepsColor = GetOrCreateTrinketFrame, PresetKeepsColor
-Inner.UpdateTrinketCooldown, Inner.UpdateTrinketFrame = UpdateTrinketCooldown, UpdateTrinketFrame
+Inner.UpdateTrinketCooldown, Inner.UpdateTrinketFrame = UpdateTrinketCooldown, SyncTrinketFrame
 Inner.broken = false

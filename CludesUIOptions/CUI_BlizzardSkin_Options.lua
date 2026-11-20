@@ -1780,7 +1780,7 @@ CludesUI.AtOptionsLogin(function()
                 and (CludesUI.IS_FOREVER or not (CludesUIDB and CludesUIDB.charSheetBlizzColors == false))
         end
 
-        local function AttachDisabledOverlay(goal)
+        local function AddDisabledCover(goal)
             local cover = CreateFrame("Frame", nil, goal)
             cover:SetAllPoints(goal)
             cover:SetFrameLevel(goal:GetFrameLevel() + 10)
@@ -1937,7 +1937,7 @@ CludesUI.AtOptionsLogin(function()
                 region._lastInline = nil
                 CludesUI.RegisterWidgetRefresh(cbDDRefresh)
             end
-            AttachDisabledOverlay(coreRow1)
+            AddDisabledCover(coreRow1)
 
             -- Socket Panel | Icon Zoom (greyed under Blizz Default). Both
             -- looks show the socket strip: under Blizz Default it hangs below
@@ -1960,7 +1960,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }, iconZoomCfg)
             cursorY = cursorY - height
-            AttachDisabledOverlay(socketRow)
+            AddDisabledCover(socketRow)
 
             -- Inline cog on Socket Panel: stat letters on the gem icons (off
             -- unless turned on).
@@ -2010,7 +2010,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }, iconZoomCfg)
             cursorY = cursorY - height
-            AttachDisabledOverlay(statsRow)
+            AddDisabledCover(statsRow)
         end
 
         -- Enchants (this sheet and the inspect sheet): a view over the
@@ -2080,7 +2080,7 @@ CludesUI.AtOptionsLogin(function()
             end,
         })
         cursorY = cursorY - height
-        AttachDisabledOverlay(enchGemRow)
+        AddDisabledCover(enchGemRow)
 
         if not CludesUI._prebuilding then
             local cogBtn = CludesUI.BuildInlineCog(enchGemRow._leftRegion, {
@@ -2532,7 +2532,7 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = "Character Sheet",
             })
         end
-        AttachDisabledOverlay(sectionsRow)
+        AddDisabledCover(sectionsRow)
 
         -- Secondary/Tertiary Text | Secondary/Tertiary Highlights (both write
         -- the Secondary and the Tertiary keys; the Secondary pair is shown)
@@ -2587,7 +2587,7 @@ CludesUI.AtOptionsLogin(function()
             end,
         })
         cursorY = cursorY - height
-        AttachDisabledOverlay(stRow)
+        AddDisabledCover(stRow)
 
         ---------------------------------------------------------------------------
         --  INSPECT SHEET
@@ -2961,7 +2961,7 @@ CludesUI.AtOptionsLogin(function()
             return CludesUIDB and CludesUIDB.reskinMerchant == false
         end
 
-        local function AttachDisabledOverlay(goal)
+        local function AddDisabledCover(goal)
             local cover = CreateFrame("Frame", nil, goal)
             cover:SetAllPoints(goal)
             cover:SetFrameLevel(goal:GetFrameLevel() + 10)
@@ -3041,7 +3041,7 @@ CludesUI.AtOptionsLogin(function()
             end,
         })
         cursorY = cursorY - height
-        AttachDisabledOverlay(row)
+        AddDisabledCover(row)
 
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
@@ -3154,7 +3154,7 @@ CludesUI.AtOptionsLogin(function()
         }, CludesUI.BlankRowCfg())
         cursorY = cursorY - height
         BuildExpandCog(row._leftRegion)
-        AttachDisabledOverlay(row)
+        AddDisabledCover(row)
 
         return cursorY
     end

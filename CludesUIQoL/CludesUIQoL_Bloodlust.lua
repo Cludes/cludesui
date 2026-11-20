@@ -88,7 +88,7 @@ local APP_DEFAULTS = {
 }
 
 -- Effective (proxied) appearance value: bloodlust override -> battleRes -> default.
-local function EP(key)
+local function LustVal(key)
     local bl = P()
     if bl and bl[key] ~= nil then
         return bl[key]
@@ -170,7 +170,7 @@ local FormatTime -- forward declaration (shared by the debuff text and the buff 
 --  Shape / appearance application (mirrors the BattleRes icon)
 -------------------------------------------------------------------------------
 local function _resolveBorderColor()
-    if EP("borderUseClass") then
+    if LustVal("borderUseClass") then
         local _, classTok = UnitClass("player")
         if classTok and RAID_CLASS_COLORS[classTok] then
             return RAID_CLASS_COLORS[classTok].r, RAID_CLASS_COLORS[classTok].g, RAID_CLASS_COLORS[classTok].b, 1
@@ -203,8 +203,8 @@ local _applyShapeOutline = mod.QoL_ApplyShapeOutline
 -- icon's border. level pins the PP strip container (see CreateBloodlustFrame).
 local function _applyBorder(owner, shapeTex, level)
     local Pix = CludesUI and CludesUI.PP
-    local shapeKey = EP("shape") or "none"
-    local bs = BORDER_PX[EP("borderSize") or "thin"] or 1
+    local shapeKey = LustVal("shape") or "none"
+    local bs = BORDER_PX[LustVal("borderSize") or "thin"] or 1
 
     if shapeKey == "none" or shapeKey == "cropped" then
         shapeTex:Hide()
@@ -243,7 +243,7 @@ local function _applyBuffShape()
     if not buffShade then
         return
     end
-    local shapeKey = EP("shape") or "none"
+    local shapeKey = LustVal("shape") or "none"
 
     buffShade:ClearAllPoints()
     buffShade:SetAllPoints(widget)
@@ -255,7 +255,7 @@ local function _applyBuffShape()
     -- Match the debuff icon's duration text exactly (font, size, position).
     buffDurationFS:SetFont(
         (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
-        EP("durationSize") or 12,
+        LustVal("durationSize") or 12,
         (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
     buffDurationFS:ClearAllPoints()
@@ -263,8 +263,8 @@ local function _applyBuffShape()
         "CENTER",
         widget,
         "CENTER",
-        _snapOff(EP("durationOffsetX") or 0),
-        _snapOff(EP("durationOffsetY") or 0)
+        _snapOff(LustVal("durationOffsetX") or 0),
+        _snapOff(LustVal("durationOffsetY") or 0)
     )
 
     if shapeKey == "none" or shapeKey == "cropped" then
@@ -278,7 +278,7 @@ local function _applyBuffShape()
             buffTexture._mask:Hide()
             buffTexture._mask = nil
         end
-        local z = (EP("iconZoom") or 11) / 100
+        local z = (LustVal("iconZoom") or 11) / 100
         if shapeKey == "cropped" then
             buffTexture:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
         elseif z > 0 then
@@ -312,9 +312,9 @@ local function ApplyShape()
     end
 
     local Pix = CludesUI and CludesUI.PP
-    local shapeKey = EP("shape") or "none"
+    local shapeKey = LustVal("shape") or "none"
 
-    local size = EP("iconSize") or 40
+    local size = LustVal("iconSize") or 40
     local fw, fh = size, size
     if shapeKey == "cropped" then
         fh = math.floor(size * 0.80 + 0.5)
@@ -336,7 +336,7 @@ local function ApplyShape()
     -- 1:1 parity with the BattleRes icon layout.
     durationFS:SetFont(
         (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
-        EP("durationSize") or 12,
+        LustVal("durationSize") or 12,
         (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
     durationFS:ClearAllPoints()
@@ -344,13 +344,13 @@ local function ApplyShape()
         "CENTER",
         widget,
         "CENTER",
-        _snapOff(EP("durationOffsetX") or 0),
-        _snapOff(EP("durationOffsetY") or 0)
+        _snapOff(LustVal("durationOffsetX") or 0),
+        _snapOff(LustVal("durationOffsetY") or 0)
     )
 
     countFS:SetFont(
         (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
-        EP("countSize") or 11,
+        LustVal("countSize") or 11,
         (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
     countFS:ClearAllPoints()
@@ -358,8 +358,8 @@ local function ApplyShape()
         "BOTTOMRIGHT",
         widget,
         "BOTTOMRIGHT",
-        _snapOff(-2 + (EP("countOffsetX") or 0)),
-        _snapOff(2 + (EP("countOffsetY") or 0))
+        _snapOff(-2 + (LustVal("countOffsetX") or 0)),
+        _snapOff(2 + (LustVal("countOffsetY") or 0))
     )
 
     -- Ready label: same font family as the countdown it replaces, but its own
@@ -409,7 +409,7 @@ local function ApplyShape()
             iconTexture._mask = nil
         end
 
-        local z = (EP("iconZoom") or 11) / 100
+        local z = (LustVal("iconZoom") or 11) / 100
         if shapeKey == "cropped" then
             iconTexture:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
         elseif z > 0 then
@@ -460,7 +460,7 @@ local function _defaultLeftOfBrezCenter()
         brCX, brCY = borderRing.pos.centerX, borderRing.pos.centerY
     end
     local brSize = (borderRing and borderRing.iconSize) or 40
-    local myW = EP("iconSize") or 40
+    local myW = LustVal("iconSize") or 40
     local gap = 6
     return brCX - (brSize * 0.5 + gap + myW * 0.5), brCY
 end
@@ -1188,7 +1188,7 @@ local function RegisterUnlock()
                 return widget
             end,
             getSize = function()
-                local s = EP("iconSize") or 40
+                local s = LustVal("iconSize") or 40
                 return s, s
             end,
             linkedDimensions = true, -- always square; one slider drives both

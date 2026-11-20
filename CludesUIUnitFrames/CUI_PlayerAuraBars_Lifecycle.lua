@@ -240,7 +240,7 @@ local function PabAssistProbe()
     return true
 end
 
-local function ApplyVehicleHidden(hidden)
+local function SetSuppressed(hidden)
     -- One suppression state, two causes: a vehicle ride and a probe-degraded
     -- window (cinematic / faction flip) hide the same parents -- degraded
     -- filter output must never render, exactly like the RF assist gate.
@@ -253,7 +253,7 @@ local function ApplyVehicleHidden(hidden)
     local pabCfg = PAB()
     -- Regen replay re-derives from the LIVE vehicle state, not the argument.
     local function recompute()
-        ApplyVehicleHidden(vehicleHidden)
+        SetSuppressed(vehicleHidden)
     end
     -- Master enable + Use Blizzard Buffs both stand the defaults down: a
     -- vehicle exit during the disabled "Later" window must not re-show them.
@@ -322,7 +322,7 @@ local function SetVehicleHidden(hidden)
     if not hidden then
         pabDegraded = true
     end
-    ApplyVehicleHidden(hidden)
+    SetSuppressed(hidden)
 end
 
 -- The latch is only ever meaningful while the recovery lane is live: every
@@ -335,7 +335,7 @@ function ClearDegraded()
         return
     end
     pabDegraded = false
-    ApplyVehicleHidden(vehicleHidden)
+    SetSuppressed(vehicleHidden)
 end
 
 local cineFixPending = false
@@ -367,7 +367,7 @@ local function ReapplyAllAfterCinematic()
         -- transition and funnels straight here, so this is the common path.
         -- Re-assert and stop.
         if vehicleHidden then
-            ApplyVehicleHidden(true)
+            SetSuppressed(true)
             return
         end
         -- Probe before acting (the RF regain model): a re-drive that lands
@@ -384,7 +384,7 @@ local function ReapplyAllAfterCinematic()
         if not PabAssistProbe() then
             if not pabDegraded then
                 pabDegraded = true
-                ApplyVehicleHidden(vehicleHidden)
+                SetSuppressed(vehicleHidden)
             end
             if not pabSettleTicker then
                 pabSettleTicker = C_Timer.NewTicker(0.25, function()
@@ -405,7 +405,7 @@ local function ReapplyAllAfterCinematic()
             -- Verified regain: un-dim here and force the re-parse below in the
             -- same execution, so no frame paints the stand-down's stale content.
             pabDegraded = false
-            ApplyVehicleHidden(vehicleHidden)
+            SetSuppressed(vehicleHidden)
         end
         ApplyLiveConfig(true)
         ApplyLiveConfig(false)

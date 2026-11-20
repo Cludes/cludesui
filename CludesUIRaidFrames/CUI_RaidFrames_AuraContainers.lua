@@ -128,7 +128,7 @@ end
 local registry = {} -- array of buttons with containers (iterate for reload)
 mod._rfcRegistry = registry -- DEBUG: /cuidm dump reads this; remove with the slash
 
-local function ProxyFor(d)
+local function ScaleProxy(d)
     if d._isParty then
         return mod._scaledPartyProxy
     end
@@ -1341,7 +1341,7 @@ local function ApplyDispLocConfig(boxHolder, d, cfg)
                 if not c2 then
                     return
                 end
-                local s2 = ProxyFor(d)
+                local s2 = ScaleProxy(d)
                 if not s2 or not DispLocActive(s2) then
                     return
                 end
@@ -1945,7 +1945,7 @@ end
 -- aura even while secret; effect slots (healthcolor/border) stay motion-off always
 -- (they overlay the health bar). 4-state mode: true/nil=hidden, false=shown,
 -- "combat"=hidden in combat, "cursor"=shown at cursor.
-local function BmTipMode()
+local function BuffTipMode()
     local p = mod.db and mod.db.profile
     local val = p and p.buffHideTooltips
     if val == nil then
@@ -1955,7 +1955,7 @@ local function BmTipMode()
 end
 
 local function BmTipsOff()
-    local val = BmTipMode()
+    local val = BuffTipMode()
     return not (val == false or val == "combat" or val == "cursor")
 end
 
@@ -1985,8 +1985,8 @@ local function BuildBmIconStyle(indicator, iconScale, px)
         alpha = (indicator.iconOpacity or 100) / 100,
         levelOffset = BM_FRAMELVL[indicator.frameLevel or "medium"] or 13,
         noTooltips = BmTipsOff(),
-        tooltipCombatHide = BmTipMode() == "combat",
-        tooltipAnchor = (BmTipMode() == "cursor") and "cursor" or nil,
+        tooltipCombatHide = BuffTipMode() == "combat",
+        tooltipAnchor = (BuffTipMode() == "cursor") and "cursor" or nil,
         bmGlowInd = indicator,
         bmPandemicEnabled = BmPandemicOn(indicator),
         bmPandemicTextured = indicator.pandemicBorderTextured == true,
@@ -2348,8 +2348,8 @@ local function BuildBmStyleFor(kindName, indicator, iconScale, px, spellId)
             stackOffX = indicator.stacksOffsetX or -1,
             stackOffY = indicator.stacksOffsetY or 2,
             noTooltips = BmTipsOff(),
-            tooltipCombatHide = BmTipMode() == "combat",
-            tooltipAnchor = (BmTipMode() == "cursor") and "cursor" or nil,
+            tooltipCombatHide = BuffTipMode() == "combat",
+            tooltipAnchor = (BuffTipMode() == "cursor") and "cursor" or nil,
             -- Squares share the display-level Icon Glow (same overlay child
             -- mechanism; the control sits on the shared icon/square pane).
             applyExtra = function(b, d2, state)
@@ -2365,8 +2365,8 @@ local function BuildBmStyleFor(kindName, indicator, iconScale, px, spellId)
             noRegions = true,
             ind = indicator,
             noTooltips = BmTipsOff(),
-            tooltipCombatHide = BmTipMode() == "combat",
-            tooltipAnchor = (BmTipMode() == "cursor") and "cursor" or nil,
+            tooltipCombatHide = BuffTipMode() == "combat",
+            tooltipAnchor = (BuffTipMode() == "cursor") and "cursor" or nil,
             applyExtra = BmApplyBar,
         }
     end
@@ -2503,19 +2503,19 @@ local function BuildBmSlots(inds, d, healthBar, iconScale, styleBase)
                         record.extraInit = function(btn, dropdown, state)
                             dropdown.bmRegistered = true
                             dropdown.bmCurve = state.durationColorCurve
-                            local hgt = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ProxyFor(d)) or healthBar
+                            local hgt = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ScaleProxy(d)) or healthBar
                             BmAnchorOneSlot(btn, mm, hgt, hgt and (hgt._cuiHealth or hgt), iconScale)
                         end
                     elseif kindName == "square" then
                         record.extraInit = function(btn, dropdown, state)
                             BmSquareInit(btn, dropdown, state, indicator, healthBar)
-                            local hgt = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ProxyFor(d)) or healthBar
+                            local hgt = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ScaleProxy(d)) or healthBar
                             BmAnchorOneSlot(btn, mm, hgt, hgt and (hgt._cuiHealth or hgt), iconScale)
                         end
                     elseif kindName == "bar" then
                         record.extraInit = function(btn, dropdown, state)
                             BmBarInit(btn, dropdown, state, indicator, healthBar)
-                            local hgt = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ProxyFor(d)) or healthBar
+                            local hgt = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ScaleProxy(d)) or healthBar
                             BmAnchorOneSlot(btn, mm, hgt, hgt and (hgt._cuiHealth or hgt), iconScale)
                         end
                     end
@@ -2534,7 +2534,7 @@ local function BuildBmSlots(inds, d, healthBar, iconScale, styleBase)
                 local lookKey = styleBase .. ":" .. tostring(indicator.id or ("x" .. i)) .. ":fx"
                 AK.styles[lookKey] = BuildBmStyleFor(kindName, indicator, iconScale, 1)
                 if kindName == "bgcolor" then
-                    mod.RFC_BmTexBg(AK.styles[lookKey], ProxyFor(d))
+                    mod.RFC_BmTexBg(AK.styles[lookKey], ScaleProxy(d))
                 end
                 local mm = { key = slotKey, styleKey = lookKey, ind = indicator, kind = kindName, spells = spellList }
                 slots[#slots + 1] = {
@@ -2545,7 +2545,7 @@ local function BuildBmSlots(inds, d, healthBar, iconScale, styleBase)
                     extraInit = function(btn, dropdown, state)
                         BmEffectInit(btn, dropdown, state, indicator, healthBar)
                         -- Self-park in the creation window (see icon branch).
-                        local hgt = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ProxyFor(d)) or healthBar
+                        local hgt = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ScaleProxy(d)) or healthBar
                         BmAnchorOneSlot(btn, mm, hgt, hgt and (hgt._cuiHealth or hgt), iconScale)
                     end,
                 }
@@ -2824,7 +2824,7 @@ local function BmVisualKey(kindName, indicator, px, font, spellId)
             indicator.stacksOffsetX,
             indicator.stacksOffsetY,
             indicator.frameLevel,
-            tostring(BmTipMode()),
+            tostring(BuffTipMode()),
             indicator.displayGlowType,
             indicator.displayGlowClassColor,
             indicator.displayGlowR,
@@ -2864,7 +2864,7 @@ local function BmVisualKey(kindName, indicator, px, font, spellId)
             CK(indicator.stacksTextColor),
             indicator.stacksOffsetX,
             indicator.stacksOffsetY,
-            tostring(BmTipMode()),
+            tostring(BuffTipMode()),
             indicator.displayGlowType,
             indicator.displayGlowClassColor,
             indicator.displayGlowR,
@@ -2893,7 +2893,7 @@ local function BmVisualKey(kindName, indicator, px, font, spellId)
             CK(indicator.barBgColor),
             indicator.barBgOpacity,
             indicator.frameLevel,
-            tostring(BmTipMode())
+            tostring(BuffTipMode())
         )
     end
     return FP(
@@ -2953,7 +2953,7 @@ local function AnchorBmSlots(d, healthBar, iconScale)
     if not metaRec then
         return
     end
-    healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ProxyFor(d)) or healthBar -- Uniform Icon Anchoring
+    healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ScaleProxy(d)) or healthBar -- Uniform Icon Anchoring
     -- Full Width/Height bar pins span the health bar itself; resolve back to
     -- the real bar when the swap above returned the full-height reference.
     local hugBar = healthBar and (healthBar._cuiHealth or healthBar)
@@ -3183,7 +3183,7 @@ local function BmAcquireChain(btnFrame, d, healthBar, childFrame, iconScale, cou
     end
     AnchorBmChainContainer(
         classColor,
-        mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ProxyFor(d)) or healthBar,
+        mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, ScaleProxy(d)) or healthBar,
         anchorMembers,
         iconScale
     )
@@ -3371,7 +3371,7 @@ local function CreateBmContainer(btnFrame, healthBar, d, unitToken)
     -- container), driven by the deferred pool reload.
     d.rfcBmChainsPending = pendingChains or nil
     AnchorBmSlots(d, healthBar, iconScale)
-    d.rfcBmGeo = BmGeoFP(metaRec, iconScale, ProxyFor(d))
+    d.rfcBmGeo = BmGeoFP(metaRec, iconScale, ScaleProxy(d))
 
     -- Prime the fingerprint caches with what was just built, so the next
     -- reload after a swap/login compares equal instead of storming.
@@ -3381,7 +3381,7 @@ local function CreateBmContainer(btnFrame, healthBar, d, unitToken)
         if meta.styleKey then
             bmStyleFP[meta.styleKey] = BmVisualKey(meta.kind, meta.ind, meta.size, font, meta.spellID)
             if meta.kind == "bgcolor" then
-                bmStyleFP[meta.styleKey] = bmStyleFP[meta.styleKey] .. mod.RFC_BmTexBgKey(ProxyFor(d))
+                bmStyleFP[meta.styleKey] = bmStyleFP[meta.styleKey] .. mod.RFC_BmTexBgKey(ScaleProxy(d))
             end
         end
     end
@@ -3499,7 +3499,7 @@ local function BmClassPass(d)
     classFile.sig = BmSignature(classFile.inds, classFile.specKey, classFile.mode)
     classFile.iscale = BmScaleFor(d)
     classFile.styleKey = StyleKeyFor(d)
-    classFile.s = ProxyFor(d)
+    classFile.s = ScaleProxy(d)
     return classFile
 end
 
@@ -3588,7 +3588,7 @@ local function ReloadBm(btnFrame, d, s, classFile)
         if not classFile.stylesChecked then
             BmRefreshSizes(d.rfcBmMeta, classFile.iscale)
             BmCheckStyles(classFile, d.rfcBmMeta)
-            classFile.geo = BmGeoFP(d.rfcBmMeta, classFile.iscale, ProxyFor(d))
+            classFile.geo = BmGeoFP(d.rfcBmMeta, classFile.iscale, ScaleProxy(d))
         end
         if d.rfcBmGeo ~= classFile.geo then
             BmRefreshSizes(d.rfcBmMeta, classFile.iscale)
@@ -3656,7 +3656,7 @@ local function CreateButtonShells(btnFrame, healthBar, d)
     -- draws something. NO unit yet: an unbound shell registers no events and parses
     -- nothing; the debuff finish job binds the real unit.
     if d.rfcDebuffShell and not d.rfcDispelInDebuff then
-        local s = ProxyFor(d)
+        local s = ScaleProxy(d)
         if s and DispelVisible(s, d) then
             local specs = DispelSlotSpecs(btnFrame, healthBar, d, s)
             for i = 1, #specs do
@@ -3705,7 +3705,7 @@ end
 -- at least a frame later, so each resolves StyleKeyFor/ProxyFor itself; capturing them
 -- at queue time gave the party self frame raid-classed containers.
 local function QueueDebuffPhase(btnFrame, healthBar, d)
-    if not ProxyFor(d) then
+    if not ScaleProxy(d) then
         return
     end
     for i = 1, #DEBUFF_GROUPS do
@@ -3715,7 +3715,7 @@ local function QueueDebuffPhase(btnFrame, healthBar, d)
             if not c or d.rfcDebuffGroups[group.key] then
                 return
             end
-            local nowSec = ProxyFor(d)
+            local nowSec = ScaleProxy(d)
             if not nowSec then
                 return
             end
@@ -3770,7 +3770,7 @@ local function QueueDebuffPhase(btnFrame, healthBar, d)
             d.rfcDispel = c
         end
         d.rfcUnit = unitToken
-        local nowSec = ProxyFor(d)
+        local nowSec = ScaleProxy(d)
         if nowSec then
             AnchorDebuffContainer(c, healthBar, nowSec)
             ApplyDebuffConfig(c, d, nowSec)
@@ -3783,7 +3783,7 @@ end
 -- every group is on-demand via DispLocGroupWanted. Class resolves at JOB
 -- time for the same party-self-button reason as QueueDebuffPhase.
 local function QueueDispLocPhase(btnFrame, healthBar, d)
-    if not ProxyFor(d) then
+    if not ScaleProxy(d) then
         return
     end
     for i = 1, #DEBUFF_GROUPS do
@@ -3793,7 +3793,7 @@ local function QueueDispLocPhase(btnFrame, healthBar, d)
             if not c or d.rfcDispLocGroups[group.key] then
                 return
             end
-            local nowSec = ProxyFor(d)
+            local nowSec = ScaleProxy(d)
             if not nowSec or not DispLocActive(nowSec) or not DispLocGroupWanted(nowSec, group.key) then
                 return
             end
@@ -3820,7 +3820,7 @@ local function QueueDispLocPhase(btnFrame, healthBar, d)
         local unitToken = btnFrame:GetAttribute("unit") or NO_UNIT
         AK.FinishContainer(c, unitToken)
         d.rfcDispLoc = c
-        local nowSec = ProxyFor(d)
+        local nowSec = ScaleProxy(d)
         if nowSec then
             AnchorDispLocContainer(c, healthBar, nowSec)
             ApplyDispLocConfig(c, d, nowSec)
@@ -3830,7 +3830,7 @@ local function QueueDispLocPhase(btnFrame, healthBar, d)
 end
 
 local function QueueButtonGroups(btnFrame, healthBar, d)
-    local s = ProxyFor(d)
+    local s = ScaleProxy(d)
     if not s then
         d.rfcGroupsPending = nil
         return
@@ -3859,7 +3859,7 @@ local function QueueButtonGroups(btnFrame, healthBar, d)
         -- before the fingerprint below is primed as current (which would otherwise
         -- latch the stale filters as already-applied).
         if d.rfcDispel then
-            local nowSec = ProxyFor(d) or s
+            local nowSec = ScaleProxy(d) or s
             if d.rfcTotemGen ~= rfcTotemGen or d.rfcDispelFilterFP ~= DispelFilterFP(nowSec) then
                 local parts = DispelSlotFilters(nowSec)
                 for i = 1, #DISPEL_SLOTS do
@@ -3872,7 +3872,7 @@ local function QueueButtonGroups(btnFrame, healthBar, d)
         -- Everything above was configured from current settings; prime the class
         -- fingerprints so the first reload doesn't re-drive it all (class resolved
         -- here, not at queue time -- party self button).
-        PrimeClassFP(StyleKeyFor(d), ProxyFor(d) or s)
+        PrimeClassFP(StyleKeyFor(d), ScaleProxy(d) or s)
         -- Clear state cached while this button was mid-build (unit assignments run
         -- the gate against partial containers): fresh containers need a full
         -- SetShown/range-alpha pass.
@@ -3895,7 +3895,7 @@ function mod.RFC_SetupButton(btnFrame, healthBar, d)
     end
     d.rfcPending = true
 
-    local s = ProxyFor(d)
+    local s = ScaleProxy(d)
     if s then
         local lookKey = StyleKeyFor(d)
         if not AK.styles[lookKey] then
@@ -4275,7 +4275,7 @@ function mod.RFC_ReloadAll()
         local d = mod.GetFFD and mod.GetFFD(btnFrame)
         local boxHolder = d and d.rfcDebuffs
         if boxHolder then
-            local s = ProxyFor(d)
+            local s = ScaleProxy(d)
             if s then
                 local lookKey = StyleKeyFor(d)
                 local flags = dirty[lookKey]
@@ -4308,7 +4308,7 @@ function mod.RFC_ReloadAll()
                             if d.rfcDispLoc or d.rfcDispLocShell then
                                 return
                             end
-                            local s2 = ProxyFor(d)
+                            local s2 = ScaleProxy(d)
                             if not s2 or not DispLocActive(s2) then
                                 return
                             end

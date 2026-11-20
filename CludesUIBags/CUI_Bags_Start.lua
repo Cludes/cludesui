@@ -292,7 +292,7 @@ local function StartAddon()
         end
         return extCache
     end
-    local function SyncDropBorder()
+    local function PaintDropBorder()
         local layer = mod.CursorItemExternalCached() and CUI_Bags:IsVisible()
         if layer and not dropCatcher then
             dropCatcher = CreateFrame("Frame", nil, CUI_Bags)
@@ -314,11 +314,11 @@ local function StartAddon()
             dropCatcher:SetScript("OnReceiveDrag", PlaceExternalCursorItem)
             dropCatcher:SetScript("OnEnter", function()
                 hoverCatch = true
-                SyncDropBorder()
+                PaintDropBorder()
             end)
             dropCatcher:SetScript("OnLeave", function()
                 hoverCatch = false
-                SyncDropBorder()
+                PaintDropBorder()
             end)
             dropCatcher:SetScript("OnHide", function()
                 hoverCatch = false
@@ -350,14 +350,14 @@ local function StartAddon()
         end
         dropEdge:SetShown(enabled and true or false)
     end
-    CUI_Bags._syncDropTarget = SyncDropBorder
+    CUI_Bags._syncDropTarget = PaintDropBorder
     CUI_Bags:HookScript("OnEnter", function()
         hoverFrame = true
-        SyncDropBorder()
+        PaintDropBorder()
     end)
     CUI_Bags:HookScript("OnLeave", function()
         hoverFrame = false
-        SyncDropBorder()
+        PaintDropBorder()
     end)
     local cursorWatcher = CreateFrame("Frame")
     cursorWatcher:SetScript("OnEvent", function(_, eventName)
@@ -365,7 +365,7 @@ local function StartAddon()
         -- A lock change only matters with an item on the cursor (the pickup's
         -- source slot locks); sorts lock and unlock slots constantly.
         if eventName == "CURSOR_CHANGED" or GetCursorInfo() == "item" then
-            SyncDropBorder()
+            PaintDropBorder()
             -- The Compact display's drop zones (CludesUIBags_Compact.lua)
             mod.CompactZonesSync()
         end
@@ -380,7 +380,7 @@ local function StartAddon()
         cursorWatcher:UnregisterEvent("ITEM_LOCK_CHANGED")
         hoverFrame = false
         extrasStale = true
-        SyncDropBorder()
+        PaintDropBorder()
     end)
 
     -- Controller cursor: empty slots take no presses in the All Items and

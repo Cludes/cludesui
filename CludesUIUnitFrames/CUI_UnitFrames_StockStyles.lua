@@ -460,21 +460,21 @@ function mod.UF_ForeverKit()
     -- (cols l..r, rows t..b of its mw x mh file) covers exactly that rect.
     -- The player art is centred half a unit down the box, so its rows fall
     -- on halves.
-    local function Fit(barFrame, posX, posY, wid, hgt, left, right, top, bottom, mw, mh)
+    local function FitBarArt(barFrame, posX, posY, wid, hgt, left, right, top, bottom, mw, mh)
         local kx, ky = wid / (right - left + 1), hgt / (bottom - top + 1)
         barFrame.x, barFrame.y, barFrame.w, barFrame.h = posX, posY, wid, hgt
         barFrame.mx, barFrame.my = -left * kx, top * ky
         barFrame.mw, barFrame.mh = mw * kx, mh * ky
     end
-    Fit(P.health, 88, 45.5, 123, 15, 4, 123, 9, 21, 128, 32)
-    Fit(P.power, 88, 61.5, 123, 10, 4, 123, 4, 11, 128, 16)
+    FitBarArt(P.health, 88, 45.5, 123, 15, 4, 123, 9, 21, 128, 32)
+    FitBarArt(P.power, 88, 61.5, 123, 10, 4, 123, 4, 11, 128, 16)
     P.name = { point = "CENTER", x = 33, y = 13, w = 116, justify = "CENTER" }
     P.badge = { point = "BOTTOMLEFT", x = 13, y = 7, size = 39, atlas = circle }
     P.level = { point = "CENTER", x = 0, y = -0.5, justify = "CENTER", skullDy = 0.5 }
     P.pvp = { point = "TOP", relPoint = "TOPLEFT", x = 22, y = -65, scale = 0.8 }
     P.vis.b, P.pad.bottom = 7, 7
-    Fit(T.health, 22, 44, 123, 15, 4, 123, 10, 22, 128, 32)
-    Fit(T.power, 22, 60, 123, 10, 68, 187, 4, 11, 256, 16)
+    FitBarArt(T.health, 22, 44, 123, 15, 4, 123, 10, 22, 128, 32)
+    FitBarArt(T.power, 22, 60, 123, 10, 68, 187, 4, 11, 256, 16)
     -- Both Forever target bars end alike: Hide Power Bar's stretched health
     -- mask fits, not the retail art's joined one.
     T.mergedHealth = nil
@@ -490,15 +490,15 @@ function mod.UF_ForeverKit()
     -- openings sit elsewhere, so each mask fits by the file that draws.
     local hm = C_Texture.GetAtlasInfo(M.health.mask)
     if hm and hm.file == 4737301 then
-        Fit(M.health, 45, 18, 70, 11, 29, 98, 3, 12, 128, 16)
+        FitBarArt(M.health, 45, 18, 70, 11, 29, 98, 3, 12, 128, 16)
     else
-        Fit(M.health, 45, 18, 70, 11, 26, 96, 4, 12, 128, 16)
+        FitBarArt(M.health, 45, 18, 70, 11, 26, 96, 4, 12, 128, 16)
     end
     local pm = C_Texture.GetAtlasInfo(M.power.mask)
     if pm and pm.file == 4737298 then
-        Fit(M.power, 45, 30, 70, 7, 28, 100, 4, 10, 128, 16)
+        FitBarArt(M.power, 45, 30, 70, 7, 28, 100, 4, 10, 128, 16)
     else
-        Fit(M.power, 45, 30, 70, 7, 29, 98, 4, 10, 128, 16)
+        FitBarArt(M.power, 45, 30, 70, 7, 29, 98, 4, 10, 128, 16)
     end
     M.name = { point = "TOPLEFT", x = 44, y = -6, w = 68, justify = "CENTER" }
     -- The Forever small art ends above the box's bottom (its ring's lowest row).

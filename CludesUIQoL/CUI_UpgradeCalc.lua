@@ -18,7 +18,7 @@ local Data = CUIUpgCalc.Data
 local CUI = CludesUI
 local Pix = CUI.PP
 
-local function IsLocked()
+local function Blocked()
     return InCombatLockdown() or (CUI.InProtectedInstance())
 end
 
@@ -581,7 +581,7 @@ end
 
 local function SelectSlotInUpgrader(loc)
     -- Never touch protected API in combat; would cause taint.
-    if not loc or IsLocked() then
+    if not loc or Blocked() then
         return false
     end
     if C_ItemUpgrade and C_ItemUpgrade.ClearItemUpgrade then
@@ -616,7 +616,7 @@ end
 -- C_ItemUpgrade.GetItemUpgradeItemInfo() (no arguments — returns data for the
 -- currently-selected slot). Passing a loc argument is silently ignored by the API.
 function Calc:ScanEquippedAtUpgrader(onDone)
-    if IsLocked() then
+    if Blocked() then
         if onDone then
             onDone(false)
         end
@@ -673,7 +673,7 @@ function Calc:ScanEquippedAtUpgrader(onDone)
     -- loc argument is silently ignored and the call returns nil).
     local si = 1
     local function scanNext()
-        if IsLocked() then
+        if Blocked() then
             onScanDone(false)
             return
         end
@@ -686,7 +686,7 @@ function Calc:ScanEquippedAtUpgrader(onDone)
         if loc and SelectSlotInUpgrader(loc) then
             -- Wait for the Upgrader frame to load this slot's data, then read it.
             C_Timer.After(0.3, function()
-                if IsLocked() then
+                if Blocked() then
                     onScanDone(false)
                     return
                 end
@@ -718,7 +718,7 @@ end
 -- Calls onDone(ok) when finished; ok=false if the NPC is closed, combat fires, or
 -- the API returns no data for the slot.
 function Calc:RescanSlot(slotId, onDone)
-    if IsLocked() or Calc._scanning then
+    if Blocked() or Calc._scanning then
         if onDone then
             onDone(false)
         end
@@ -743,7 +743,7 @@ function Calc:RescanSlot(slotId, onDone)
     local saved = DB()
     C_Timer.After(0.3, function()
         Calc._scanning = false
-        if IsLocked() then
+        if Blocked() then
             if onDone then
                 onDone(false)
             end
@@ -2065,7 +2065,7 @@ end)
 -- Show / Hide
 
 frame:SetScript("OnShow", function()
-    if IsLocked() then
+    if Blocked() then
         frame:Hide()
         return
     end
@@ -2101,7 +2101,7 @@ SLASH_CUIUPGCALC1 = "/cuic"
 SLASH_CUIUPGCALC2 = "/upgcalc"
 SLASH_CUIUPGCALC3 = "/cec"
 SlashCmdList["CUIUPGCALC"] = function()
-    if IsLocked() then
+    if Blocked() then
         return
     end
     if frame:IsShown() then

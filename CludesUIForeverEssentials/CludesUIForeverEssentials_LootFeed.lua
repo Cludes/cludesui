@@ -800,7 +800,7 @@ end
 
 -- The rate falls while nothing is looted, so the row is repainted once a
 -- minute while it is on screen with a running session.
-local function SyncClock()
+local function SyncSessionClock()
     local run = session.start and summary and summary:IsVisible()
     if run and not clock then
         clock = C_Timer.NewTicker(RATE_TICK, FillSummary)
@@ -816,7 +816,7 @@ local function Earn(kind, copper)
     if summary then
         FillSummary()
     end
-    SyncClock()
+    SyncSessionClock()
 end
 
 local AuctionPrice = module.AuctionPrice
@@ -874,13 +874,13 @@ local function ResetShow(widget)
     if summary and session.start then
         FillSummary()
     end
-    SyncClock()
+    SyncSessionClock()
 end
 
 local function ResetHide(widget)
     widget:UnregisterEvent("MODIFIER_STATE_CHANGED")
     ResetLeave(widget)
-    SyncClock()
+    SyncSessionClock()
 end
 
 local function ResetClick()
@@ -889,7 +889,7 @@ local function ResetClick()
     end
     session.coin, session.items, session.start = 0, 0, nil
     FillSummary()
-    SyncClock()
+    SyncSessionClock()
 end
 
 -- The Reset Session button ends the second line. The row takes no mouse. With
@@ -944,13 +944,13 @@ local function UpdateSummary()
         if summary then
             summary:Hide()
         end
-        SyncClock()
+        SyncSessionClock()
         return
     end
     summary = summary or NewSummary()
     PlaceSummary(summary)
     FillSummary()
-    SyncClock()
+    SyncSessionClock()
 end
 
 -- Group loot by item name: links from the loot history, and the roll behind each of your wins.
@@ -1396,7 +1396,7 @@ local function Apply()
         if summary then
             summary:Hide()
         end
-        SyncClock()
+        SyncSessionClock()
         return
     end
     CreateAnchor()

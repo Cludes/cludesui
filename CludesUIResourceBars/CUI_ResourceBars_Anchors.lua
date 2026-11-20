@@ -227,15 +227,15 @@ local function RegisterUnlockElements()
 
     -- Health Bar
     do
-        local function S()
+        local function HealthCfg()
             return ERB.db.profile.health
         end
         -- Size callbacks use the spec-resolved config so matching lands where the
         -- bar renders; position always stays on S() (global).
-        local function SS()
-            return _G._CURB_ResolveHealthCfg() or S()
+        local function HealthCfgResolved()
+            return _G._CURB_ResolveHealthCfg() or HealthCfg()
         end
-        local save, load, clear, apply = MakePosHelpers(S, function()
+        local save, load, clear, apply = MakePosHelpers(HealthCfg, function()
             return health
         end, 0, -65)
         elements[#elements + 1] = MK({
@@ -247,7 +247,7 @@ local function RegisterUnlockElements()
                 return health
             end,
             isHidden = function()
-                local cfg = S()
+                local cfg = HealthCfg()
                 return not cfg.enabled or IsSpecDisabled(cfg)
             end,
             -- Reported through the ON-SCREEN axes, not the stored ones: a vertical
@@ -255,7 +255,7 @@ local function RegisterUnlockElements()
             -- sees as height; handing the mover the raw stored pair would make it
             -- act on a bar that is still horizontal.
             getSize = function()
-                local s, g = SS(), ERB.db.profile.general
+                local s, g = HealthCfgResolved(), ERB.db.profile.general
                 return OrientedSize(s.width, s.height, s.orientation or (g and g.orientation) or "HORIZONTAL")
             end,
             -- Stock styles: the frame drawn outside the fill (Classic WoW UI's
@@ -265,7 +265,7 @@ local function RegisterUnlockElements()
             getMatchPad = function()
                 local style = mod.ERB_BarsStyle()
                 if style == "cui" then
-                    local pw, ph = mod.ERB_EuiBorderPad(SS())
+                    local pw, ph = mod.ERB_EuiBorderPad(HealthCfgResolved())
                     if pw then
                         return pw, ph
                     end
@@ -273,7 +273,7 @@ local function RegisterUnlockElements()
                 if style == "cui" then
                     return nil
                 end
-                local s, g = SS(), ERB.db.profile.general
+                local s, g = HealthCfgResolved(), ERB.db.profile.general
                 local ori = s.orientation or (g and g.orientation) or "HORIZONTAL"
                 if style == "blizzard" then
                     return mod.ERB_BlizzMatchPad(IsVerticalOrientation(ori))
@@ -282,7 +282,7 @@ local function RegisterUnlockElements()
                 return mod.ERB_ClassicMatchPad(wid, hgt, IsVerticalOrientation(ori), mod.ERB_BarFrameK(s))
             end,
             setWidth = function(_, wid)
-                local s, g = SS(), ERB.db.profile.general
+                local s, g = HealthCfgResolved(), ERB.db.profile.general
                 if IsVerticalOrientation(s.orientation or (g and g.orientation)) then
                     SetDim(s, "height", Pix.Snap(wid))
                 else
@@ -290,7 +290,7 @@ local function RegisterUnlockElements()
                 end
             end,
             setHeight = function(_, hgt)
-                local s, g = SS(), ERB.db.profile.general
+                local s, g = HealthCfgResolved(), ERB.db.profile.general
                 if IsVerticalOrientation(s.orientation or (g and g.orientation)) then
                     SetDim(s, "width", Pix.Snap(hgt))
                 else
@@ -298,7 +298,7 @@ local function RegisterUnlockElements()
                 end
             end,
             isAnchored = function()
-                local cfg = S()
+                local cfg = HealthCfg()
                 return cfg.anchorTo and cfg.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
@@ -312,15 +312,15 @@ local function RegisterUnlockElements()
 
     -- Power Bar
     do
-        local function S()
+        local function HealthCfg()
             return ERB.db.profile.primary
         end
-        local function SS()
-            return _G._CURB_ResolvePowerCfg() or S()
+        local function HealthCfgResolved()
+            return _G._CURB_ResolvePowerCfg() or HealthCfg()
         end
         -- Expand Power Bar if No Resource grows it toward the class resource slot.
         local save, load, clear, apply = MakePosHelpers(
-            S,
+            HealthCfg,
             function()
                 return primaryBar
             end,
@@ -339,12 +339,12 @@ local function RegisterUnlockElements()
                 return primaryBar
             end,
             isHidden = function()
-                local cfg = S()
+                local cfg = HealthCfg()
                 return cfg.enabled == false or IsSpecDisabled(cfg)
             end,
             -- On-screen axes, as with the health bar above.
             getSize = function()
-                local s, g = SS(), ERB.db.profile.general
+                local s, g = HealthCfgResolved(), ERB.db.profile.general
                 return OrientedSize(
                     s.width or 214,
                     s.height or 14,
@@ -355,7 +355,7 @@ local function RegisterUnlockElements()
             getMatchPad = function()
                 local style = mod.ERB_BarsStyle()
                 if style == "cui" then
-                    local pw, ph = mod.ERB_EuiBorderPad(SS())
+                    local pw, ph = mod.ERB_EuiBorderPad(HealthCfgResolved())
                     if pw then
                         return pw, ph
                     end
@@ -363,7 +363,7 @@ local function RegisterUnlockElements()
                 if style == "cui" then
                     return nil
                 end
-                local s, g = SS(), ERB.db.profile.general
+                local s, g = HealthCfgResolved(), ERB.db.profile.general
                 local ori = s.orientation or (g and g.orientation) or "HORIZONTAL"
                 if style == "blizzard" then
                     return mod.ERB_BlizzMatchPad(IsVerticalOrientation(ori))
@@ -376,7 +376,7 @@ local function RegisterUnlockElements()
             -- on every other client and class.
             getBottomExtra = mod.FDM_BottomExtra,
             setWidth = function(_, wid)
-                local s, g = SS(), ERB.db.profile.general
+                local s, g = HealthCfgResolved(), ERB.db.profile.general
                 if IsVerticalOrientation(s.orientation or (g and g.orientation)) then
                     SetDim(s, "height", Pix.Snap(wid))
                 else
@@ -384,7 +384,7 @@ local function RegisterUnlockElements()
                 end
             end,
             setHeight = function(_, hgt)
-                local s, g = SS(), ERB.db.profile.general
+                local s, g = HealthCfgResolved(), ERB.db.profile.general
                 if IsVerticalOrientation(s.orientation or (g and g.orientation)) then
                     SetDim(s, "width", Pix.Snap(hgt))
                 else
@@ -392,7 +392,7 @@ local function RegisterUnlockElements()
                 end
             end,
             isAnchored = function()
-                local cfg = S()
+                local cfg = HealthCfg()
                 return cfg.anchorTo and cfg.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
@@ -406,7 +406,7 @@ local function RegisterUnlockElements()
             -- while Expand Power Bar if No Resource grows the bar, and a layer
             -- banking that would save the shift into the stored position.
             loadRawPos = function()
-                local place = S().unlockPos
+                local place = HealthCfg().unlockPos
                 if not (place and place.point) then
                     return nil
                 end
@@ -421,7 +421,7 @@ local function RegisterUnlockElements()
                 if not (profile and profile.point) then
                     return
                 end
-                S().unlockPos = { point = profile.point, relPoint = profile.relPoint or profile.point, x = profile.x, y = profile.y }
+                HealthCfg().unlockPos = { point = profile.point, relPoint = profile.relPoint or profile.point, x = profile.x, y = profile.y }
                 mod.ERB_GroupDirty()
             end,
         })
@@ -429,13 +429,13 @@ local function RegisterUnlockElements()
 
     -- Class Resource (pips/runes)
     do
-        local function S()
+        local function HealthCfg()
             return ERB.db.profile.secondary
         end
-        local function SS()
-            return _G._CURB_ResolveSecondaryCfg() or S()
+        local function HealthCfgResolved()
+            return _G._CURB_ResolveSecondaryCfg() or HealthCfg()
         end
-        local save, load, clear, apply = MakePosHelpers(S, function()
+        local save, load, clear, apply = MakePosHelpers(HealthCfg, function()
             return secondaryFrame
         end, 0, -38)
         elements[#elements + 1] = MK({
@@ -450,7 +450,7 @@ local function RegisterUnlockElements()
             -- fallback to general) treats anything not HORIZONTAL as vertical in
             -- its renderer -- mirrored here so the mover and W/H match what is drawn.
             getSize = function()
-                local cfg = SS()
+                local cfg = HealthCfgResolved()
                 return OrientedSize(
                     cfg.pipWidth,
                     cfg.pipHeight,
@@ -461,7 +461,7 @@ local function RegisterUnlockElements()
             getMatchPad = function()
                 local style = mod.ERB_BarsStyle()
                 if style == "cui" then
-                    local pw, ph = mod.ERB_EuiBorderPad(SS())
+                    local pw, ph = mod.ERB_EuiBorderPad(HealthCfgResolved())
                     if pw then
                         return pw, ph
                     end
@@ -469,7 +469,7 @@ local function RegisterUnlockElements()
                 if style == "cui" then
                     return nil
                 end
-                local cfg = SS()
+                local cfg = HealthCfgResolved()
                 local vertical = (cfg.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL"
                 if style == "blizzard" then
                     return mod.ERB_BlizzMatchPad(vertical)
@@ -479,7 +479,7 @@ local function RegisterUnlockElements()
                 return mod.ERB_ClassicMatchPad(wid, hgt, vertical, mod.ERB_BarFrameK(cfg))
             end,
             setWidth = function(_, wid)
-                local cfg = SS()
+                local cfg = HealthCfgResolved()
                 if (cfg.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL" then
                     SetDim(cfg, "pipHeight", Pix.Snap(wid))
                 else
@@ -487,7 +487,7 @@ local function RegisterUnlockElements()
                 end
             end,
             setHeight = function(_, hgt)
-                local cfg = SS()
+                local cfg = HealthCfgResolved()
                 if (cfg.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL" then
                     SetDim(cfg, "pipWidth", Pix.Snap(hgt))
                 else
@@ -495,11 +495,11 @@ local function RegisterUnlockElements()
                 end
             end,
             isHidden = function()
-                local cfg = S()
+                local cfg = HealthCfg()
                 return cfg.enabled == false or IsSpecDisabled(cfg)
             end,
             isAnchored = function()
-                local cfg = S()
+                local cfg = HealthCfg()
                 return cfg.anchorTo and cfg.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
@@ -513,14 +513,14 @@ local function RegisterUnlockElements()
 
     -- Cast Bar
     do
-        local function S()
+        local function HealthCfg()
             return ERB.db.profile.castBar
         end
         local function castSave(key, anchorPoint, relPoint, posX, posY)
             if not anchorPoint then
                 return
             end
-            local callback = S()
+            local callback = HealthCfg()
             callback.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive and castBarFrame then
                 castBarFrame:ClearAllPoints()
@@ -528,7 +528,7 @@ local function RegisterUnlockElements()
             end
         end
         local function castLoad()
-            local place = S().unlockPos
+            local place = HealthCfg().unlockPos
             if not place then
                 return nil
             end
@@ -536,13 +536,13 @@ local function RegisterUnlockElements()
             return { point = pt, relPoint = place.relPoint or pt, x = place.x, y = place.y }
         end
         local function castClear()
-            local callback = S()
+            local callback = HealthCfg()
             callback.unlockPos = nil
             callback.anchorX = 0
             callback.anchorY = -54
         end
         local function castApply()
-            local place = S().unlockPos
+            local place = HealthCfg().unlockPos
             if not place then
                 return
             end
@@ -563,7 +563,7 @@ local function RegisterUnlockElements()
                 return castBarFrame
             end,
             getSize = function()
-                local callback = S()
+                local callback = HealthCfg()
                 return callback.width + mod.ERB_CastIconW(callback), callback.height
             end,
             -- Stock styles: the frame outside the bar. Classic WoW UI: the
@@ -575,13 +575,13 @@ local function RegisterUnlockElements()
             getMatchPad = function()
                 local cs = mod.ERB_CastStyle()
                 if cs == "classic" then
-                    return mod.ERB_ClassicMatchPad(0, 0, false, mod.ERB_ClassicFrameK(S()))
+                    return mod.ERB_ClassicMatchPad(0, 0, false, mod.ERB_ClassicFrameK(HealthCfg()))
                 end
                 if cs == "blizzard" and mod.ERB_BlizzAtlas("frame") then
-                    return (mod.ERB_CastIconW(S()) > 0) and 2 or 4, 4
+                    return (mod.ERB_CastIconW(HealthCfg()) > 0) and 2 or 4, 4
                 end
                 if cs == "cui" then
-                    return mod.ERB_EuiBorderPad(S())
+                    return mod.ERB_EuiBorderPad(HealthCfg())
                 end
                 return nil
             end,
@@ -589,7 +589,7 @@ local function RegisterUnlockElements()
             -- hang 13px below the bar; the mover wraps them. Classic WoW UI
             -- has no text box.
             getBottomExtra = function()
-                local callback = S()
+                local callback = HealthCfg()
                 if
                     mod.ERB_CastStyle() == "blizzard"
                     and callback.showSpellText
@@ -600,11 +600,11 @@ local function RegisterUnlockElements()
                 return 0
             end,
             setWidth = function(_, wid)
-                local callback = S()
+                local callback = HealthCfg()
                 SetDim(callback, "width", Pix.Snap(math.max(wid - mod.ERB_CastIconW(callback), 10)))
             end,
             setHeight = function(_, hgt)
-                SetDim(S(), "height", Pix.Snap(hgt))
+                SetDim(HealthCfg(), "height", Pix.Snap(hgt))
             end,
             savePos = castSave,
             loadPos = castLoad,
@@ -615,14 +615,14 @@ local function RegisterUnlockElements()
 
     -- GCD Bar
     do
-        local function S()
+        local function HealthCfg()
             return ERB.db.profile.gcdBar
         end
         local function gcdSave(key, anchorPoint, relPoint, posX, posY)
             if not anchorPoint then
                 return
             end
-            local g = S()
+            local g = HealthCfg()
             g.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive and gcdBarFrame then
                 gcdBarFrame:ClearAllPoints()
@@ -630,7 +630,7 @@ local function RegisterUnlockElements()
             end
         end
         local function gcdLoad()
-            local place = S().unlockPos
+            local place = HealthCfg().unlockPos
             if not place then
                 return nil
             end
@@ -638,13 +638,13 @@ local function RegisterUnlockElements()
             return { point = pt, relPoint = place.relPoint or pt, x = place.x, y = place.y }
         end
         local function gcdClear()
-            local g = S()
+            local g = HealthCfg()
             g.unlockPos = nil
             g.anchorX = 0
             g.anchorY = -78
         end
         local function gcdApply()
-            local place = S().unlockPos
+            local place = HealthCfg().unlockPos
             if not place then
                 return
             end
@@ -665,15 +665,15 @@ local function RegisterUnlockElements()
                 return gcdBarFrame
             end,
             getSize = function()
-                local g = S()
+                local g = HealthCfg()
                 return OrientedSize(g.width, g.height, g.orientation or "HORIZONTAL")
             end,
             -- The textured border's reach outside the bar (every look draws it).
             getMatchPad = function()
-                return mod.ERB_EuiBorderPad(S())
+                return mod.ERB_EuiBorderPad(HealthCfg())
             end,
             setWidth = function(_, wid)
-                local g = S()
+                local g = HealthCfg()
                 if IsVerticalOrientation(g.orientation) then
                     SetDim(g, "height", Pix.Snap(math.max(wid, 4)))
                 else
@@ -681,7 +681,7 @@ local function RegisterUnlockElements()
                 end
             end,
             setHeight = function(_, hgt)
-                local g = S()
+                local g = HealthCfg()
                 if IsVerticalOrientation(g.orientation) then
                     SetDim(g, "width", Pix.Snap(math.max(hgt, 10)))
                 else
@@ -697,14 +697,14 @@ local function RegisterUnlockElements()
 
     -- Totem Bar
     do
-        local function S()
+        local function HealthCfg()
             return ERB.db.profile.totemBar
         end
         local function totemSave(key, anchorPoint, relPoint, posX, posY)
             if not anchorPoint then
                 return
             end
-            local tb = S()
+            local tb = HealthCfg()
             tb.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive and totemBarFrame then
                 totemBarFrame:ClearAllPoints()
@@ -712,7 +712,7 @@ local function RegisterUnlockElements()
             end
         end
         local function totemLoad()
-            local place = S().unlockPos
+            local place = HealthCfg().unlockPos
             if not place then
                 return nil
             end
@@ -720,10 +720,10 @@ local function RegisterUnlockElements()
             return { point = pt, relPoint = place.relPoint or pt, x = place.x, y = place.y }
         end
         local function totemClear()
-            S().unlockPos = nil
+            HealthCfg().unlockPos = nil
         end
         local function totemApply()
-            local place = S().unlockPos
+            local place = HealthCfg().unlockPos
             if not place then
                 return
             end
@@ -745,7 +745,7 @@ local function RegisterUnlockElements()
                 return totemBarFrame
             end,
             getSize = function()
-                local tb = S()
+                local tb = HealthCfg()
                 local iconSz = tb.iconSize or 30
                 local spacing = tb.spacing or 2
                 -- Estimate extent based on max 5 totems; swap W/H when vertical

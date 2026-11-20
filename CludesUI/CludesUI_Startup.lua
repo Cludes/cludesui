@@ -24,12 +24,12 @@ do
     local dbReady = false
     local scaleKnown = false -- true when ppUIScale was already saved
 
-    local function ApplyScaleSafe(scale)
+    local function SetScaleWhenSafe(scale)
         if InCombatLockdown() then
             -- Re-read the saved scale at drain: a UI Scale change made later in the
             -- same fight (SetUIScale) must not be undone by this older value.
             CludesUI.CombatQueue.Defer("StartupScale", function()
-                ApplyScaleSafe(CludesUIDB and CludesUIDB.ppUIScale or scale)
+                SetScaleWhenSafe(CludesUIDB and CludesUIDB.ppUIScale or scale)
             end)
             return
         end
@@ -100,7 +100,7 @@ do
                 -- restore still ran at the CVar scale. Kept anyway: it is idempotent,
                 -- costs nothing, and closes the same window for anything restored
                 -- before Blizzard's CVar apply. The chat fix is below.
-                ApplyScaleSafe(CludesUIDB.ppUIScale)
+                SetScaleWhenSafe(CludesUIDB.ppUIScale)
             end
         elseif evt == "PLAYER_LOGIN" then
             self:UnregisterEvent("PLAYER_LOGIN")
@@ -108,7 +108,7 @@ do
             if scaleKnown and CludesUIDB.ppUIScale then
                 -- Returning user: single SetScale at PLAYER_LOGIN.
                 -- No timers, no repeated calls.
-                ApplyScaleSafe(CludesUIDB.ppUIScale)
+                SetScaleWhenSafe(CludesUIDB.ppUIScale)
 
                 -- Re-apply our scale whenever Blizzard fires UI_SCALE_CHANGED
                 -- (zone transitions, CVar resets, resolution changes).
@@ -123,7 +123,7 @@ do
         elseif evt == "UI_SCALE_CHANGED" then
             local saved = CludesUIDB and CludesUIDB.ppUIScale
             if saved then
-                ApplyScaleSafe(saved)
+                SetScaleWhenSafe(saved)
                 SyncMultOnly()
             end
             return
@@ -191,13 +191,13 @@ do
             if CludesUI and CludesUI.PP and CludesUI.PP.UpdateMult then
                 CludesUI.PP.UpdateMult()
             end
-            ApplyScaleSafe(scale)
+            SetScaleWhenSafe(scale)
             C_Timer.After(2, function()
                 if InCombatLockdown() then
                     return
                 end
                 if CludesUIDB and CludesUIDB.ppUIScale then
-                    ApplyScaleSafe(CludesUIDB.ppUIScale)
+                    SetScaleWhenSafe(CludesUIDB.ppUIScale)
                 end
                 SyncMultOnly()
             end)
@@ -206,7 +206,7 @@ do
                     return
                 end
                 if CludesUIDB and CludesUIDB.ppUIScale then
-                    ApplyScaleSafe(CludesUIDB.ppUIScale)
+                    SetScaleWhenSafe(CludesUIDB.ppUIScale)
                 end
                 SyncMultOnly()
             end)

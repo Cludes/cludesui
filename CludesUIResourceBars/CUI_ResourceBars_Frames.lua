@@ -118,7 +118,7 @@ mod.IsVerticalOrientation = IsVerticalOrientation
 mod.OrientedMatchGuard = function(barId, propKey, getOri, existingDisabled, existingTooltip)
     local hD, hT, hR = CludesUI.MatchGuard(barId, "Height", existingDisabled, existingTooltip)
     local wD, wT, wR = CludesUI.MatchGuard(barId, "Width", existingDisabled, existingTooltip)
-    local function pick(sameAxis, swappedAxis)
+    local function byAxis(sameAxis, swappedAxis)
         return function(...)
             if IsVerticalOrientation(getOri and getOri()) then
                 return swappedAxis(...)
@@ -127,9 +127,9 @@ mod.OrientedMatchGuard = function(barId, propKey, getOri, existingDisabled, exis
         end
     end
     if propKey == "Height" then
-        return pick(hD, wD), pick(hT, wT), pick(hR, wR)
+        return byAxis(hD, wD), byAxis(hT, wT), byAxis(hR, wR)
     end
-    return pick(wD, hD), pick(wT, hT), pick(wR, hR)
+    return byAxis(wD, hD), byAxis(wT, hT), byAxis(wR, hR)
 end
 
 -- Cached empower stage thresholds (set once at empower start, avoids per-frame API call)

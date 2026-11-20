@@ -73,7 +73,7 @@ local COLUMNS = {
 local COLUMN_ORDER = { "icon", "name", "ilvl", "track", "reqlvl", "type", "bind", "count", "sell" }
 local DEFAULT_COLUMNS = { "icon", "name", "ilvl", "count", "sell" }
 
-local function GetColumns()
+local function ListColumns()
     return BagsProfile().bagListColumns or DEFAULT_COLUMNS
 end
 
@@ -103,7 +103,7 @@ local function SetListFont(fontStr, size)
 end
 
 -- Repaints both list views; the bank only while it shows its List View.
-local function Refresh()
+local function RefreshBags()
     if CUI_Bags and CUI_Bags.RefreshInventory then
         CUI_Bags:RefreshInventory()
     end
@@ -446,7 +446,7 @@ local function ToggleCollapsed(self)
     else
         SetCollapsed(set, self._key, not IsCollapsed(self._key) or nil)
     end
-    Refresh()
+    RefreshBags()
 end
 
 local function GetOrCreateSection(position)
@@ -507,7 +507,7 @@ local _lastRowW
 local function LayoutColumns(rowW)
     _lastRowW = rowW
     ResolveListFont()
-    local cols = GetColumns()
+    local cols = ListColumns()
     local fixed = 0
     for _, ident in ipairs(cols) do
         fixed = fixed + (FixedWidth(ident) or 0)
@@ -528,7 +528,7 @@ mod.ListLayoutColumns = LayoutColumns
 -------------------------------------------------------------------------------
 local function MoveColumn(ident, toIdx)
     local cols = {}
-    for _, c in ipairs(GetColumns()) do
+    for _, c in ipairs(ListColumns()) do
         if c ~= ident then
             cols[#cols + 1] = c
         end
@@ -536,13 +536,13 @@ local function MoveColumn(ident, toIdx)
     toIdx = math.max(1, math.min(toIdx, #cols + 1))
     table.insert(cols, toIdx, ident)
     SetColumns(cols)
-    Refresh()
+    RefreshBags()
 end
 
 local IndexOf = tIndexOf
 
 local function ToggleColumn(ident)
-    local cols = GetColumns()
+    local cols = ListColumns()
     local at = IndexOf(cols, ident)
     local result = {}
     for _, c in ipairs(cols) do
@@ -566,12 +566,12 @@ local function ToggleColumn(ident)
         table.insert(result, insertAt, ident)
     end
     SetColumns(result)
-    Refresh()
+    RefreshBags()
 end
 
 -- True while a column is shown or still sorts the list (its data is needed)
 function mod.ListUsesColumn(ident)
-    return IndexOf(GetColumns(), ident) ~= nil or BagsProfile().bagListSortKey == ident
+    return IndexOf(ListColumns(), ident) ~= nil or BagsProfile().bagListSortKey == ident
 end
 
 local function ShowColumnMenu(ownerFrame, ident)
@@ -580,23 +580,23 @@ local function ShowColumnMenu(ownerFrame, ident)
         for _, cid in ipairs(COLUMN_ORDER) do
             -- WoW Forever has no upgrade tracks: Track is offered there only
             -- to switch off a column an imported profile brought in
-            if cid ~= "track" or not CUI.IS_FOREVER or IndexOf(GetColumns(), cid) then
+            if cid ~= "track" or not CUI.IS_FOREVER or IndexOf(ListColumns(), cid) then
                 local def = COLUMNS[cid]
                 root:CreateCheckbox(L(def.menuLabel or def.label), function()
-                    return IndexOf(GetColumns(), cid) ~= nil
+                    return IndexOf(ListColumns(), cid) ~= nil
                 end, function()
                     ToggleColumn(cid)
                 end)
             end
         end
         root:CreateDivider()
-        local at = IndexOf(GetColumns(), ident)
+        local at = IndexOf(ListColumns(), ident)
         if at and at > 1 then
             root:CreateButton(L("Move Left"), function()
                 MoveColumn(ident, at - 1)
             end)
         end
-        if at and at < #GetColumns() then
+        if at and at < #ListColumns() then
             root:CreateButton(L("Move Right"), function()
                 MoveColumn(ident, at + 1)
             end)
@@ -605,13 +605,13 @@ local function ShowColumnMenu(ownerFrame, ident)
             return BagsProfile().bagListRoundIcons == true
         end, function()
             BagsProfile().bagListRoundIcons = not BagsProfile().bagListRoundIcons
-            Refresh()
+            RefreshBags()
         end)
         root:CreateButton(L("Reset Columns"), function()
             BagsProfile().bagListColumns = nil
             BagsProfile().bagListSortKey = nil
             BagsProfile().bagListColWidths = nil
-            Refresh()
+            RefreshBags()
         end)
     end)
 end
@@ -632,7 +632,7 @@ local function OnHeaderDragUpdate(self)
         self._dragged = true
     end
     curX = curX / self:GetEffectiveScale()
-    local cols, btns = GetColumns(), self:GetParent()._btns
+    local cols, btns = ListColumns(), self:GetParent()._btns
     local target = 1
     for _, cid in ipairs(cols) do
         local widget = btns[cid]
@@ -683,7 +683,7 @@ local function OnHeaderMouseUp(self, btnFrame)
         profile.bagListSortKey = self._colId
         profile.bagListSortAsc = not def.desc
     end
-    Refresh()
+    RefreshBags()
 end
 
 -- Live column reflow: re-place the header buttons and the visible rows'
@@ -721,7 +721,7 @@ local function SizerStop(self)
     end
     self:SetScript("OnUpdate", nil)
     self._startW = nil
-    Refresh()
+    RefreshBags()
 end
 
 local function SizerOnUpdate(self)
@@ -761,7 +761,7 @@ local function SizerOnMouseDown(self, btnFrame)
     LayoutColumns(barFrame._rowW)
     -- Width the flexible column can give up (no flexible column: capped growth)
     local slack = 200
-    for _, cid in ipairs(GetColumns()) do
+    for _, cid in ipairs(ListColumns()) do
         if not COLUMNS[cid].width then
             slack = _colW[cid] - MIN_FLEX_W
         end

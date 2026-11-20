@@ -337,7 +337,7 @@ local defaultSet = {
 }
 
 local saved = CludesUI.Lite.NewDB("CludesUIQoLDB", defaultSet)
-local function MA()
+local function AlertCfg()
     return saved.profile.movementAlert
 end
 
@@ -346,7 +346,7 @@ end
 -- runtime keys off the PLAYER's class -- a character whose class is
 -- unchecked pays exactly the same zero cost as the feature being off.
 local function MovementEnabled()
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     local ec = alertCfg and alertCfg.enabledClasses
     if not ec then
         return false
@@ -406,7 +406,7 @@ local function AlertFontOutline()
     return o
 end
 local function ResolveAlertColor(prefixText, useClassKey)
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if alertCfg[useClassKey] then
         local _, classToken = UnitClass("player")
         local color = classToken and CludesUI.GetClassColor(classToken)
@@ -470,7 +470,7 @@ end
 -- plays. abilityName, if given, substitutes "%a" in the TTS message (used by
 -- the Movement Cooldown Alert's per-spell "ready" callout).
 local function FireTrackerAlert(prefixText, abilityName)
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if alertCfg[prefixText .. "TtsEnabled"] then
         -- The Movement Cooldown Alert always speaks the ability name (or its
         -- per-spell Custom Text) -- there is no message setting for it. The
@@ -650,7 +650,7 @@ local function LayoutDisplaySlots(stacks)
 end
 
 local function StyleSlot(slotRec)
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     local fontFile, outline = AlertFontPath(), AlertFontOutline()
     local frameH, frameW = moveFrame:GetHeight(), moveFrame:GetWidth()
     local fontPx = math.max(8, math.min(72, alertCfg.textSize or 24))
@@ -775,7 +775,7 @@ local function ShowEngineCountdown(slotRec, showMode, dur)
     if not cooldown then
         return false
     end
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     local fontPx = math.max(8, math.min(72, alertCfg.textSize or 24))
     -- Decimals: this is the engine's version of the Show Decimal toggle. Above
     -- the threshold it prints whole seconds, below it one decimal place, so
@@ -857,7 +857,7 @@ local function ShowEngineCountdownCentred(slotRec, anchor, dur)
     if not cooldown then
         return false
     end
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     local fontPx = math.max(8, math.min(72, alertCfg.textSize or 24))
     local decimals = ((tonumber(alertCfg.precision) or 1) > 0) and 1 or 0
     if cooldown.SetCountdownMillisecondsThreshold then
@@ -1034,7 +1034,7 @@ local function GetPlayerMovementSpells()
         return {}
     end
 
-    local overrides = MA().spellOverrides or {}
+    local overrides = AlertCfg().spellOverrides or {}
     local classAbilities = MOVEMENT_ABILITIES[classFile]
     if not classAbilities then
         return {}
@@ -1220,7 +1220,7 @@ local function UpdateCachedCharges()
     end
 end
 
-local function CacheMovementSpells(fullReset)
+local function LoadMovementSpells(fullReset)
     local classFile = select(2, UnitClass("player"))
     local specId = ResolvePlayerSpecId()
 
@@ -1308,7 +1308,7 @@ local function CacheMovementSpells(fullReset)
         end
     end
 
-    local overrides = MA().spellOverrides or {}
+    local overrides = AlertCfg().spellOverrides or {}
     local classAbilities = MOVEMENT_ABILITIES[classFile]
     local specAbilities = classAbilities and specId and classAbilities[specId]
     if CludesUI.IS_FOREVER and specId then
@@ -1332,7 +1332,7 @@ local function CacheMovementSpells(fullReset)
 
     UpdateCachedCharges()
 end
-CludesUI._CacheMovementSpells = CacheMovementSpells
+CludesUI._CacheMovementSpells = LoadMovementSpells
 
 CancelAllRechargeTimers = function()
     for _, timer in pairs(rechargeTimers) do
@@ -1469,7 +1469,7 @@ end
 local PREC_FMT = { [0] = "%.0f", [1] = "%.1f" }
 
 local function ShowMovementSlot(index, cdInfo, spellEntry, dur)
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     local slotRec = GetDisplaySlot(index)
     StyleSlot(slotRec)
     local showMode = alertCfg.displayMode or "text"
@@ -1783,7 +1783,7 @@ end
 local BUFF_ALERT_STYLE = "qol:movealert"
 
 local function BuffAlertApplyExtra(btnFrame, skinData, style)
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     local mode = alertCfg.displayMode or "text"
     if not skinData.maText then
         skinData.maText = btnFrame:CreateFontString(nil, "OVERLAY")
@@ -1818,7 +1818,7 @@ local function BuffAlertApplyExtra(btnFrame, skinData, style)
 end
 
 local function BuildBuffAlertStyle(record)
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     local px = (CludesUI.PP and CludesUI.PP.Scale and CludesUI.PP.Scale(alertCfg.iconSize or 32))
         or alertCfg.iconSize
         or 32
@@ -2164,7 +2164,7 @@ CheckMovementCooldown = function()
     if movementPreviewTicker then
         return
     end
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if not MovementEnabled() then
         HideMovementDisplay()
         return
@@ -2297,7 +2297,7 @@ CludesUI._CheckMovementCooldown = function()
 end
 
 local function ApplyMovementFrame()
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if not alertCfg then
         return
     end
@@ -2380,7 +2380,7 @@ local function StopMovementPreview()
 end
 
 local function PreviewTick()
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     -- Auto-shutoff: options window closed, or the user navigated to another
     -- page/module. (Page name must match PAGE_MOVEMENT in CUI_QoL_Options.lua.)
     local isShown = CludesUI._mainFrame and CludesUI._mainFrame:IsShown()
@@ -2419,7 +2419,7 @@ local function StartMovementPreview()
     if movementPreviewTicker then
         return
     end
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if not alertCfg then
         return
     end
@@ -2504,7 +2504,7 @@ local function RebuildMobilitySpellLookup()
             end
         end
     end
-    local overrides = MA().spellOverrides
+    local overrides = AlertCfg().spellOverrides
     if overrides then
         for alertSpell, overrideId in pairs(overrides) do
             if overrideId.enabled ~= false and not BUFF_ACTIVE_SPELLS[alertSpell] then
@@ -2566,7 +2566,7 @@ local function CancelTimeSpiralCountdown()
 end
 
 local function UpdateTimeSpiralCountdown()
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if not alertCfg.tsEnabled or not timeSpiralActiveTime then
         spiralFrame:Hide()
         CancelTimeSpiralCountdown()
@@ -2586,7 +2586,7 @@ local function UpdateTimeSpiralCountdown()
 end
 
 local function ApplyTimeSpiralFrame()
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if not alertCfg then
         return
     end
@@ -2648,7 +2648,7 @@ local function StopGatewayPolling()
 end
 
 local function CheckGatewayUsable()
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if not alertCfg.gwEnabled then
         gateFrame:Hide()
         StopGatewayPolling()
@@ -2699,7 +2699,7 @@ CludesUI._CheckGatewayUsable = CheckGatewayUsable
 
 local function StartGatewayPolling()
     StopGatewayPolling()
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if not alertCfg.gwEnabled then
         return
     end
@@ -2715,7 +2715,7 @@ local function StartGatewayPolling()
 end
 
 local function ApplyGatewayFrame()
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if not alertCfg then
         return
     end
@@ -2783,7 +2783,7 @@ local movementEventsRegistered = false
 local timeSpiralEventsRegistered = false
 
 local function UpdateEventRegistration()
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if not alertCfg then
         return
     end
@@ -2800,7 +2800,7 @@ local function UpdateEventRegistration()
         -- combat state) before any tracker logic runs.
         inCombat = UnitAffectingCombat("player")
         RebuildMobilitySpellLookup()
-        CacheMovementSpells(true)
+        LoadMovementSpells(true)
         -- Register the bar-texture tables with SharedMedia (idempotent; also
         -- installs the session-long late-registration callback), matching the
         -- CDM Tracking Bars setup: a saved SM texture renders correctly
@@ -2876,7 +2876,7 @@ end
 CludesUI._UpdateMovementAlertEvents = UpdateEventRegistration
 
 loadFrame:SetScript("OnEvent", function(self, evt, ...)
-    local alertCfg = MA()
+    local alertCfg = AlertCfg()
     if not alertCfg then
         return
     end
@@ -2895,7 +2895,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
             CheckMovementCooldown()
             C_Timer.After(0.5, function()
                 if ResolvePlayerSpecId() then
-                    CacheMovementSpells(true)
+                    LoadMovementSpells(true)
                     CheckMovementCooldown()
                 end
             end)
@@ -2919,21 +2919,21 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
                         if type(isHiddenKey) == "function" then
                             return not isHiddenKey()
                         end
-                        return not MA()[isHiddenKey]
+                        return not AlertCfg()[isHiddenKey]
                     end,
                     getFrame = getFrameFn,
                     getSize = function()
-                        local place = MA()[posKey]
+                        local place = AlertCfg()[posKey]
                         return (place and place.width) or 200, (place and place.height) or 40
                     end,
                     setWidth = function(_, wid)
-                        local m = MA()
+                        local m = AlertCfg()
                         m[posKey] = m[posKey] or {}
                         m[posKey].width = math.max(60, math.floor(wid + 0.5))
                         applyFn()
                     end,
                     setHeight = function(_, hgt)
-                        local m = MA()
+                        local m = AlertCfg()
                         m[posKey] = m[posKey] or {}
                         m[posKey].height = math.max(20, math.floor(hgt + 0.5))
                         applyFn()
@@ -2942,20 +2942,20 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
                         if not point then
                             return
                         end
-                        local m = MA()
+                        local m = AlertCfg()
                         m[posKey] = m[posKey] or {}
                         m[posKey].point, m[posKey].relPoint, m[posKey].x, m[posKey].y =
                             point, relPoint, posX, posY
                     end,
                     loadPos = function()
-                        local place = MA()[posKey]
+                        local place = AlertCfg()[posKey]
                         if place and place.point then
                             return place
                         end
                         return nil
                     end,
                     clearPos = function()
-                        MA()[posKey] = nil
+                        AlertCfg()[posKey] = nil
                         applyFn()
                     end,
                     applyPos = applyFn,
@@ -2999,12 +2999,12 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
         or evt == "TRAIT_CONFIG_UPDATED"
     then
         if not InCombatLockdown() then
-            CacheMovementSpells(true)
+            LoadMovementSpells(true)
             CheckMovementCooldown()
             RefreshCastFilters()
         end
     elseif evt == "UPDATE_SHAPESHIFT_FORM" then
-        CacheMovementSpells()
+        LoadMovementSpells()
         CheckMovementCooldown()
     elseif evt == "PLAYER_ENTERING_WORLD" then
         inCombat = UnitAffectingCombat("player")
@@ -3013,7 +3013,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
         SyncBuffAlertVehicleLatch()
         wipe(timeSpiralActiveSpells)
         timeSpiralActiveTime = nil
-        CacheMovementSpells(true)
+        LoadMovementSpells(true)
         CheckMovementCooldown()
         CheckGatewayUsable()
     elseif evt == "PLAYER_REGEN_DISABLED" then
@@ -3050,7 +3050,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
                 spellCastTime[alertSpell] = nil
             end
         end
-        CacheMovementSpells()
+        LoadMovementSpells()
         CheckMovementCooldown()
         CheckGatewayUsable()
     elseif

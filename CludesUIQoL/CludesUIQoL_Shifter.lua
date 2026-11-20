@@ -1463,7 +1463,7 @@ end
 -- Our saved spot while the feature is on; otherwise Blizzard's own anchor,
 -- and only while ours is still on the container. SECURE writes only (see
 -- block comment); false = in combat, so the queue decides again later.
-local function SyncTopBar()
+local function PlaceTopBar()
     local widget = TopBarFrame()
     if not widget then
         return
@@ -1483,7 +1483,7 @@ local function SyncTopBar()
     if success then
         topBarMoved = place and true or false
     else
-        mod.CombatQueue.Defer("ShifterTopBar", SyncTopBar)
+        mod.CombatQueue.Defer("ShifterTopBar", PlaceTopBar)
     end
 end
 
@@ -1505,7 +1505,7 @@ local function HookTopBar()
             return
         end
         if TopBarEnabled() and GetTopBarPos() then
-            SyncTopBar()
+            PlaceTopBar()
         else
             topBarMoved = false
         end
@@ -1566,7 +1566,7 @@ local function RegisterTopBarUnlockElement()
                 proxyFrame:ClearAllPoints()
                 proxyFrame:SetPoint(anchorPoint, UIParent, relPoint, posX, posY)
                 HookTopBar()
-                SyncTopBar()
+                PlaceTopBar()
             end,
             loadPos = function()
                 local place = GetTopBarPos()
@@ -1584,7 +1584,7 @@ local function RegisterTopBarUnlockElement()
                     proxyFrame:ClearAllPoints()
                     proxyFrame:SetPoint("TOP", UIParent, "TOP", 0, TOPBAR_DEFY)
                 end
-                SyncTopBar()
+                PlaceTopBar()
             end,
             applyPos = function()
                 local place = GetTopBarPos()
@@ -1595,7 +1595,7 @@ local function RegisterTopBarUnlockElement()
                 else
                     proxyFrame:SetPoint("TOP", UIParent, "TOP", 0, TOPBAR_DEFY)
                 end
-                SyncTopBar()
+                PlaceTopBar()
             end,
         }),
     }, "CludesUIQoL")
@@ -1604,14 +1604,14 @@ end
 -- Exposed for the options toggle (mid-session enable without /reload)
 function CludesUI._InitShifterTopBar()
     HookTopBar()
-    SyncTopBar()
+    PlaceTopBar()
 end
 
 -- Exposed for the options toggle, which turns the setting off first: the
 -- container gets Blizzard's own anchor back (after combat if need be) and the
 -- post-hook goes dormant through the TopBarEnabled gate.
 function CludesUI._DisableShifterTopBar()
-    SyncTopBar()
+    PlaceTopBar()
 end
 
 -------------------------------------------------------------------------------
@@ -1875,7 +1875,7 @@ function CludesUI._ResetShifterPositions()
     for index = 1, #LOOT_WINDOWS do
         ReleaseLootWindow(LOOT_WINDOWS[index].name)
     end
-    SyncTopBar()
+    PlaceTopBar()
     CARRIER.Sync()
 end
 

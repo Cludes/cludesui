@@ -17,14 +17,14 @@ end -- module disabled: no options page
 local REQ = "Kick Tracker"
 
 -- Settings: db.profile.kickTracker of the Mythic+ Tools Lite DB.
-local function KT()
+local function KickCfg()
     local saved = _G._CUMT_AceDB
     local profile = saved and saved.profile
     return profile and profile.kickTracker
 end
 
 local function Get(key, fallback)
-    local c = KT()
+    local c = KickCfg()
     local val = c and c[key]
     if val == nil then
         return fallback
@@ -54,7 +54,7 @@ local function Refresh()
 end
 
 local function Set(key, val)
-    local c = KT()
+    local c = KickCfg()
     if not c then
         return
     end
@@ -153,13 +153,13 @@ end
 -- Some entries default to true, so an unchecked entry is stored as false:
 -- a missing one would be filled back in with its default at the next login.
 local function WhereGet(keyName)
-    local c = KT()
+    local c = KickCfg()
     local tbl = c and c.whereToShow
     return type(tbl) == "table" and tbl[keyName] == true
 end
 
 local function WhereSet(keyName, val)
-    local c = KT()
+    local c = KickCfg()
     if not c then
         return
     end
@@ -182,7 +182,7 @@ local SIDE_X = { LEFT = -4, RIGHT = 4, TOP = 0, BOTTOM = 0 }
 -- A new side takes its own natural X offset while the old side's offsets are
 -- still untouched; custom offsets stay as they are.
 local function SetPosition(val)
-    local c = KT()
+    local c = KickCfg()
     if not c then
         return
     end
@@ -346,7 +346,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         setValue = CludesUI.SectionToggleSetValue(function(val)
             -- The runtime alone: the section rebuild that follows builds
             -- the header again and paints its samples then.
-            local c = KT()
+            local c = KickCfg()
             if not c then
                 return
             end
@@ -798,7 +798,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                             (col and col.a) or 0.45
                     end,
                     setValue = function(red, green, blue, a)
-                        local c = KT()
+                        local c = KickCfg()
                         if not c then
                             return
                         end

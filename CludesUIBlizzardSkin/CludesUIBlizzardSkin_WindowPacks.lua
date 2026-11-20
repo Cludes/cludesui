@@ -3151,7 +3151,7 @@ local function ApplyGuildPopup(pop, skinData)
     end
 end
 
-local function SkinGuildPopup(pop)
+local function SkinGuildDialog(pop)
     -- Some same-named globals are functions until their dialog exists.
     if type(pop) ~= "table" or not pop.IsForbidden or pop:IsForbidden() then
         return
@@ -3403,9 +3403,9 @@ do
     end
 
     local function SkinGuildDialogs(win)
-        SkinGuildPopup(win.GuildMemberDetailFrame)
-        SkinGuildPopup(_G.CommunitiesAddDialog)
-        SkinGuildPopup(_G.CommunitiesCreateCommunityDialog)
+        SkinGuildDialog(win.GuildMemberDetailFrame)
+        SkinGuildDialog(_G.CommunitiesAddDialog)
+        SkinGuildDialog(_G.CommunitiesCreateCommunityDialog)
         -- Add/Create Community dialogs: their globals are NOT live frames at addon
         -- load (the real frame appears when the dialog first opens), so catch it
         -- from StaticPopupSpecial_Show, which receives the frame itself. The BG is
@@ -3427,7 +3427,7 @@ do
                     if not success or not nm2 or not wanted[nm2] then
                         return
                     end
-                    SkinGuildPopup(guildDialog)
+                    SkinGuildDialog(guildDialog)
                     local d2 = GetFFD(guildDialog)
                     if guildDialog.BG and not d2.bgKilled then
                         d2.bgKilled = true
@@ -3453,7 +3453,7 @@ do
         local csd = _G.CommunitiesSettingsDialog
         if csd and type(csd) == "table" and not GetFFD(csd).csdSkinned then
             GetFFD(csd).csdSkinned = true
-            SkinGuildPopup(csd)
+            SkinGuildDialog(csd)
             for _, keyName in ipairs({
                 "Accept",
                 "AcceptButton",
@@ -3490,7 +3490,7 @@ do
         local regionData = win.RecruitmentDialog
         if regionData and not GetFFD(regionData).rdSkinned then
             GetFFD(regionData).rdSkinned = true
-            SkinGuildPopup(regionData)
+            SkinGuildDialog(regionData)
             -- Blizzard pins this to the SCREEN (UIParent), nowhere near a
             -- repositioned Communities window; dock it to the panel's right edge
             -- instead (nothing re-anchors it at runtime). 38 = the 32px side tabs
@@ -3522,7 +3522,7 @@ do
         local esd = win.EditStreamDialog
         if esd and not GetFFD(esd).esdSkinned then
             GetFFD(esd).esdSkinned = true
-            SkinGuildPopup(esd)
+            SkinGuildDialog(esd)
             for _, keyName in ipairs({
                 "Accept",
                 "AcceptButton",
@@ -3554,7 +3554,7 @@ do
         -- Notification settings dialog (chat bell): house popup + its extras.
         local nsd = win.NotificationSettingsDialog
         if nsd then
-            SkinGuildPopup(nsd)
+            SkinGuildDialog(nsd)
             if nsd.Selector then
                 Skin.FadeRegions(nsd.Selector)
                 Skin.Register(nsd.Selector, true)
@@ -3800,7 +3800,7 @@ do
             -- with its own bottom separator, while the main band's separator hides so no
             -- line cuts mid-bar. The request-to-join dialog hangs off the finder.
             if finder and finder.RequestToJoinFrame then
-                SkinGuildPopup(finder.RequestToJoinFrame)
+                SkinGuildDialog(finder.RequestToJoinFrame)
             end
             if finder and not GetFFD(finder).bandExt then
                 local fd2 = GetFFD(finder)
@@ -4436,7 +4436,7 @@ do
                     TreatClose(childFrame)
                 end
             end
-            SkinGuildPopup(guildLog)
+            SkinGuildDialog(guildLog)
             -- Inner container carries its own NineSlice chrome.
             local cont = guildLog.Container
             if cont then
@@ -7171,7 +7171,7 @@ do
             HookRCScrollBox(rep.ScrollBox)
             local repDetail = rep.ReputationDetailFrame
             if repDetail then
-                SkinGuildPopup(repDetail)
+                SkinGuildDialog(repDetail)
                 for _, keyName in ipairs({
                     "AtWarCheckbox",
                     "MakeInactiveCheckbox",
@@ -7579,7 +7579,7 @@ do
         end
         local qd = form.QualityDialog
         if qd then
-            SkinGuildPopup(qd)
+            SkinGuildDialog(qd)
             if qd.ClosePanelButton then
                 Skin.CloseButton(qd.ClosePanelButton)
             end
@@ -7597,7 +7597,7 @@ do
             return
         end
         GetFFD(log).outLog = true
-        SkinGuildPopup(log)
+        SkinGuildDialog(log)
         if log.ClosePanelButton then
             Skin.CloseButton(log.ClosePanelButton)
         end
@@ -7739,7 +7739,7 @@ do
         end
         local dropdown = shade.DeclineOrderDialog
         if dropdown then
-            SkinGuildPopup(dropdown)
+            SkinGuildDialog(dropdown)
             if dropdown.ConfirmButton then
                 Skin.Button(dropdown.ConfirmButton)
             end
@@ -11869,7 +11869,7 @@ do
             end
         end
 
-        local function WhiteBtn(button)
+        local function SkinWhiteButton(button)
             if button then
                 Skin.Button(button)
                 Skin.WhiteButtonLabel(button)
@@ -12107,7 +12107,7 @@ do
                     Skin.EditBox(scrollFrame.QuantityInput.InputBox)
                     SlimInput(scrollFrame.QuantityInput.InputBox)
                 end
-                WhiteBtn(scrollFrame.QuantityInput.MaxButton)
+                SkinWhiteButton(scrollFrame.QuantityInput.MaxButton)
             end
             for _, pk in ipairs({ "PriceInput", "SecondaryPriceInput" }) do
                 local mi = scrollFrame[pk] and scrollFrame[pk].MoneyInputFrame
@@ -12120,7 +12120,7 @@ do
             if scrollFrame.Duration and scrollFrame.Duration.Dropdown then
                 Skin.Dropdown(scrollFrame.Duration.Dropdown)
             end
-            WhiteBtn(scrollFrame.PostButton)
+            SkinWhiteButton(scrollFrame.PostButton)
             local bmc = scrollFrame.BuyoutModeCheckButton
             if bmc then
                 Skin.Checkbox(bmc)
@@ -12156,7 +12156,7 @@ do
         -- height, label pinned left, active-filter clear X is the house glyph lifted above the dropdown's border strips.
         local scrollBar = win.SearchBar
         if scrollBar then
-            WhiteBtn(scrollBar.SearchButton)
+            SkinWhiteButton(scrollBar.SearchButton)
             -- Favorites button: the star is its Icon key here (the professions
             -- version keeps it in the Normal texture, hence no restore). Favoriting
             -- re-raises the button's state art, so every non-Icon texture gets a
@@ -12397,7 +12397,7 @@ do
         -- Commodities buy view.
         local cbf = win.CommoditiesBuyFrame
         if cbf then
-            WhiteBtn(cbf.BackButton)
+            SkinWhiteButton(cbf.BackButton)
             -- Back button 3px lower (one-shot, all points preserved).
             if cbf.BackButton and not GetFFD(cbf.BackButton).dropped then
                 local bb = cbf.BackButton
@@ -12447,7 +12447,7 @@ do
         -- Single-item buy view.
         local ibf = win.ItemBuyFrame
         if ibf then
-            WhiteBtn(ibf.BackButton)
+            SkinWhiteButton(ibf.BackButton)
             if ibf.BuyoutFrame then
                 StateBtn(ibf.BuyoutFrame.BuyoutButton)
             end
@@ -12520,7 +12520,7 @@ do
             Skin.FadeRegions(tsf)
             Skin.Register(tsf, true)
             ItemDisplay(tsf)
-            WhiteBtn(tsf.PostButton)
+            SkinWhiteButton(tsf.PostButton)
             if tsf.DummyItemList then
                 Skin.FadeRegions(tsf.DummyItemList)
                 Skin.Register(tsf.DummyItemList, true)
@@ -12853,7 +12853,7 @@ do
         if tr then
             Skin.FadeRegions(tr)
             Skin.Register(tr, true)
-            WhiteBtn(tr.Buyout)
+            SkinWhiteButton(tr.Buyout)
             Skin.ScrollBarsIn(tr)
             local titleData = tr.TokenDisplay
             if titleData then
@@ -12875,7 +12875,7 @@ do
                     Skin.CloseButton(tut.CloseButton)
                 end
                 if tut.RightDisplay then
-                    WhiteBtn(tut.RightDisplay.StoreButton)
+                    SkinWhiteButton(tut.RightDisplay.StoreButton)
                     if tut.RightDisplay.Label then
                         Skin.White(tut.RightDisplay.Label)
                     end
@@ -12895,8 +12895,8 @@ do
                 Skin.FadeNineSlice(guildDialog.Border)
                 Skin.Register(guildDialog.Border, true)
             end
-            WhiteBtn(guildDialog.BuyNowButton)
-            WhiteBtn(guildDialog.CancelButton)
+            SkinWhiteButton(guildDialog.BuyNowButton)
+            SkinWhiteButton(guildDialog.CancelButton)
         end
 
         -- Multisell progress popup: house bar (flat fill on a dark trough).
@@ -13790,7 +13790,7 @@ do
             end
         end
 
-        local function WhiteBtn(button)
+        local function SkinWhiteButton(button)
             if button then
                 Skin.Button(button)
                 Skin.WhiteButtonLabel(button)
@@ -14053,7 +14053,7 @@ do
             -- Search bar: AH treatment verbatim.
             local scrollBar = browse.SearchBar
             if scrollBar then
-                WhiteBtn(scrollBar.SearchButton)
+                SkinWhiteButton(scrollBar.SearchButton)
                 if scrollBar.FavoritesSearchButton then
                     Skin.Button(scrollBar.FavoritesSearchButton, { "Icon" })
                     for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture" }) do
@@ -14200,7 +14200,7 @@ do
                 form:HookScript("OnHide", SyncFormZone)
                 SyncFormZone()
             end
-            WhiteBtn(form.BackButton)
+            SkinWhiteButton(form.BackButton)
             for _, keyName in ipairs({ "RecipeHeader", "LeftPanelBackground", "RightPanelBackground" }) do
                 local part = form[keyName]
                 if part then
@@ -14312,8 +14312,8 @@ do
                 if qd.ClosePanelButton then
                     Skin.CloseButton(qd.ClosePanelButton)
                 end
-                WhiteBtn(qd.AcceptButton)
-                WhiteBtn(qd.CancelButton)
+                SkinWhiteButton(qd.AcceptButton)
+                SkinWhiteButton(qd.CancelButton)
                 for idx = 1, 3 do
                     local c = qd["Container" .. idx]
                     if c and c.EditBox then

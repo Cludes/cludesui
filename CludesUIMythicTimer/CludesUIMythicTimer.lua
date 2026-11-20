@@ -529,7 +529,7 @@ local function CheckForNewDeaths(newDeathCount)
 end
 
 -- Helpers
-local function FormatTime(seconds, withMilliseconds)
+local function TimeText(seconds, withMilliseconds)
     if not seconds or seconds < 0 then
         seconds = 0
     end
@@ -554,9 +554,9 @@ end
 -- "00:00", so it's obvious by how much you're over.
 local function FormatRemaining(remaining)
     if remaining and remaining < 0 then
-        return "-" .. FormatTime(-remaining)
+        return "-" .. TimeText(-remaining)
     end
-    return FormatTime(remaining)
+    return TimeText(remaining)
 end
 
 local function RoundToInt(amount)
@@ -566,7 +566,7 @@ local function RoundToInt(amount)
     return floor(amount + 0.5)
 end
 
-local function GetColor(list, fallbackR, fallbackG, fallbackB)
+local function ColorOr(list, fallbackR, fallbackG, fallbackB)
     if list then
         return list.r or fallbackR, list.g or fallbackG, list.b or fallbackB
     end
@@ -575,26 +575,26 @@ end
 
 local function GetTimerBarFillColor(profileTbl, timePassed, plusThreeTime, plusTwoTime, timeLimit)
     if profileTbl and profileTbl.timerBarUseCustomColor == true then
-        return GetColor(profileTbl.timerBarColor, 0.4, 1, 0.4)
+        return ColorOr(profileTbl.timerBarColor, 0.4, 1, 0.4)
     end
     if timeLimit and timeLimit > 0 and timePassed > plusTwoTime then
         -- +2 lost: solid #B059CC.
         return 0xB0 / 255, 0x59 / 255, 0xCC / 255
     elseif timeLimit and timeLimit > 0 and timePassed > plusThreeTime then
         -- +3 lost, +2 still on: match the +2 threshold color.
-        return GetColor(profileTbl and profileTbl.timerPlusTwoColor, 0.3, 0.8, 1)
+        return ColorOr(profileTbl and profileTbl.timerPlusTwoColor, 0.3, 0.8, 1)
     end
     -- On for +3: match the +3 threshold color.
-    return GetColor(profileTbl and profileTbl.timerPlusThreeColor, 0.4, 1, 0.4)
+    return ColorOr(profileTbl and profileTbl.timerPlusThreeColor, 0.4, 1, 0.4)
 end
 
 local function GetTimerSegmentFillColor(profileTbl, timePassed, plusThreeTime, plusTwoTime)
     if timePassed > plusTwoTime then
-        return GetColor(profileTbl and profileTbl.timerSegment3Color, 0xB0 / 255, 0x59 / 255, 0xCC / 255)
+        return ColorOr(profileTbl and profileTbl.timerSegment3Color, 0xB0 / 255, 0x59 / 255, 0xCC / 255)
     elseif timePassed > plusThreeTime then
-        return GetColor(profileTbl and profileTbl.timerSegment2Color, 0.3, 0.8, 1)
+        return ColorOr(profileTbl and profileTbl.timerSegment2Color, 0.3, 0.8, 1)
     end
-    return GetColor(profileTbl and profileTbl.timerSegment1Color, 0.4, 1, 0.4)
+    return ColorOr(profileTbl and profileTbl.timerSegment1Color, 0.4, 1, 0.4)
 end
 
 local function GetTimerSegmentTextColor(profileTbl, index)
@@ -602,17 +602,17 @@ local function GetTimerSegmentTextColor(profileTbl, index)
         if profileTbl and profileTbl.thresholdPlusOneTextWhite == true then
             return 1, 1, 1
         end
-        return GetColor(profileTbl and profileTbl.timerSegment3Color, 0xB0 / 255, 0x59 / 255, 0xCC / 255)
+        return ColorOr(profileTbl and profileTbl.timerSegment3Color, 0xB0 / 255, 0x59 / 255, 0xCC / 255)
     elseif index == 2 then
         if profileTbl and profileTbl.thresholdPlusTwoTextWhite == true then
             return 1, 1, 1
         end
-        return GetColor(profileTbl and profileTbl.timerSegment2Color, 0.3, 0.8, 1)
+        return ColorOr(profileTbl and profileTbl.timerSegment2Color, 0.3, 0.8, 1)
     end
     if profileTbl and profileTbl.thresholdPlusThreeTextWhite == true then
         return 1, 1, 1
     end
-    return GetColor(profileTbl and profileTbl.timerSegment1Color, 0.4, 1, 0.4)
+    return ColorOr(profileTbl and profileTbl.timerSegment1Color, 0.4, 1, 0.4)
 end
 
 local function NormalizeAffixKey(affixes)
@@ -763,21 +763,21 @@ local function BuildSplitCompareText(referenceTime, currentTime, deltaOnly, fast
     -- No time to compare yet (boss still alive): the reference on its own, in the
     -- same gray parentheses a completed objective uses, just without the +/-.
     if not currentTime then
-        return format("  |cff888888(%s)|r", FormatTime(referenceTime))
+        return format("  |cff888888(%s)|r", TimeText(referenceTime))
     end
 
     local diff = currentTime - referenceTime
     local color = diff <= 0 and fasterColor or slowerColor
-    local cR, cG, cB = GetColor(color, 0.4, 1, 0.4)
+    local cR, cG, cB = ColorOr(color, 0.4, 1, 0.4)
     local diffPrefix = diff < 0 and "-" or "+"
-    local diffText = diff == 0 and "0:00" or FormatTime(abs(diff))
+    local diffText = diff == 0 and "0:00" or TimeText(abs(diff))
     local colorHex = CludesUI.HexColor(cR, cG, cB)
 
     if deltaOnly then
         return format("  %s(%s%s)|r", colorHex, diffPrefix, diffText)
     end
 
-    return format("  |cff888888(%s, %s%s%s)|r", FormatTime(referenceTime), colorHex, diffPrefix, diffText)
+    return format("  |cff888888(%s, %s%s%s)|r", TimeText(referenceTime), colorHex, diffPrefix, diffText)
 end
 
 local function FormatEnemyForcesText(enemyLine, formatId, compact)
@@ -1928,7 +1928,7 @@ do
 
         local red, green, blue = barR, barG, barB
         if profile.pullBarUseBarColor == false then
-            red, green, blue = GetColor(profile.pullBarColor, 1, 0.55, 0.1)
+            red, green, blue = ColorOr(profile.pullBarColor, 1, 0.55, 0.1)
         end
         local a = profile.pullBarAlpha or 0.35
         local texPath = CludesUI.ResolveTexturePath(barTextures, profile.enemyBarTexture or "none", nil)
@@ -2421,7 +2421,7 @@ local function RenderStandalone()
                 end
             end
             if #nameList > 0 then
-                frame._affixFS:SetTextColor(GetColor(p.affixTextColor, 1, 1, 1))
+                frame._affixFS:SetTextColor(ColorOr(p.affixTextColor, 1, 1, 1))
                 frame._affixFS:SetJustifyH(titleAlign)
                 local affixMax = p.affixSize or 10
                 local affixMin = max(6, affixMax - 2)
@@ -2453,11 +2453,11 @@ local function RenderStandalone()
         local dPad = ContentPad(deathAlign)
         SetFS(frame._deathFS, 12)
         ApplyShadow(frame._deathFS)
-        local dR, dG, dB = GetColor(p.deathTextColor, 0.93, 0.33, 0.33)
+        local dR, dG, dB = ColorOr(p.deathTextColor, 0.93, 0.33, 0.33)
         frame._deathFS:SetTextColor(dR, dG, dB)
         frame._deathFS:SetText(
-            runRec.deaths == 1 and CludesUI.Lf("%1$d Death  -%2$s", runRec.deaths, FormatTime(runRec.deathTimeLost))
-                or CludesUI.Lf("%1$d Deaths  -%2$s", runRec.deaths, FormatTime(runRec.deathTimeLost))
+            runRec.deaths == 1 and CludesUI.Lf("%1$d Death  -%2$s", runRec.deaths, TimeText(runRec.deathTimeLost))
+                or CludesUI.Lf("%1$d Deaths  -%2$s", runRec.deaths, TimeText(runRec.deathTimeLost))
         )
         frame._deathFS:ClearAllPoints()
         frame._deathFS:SetPoint("TOPLEFT", frame, "TOPLEFT", dPad, posY - 5)
@@ -2509,8 +2509,8 @@ local function RenderStandalone()
         -- Completed run: freeze the clock at the final elapsed seconds but preserve the
         -- user's chosen display mode so "/33:00" doesn't vanish on completion.
         local modeName = p.timerDisplayMode or "REMAINING_TOTAL"
-        local elaStr = FormatTime(timePassed)
-        local maxStr = FormatTime(timeLimit)
+        local elaStr = TimeText(timePassed)
+        local maxStr = TimeText(timeLimit)
         if modeName == "REMAINING_TOTAL" then
             timerText = elaStr .. " / " .. maxStr
         elseif modeName == "ELAPSED_DETAIL" then
@@ -2521,8 +2521,8 @@ local function RenderStandalone()
         end
     else
         local modeName = p.timerDisplayMode or "REMAINING_TOTAL"
-        local elaStr = FormatTime(timePassed)
-        local maxStr = FormatTime(timeLimit)
+        local elaStr = TimeText(timePassed)
+        local maxStr = TimeText(timeLimit)
         local remStr = FormatRemaining(timeLimit - timePassed)
         if modeName == "REMAINING_TOTAL" then
             timerText = elaStr .. " / " .. maxStr
@@ -2540,7 +2540,7 @@ local function RenderStandalone()
     local depleted = (runRec.completed and timePassed > timeLimit)
         or ((not runRec.completed) and timeLeft <= 0 and timeLimit > 0)
     if depleted then
-        tR, tG, tB = GetColor(p.timerExpiredColor, 0.9, 0.2, 0.2)
+        tR, tG, tB = ColorOr(p.timerExpiredColor, 0.9, 0.2, 0.2)
     end
 
     local underBarMode = (p.enemyForcesPos == "UNDER_BAR")
@@ -2574,10 +2574,10 @@ local function RenderStandalone()
             local function buildLabel(threshTime, color)
                 local diff = threshTime - timePassed
                 if diff >= 0 then
-                    local cR, cG, cB = GetColor(color, 0.3, 0.8, 1)
-                    return format("%s%s|r", CludesUI.HexColor(cR, cG, cB), FormatTime(diff))
+                    local cR, cG, cB = ColorOr(color, 0.3, 0.8, 1)
+                    return format("%s%s|r", CludesUI.HexColor(cR, cG, cB), TimeText(diff))
                 end
-                return format("|cff999999%s|r", FormatTime(threshTime))
+                return format("|cff999999%s|r", TimeText(threshTime))
             end
 
             local segmentedThresholds = (p.timerBarStyle == "SEGMENTS")
@@ -2872,9 +2872,9 @@ local function RenderStandalone()
         SetFS(frame._enemyFS, enemyTextSize)
         ApplyShadow(frame._enemyFS)
         if enemyLine.completed then
-            frame._enemyFS:SetTextColor(GetColor(p.objectiveCompletedColor, 0.3, 0.8, 0.3))
+            frame._enemyFS:SetTextColor(ColorOr(p.objectiveCompletedColor, 0.3, 0.8, 0.3))
         else
-            frame._enemyFS:SetTextColor(GetColor(p.objectiveTextColor, 0.9, 0.9, 0.9))
+            frame._enemyFS:SetTextColor(ColorOr(p.objectiveTextColor, 0.9, 0.9, 0.9))
         end
         frame._enemyFS:SetText(labelText)
         if hideLabel and pctPos ~= "LABEL" then
@@ -2909,11 +2909,11 @@ local function RenderStandalone()
 
             local eR, eG, eB
             if enemyLine.completed then
-                eR, eG, eB = GetColor(p.objectiveCompletedColor, 0.3, 0.8, 0.3)
+                eR, eG, eB = ColorOr(p.objectiveCompletedColor, 0.3, 0.8, 0.3)
             elseif p.enemyBarUseAccent ~= false then
                 eR, eG, eB = GetAccentColor()
             else
-                eR, eG, eB = GetColor(p.enemyBarColor, 0.35, 0.55, 0.8)
+                eR, eG, eB = ColorOr(p.enemyBarColor, 0.35, 0.55, 0.8)
             end
 
             local epct = enemyLine.completed and 1 or min(1, max(0, pctRaw / 100))
@@ -2946,9 +2946,9 @@ local function RenderStandalone()
                 SetFS(frame._enemyBarText, enemyTextSize)
                 ApplyShadow(frame._enemyBarText)
                 if enemyLine.completed then
-                    frame._enemyBarText:SetTextColor(GetColor(p.objectiveCompletedColor, 0.3, 0.8, 0.3))
+                    frame._enemyBarText:SetTextColor(ColorOr(p.objectiveCompletedColor, 0.3, 0.8, 0.3))
                 else
-                    frame._enemyBarText:SetTextColor(GetColor(p.objectiveTextColor, 0.9, 0.9, 0.9))
+                    frame._enemyBarText:SetTextColor(ColorOr(p.objectiveTextColor, 0.9, 0.9, 0.9))
                 end
                 frame._enemyBarText:SetText(FormatEnemyForcesText(enemyLine, enemyTextFormat, true))
                 frame._enemyBarText:ClearAllPoints()
@@ -3350,7 +3350,7 @@ local function RenderStandalone()
 
         local tickA = p.tickAlpha or 1
         local whiteTicks = p.tickWhite == true
-        local tickR, tickG, tickB = GetColor(p.timerTickColor, 1, 1, 1)
+        local tickR, tickG, tickB = ColorOr(p.timerTickColor, 1, 1, 1)
 
         if barStyle == "SEGMENTS" then
             frame._seg3:Hide()
@@ -3491,9 +3491,9 @@ local function RenderStandalone()
                     displayName = format("%d/%d %s", object.quantity or 0, object.totalQuantity, displayName)
                 end
                 if object.completed then
-                    nameText:SetTextColor(GetColor(p.objectiveCompletedColor, 0.3, 0.8, 0.3))
+                    nameText:SetTextColor(ColorOr(p.objectiveCompletedColor, 0.3, 0.8, 0.3))
                 else
-                    nameText:SetTextColor(GetColor(p.objectiveTextColor, 0.9, 0.9, 0.9))
+                    nameText:SetTextColor(ColorOr(p.objectiveTextColor, 0.9, 0.9, 0.9))
                 end
                 local timeStr = ""
                 if
@@ -3502,8 +3502,8 @@ local function RenderStandalone()
                     and object.elapsed
                     and object.elapsed > 0
                 then
-                    local cR, cG, cB = GetColor(p.objectiveCompletedColor, 0.3, 0.8, 0.3)
-                    timeStr = format("%s%s|r", CludesUI.HexColor(cR, cG, cB), FormatTime(object.elapsed))
+                    local cR, cG, cB = ColorOr(p.objectiveCompletedColor, 0.3, 0.8, 0.3)
+                    timeStr = format("%s%s|r", CludesUI.HexColor(cR, cG, cB), TimeText(object.elapsed))
                 end
                 local compareMode = p.objectiveCompareMode or COMPARE_NONE
                 local compareSuffix = ""

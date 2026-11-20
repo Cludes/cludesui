@@ -259,7 +259,7 @@ local function BeaconApplyText(frame)
     end
 end
 
-local function BeaconSetVisible(spellId, show)
+local function ShowBeaconIcon(spellId, show)
     local frame = _B.icons[spellId]
     if not frame then
         return
@@ -292,18 +292,18 @@ local function BeaconRefresh()
         return
     end
     if cuiPanelOpen or not IsSpellOverlayed then
-        BeaconSetVisible(_B.BOL, false)
-        BeaconSetVisible(_B.BOF, false)
+        ShowBeaconIcon(_B.BOL, false)
+        ShowBeaconIcon(_B.BOF, false)
         return
     end
     if UnitInVehicle("player") or (IsMounted() and IsFlying()) then
-        BeaconSetVisible(_B.BOL, false)
-        BeaconSetVisible(_B.BOF, false)
+        ShowBeaconIcon(_B.BOL, false)
+        ShowBeaconIcon(_B.BOF, false)
         return
     end
     if not _B.cachedInInstance or not (IsInGroup() or IsInRaid()) then
-        BeaconSetVisible(_B.BOL, false)
-        BeaconSetVisible(_B.BOF, false)
+        ShowBeaconIcon(_B.BOL, false)
+        ShowBeaconIcon(_B.BOF, false)
         return
     end
 
@@ -313,8 +313,8 @@ local function BeaconRefresh()
     local trackBOL = enabled and enabled.bol ~= false and Known(_B.BOL) and not Known(_B.VIRTUE)
     local trackBOF = enabled and enabled.bof ~= false and Known(_B.BOF)
 
-    BeaconSetVisible(_B.BOL, trackBOL and IsSpellOverlayed(_B.BOL))
-    BeaconSetVisible(_B.BOF, trackBOF and IsSpellOverlayed(_B.BOF))
+    ShowBeaconIcon(_B.BOL, trackBOL and IsSpellOverlayed(_B.BOL))
+    ShowBeaconIcon(_B.BOF, trackBOF and IsSpellOverlayed(_B.BOF))
 end
 
 -- Combat edges (the main event handler, right after the combat flag moves):

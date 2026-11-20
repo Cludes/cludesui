@@ -168,7 +168,7 @@ CludesUI.AtOptionsLogin(function()
                 mod.ApplyWindowBorder()
             end
         end
-        local function ApplyIconBrd()
+        local function ApplyIconBorderLook()
             if mod.ApplyIconBorder then
                 mod.ApplyIconBorder()
             end
@@ -1131,7 +1131,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = CfgOr("iconStyle", "spec"),
             setValue = function(val)
                 MeterSet("iconStyle", val)
-                ApplyIconBrd()
+                ApplyIconBorderLook()
                 RefreshMeters()
                 CludesUI:RefreshPage()
             end,
@@ -1369,7 +1369,7 @@ CludesUI.AtOptionsLogin(function()
                         get = CfgOr("customIconBorder", false),
                         set = function(val)
                             MeterSet("customIconBorder", val)
-                            ApplyIconBrd()
+                            ApplyIconBorderLook()
                             -- force=true: the row is added/removed at build time,
                             -- so the fast refresh path is not enough
                             CludesUI:RefreshPage(true)
@@ -1503,7 +1503,7 @@ CludesUI.AtOptionsLogin(function()
                             MeterSet("iconBorderSizePx", false)
                         end
                         -- force: the offset row below exists only for a textured style
-                        ApplyIconBrd()
+                        ApplyIconBorderLook()
                         CludesUI:RefreshPage(true)
                     end,
                 },
@@ -1524,7 +1524,7 @@ CludesUI.AtOptionsLogin(function()
                     setPx = function(val)
                         MeterSet("iconBorderSizePx", val)
                     end,
-                    apply = ApplyIconBrd,
+                    apply = ApplyIconBorderLook,
                 })
             )
             cursorY = cursorY - height
@@ -1560,7 +1560,7 @@ CludesUI.AtOptionsLogin(function()
                         setY = function(val)
                             MeterSet("iconBorderTextureOffsetY", val)
                         end,
-                        apply = ApplyIconBrd,
+                        apply = ApplyIconBorderLook,
                     })
                     _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
                     cursorY = cursorY - height
@@ -1590,7 +1590,7 @@ CludesUI.AtOptionsLogin(function()
                             end,
                             set = function(val)
                                 MeterSet("iconBorderTextureShiftX", val == 0 and nil or val)
-                                ApplyIconBrd()
+                                ApplyIconBorderLook()
                             end,
                         },
                         {
@@ -1612,7 +1612,7 @@ CludesUI.AtOptionsLogin(function()
                             end,
                             set = function(val)
                                 MeterSet("iconBorderTextureShiftY", val == 0 and nil or val)
-                                ApplyIconBrd()
+                                ApplyIconBorderLook()
                             end,
                         },
                     },
@@ -1647,7 +1647,7 @@ CludesUI.AtOptionsLogin(function()
                         MeterSet("iconBorderG", green)
                         MeterSet("iconBorderB", blue)
                         MeterSet("iconBorderA", a)
-                        ApplyIconBrd()
+                        ApplyIconBorderLook()
                     end,
                     true,
                     20

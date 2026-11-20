@@ -1430,7 +1430,7 @@ CludesUI.AtLogin(function()
 
         -- allPreviews: unit -> its preview. An entry whose frame a kept header root
         -- dressed again for another unit (pv._pvUnit) is stale and skipped.
-        local function UpdatePreview()
+        local function RepaintPreviews()
             for keyName, previewRef in pairs(allPreviews) do
                 if previewRef and previewRef._pvUnit == keyName and previewRef.Update then
                     previewRef:Update()
@@ -1449,17 +1449,17 @@ CludesUI.AtLogin(function()
             if rf then
                 rf()
             end
-            UpdatePreview()
+            RepaintPreviews()
         end
 
-        CludesUI:RegisterOnShow(UpdatePreview)
-        mod.UpdatePreview = UpdatePreview
+        CludesUI:RegisterOnShow(RepaintPreviews)
+        mod.UpdatePreview = RepaintPreviews
 
         -- Re-run preview Update() when panel scale changes so border pixel sizes refresh
         if not CludesUI._onScaleChanged then
             CludesUI._onScaleChanged = {}
         end
-        CludesUI._onScaleChanged[#CludesUI._onScaleChanged + 1] = UpdatePreview
+        CludesUI._onScaleChanged[#CludesUI._onScaleChanged + 1] = RepaintPreviews
 
         -- Hide UIParent-parented disabled overlays when the options window closes
         CludesUI:RegisterOnHide(function()
@@ -3244,7 +3244,7 @@ CludesUI.AtLogin(function()
             local function SSetSupported(settingKey, val)
                 UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] = val
                 ReloadAndUpdate()
-                UpdatePreview()
+                RepaintPreviews()
             end
             local function SGetSupported(settingKey)
                 return UNIT_DB_MAP[optionState.selectedUnit]()[settingKey]
@@ -3488,7 +3488,7 @@ CludesUI.AtLogin(function()
                         -- layout settles, so its sizing pass lands on stale geometry (spacing
                         -- wrong, debuff row missing until a slider nudge). Initial page load
                         -- gets a settled pass via RegisterOnShow; a unit switch does not, so re-run the preview next frame once layout has settled.
-                        C_Timer.After(0, UpdatePreview)
+                        C_Timer.After(0, RepaintPreviews)
                     end
                 )
                 Pix.Point(dropdownBtn, "TOP", heading, "TOP", 0, rowY)
@@ -3817,7 +3817,7 @@ CludesUI.AtLogin(function()
                         CludesUI.SmoothScrollTo(0)
                         -- Re-run the preview next frame once the rebuilt layout has
                         -- settled (same fix as the Main Frames unit selector).
-                        C_Timer.After(0, UpdatePreview)
+                        C_Timer.After(0, RepaintPreviews)
                     end
                 )
                 Pix.Point(dropdownBtn, "TOP", heading, "TOP", 0, rowY)
@@ -4263,7 +4263,7 @@ CludesUI.AtLogin(function()
             UNIT_DB_MAP = UNIT_DB_MAP,
             UNIT_LABELS_SUP = UNIT_LABELS_SUP,
             unitSide = unitSide,
-            UpdatePreview = UpdatePreview,
+            UpdatePreview = RepaintPreviews,
         }
 
         ---------------------------------------------------------------------------
@@ -4390,7 +4390,7 @@ CludesUI.AtLogin(function()
                         end
                     end
                 end
-                UpdatePreview()
+                RepaintPreviews()
                 -- Refresh hint visibility on cache restore
                 local dismissed = IsPreviewHintDismissed()
                 if pageTitle == PAGE_DISPLAY and optionState._ufPreviewHintFS_display then

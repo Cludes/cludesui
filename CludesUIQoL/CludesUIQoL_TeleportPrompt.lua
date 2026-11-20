@@ -42,7 +42,7 @@ local function TeleCfg()
     return CludesUIDB.teleportPrompt
 end
 
-local function IsEnabled()
+local function PromptOn()
     return TeleCfg().enabled ~= false -- default ON
 end
 
@@ -406,7 +406,7 @@ end
 --  Show / Hide / Clear
 -------------------------------------------------------------------------------
 ShowPrompt = function()
-    if not IsEnabled() or not pendingSpellID then
+    if not PromptOn() or not pendingSpellID then
         return
     end
     BuildPopup()
@@ -472,7 +472,7 @@ local eventFrame = CreateFrame("Frame")
 -- PLAYER_REGEN_ENABLED outlives a mid-combat disable while a combat-blocked
 -- hide or secure attribute write is pending; its handler re-syncs afterwards.
 local function SyncEvents()
-    if IsEnabled() then
+    if PromptOn() then
         eventFrame:RegisterEvent("LFG_LIST_JOINED_GROUP")
         eventFrame:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
         eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
@@ -509,7 +509,7 @@ local function SeedShownFromListing()
 end
 
 ApplyTeleportPrompt = function()
-    if IsEnabled() then
+    if PromptOn() then
         SeedShownFromListing()
         if not dialog and InCombatLockdown() then
             pendingBuild = true
@@ -532,7 +532,7 @@ eventFrame:RegisterEvent("PLAYER_LOGIN")
 eventFrame:SetScript("OnEvent", function(self, evt, arg1, arg2)
     if evt == "PLAYER_LOGIN" then
         -- Login is always out of combat: safe to create the secure button now.
-        if IsEnabled() then
+        if PromptOn() then
             BuildPopup()
             SyncEvents()
             SeedShownFromListing()
@@ -542,7 +542,7 @@ eventFrame:SetScript("OnEvent", function(self, evt, arg1, arg2)
         -- Finish a mid-combat enable: safe to build the secure button now.
         if pendingBuild then
             pendingBuild = nil
-            if IsEnabled() then
+            if PromptOn() then
                 BuildPopup()
             end
         end
@@ -552,7 +552,7 @@ eventFrame:SetScript("OnEvent", function(self, evt, arg1, arg2)
             pendingAttrSpellID = nil
         end
         -- Surface a prompt whose accept landed mid-combat.
-        if pendingShow and pendingSpellID and IsEnabled() then
+        if pendingShow and pendingSpellID and PromptOn() then
             pendingShow = nil
             UpdateButtonVisuals()
             if dialog then
@@ -576,7 +576,7 @@ eventFrame:SetScript("OnEvent", function(self, evt, arg1, arg2)
 
     -- Defense in depth: feature events unregister on disable, but bail if one
     -- lands mid-transition.
-    if not IsEnabled() then
+    if not PromptOn() then
         ClearPending()
         HidePrompt()
         return

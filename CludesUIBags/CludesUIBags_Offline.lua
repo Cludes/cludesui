@@ -352,7 +352,7 @@ end
 
 local dirty = {} -- bag ids to read on the next save
 
-local function MarkAll(ids)
+local function MarkDirty(ids)
     for _, ident in ipairs(ids) do
         dirty[ident] = true
     end
@@ -504,18 +504,18 @@ eventFrame:SetScript("OnEvent", function(_, evt, arg)
     elseif evt == "BAG_UPDATE_DELAYED" then
         QueueSave(true, false)
     elseif evt == "BAG_CONTAINER_UPDATE" then
-        MarkAll(BAGS)
+        MarkDirty(BAGS)
         QueueSave(true, false)
         -- forever: a bag went in or out of a bank tab
         if atCharBank and CUI.IS_FOREVER then
-            MarkAll(CHAR_BANK)
+            MarkDirty(CHAR_BANK)
             QueueSave(false, true)
         end
     elseif evt == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" then
         if BANKERS[arg] ~= nil then
             atBank, atCharBank = true, BANKERS[arg]
-            MarkAll(CHAR_BANK)
-            MarkAll(WARBAND_BANK)
+            MarkDirty(CHAR_BANK)
+            MarkDirty(WARBAND_BANK)
             QueueSave(false, true)
         end
     elseif evt == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
@@ -528,10 +528,10 @@ eventFrame:SetScript("OnEvent", function(_, evt, arg)
         -- arg = its bank type): that bank's tabs, for their names and icons.
         -- slot changes come through BAG_UPDATE with the tab's bag id
         if arg == Enum.BankType.Account then
-            MarkAll(WARBAND_BANK)
+            MarkDirty(WARBAND_BANK)
             QueueSave(false, true)
         elseif arg == Enum.BankType.Character then
-            MarkAll(CHAR_BANK)
+            MarkDirty(CHAR_BANK)
             QueueSave(false, true)
         end
     end
@@ -562,7 +562,7 @@ function Offline.Sync()
         end
     end
     if enabled then
-        MarkAll(BAGS)
+        MarkDirty(BAGS)
         QueueSave(true, false)
     end
 end
@@ -575,7 +575,7 @@ function Offline.Wipe()
     listGen = listGen + 1
     Changed("forget")
     -- this character saves again right away
-    MarkAll(BAGS)
+    MarkDirty(BAGS)
     if listening then
         QueueSave(true, false)
     end

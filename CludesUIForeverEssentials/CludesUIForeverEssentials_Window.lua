@@ -147,7 +147,7 @@ local tiled = setmetatable({}, { __mode = "k" }) -- textures already set to tile
 -- Whether this client has an atlas, checked once per name: a missing piece
 -- falls back to the CUI paint (header, bar track) or is left out (edge).
 local atlasOK = {}
-local function HasAtlas(name)
+local function AtlasExists(name)
     local success = atlasOK[name]
     if success == nil then
         success = C_Texture.GetAtlasInfo(name) ~= nil
@@ -201,7 +201,7 @@ end
 
 -- The header colour is not used; its opacity is.
 function Blizzard.HeaderBg(texture, red, green, blue, a)
-    if HasAtlas(BLIZZ_HEADER) then
+    if AtlasExists(BLIZZ_HEADER) then
         texture:SetAtlas(BLIZZ_HEADER)
         texture:SetVertexColor(1, 1, 1, a)
     else
@@ -211,7 +211,7 @@ end
 
 -- The stock track (set up with the row's art) takes no colour.
 function Blizzard.RowBg(texture, red, green, blue, a)
-    if HasAtlas(BLIZZ_TRACK) then
+    if AtlasExists(BLIZZ_TRACK) then
         return
     end
     texture:SetColorTexture(red, green, blue, a)
@@ -221,7 +221,7 @@ end
 -- up once per row (WoW Forever wears it too: a bar texture, not frame art).
 local function BlizzTrack(line, artTex)
     local fillTex = line.fill
-    if HasAtlas(BLIZZ_TRACK) then
+    if AtlasExists(BLIZZ_TRACK) then
         local backdrop = line.bg
         backdrop:SetAtlas(BLIZZ_TRACK)
         backdrop:SetVertexColor(1, 1, 1, 1)
@@ -229,7 +229,7 @@ local function BlizzTrack(line, artTex)
         backdrop:SetPoint("TOPLEFT", fillTex, "TOPLEFT", -2, 2)
         backdrop:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 2, -2)
     end
-    if HasAtlas(BLIZZ_EDGE) then
+    if AtlasExists(BLIZZ_EDGE) then
         local edge = fillTex:CreateTexture(nil, "OVERLAY", nil, 6)
         edge:SetAtlas(BLIZZ_EDGE)
         edge:SetPoint("TOPLEFT", fillTex, "TOPLEFT", -2, 2)
@@ -635,7 +635,7 @@ end
 -- the module registry: nil while Damage Meters is off or not on its own WoW
 -- Forever look.
 local function UseForever()
-    platesOK = HasAtlas(FV.plate) and HasAtlas(FV.plateHover)
+    platesOK = AtlasExists(FV.plate) and AtlasExists(FV.plateHover)
     for key, value in pairs(Forever) do
         Look[key] = value
     end
@@ -653,7 +653,7 @@ local function UseForever()
         Look.WindowBg = FvWindowBg
         -- The band's rod ends run under the frame's side lines (Heavy Bronze:
         -- its side bands).
-        if HasAtlas(FV.header) then
+        if AtlasExists(FV.header) then
             Look.HeaderBg, Look.HeaderRail = FvHeaderBg, FvHeaderRail
         end
     end

@@ -2885,7 +2885,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
 
     -- Healer Mana Display: one mana-percent text row per group healer,
     -- riding the existing power-event plumbing (see ns.HM_Rebuild).
-    local function HMS()
+    local function HealerManaCfg()
         local profile = saved.profile
         if not profile.healerMana then
             profile.healerMana = { mode = "none" }
@@ -2905,11 +2905,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         values = { none = "None", party = "In Party", raid = "In Raid", both = "In Party & Raid" },
         order = { "none", "party", "raid", "both" },
         getValue = function()
-            local m = HMS().mode
+            local m = HealerManaCfg().mode
             return (m == "party" or m == "raid" or m == "both") and m or "none"
         end,
         setValue = function(val)
-            HMS().mode = val
+            HealerManaCfg().mode = val
             -- Re-syncs healer power-event registrations and rebuilds.
             if mod.UpdatePowerEventRegistration then
                 mod.UpdatePowerEventRegistration()
@@ -2928,17 +2928,17 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             {
                 tooltip = "Custom Colored",
                 getValue = function()
-                    local color = HMS().color
+                    local color = HealerManaCfg().color
                     return (color and color.r) or 1, (color and color.g) or 1, (color and color.b) or 1, 1
                 end,
                 setValue = function(red, green, blue)
-                    local hm = HMS()
+                    local hm = HealerManaCfg()
                     hm.color = { r = red, g = green, b = blue }
                     hm.colorMode = "custom"
                     RebuildHealthMarkers()
                 end,
                 onClick = function(self)
-                    local hm = HMS()
+                    local hm = HealerManaCfg()
                     if hm.colorMode == "power" then
                         hm.colorMode = "custom"
                         RebuildHealthMarkers()
@@ -2950,7 +2950,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end
                 end,
                 refreshAlpha = function()
-                    return (HMS().colorMode == "power") and 0.3 or 1
+                    return (HealerManaCfg().colorMode == "power") and 0.3 or 1
                 end,
             },
             {
@@ -2970,13 +2970,13 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 end,
                 setValue = function() end,
                 onClick = function()
-                    local hm = HMS()
+                    local hm = HealerManaCfg()
                     hm.colorMode = "power"
                     RebuildHealthMarkers()
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    return (HMS().colorMode == "power") and 1 or 0.3
+                    return (HealerManaCfg().colorMode == "power") and 1 or 0.3
                 end,
             },
         },
@@ -2995,10 +2995,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     max = 24,
                     step = 1,
                     get = function()
-                        return HMS().textSize or 12
+                        return HealerManaCfg().textSize or 12
                     end,
                     set = function(val)
-                        HMS().textSize = val
+                        HealerManaCfg().textSize = val
                         RebuildHealthMarkers()
                     end,
                 },
@@ -3010,10 +3010,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     step = 1,
                     tooltip = "Vertical space between rows.",
                     get = function()
-                        return HMS().spacing or 2
+                        return HealerManaCfg().spacing or 2
                     end,
                     set = function(val)
-                        HMS().spacing = val
+                        HealerManaCfg().spacing = val
                         RebuildHealthMarkers()
                     end,
                 },
@@ -3023,11 +3023,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     values = { LEFT = "Left", CENTER = "Center", RIGHT = "Right" },
                     order = { "LEFT", "CENTER", "RIGHT" },
                     get = function()
-                        local a = HMS().align
+                        local a = HealerManaCfg().align
                         return (a == "RIGHT" or a == "CENTER") and a or "LEFT"
                     end,
                     set = function(keyName)
-                        HMS().align = keyName
+                        HealerManaCfg().align = keyName
                         RebuildHealthMarkers()
                     end,
                 },
@@ -3038,10 +3038,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     values = { DOWN = "Down", UP = "Up" },
                     order = { "DOWN", "UP" },
                     get = function()
-                        return HMS().growth == "UP" and "UP" or "DOWN"
+                        return HealerManaCfg().growth == "UP" and "UP" or "DOWN"
                     end,
                     set = function(keyName)
-                        HMS().growth = keyName
+                        HealerManaCfg().growth = keyName
                         RebuildHealthMarkers()
                     end,
                 },
@@ -3050,15 +3050,15 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     label = "Show Names in Raid",
                     tooltip = "Shows each healer's name before the number while in a raid. In a party the display always shows numbers only.",
                     get = function()
-                        return HMS().showNames ~= false
+                        return HealerManaCfg().showNames ~= false
                     end,
                     -- if/else, NOT `v and nil or false`: that expression is
                     -- ALWAYS false (the nil arm falls through the or).
                     set = function(val)
                         if val then
-                            HMS().showNames = nil
+                            HealerManaCfg().showNames = nil
                         else
-                            HMS().showNames = false
+                            HealerManaCfg().showNames = false
                         end
                         RebuildHealthMarkers()
                     end,
@@ -3067,13 +3067,13 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     type = "toggle",
                     label = "Class Colored Names",
                     get = function()
-                        return HMS().classNames ~= false
+                        return HealerManaCfg().classNames ~= false
                     end,
                     set = function(val)
                         if val then
-                            HMS().classNames = nil
+                            HealerManaCfg().classNames = nil
                         else
-                            HMS().classNames = false
+                            HealerManaCfg().classNames = false
                         end
                         RebuildHealthMarkers()
                     end,

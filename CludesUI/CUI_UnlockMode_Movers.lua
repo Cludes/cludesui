@@ -839,7 +839,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         end
 
         -- Refresh link button text/color based on active matches
-        local function RefreshLinkStates()
+        local function SyncLinkStates()
             local wm = MatchH.GetWidthMatchInfo(barId)
             local hm = MatchH.GetHeightMatchInfo(barId)
             local anchorInfo = GetAnchorInfo(barId)
@@ -901,7 +901,7 @@ CUI_NS.unlockParts.Movers = function(LM)
 
         local animFrame = CreateFrame("Frame", nil, nameTag)
 
-        local function ApplyHoverState(s)
+        local function PaintHover(s)
             -- Name shifts up on hover to make room for action links below
             local labelShift = LABEL_Y_NORMAL + s * (LABEL_Y_SHIFTED - LABEL_Y_NORMAL)
             labelShift = labelShift + 2 - s
@@ -1031,7 +1031,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         end
                     end
                 end
-                ApplyHoverState(hoverState)
+                PaintHover(hoverState)
             end)
         end
 
@@ -1078,7 +1078,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 end
             end
             if not linkHovered then
-                RefreshLinkStates()
+                SyncLinkStates()
             end
             LayoutActionRow()
             AnimateHoverTo(1)
@@ -1134,7 +1134,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 handle._coordFS:Hide()
             end
             animFrame:SetScript("OnUpdate", nil)
-            ApplyHoverState(0)
+            PaintHover(0)
             if handle.ReanchorToBar then
                 handle:ReanchorToBar()
             end
@@ -1143,10 +1143,10 @@ CUI_NS.unlockParts.Movers = function(LM)
         -- Refresh the anchored text (called after anchor changes)
         function handle:RefreshAnchoredText()
             RefreshAnchoredIdle()
-            RefreshLinkStates()
+            SyncLinkStates()
             -- If not hovered, apply idle state to show/hide anchored text
             if not self:IsMouseOver() then
-                ApplyHoverState(hoverState)
+                PaintHover(hoverState)
             end
         end
 
@@ -1358,7 +1358,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             if MatchH.GetWidthMatchInfo(barId) then
                 MatchH.ClearWidthMatch(barId)
                 LM.hasChanges = true
-                RefreshLinkStates()
+                SyncLinkStates()
                 LayoutActionRow()
                 return
             end
@@ -1393,7 +1393,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             if MatchH.GetHeightMatchInfo(barId) then
                 MatchH.ClearHeightMatch(barId)
                 LM.hasChanges = true
-                RefreshLinkStates()
+                SyncLinkStates()
                 LayoutActionRow()
                 return
             end
@@ -1436,7 +1436,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 end
                 LM.hasChanges = true
                 RefreshAnchoredIdle()
-                RefreshLinkStates()
+                SyncLinkStates()
                 LayoutActionRow()
                 if handles[barId] and handles[barId].RefreshAnchoredText then
                     handles[barId]:RefreshAnchoredText()
@@ -1636,7 +1636,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         end
 
                         CludesUI._unlockSetGrowDirection(barId, sideVal)
-                        RefreshLinkStates()
+                        SyncLinkStates()
                     end)
                 end
                 menuY = menuY - DD_ITEM_H
@@ -1764,8 +1764,8 @@ CUI_NS.unlockParts.Movers = function(LM)
 
         -- Initialize anchored text and link states, then apply idle state
         RefreshAnchoredIdle()
-        RefreshLinkStates()
-        ApplyHoverState(0)
+        SyncLinkStates()
+        PaintHover(0)
 
         -- Sync size/position to the real bar (or registered element)
         function handle:Sync()
@@ -1849,7 +1849,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     self:SetPoint("CENTER", UIParent, "CENTER", 0, centerYOff)
                 end
                 self:Show()
-                ApplyHoverState(hoverState)
+                PaintHover(hoverState)
                 return
             end
 
@@ -1987,7 +1987,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             end
             self:Show()
             -- Re-apply hover state so mover size reflects current animation state
-            ApplyHoverState(hoverState)
+            PaintHover(hoverState)
         end
 
         -- Lightweight size-only sync: updates baseW/baseH and re-applies hover state
@@ -2020,7 +2020,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             -- SyncSize). Do NOT recompute from GetLeft/GetTop here -- the mover may
             -- still be anchored to the bar's old TOPLEFT position at this point, which
             -- would produce a wrong center and cause a one-frame visual jump.
-            ApplyHoverState(hoverState)
+            PaintHover(hoverState)
             -- Re-anchor to bar for pixel-perfect alignment after size change
             self:ReanchorToBar()
         end
@@ -2072,7 +2072,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             hoverState = 0
             hoverTarget = 0
             animFrame:SetScript("OnUpdate", nil)
-            ApplyHoverState(0)
+            PaintHover(0)
 
             -- Record offset from cursor to mover center at drag start
             -- Use stored moverCX/moverCY (base-size center) so expanding/collapsing
@@ -3931,7 +3931,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         local gearMenu
         local cogClickCatcher
 
-        local function CloseCogMenu()
+        local function HideGearMenu()
             if gearMenu then
                 gearMenu:Hide()
             end
@@ -4032,7 +4032,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     optLbl:SetTextColor(0.75, 0.75, 0.75, 0.9)
                 end)
                 optItem:SetScript("OnClick", function()
-                    CloseCogMenu()
+                    HideGearMenu()
                     if opensEditMode then
                         -- Open Blizzard Edit Mode, exactly as the Blizz-owned overlays do.
                         if InCombatLockdown() then
@@ -4554,14 +4554,14 @@ CUI_NS.unlockParts.Movers = function(LM)
                 if hasTarget then
                     handle._snapTarget = nil
                     UpdateSnapLabel()
-                    CloseCogMenu()
+                    HideGearMenu()
                 else
                     handle._preSelectTarget = handle._snapTarget
                     handle._snapTarget = "_select_"
                     LM.selectElementPicker = handle
                     FadeOverlayForSelectElement(true)
                     UpdateSnapLabel()
-                    CloseCogMenu()
+                    HideGearMenu()
                 end
             end)
             rowOffset = rowOffset - ITEM_H
@@ -4597,7 +4597,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     if hoverFullText and CludesUI.HideWidgetTooltip then
                         CludesUI.HideWidgetTooltip()
                     end
-                    CloseCogMenu()
+                    HideGearMenu()
                     onClick()
                 end)
                 rowOffset = rowOffset - ITEM_H
@@ -5166,7 +5166,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                             subLabel:SetTextColor(0.75, 0.75, 0.75, 0.9)
                         end)
                         subItem:SetScript("OnClick", function()
-                            CloseCogMenu()
+                            HideGearMenu()
                             onClick()
                         end)
                         return rsY - ITEM_H
@@ -5341,7 +5341,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 cogClickCatcher._umCatcher = true -- not an element for the hover bar
                 cogClickCatcher:RegisterForClicks("AnyUp")
                 cogClickCatcher:SetScript("OnClick", function()
-                    CloseCogMenu()
+                    HideGearMenu()
                 end)
             end
             cogClickCatcher:Show()
@@ -5349,7 +5349,7 @@ CUI_NS.unlockParts.Movers = function(LM)
 
         gearButton:SetScript("OnClick", function()
             if gearMenu and gearMenu:IsShown() then
-                CloseCogMenu()
+                HideGearMenu()
             else
                 SelectMover(handle)
                 handle._menuOpen = true
@@ -5357,12 +5357,12 @@ CUI_NS.unlockParts.Movers = function(LM)
                 ShowCogClickCatcher()
             end
         end)
-        gearButton:SetScript("OnHide", CloseCogMenu)
+        gearButton:SetScript("OnHide", HideGearMenu)
 
         -- Expose cog menu opener on the mover (used by right-click handler)
         handle._openCogMenu = function()
             if gearMenu and gearMenu:IsShown() then
-                CloseCogMenu()
+                HideGearMenu()
             else
                 SelectMover(handle)
                 handle._menuOpen = true

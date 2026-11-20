@@ -82,7 +82,7 @@ local function Register(widget, keep)
         _restrip[widget] = keep or true
     end
 end
-local function Restrip()
+local function StripAgain()
     for widget, keep in pairs(_restrip) do
         if widget and not widget:IsForbidden() then
             local keyName = (type(keep) == "table") and keep or nil
@@ -1666,12 +1666,12 @@ local function InstallPVPHooks()
             if type(sel) == "number" or type(sel) == "table" then
                 _pvpSel = sel
             end
-            Restrip()
+            StripAgain()
             UpdatePVPCategorySelection()
         end)
     end
     if _G.PVPQueueFrame_ShowFrame then
-        hooksecurefunc("PVPQueueFrame_ShowFrame", Restrip)
+        hooksecurefunc("PVPQueueFrame_ShowFrame", StripAgain)
     end
 end
 
@@ -1686,7 +1686,7 @@ local function RefreshAll()
     Skin_RaidFinder()
     Skin_Challenges()
     Skin_PVP()
-    Restrip()
+    StripAgain()
 end
 
 -------------------------------------------------------------------------------
@@ -1723,20 +1723,20 @@ local function InstallHooks()
             if type(index) == "number" then
                 _gfSelIndex = index
             end
-            Restrip()
+            StripAgain()
             UpdateCategorySelection()
         end)
     end
     if GroupFinderFrameGroupButton_OnClick then
         hooksecurefunc("GroupFinderFrameGroupButton_OnClick", function()
-            Restrip()
+            StripAgain()
             UpdateCategorySelection()
         end)
     end
     if LFGListCategorySelectionButton_OnClick then
         -- Selection wash is driven by the AddButton rebuild hook (fires on
         -- every pick); here we only re-flatten art after the click.
-        hooksecurefunc("LFGListCategorySelectionButton_OnClick", Restrip)
+        hooksecurefunc("LFGListCategorySelectionButton_OnClick", StripAgain)
     end
     -- Blizzard's rewards updaters re-apply the questpaper background (LFD /
     -- Raid Finder / Scenario) and the Raid Finder role-row gradient on every
@@ -2110,7 +2110,7 @@ local ON_ADDON = {
             ResolveTheme()
         end
         Skin_Challenges()
-        Restrip()
+        StripAgain()
     end,
     Blizzard_PVPUI = function()
         if not SkinEnabled() then
@@ -2121,7 +2121,7 @@ local ON_ADDON = {
         end
         Skin_PVP()
         InstallPVPHooks()
-        Restrip()
+        StripAgain()
     end,
 }
 

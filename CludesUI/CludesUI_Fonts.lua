@@ -1030,19 +1030,19 @@ function CludesUI.ApplyGlobalFontToGameText()
         scale = 125
     end
     scale = scale / 100
-    local swap = saved.applyToAllGameText and true or false
+    local swapFont = saved.applyToAllGameText and true or false
     local filePath
-    if swap then
+    if swapFont then
         filePath = ResolveFontName(saved.global or CludesUI.DEFAULT_FONT_NAME)
         if not filePath then
-            swap = false
+            swapFont = false
         end
     end
-    if not swap and scale == 1 then
+    if not swapFont and scale == 1 then
         return
     end
 
-    if swap then
+    if swapFont then
         -- The client's own font, before the first swap replaces it (Blizzard Default).
         CludesUI._clientFontPath = CludesUI._clientFontPath or _G.STANDARD_TEXT_FONT
         -- Universal fallback consumed by newly-created Blizzard/addon text.
@@ -1082,7 +1082,7 @@ function CludesUI.ApplyGlobalFontToGameText()
         local object = _G[fonts[idx]]
         -- Guard each: GetFonts may list entries that are not usable font objects.
         if object and type(object) == "table" and not ours[object] and object.GetFont and object.SetFont then
-            CludesUI._FontObjectFaceInto(object, swap and filePath or nil, nil, nil, scale, done)
+            CludesUI._FontObjectFaceInto(object, swapFont and filePath or nil, nil, nil, scale, done)
         end
     end
     -- Premade Groups' category labels are copies of GameFontNormal taken as each button
@@ -1092,7 +1092,7 @@ function CludesUI.ApplyGlobalFontToGameText()
     -- same face) or on WoW Forever (no such window, so the wait would never end).
     local old = CludesUI._clientFontPath
     if
-        swap
+        swapFont
         and filePath ~= old
         and not CludesUI.IS_FOREVER
         and EventUtil
@@ -1138,7 +1138,7 @@ function CludesUI.ApplyModuleFontFailsafe()
     -- (Drop Shadow/None), which correctly CLEARS a native outline; pass nil to keep native flags. Guards nil/non-object, missing size and a rejecting SetFont, so an absent or renamed object is a no-op.
     -- A family changes member by member (SetFontObjectFace): the members whose script the
     -- face lacks keep their own faces. Our own families are skipped.
-    local function swap(object, filePath, outline)
+    local function swapFont(object, filePath, outline)
         if not object or type(object) ~= "table" or CludesUI._fontFamilySet[object] then
             return
         end
@@ -1147,7 +1147,7 @@ function CludesUI.ApplyModuleFontFailsafe()
 
     -- Chat: the module fonts the frames + edit boxes directly; ChatFontNormal backstops the rest (menus, copy/URL windows, channel buttons, etc.).
     if IsLoaded("CludesUIChat") then
-        swap(_G.ChatFontNormal, GetPath("chat"), GetOutline and GetOutline("chat"))
+        swapFont(_G.ChatFontNormal, GetPath("chat"), GetOutline and GetOutline("chat"))
     end
 
     -- Quest Tracker: the skin region-walks live blocks; these shared objects catch fontstrings
@@ -1158,10 +1158,10 @@ function CludesUI.ApplyModuleFontFailsafe()
     if IsLoaded("CludesUIQuestTracker") and not qtStock then
         local p = GetPath("questTracker")
         local po = GetOutline and GetOutline("questTracker")
-        swap(_G.ObjectiveTrackerHeaderFont, p, po)
-        swap(_G.ObjectiveTrackerLineFont, p, po)
+        swapFont(_G.ObjectiveTrackerHeaderFont, p, po)
+        swapFont(_G.ObjectiveTrackerLineFont, p, po)
         for idx = 12, 22 do
-            swap(_G["ObjectiveTrackerFont" .. idx], p, po)
+            swapFont(_G["ObjectiveTrackerFont" .. idx], p, po)
         end
     end
 
@@ -1169,9 +1169,9 @@ function CludesUI.ApplyModuleFontFailsafe()
     if IsLoaded("CludesUIBlizzardSkin") and (not CludesUIDB or CludesUIDB.customTooltips ~= false) then
         local p = GetPath("blizzardSkin")
         local po = GetOutline and GetOutline("blizzardSkin")
-        swap(_G.GameTooltipText, p, po)
-        swap(_G.GameTooltipHeaderText, p, po)
-        swap(_G.GameTooltipTextSmall, p, po)
+        swapFont(_G.GameTooltipText, p, po)
+        swapFont(_G.GameTooltipHeaderText, p, po)
+        swapFont(_G.GameTooltipTextSmall, p, po)
     end
 end
 

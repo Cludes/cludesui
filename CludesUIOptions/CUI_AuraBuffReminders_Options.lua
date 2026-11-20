@@ -397,7 +397,7 @@ CludesUI.AtOptionsLogin(function()
         CludesUI:SetContentHeaderHeightSilent(PREVIEW_H + hintH)
     end
 
-    local function RefreshBorders()
+    local function ApplyIconBorders()
         if _G._CUABR_ApplyAllIconBorders then
             _G._CUABR_ApplyAllIconBorders()
         end
@@ -1843,7 +1843,7 @@ CludesUI.AtOptionsLogin(function()
         if display.borderSizePx then
             display.borderSizePx = false
         end
-        RefreshBorders()
+        ApplyIconBorders()
         -- Rebuild: the Width | Height Offset row follows the Solid / textured pick.
         CludesUI:RefreshPage(true)
     end
@@ -1873,7 +1873,7 @@ CludesUI.AtOptionsLogin(function()
                     elseif (display.borderSize or 1) <= 0 then
                         display.borderSize = 1
                     end
-                    RefreshBorders()
+                    ApplyIconBorders()
                 end,
             }
         end
@@ -1884,7 +1884,7 @@ CludesUI.AtOptionsLogin(function()
             getTex = BorderTex,
             getPx = Raw("borderSizePx"),
             setPx = Store("borderSizePx"),
-            apply = RefreshBorders,
+            apply = ApplyIconBorders,
         })
     end
 
@@ -1920,7 +1920,7 @@ CludesUI.AtOptionsLogin(function()
                 local display = DDB()
                 if display then
                     display[key] = (value ~= 0) and value or nil
-                    RefreshBorders()
+                    ApplyIconBorders()
                 end
             end,
         }
@@ -1959,7 +1959,7 @@ CludesUI.AtOptionsLogin(function()
                 setX = Store("borderTextureOffset"),
                 getY = Raw("borderTextureOffsetY"),
                 setY = Store("borderTextureOffsetY"),
-                apply = RefreshBorders,
+                apply = ApplyIconBorders,
             })
             local _, offsetH = W:DualRow(parent, y, left, right)
             y = y - offsetH
@@ -1984,7 +1984,7 @@ CludesUI.AtOptionsLogin(function()
                         local display = DDB()
                         if display then
                             display.borderBehind = value
-                            RefreshBorders()
+                            ApplyIconBorders()
                         end
                     end,
                 },
@@ -2008,7 +2008,7 @@ CludesUI.AtOptionsLogin(function()
             local display = DDB()
             if display then
                 display.borderR, display.borderG, display.borderB, display.borderA = red, green, blue, a or 1
-                RefreshBorders()
+                ApplyIconBorders()
             end
         end, true, 20)
         swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -12, 0)

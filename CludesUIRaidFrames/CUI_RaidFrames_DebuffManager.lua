@@ -102,15 +102,15 @@ local function EnsureFilterLanes(dmCfg)
     dmCfg.lanesV1 = true
     if dmCfg.all ~= false then
         local negated
-        local function Move(category)
+        local function NegateCategory(category)
             if dmCfg[category] == true then
                 negated = negated or {}
                 negated[category] = true
                 dmCfg[category] = nil
             end
         end
-        Move("boss"); Move("role"); Move("priority"); Move("cc")
-        Move("raid"); Move("raidcombat"); Move("dispel"); Move("nonplayer")
+        NegateCategory("boss"); NegateCategory("role"); NegateCategory("priority"); NegateCategory("cc")
+        NegateCategory("raid"); NegateCategory("raidcombat"); NegateCategory("dispel"); NegateCategory("nonplayer")
         if negated then dmCfg.neg = negated end
     end
 end

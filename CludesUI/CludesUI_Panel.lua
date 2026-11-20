@@ -72,7 +72,7 @@ local suppressScrollRangeChanged = false
 local lastHeaderPadded = false
 local skipScrollChildReanchor = false
 
-local function ClearWidgetRefreshList()
+local function WipeWidgetRefreshes()
     for i = 1, #_widgetRefreshList do
         _widgetRefreshList[i] = nil
     end
@@ -85,11 +85,11 @@ function CludesUI._SnapshotAndClearWidgetRefreshList()
     for i = 1, #_widgetRefreshList do
         snap[i] = _widgetRefreshList[i]
     end
-    ClearWidgetRefreshList()
+    WipeWidgetRefreshes()
     return snap
 end
 function CludesUI._RestoreWidgetRefreshList(snap)
-    ClearWidgetRefreshList()
+    WipeWidgetRefreshes()
     for i = 1, #snap do
         _widgetRefreshList[i] = snap[i]
     end
@@ -5034,7 +5034,7 @@ ClearContent = function()
         return
     end
     -- Clear widget refresh registry
-    ClearWidgetRefreshList()
+    WipeWidgetRefreshes()
     -- Clear content header (non-scrolling region) if active
     if CludesUI.ClearContentHeader then
         CludesUI:ClearContentHeader()
@@ -5431,7 +5431,7 @@ local function PagePassBody(pageKey, pageTitle, moduleConfig, refresh)
     local wrapper
     if reuse then
         RecycleAllSearchHighlights(true)
-        ClearWidgetRefreshList()
+        WipeWidgetRefreshes()
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
         end
@@ -5464,7 +5464,7 @@ local function PagePassBody(pageKey, pageTitle, moduleConfig, refresh)
         _pageCache[pageKey] = nil
         record = nil
         -- Clear widget refresh registry and header (safe -- these are per-page)
-        ClearWidgetRefreshList()
+        WipeWidgetRefreshes()
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
         end
@@ -5486,7 +5486,7 @@ local function PagePassBody(pageKey, pageTitle, moduleConfig, refresh)
     else
         -- Cold path: clear the content header, then a wrapper frame for this page
         lastHeaderPadded = false
-        ClearWidgetRefreshList()
+        WipeWidgetRefreshes()
         ResetRowCounters()
         if CludesUI._copyPopup then
             CludesUI._copyPopup:Hide()
@@ -5802,7 +5802,7 @@ function CludesUI:SelectPage(pageTitle)
         end
 
         -- Restore this page's refresh list
-        ClearWidgetRefreshList()
+        WipeWidgetRefreshes()
         if cachedPage.refreshList then
             for i = 1, #cachedPage.refreshList do
                 _widgetRefreshList[i] = cachedPage.refreshList[i]
@@ -6176,7 +6176,7 @@ end
 -------------------------------------------------------------------------------
 --  Show / Hide / Toggle
 -------------------------------------------------------------------------------
-local function RefreshSidebarStates()
+local function SyncNavStates()
     -- Refresh global settings button state (unchanged -- still a dedicated
     -- always-visible row above the grouped scroll area).
     local globalButton = sidebarButtons["_CUIGlobal"]
@@ -6352,7 +6352,7 @@ function CUI_NS.ToggleSidebarGroup(entryKey)
         CludesUIDB.sidebarCollapsed = c
     end
     c[entryKey] = (not c[entryKey]) or nil
-    RefreshSidebarStates()
+    SyncNavStates()
 end
 
 -- Selecting a module whose group is collapsed expands that group, so the
@@ -6368,7 +6368,7 @@ function CUI_NS.RevealSidebarRow(moduleKey)
             for _, member in ipairs(navGroup.members) do
                 if member == moduleKey then
                     c[navGroup.key] = nil
-                    RefreshSidebarStates()
+                    SyncNavStates()
                     return
                 end
             end
@@ -6466,7 +6466,7 @@ function CludesUI:Show()
         return
     end
     CreateMainFrame()
-    RefreshSidebarStates()
+    SyncNavStates()
     panelFrame:Show()
     -- An open request while folded to the mini window unfolds it.
     if self._panelCollapsed then
@@ -6501,7 +6501,7 @@ function CludesUI:Toggle()
     elseif panelFrame:IsShown() then
         panelFrame:Hide()
     else
-        RefreshSidebarStates()
+        SyncNavStates()
         panelFrame:Show()
         ShowSidebarUnlockTip()
         -- Refresh widget disabled states (e.g. width-match may have
@@ -6718,7 +6718,7 @@ function CludesUI:ShowModule(moduleFolder)
         return
     end
     CreateMainFrame()
-    RefreshSidebarStates()
+    SyncNavStates()
     panelFrame:Show()
     if self._panelCollapsed then
         self._SetPanelCollapsed(false)
@@ -6943,7 +6943,7 @@ do
             CludesUI.RefreshSidebarOverrideLocks()
         end
         if panelFrame and panelFrame:IsShown() then
-            RefreshSidebarStates()
+            SyncNavStates()
         end
     end
 
@@ -7271,7 +7271,7 @@ do
             CludesUI.RefreshSidebarOverrideLocks()
         end
         if panelFrame:IsShown() then
-            RefreshSidebarStates()
+            SyncNavStates()
         end
     end
 

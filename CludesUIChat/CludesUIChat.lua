@@ -69,7 +69,7 @@ local min, upper, floor, ceil, abs = min, max, floor, ceil, math.abs
 -- Per-frame state lives here, never as properties on Blizzard's chat frame
 -- tables (that taints them -> HistoryKeeper errors in protected instances).
 local _cfd = {}
-local function CFD(castFrame)
+local function CastFrameData(castFrame)
     local skinData = _cfd[castFrame]
     if not skinData then
         skinData = {}
@@ -77,7 +77,7 @@ local function CFD(castFrame)
     end
     return skinData
 end
-CludesUI._chatCFD = CFD
+CludesUI._chatCFD = CastFrameData
 
 local CHAT_DEFAULTS = {
     profile = {
@@ -484,8 +484,8 @@ function CHAT.ApplyBackground()
     local stock = mod.ChatStock()
     for index = 1, 20 do
         local castFrame = _G["ChatFrame" .. index]
-        if castFrame and CFD(castFrame).bg then
-            local bgTex = CFD(castFrame).bg:GetRegions()
+        if castFrame and CastFrameData(castFrame).bg then
+            local bgTex = CastFrameData(castFrame).bg:GetRegions()
             if bgTex then
                 if stock and bgTex.SetColorTexture then
                     if bgTex.SetVertexColor then
@@ -511,8 +511,8 @@ function CHAT.ApplyBackground()
         CHAT.FV_PaintFills(texPath, BG_R, BG_G, BG_B, BG_A)
     end
     local cf1 = _G.ChatFrame1
-    if cf1 and CFD(cf1).sidebar then
-        local sbBg = CFD(cf1).sidebar:GetRegions()
+    if cf1 and CastFrameData(cf1).sidebar then
+        local sbBg = CastFrameData(cf1).sidebar:GetRegions()
         if sbBg and sbBg.SetColorTexture then
             sbBg:SetColorTexture(BG_R, BG_G, BG_B, stock and 0 or BG_A)
         end
@@ -552,7 +552,7 @@ function CHAT.ApplyExtendedBackground()
     local conf = CHAT.DB()
     local extend = CHAT.ExtendBgBehindTabs(conf)
     local cf1 = _G.ChatFrame1
-    local d1 = cf1 and CFD(cf1)
+    local d1 = cf1 and CastFrameData(cf1)
     local bg1 = d1 and d1.bg
     if not bg1 then
         return
@@ -915,7 +915,7 @@ function CHAT.ApplySidebarVisibility()
     local conf = CHAT.DB()
     local mode = conf.sidebarVisibility or "always"
     local cf1 = _G.ChatFrame1
-    local sidebar = cf1 and CFD(cf1).sidebar
+    local sidebar = cf1 and CastFrameData(cf1).sidebar
     if not sidebar then
         return
     end
@@ -966,7 +966,7 @@ function CHAT.ApplySidebarVisibility()
             else
                 SetSidebarFadeAlpha(upper(_sidebarFadeTarget, _sidebarFadeAlpha - step))
             end
-            local scrollBar = _G.ChatFrame1 and CFD(_G.ChatFrame1).sidebar
+            local scrollBar = _G.ChatFrame1 and CastFrameData(_G.ChatFrame1).sidebar
             if scrollBar then
                 scrollBar:SetAlpha(min(_sidebarFadeAlpha, _chatAlphaCurrent))
             end
@@ -996,30 +996,30 @@ function CHAT.ApplyBorders()
 
     for index = 1, 20 do
         local castFrame = _G["ChatFrame" .. index]
-        if castFrame and CFD(castFrame).bg and Pix.GetBorders(CFD(castFrame).bg) then
-            Pix.SetBorderColor(CFD(castFrame).bg, red, green, blue, a)
-            Pix.GetBorders(CFD(castFrame).bg):SetShown(not hide)
+        if castFrame and CastFrameData(castFrame).bg and Pix.GetBorders(CastFrameData(castFrame).bg) then
+            Pix.SetBorderColor(CastFrameData(castFrame).bg, red, green, blue, a)
+            Pix.GetBorders(CastFrameData(castFrame).bg):SetShown(not hide)
         end
-        if castFrame and CFD(castFrame).inputDiv then
-            CFD(castFrame).inputDiv:SetColorTexture(red, green, blue, a)
+        if castFrame and CastFrameData(castFrame).inputDiv then
+            CastFrameData(castFrame).inputDiv:SetColorTexture(red, green, blue, a)
             -- Input-on-top: the divider marks the overlaid input's edge, so it
             -- shares that input's shown state (ECHAT.ApplyInputTopStrip) --
             -- otherwise it cuts across a message once the strip is released.
-            CFD(castFrame).inputDiv:SetShown(
+            CastFrameData(castFrame).inputDiv:SetShown(
                 not hide and (not CHAT.InputOnTop(conf) or CHAT.InputTopStripActive(castFrame))
             )
         end
     end
     local cf1 = _G.ChatFrame1
-    if cf1 and CFD(cf1).sidebar then
+    if cf1 and CastFrameData(cf1).sidebar then
         local sbBgHidden = conf.hideSidebarBg
-        if Pix.GetBorders(CFD(cf1).sidebar) then
-            Pix.SetBorderColor(CFD(cf1).sidebar, red, green, blue, a)
-            Pix.GetBorders(CFD(cf1).sidebar):SetShown(not hide and not sbBgHidden)
+        if Pix.GetBorders(CastFrameData(cf1).sidebar) then
+            Pix.SetBorderColor(CastFrameData(cf1).sidebar, red, green, blue, a)
+            Pix.GetBorders(CastFrameData(cf1).sidebar):SetShown(not hide and not sbBgHidden)
         end
-        if CFD(cf1).sidebarDiv then
-            CFD(cf1).sidebarDiv:SetColorTexture(red, green, blue, a)
-            CFD(cf1).sidebarDiv:SetShown(not hide)
+        if CastFrameData(cf1).sidebarDiv then
+            CastFrameData(cf1).sidebarDiv:SetColorTexture(red, green, blue, a)
+            CastFrameData(cf1).sidebarDiv:SetShown(not hide)
         end
     end
     -- Mirror border visibility onto the behind-tabs divider continuation.
@@ -1073,7 +1073,7 @@ end
 -- this to one queued placement per chat frame per frame; the closure is built once
 -- and reused, so repeats cost only the timer.
 function CHAT.PositionChatPanel(castFrame)
-    local skinData = CFD(castFrame)
+    local skinData = CastFrameData(castFrame)
     if skinData._posQueued then
         return
     end
@@ -1090,7 +1090,7 @@ function CHAT.PositionChatPanel(castFrame)
 end
 
 function CHAT._PositionChatPanelNow(castFrame)
-    local skinData = CFD(castFrame)
+    local skinData = CastFrameData(castFrame)
     local backdrop = skinData and skinData.bg
     if not backdrop then
         return
@@ -1218,7 +1218,7 @@ function CHAT.PositionChatPanelsNow()
         local castFrame = _G["ChatFrame" .. index]
         -- Gate on the panel existing, NOT on _skinned: that table is a local of
         -- CUI_Chat_EditBox.lua, so referencing it here reads a nil GLOBAL.
-        if castFrame and CFD(castFrame).bg then
+        if castFrame and CastFrameData(castFrame).bg then
             CHAT._PositionChatPanelNow(castFrame)
         end
     end
@@ -1253,7 +1253,7 @@ function CHAT.ApplyPanelHost()
     for index = 1, 20 do
         local castFrame = _G["ChatFrame" .. index]
         if castFrame then
-            local skinData = CFD(castFrame)
+            local skinData = CastFrameData(castFrame)
             ReseatPanel(skinData.bg, owner)
             ReseatPanel(skinData.sidebar, owner)
             -- Moves only while it is seated on the chat panel; on the sidebar
@@ -1381,7 +1381,7 @@ function CHAT.SeatStockBackground(castFrame)
     if not (castFrame and CHAT._stockSeatArmed) then
         return
     end
-    local skinData = CFD(castFrame)
+    local skinData = CastFrameData(castFrame)
     if skinData.stockSeated then
         return
     end
@@ -1443,7 +1443,7 @@ function CHAT.SyncChatFrameState()
         -- this heal re-rects chat mid-login while Blizzard's dock passes are
         -- still resolving (ghost tab strip built against half-resolved
         -- geometry = invisible tabs until the next pass).
-        local d1 = cf1s and CFD(cf1s)
+        local d1 = cf1s and CastFrameData(cf1s)
         if d1 and d1.anchorGuarded then
             local wid = cf1s:GetWidth()
             local hgt = cf1s:GetHeight()
@@ -1527,7 +1527,7 @@ function CHAT.SyncChatFrameState()
             if stockLvl then
                 CHAT.SeatStockBackground(castFrame)
             end
-            local backdrop = CFD(castFrame).bg
+            local backdrop = CastFrameData(castFrame).bg
             if backdrop and not mod._chatStackHidden then
                 if backdrop:IsShown() ~= isShown then
                     backdrop:SetShown(isShown)
@@ -1751,7 +1751,7 @@ CludesUI.NewInternals(mod, "_internals", {
     BG_B = BG_B,
     BG_G = BG_G,
     BG_R = BG_R,
-    CFD = CFD,
+    CFD = CastFrameData,
     EnsureChatClampInsets = EnsureChatClampInsets,
     EnsureDB = EnsureDB,
     FADE_IN_DURATION = FADE_IN_DURATION,

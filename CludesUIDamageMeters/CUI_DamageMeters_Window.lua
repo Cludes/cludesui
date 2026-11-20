@@ -1097,7 +1097,7 @@ local function CreateDMWindow(winIdx)
 
     W.settingsBtn = MakeHeaderBtn("dm_settings.png", -(btnPad + 2), "Settings", function()
         -- "Default on M+ Start" submenu: meter type this window switches to when a key starts; "Off" (default) leaves it alone
-        local function mStartEntry(labelText, dmType)
+        local function mythicStartEntry(labelText, dmType)
             return {
                 text = labelText,
                 isActive = (wdb.mythicStartDMType == dmType),
@@ -1115,14 +1115,14 @@ local function CreateDMWindow(winIdx)
                 end,
             },
             "---",
-            mStartEntry(L("Damage Done"), Enum.DamageMeterType.DamageDone),
-            mStartEntry(L("Healing"), Enum.DamageMeterType.HealingDone),
-            mStartEntry(L("Damage Taken"), Enum.DamageMeterType.DamageTaken),
-            mStartEntry(L("Avoidable Damage Taken"), Enum.DamageMeterType.AvoidableDamageTaken),
-            mStartEntry(L("Enemy Damage Taken"), Enum.DamageMeterType.EnemyDamageTaken),
-            mStartEntry(L("Interrupts"), Enum.DamageMeterType.Interrupts),
-            mStartEntry(L("Dispels"), Enum.DamageMeterType.Dispels),
-            mStartEntry(L("Deaths"), Enum.DamageMeterType.Deaths),
+            mythicStartEntry(L("Damage Done"), Enum.DamageMeterType.DamageDone),
+            mythicStartEntry(L("Healing"), Enum.DamageMeterType.HealingDone),
+            mythicStartEntry(L("Damage Taken"), Enum.DamageMeterType.DamageTaken),
+            mythicStartEntry(L("Avoidable Damage Taken"), Enum.DamageMeterType.AvoidableDamageTaken),
+            mythicStartEntry(L("Enemy Damage Taken"), Enum.DamageMeterType.EnemyDamageTaken),
+            mythicStartEntry(L("Interrupts"), Enum.DamageMeterType.Interrupts),
+            mythicStartEntry(L("Dispels"), Enum.DamageMeterType.Dispels),
+            mythicStartEntry(L("Deaths"), Enum.DamageMeterType.Deaths),
         }
         -- An instance rule changed: re-apply every window now, and move the mouseover
         -- scan's cached predicate on next frame (deferred like the hotkey toggle), so a

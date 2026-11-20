@@ -77,12 +77,12 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
 
     -- Style page gates: Gate() for settings neither stock look uses,
     -- BlizzOnly() for those only Blizzard Style ignores.
-    local function Gate(rowConf)
+    local function ThreatGate(rowConf)
         return BS.Gate("threatmeter", rowConf)
     end
     local function BlizzOnly(rowConf)
         if BS.Active("threatmeter") == "blizzard" then
-            return Gate(rowConf)
+            return ThreatGate(rowConf)
         end
         return rowConf
     end
@@ -790,7 +790,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                         mod.SetStyleValue("bars", "iconZoom", val)
                     end,
                 },
-                Gate({
+                ThreatGate({
                     type = "toggle",
                     label = "Separator",
                     tooltip = "Adds a divider between each icon and its bar.",
@@ -904,7 +904,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             hostFrame,
             cursorY,
             StyleSlider("header", "hdrBgAlpha", "Header Opacity", 0, 1, 0.01),
-            Gate({
+            ThreatGate({
                 type = "slider",
                 text = "Header Bottom Border",
                 min = 0,
@@ -927,11 +927,11 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
         )
         cursorY = cursorY - height
         if not CludesUI._prebuilding then
-            Swatch(bgRow._leftRegion, Gate(StyleSwatch("header", "hdrBgColor", "Header Background")))
+            Swatch(bgRow._leftRegion, ThreatGate(StyleSwatch("header", "hdrBgColor", "Header Background")))
             local sepRgn = bgRow._rightRegion
             local sepCog = CludesUI.BuildInlineCog(
                 sepRgn,
-                Gate({
+                ThreatGate({
                     title = "Header Settings",
                     disabled = off,
                     disabledTooltip = "Threat Meter",
@@ -972,7 +972,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                 return SeparatorShown() and "Bottom Separator" or "Header Bottom Border"
             end
             lineSwatch.requireState = LineState
-            Swatch(sepRgn, Gate(lineSwatch))
+            Swatch(sepRgn, ThreatGate(lineSwatch))
             -- The swatch sits left of the cog while the cog shows, else beside
             -- the slider; re-anchored only when the cog's shown state flips.
             local lineSw, sepShown = sepRgn._lastInline, nil
@@ -1291,7 +1291,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     bgRow, height = W:DualRow(
         hostFrame,
         cursorY,
-        Gate({
+        ThreatGate({
             type = "dropdown",
             text = "Background Texture",
             values = texValues,
@@ -1396,28 +1396,28 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     windowRow, height = W:DualRow(
         hostFrame,
         cursorY,
-        Gate(BorderStyle(true, "Window Border Style")),
-        Gate(BorderSize(true, "Window Border Size"))
+        ThreatGate(BorderStyle(true, "Window Border Style")),
+        ThreatGate(BorderSize(true, "Window Border Size"))
     )
     cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local sc = StyleSwatch("borders", "windowBorderColor", "Window Border Color")
         sc.disabled, sc.disabledTooltip = windowBorderOff, windowBorderTip
-        Swatch(windowRow._rightRegion, Gate(sc))
+        Swatch(windowRow._rightRegion, ThreatGate(sc))
     end
 
     local barBorderRow
     barBorderRow, height = W:DualRow(
         hostFrame,
         cursorY,
-        Gate(BorderStyle(false, "Bar Border Style")),
-        Gate(BorderSize(false, "Bar Border Size"))
+        ThreatGate(BorderStyle(false, "Bar Border Style")),
+        ThreatGate(BorderSize(false, "Bar Border Size"))
     )
     cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local sepCog = CludesUI.BuildInlineCog(
             barBorderRow._leftRegion,
-            Gate({
+            ThreatGate({
                 title = "Bar Border Settings",
                 disabled = off,
                 disabledTooltip = "Threat Meter",
@@ -1449,10 +1449,10 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
         sc.disabled, sc.disabledTooltip = Needs(function()
             return IsZero("borders", "borderSize")
         end, "Bar Border Size")
-        Swatch(barBorderRow._rightRegion, Gate(sc))
+        Swatch(barBorderRow._rightRegion, ThreatGate(sc))
     end
 
-    _, height = W:DualRow(hostFrame, cursorY, Gate(includeHeader), BLANK())
+    _, height = W:DualRow(hostFrame, cursorY, ThreatGate(includeHeader), BLANK())
     cursorY = cursorY - height
 
     return math.abs(cursorY)

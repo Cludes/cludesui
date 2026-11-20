@@ -2020,7 +2020,7 @@ local function SkinFriendsFrame()
 
     local _activeSubTab = 1
 
-    local function UpdateCustomTabs(overrideTab)
+    local function SyncCustomTabs(overrideTab)
         local selected = overrideTab or PanelTemplates_GetSelectedTab(FriendsFrame) or 1
         local isContacts = (selected == 1)
         local fontPath = SKIN.db and SKIN.db.profile and SKIN.db.profile.friends
@@ -2121,7 +2121,7 @@ local function SkinFriendsFrame()
         end
     end
 
-    GetFFD(widget).updateCustomTabs = UpdateCustomTabs
+    GetFFD(widget).updateCustomTabs = SyncCustomTabs
 
     -- Tab changes are detected from each content frame's OnShow.
     local tabFrames = {
@@ -2134,7 +2134,7 @@ local function SkinFriendsFrame()
         local sf, tabIdx = record[1], record[2]
         if sf then
             sf:HookScript("OnShow", function()
-                UpdateCustomTabs(tabIdx)
+                SyncCustomTabs(tabIdx)
                 if tabIdx == 3 then
                     C_Timer.After(0, SkinRaidTab)
                     C_Timer.After(0.2, SkinRaidTab)
@@ -2147,7 +2147,7 @@ local function SkinFriendsFrame()
             local rf = _G.RaidFrame
             if rf then
                 rf:HookScript("OnShow", function()
-                    UpdateCustomTabs(3)
+                    SyncCustomTabs(3)
                     C_Timer.After(0, SkinRaidTab)
                     C_Timer.After(0.2, SkinRaidTab)
                 end)
@@ -2155,7 +2155,7 @@ local function SkinFriendsFrame()
         end)
     end
     hooksecurefunc(widget, "Show", function()
-        UpdateCustomTabs()
+        SyncCustomTabs()
     end)
 
     hooksecurefunc(widget, "Hide", function()
@@ -2497,14 +2497,14 @@ local function SkinFriendsFrame()
                     end
                     _activeSubTab = i
                     UpdateSubTabs()
-                    UpdateCustomTabs()
+                    SyncCustomTabs()
                     return
                 else
                     local bottomTab = PanelTemplates_GetSelectedTab(FriendsFrame) or 1
                     if bottomTab ~= 1 then
                         PanelTemplates_SetTab(FriendsFrame, 1)
                         FriendsFrame_Update()
-                        UpdateCustomTabs()
+                        SyncCustomTabs()
                     end
                     if stock then
                         stock:EnableMouse(true)
@@ -2514,7 +2514,7 @@ local function SkinFriendsFrame()
                 end
                 _activeSubTab = i
                 UpdateSubTabs()
-                UpdateCustomTabs()
+                SyncCustomTabs()
             end)
 
             customTab:SetWidth(60)
@@ -3590,7 +3590,7 @@ local function SkinFriendsFrame()
             GetFFD(widget).tabTopBorder:SetPoint("TOPRIGHT", lastCT, "TOPRIGHT", 0, 0)
         end
 
-        UpdateCustomTabs()
+        SyncCustomTabs()
     end
 
     local closeButton = widget.CloseButton or _G.FriendsFrameCloseButton
@@ -3621,7 +3621,7 @@ local function SkinFriendsFrame()
         ws.OnStylesChanged(OnChromeStylesChanged)
     end
 
-    C_Timer.After(0, UpdateCustomTabs)
+    C_Timer.After(0, SyncCustomTabs)
 end
 
 -- Live updates: colors, border, opacity

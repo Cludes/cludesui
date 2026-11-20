@@ -303,7 +303,7 @@ local function InitializeFrames()
     end
 
     -- Resize frame and portrait to account for class power pips above health bar
-    local function ResizeFrameForClassPower(cpAboveH)
+    local function FitPlayerForClassPower(cpAboveH)
         local widget = frameList.player
         if not widget then
             return
@@ -471,7 +471,7 @@ local function InitializeFrames()
             local anchorFrame = frameList.player.Health
             local pipH = barFrame._pipH or 3
             -- Resize frame/portrait BEFORE anchoring health bar so _xOffset is correct
-            ResizeFrameForClassPower(pipH)
+            FitPlayerForClassPower(pipH)
             local btbDisabled = 0
             local btbPos2 = saved.profile.player.btbPosition or "bottom"
             if btbPos2 == "top" and saved.profile.player.bottomTextBar then
@@ -508,7 +508,7 @@ local function InitializeFrames()
             -- "top" floats above the frame (like "bottom" floats below) -- does NOT become part of the frame
             _cpExpectedParent = frameList.player
             barFrame:SetParent(frameList.player)
-            ResizeFrameForClassPower(0)
+            FitPlayerForClassPower(0)
             -- Reset health bar to normal position
             if frameList.player.Health and not stock then
                 local btbDisabled = 0
@@ -572,7 +572,7 @@ local function InitializeFrames()
             else
                 Pix.Point(barFrame, "CENTER", UIParent, "CENTER", 0, -220)
             end
-            ResizeFrameForClassPower(0)
+            FitPlayerForClassPower(0)
             if barFrame._bottomBdrFrame then
                 barFrame._bottomBdrFrame:Hide()
             end
@@ -662,7 +662,7 @@ local function InitializeFrames()
                 watcher:Show()
                 mod._cpWatchTick.Start()
             end
-            ResizeFrameForClassPower(0)
+            FitPlayerForClassPower(0)
         end
         barFrame:SetFrameStrata(frameList.player:GetFrameStrata())
         barFrame:SetFrameLevel(frameList.player:GetFrameLevel() + 5)
@@ -786,7 +786,7 @@ local function InitializeFrames()
                 end
             else
                 -- Spec has no class resource: reset frame sizing
-                ResizeFrameForClassPower(0)
+                FitPlayerForClassPower(0)
             end
         end
     end
@@ -880,7 +880,7 @@ local function InitializeFrames()
                     0
                 )
             end
-            ResizeFrameForClassPower(0)
+            FitPlayerForClassPower(0)
             return
         end
 
@@ -921,7 +921,7 @@ local function InitializeFrames()
                 end
             else
                 -- Spec has no class resource: reset frame sizing
-                ResizeFrameForClassPower(0)
+                FitPlayerForClassPower(0)
             end
         end
     end

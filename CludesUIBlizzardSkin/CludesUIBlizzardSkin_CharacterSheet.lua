@@ -3047,7 +3047,7 @@ local function SkinCharacterSheet()
     end
 
     -- Refresh row visibility against the showWhen / crest / opt-in filters.
-    local function RefreshStatsVisibility()
+    local function SyncStatSections()
         local currentSpec = GetSpecialization()
 
         for _, sectionInfo in ipairs(GetFFD(widget).statsSections) do
@@ -3092,7 +3092,7 @@ local function SkinCharacterSheet()
             CludesUI._refreshStatFormats()
         end
     end
-    CludesUI._refreshStatsVisibility = RefreshStatsVisibility
+    CludesUI._refreshStatsVisibility = SyncStatSections
 
     -- Event-driven primary-stat + stat-visibility refresh. Fires only on spec
     -- / talent changes and once on panel open: no row filter reads stats,
@@ -3112,7 +3112,7 @@ local function SkinCharacterSheet()
             return
         end
         RefreshAttributeStats()
-        RefreshStatsVisibility()
+        SyncStatSections()
     end)
     -- Same dynamic-registration trick as statsEventFrame below.
     widget:HookScript("OnShow", function()
@@ -3133,14 +3133,14 @@ local function SkinCharacterSheet()
     end
     widget:HookScript("OnShow", function()
         RefreshAttributeStats()
-        RefreshStatsVisibility()
+        SyncStatSections()
         if CludesUI._updateStatCategoryVisibility then
             CludesUI._updateStatCategoryVisibility()
         end
         -- Deferred re-layout: scroll child bounds may not be finalized on the OnShow
         -- frame, causing sections to stack on first open.
         C_Timer.After(0, function()
-            RefreshStatsVisibility()
+            SyncStatSections()
             if CludesUI._updateStatCategoryVisibility then
                 CludesUI._updateStatCategoryVisibility()
             end
@@ -3809,7 +3809,7 @@ local function SkinCharacterSheet()
             -- Expand above shows every row unconditionally, including ones showWhen/
             -- showCrestKey correctly hid (e.g. Brewmaster's Stagger Effect); re-apply
             -- the real filter here (also recalculates layout, no separate call needed).
-            RefreshStatsVisibility()
+            SyncStatSections()
 
             -- Persist across sessions.
             if CludesUIDB then
@@ -3914,11 +3914,11 @@ local function SkinCharacterSheet()
 
     -- Initial visibility. RefreshStatsVisibility also settles opt-in rows (Mana,
     -- built unconditionally so toggles apply without /reload) before first OnShow.
-    RefreshStatsVisibility()
+    SyncStatSections()
     UpdateStatCategoryVisibility()
     -- Deferred pass: some settings (e.g. section visibility) may not be initialized yet.
     C_Timer.After(0, function()
-        RefreshStatsVisibility()
+        SyncStatSections()
         UpdateStatCategoryVisibility()
     end)
 
@@ -3995,7 +3995,7 @@ local function SkinCharacterSheet()
             end
             if specInfo then
                 RefreshAttributeStats()
-                RefreshStatsVisibility()
+                SyncStatSections()
             elseif (widget.selectedTab or 1) == 1 then
                 UpdateAllStats()
             end
@@ -6060,7 +6060,7 @@ if CludesUI then
                 -- PreSkin hides the portrait once; Blizzard's CharacterFrameMixin:UpdatePortrait
                 -- (RefreshDisplay/UNIT_PORTRAIT_UPDATE/spec icon) runs after OnShow hooks and redraws it -- re-hide via secure hook + deferred GetPortrait() passes too.
                 if not GetFFD(CharacterFrame)._cuiPortraitSuppressRegistered then
-                    local function SuppressCharacterFramePortrait()
+                    local function HideSheetPortrait()
                         if
                             CludesUIDB
                             and (
@@ -6117,9 +6117,9 @@ if CludesUI then
                         GetFFD(CharacterFrame)._cuiPortraitSuppressRegistered = true
 
                         CharacterFrame:HookScript("OnShow", function()
-                            SuppressCharacterFramePortrait()
-                            C_Timer.After(0, SuppressCharacterFramePortrait)
-                            C_Timer.After(0.05, SuppressCharacterFramePortrait)
+                            HideSheetPortrait()
+                            C_Timer.After(0, HideSheetPortrait)
+                            C_Timer.After(0.05, HideSheetPortrait)
                         end)
 
                         hooksecurefunc(CharacterFrame, "UpdatePortrait", function()
@@ -6132,7 +6132,7 @@ if CludesUI then
                             then
                                 return
                             end
-                            SuppressCharacterFramePortrait()
+                            HideSheetPortrait()
                         end)
 
                         if CharacterFrame.RefreshDisplay then
@@ -6146,7 +6146,7 @@ if CludesUI then
                                 then
                                     return
                                 end
-                                SuppressCharacterFramePortrait()
+                                HideSheetPortrait()
                             end)
                         end
 
@@ -6161,7 +6161,7 @@ if CludesUI then
                                 then
                                     return
                                 end
-                                SuppressCharacterFramePortrait()
+                                HideSheetPortrait()
                             end)
                         end
 
@@ -6182,7 +6182,7 @@ if CludesUI then
                             end)
                         end
 
-                        SuppressCharacterFramePortrait()
+                        HideSheetPortrait()
                         return true
                     end
 

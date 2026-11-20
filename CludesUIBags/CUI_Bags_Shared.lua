@@ -864,7 +864,7 @@ do
         pickup = PickupGuildBankItem,
     }
 
-    local function StopJob()
+    local function CancelJob()
         task = nil
     end
 
@@ -887,19 +887,19 @@ do
             return
         end
         if not task.window:IsVisible() then
-            StopJob()
+            CancelJob()
             return
         end
         local opList = task.ops
         local details = opList.info(task.bag, task.slot)
         if not details or details.itemID ~= task.itemID then
-            StopJob()
+            CancelJob()
             return
         end
         if details.isLocked or (task.pending and details.stackCount ~= task.pending) then
             if GetTime() - task.issuedAt > 2 then
                 ClearCursor()
-                StopJob()
+                CancelJob()
             else
                 Later()
             end
@@ -907,7 +907,7 @@ do
         end
         task.pending = nil
         if details.stackCount <= task.size then
-            StopJob()
+            CancelJob()
             return
         end
         for _, bagID in ipairs(task.targets) do
@@ -920,7 +920,7 @@ do
                     opList.pickup(bagID, s)
                     -- Single placed split: one issue, no settle polling.
                     if task.once then
-                        StopJob()
+                        CancelJob()
                         return
                     end
                     task.pending = details.stackCount - task.size
@@ -930,7 +930,7 @@ do
                 end
             end
         end
-        StopJob()
+        CancelJob()
     end
 
     -- once = a single split placed into the first empty target slot (the views
@@ -957,7 +957,7 @@ do
             dialogFrame:Hide()
         end
         if task and task.window == win then
-            StopJob()
+            CancelJob()
         end
         -- Closing the bags ends every session unmerge; the next open merges again.
         if win == CUI_Bags and CUI_Bags._unmergedLinks then
@@ -1181,7 +1181,7 @@ do
             return
         end
         dialogFrame = dialogFrame or CreateDialog()
-        StopJob()
+        CancelJob()
         dialogFrame._owner, dialogFrame._bag, dialogFrame._slot, dialogFrame._itemID = ownerFrame, bag, slot, details.itemID
         dialogFrame._targets, dialogFrame._window, dialogFrame._ops = targets, window, opList
         dialogFrame._placeOnce = placeOnce

@@ -451,7 +451,7 @@ local function ShowBackground(instant)
     hgt.fade:Play()
 end
 
-local function UpdateHover()
+local function SyncHover()
     if not HoverWanted() then
         return
     end
@@ -520,11 +520,11 @@ local function FocusButton(line)
         ToggleFocus(self.id)
     end)
     widget:SetScript("OnEnter", function(self)
-        UpdateHover()
+        SyncHover()
         FocusOnEnter(self)
     end)
     widget:SetScript("OnLeave", function()
-        UpdateHover()
+        SyncHover()
         CludesUI.HideWidgetTooltip()
     end)
     line.focus = widget
@@ -959,7 +959,7 @@ local function ItemButton(index)
     widget.count:SetPoint("BOTTOMRIGHT", -1, 1)
     widget:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
     widget:SetScript("OnEnter", function(self)
-        UpdateHover()
+        SyncHover()
         GameTooltip:SetOwner(self, TooltipSide())
         local logIndex = C_QuestLog.GetLogIndexForQuestID(self.questID)
         if logIndex then
@@ -968,7 +968,7 @@ local function ItemButton(index)
         GameTooltip:Show()
     end)
     widget:SetScript("OnLeave", function()
-        UpdateHover()
+        SyncHover()
         GameTooltip:Hide()
     end)
     itemList[index] = widget
@@ -1577,7 +1577,7 @@ local function AddRewards(questId, ownerFrame)
 end
 
 function OnLineEnter(self)
-    UpdateHover()
+    SyncHover()
     -- A recipe: only the overlay that takes its clicks to Blizzard's block.
     if self.kind == "recipe" then
         ShowOverlay(self)
@@ -1603,7 +1603,7 @@ function OnLineEnter(self)
 end
 
 function OnLineLeave()
-    UpdateHover()
+    SyncHover()
     GameTooltip:Hide()
 end
 
@@ -1889,8 +1889,8 @@ local function BuildFrame()
     end)
     -- Hover modes only: motion (no clicks) so hover sees the cursor over gaps.
     widget:SetMouseClickEnabled(false)
-    widget:SetScript("OnEnter", UpdateHover)
-    widget:SetScript("OnLeave", UpdateHover)
+    widget:SetScript("OnEnter", SyncHover)
+    widget:SetScript("OnLeave", SyncHover)
     local holderFrame = CreateFrame("Frame", nil, widget)
     holderFrame:SetAllPoints()
     holderFrame:SetFrameLevel(widget:GetFrameLevel())
@@ -1919,8 +1919,8 @@ local function BuildFrame()
     headerFrame:SetScript("OnClick", function()
         ToggleCollapsed("all")
     end)
-    headerFrame:SetScript("OnEnter", UpdateHover)
-    headerFrame:SetScript("OnLeave", UpdateHover)
+    headerFrame:SetScript("OnEnter", SyncHover)
+    headerFrame:SetScript("OnLeave", SyncHover)
 
     scroller = CreateFrame("ScrollFrame", nil, widget)
     scroller:SetPoint("TOPLEFT", PAD, -HEADER_H)
@@ -1965,7 +1965,7 @@ local function BuildFrame()
     end)
     knob:SetScript("OnMouseUp", function(self)
         self:SetScript("OnUpdate", nil)
-        UpdateHover()
+        SyncHover()
     end)
 
     ApplySpot()

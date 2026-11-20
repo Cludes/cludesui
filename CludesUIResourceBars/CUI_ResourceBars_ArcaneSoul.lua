@@ -969,7 +969,7 @@ end
 -- placeOnly: size and position the proxy but keep it, and with it any engine
 -- slot built earlier, hidden (the options live preview for a Mage the gate
 -- does not pass; its sample has a host of its own).
-local function Activate(placeOnly)
+local function StartTracking(placeOnly)
     EnsureProxy()
     if placeOnly then
         S.proxy:SetSize(ProxySize())
@@ -1116,7 +1116,7 @@ function mod.AS_Apply()
     end
     EnsureGateEvents()
     if CludesUI and CludesUI._unlockActive then
-        Activate()
+        StartTracking()
         ShowSample()
         return
     end
@@ -1124,7 +1124,7 @@ function mod.AS_Apply()
     -- Options page open, out of combat: the live preview, for any Mage (as
     -- unlock mode). The engine slots only for a Mage the gate passes.
     if S.demoApplied and not S.demoCombat then
-        Activate(not GateOK())
+        StartTracking(not GateOK())
         ShowDemo()
         return
     end
@@ -1132,7 +1132,7 @@ function mod.AS_Apply()
         Park()
         return
     end
-    Activate()
+    StartTracking()
 end
 
 -- Applied a frame later, once: a rebuild hides and shows the watcher in one pass.
@@ -1171,7 +1171,7 @@ function mod.AS_MakeUnlockElement(MK)
         CludesUI:RegisterUnlockModeListener(UNLOCK_KEY, function(isActive)
             if isActive then
                 if EnabledForClass() then
-                    Activate()
+                    StartTracking()
                     ShowSample()
                 end
             else
@@ -1198,7 +1198,7 @@ function mod.AS_MakeUnlockElement(MK)
                 return nil
             end
             if CludesUI._unlockActive then
-                Activate()
+                StartTracking()
                 ShowSample()
             else
                 -- Outside unlock mode this is a pure geometry request (anchor
@@ -1206,7 +1206,7 @@ function mod.AS_MakeUnlockElement(MK)
                 -- See MoverShowOK: Activate() ends in proxy:Show().
                 EnsureProxy()
                 if MoverShowOK() then
-                    Activate()
+                    StartTracking()
                 end
             end
             return S.proxy
@@ -1262,7 +1262,7 @@ function mod.AS_MakeUnlockElement(MK)
             -- applyPos IS the "put it where it is stored" request, so it PLACES
             -- unconditionally -- but placing is not showing (see MoverShowOK).
             if MoverShowOK() then
-                Activate()
+                StartTracking()
             end
             ApplyPosition()
             if CludesUI._unlockActive then

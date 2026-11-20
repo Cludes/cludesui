@@ -69,7 +69,7 @@ local CAPTURE_EVENTS = {
 -------------------------------------------------------------------------------
 --  Helpers
 -------------------------------------------------------------------------------
-local function PersistEnabled()
+local function HistoryOn()
     if not CHAT.DB then
         return false
     end
@@ -81,7 +81,7 @@ local function PersistEnabled()
 end
 
 local function SessionHistorySafe()
-    if not PersistEnabled() then
+    if not HistoryOn() then
         return false
     end
     if CludesUI.InProtectedInstance() then
@@ -106,7 +106,7 @@ local function InOpenWorld()
 end
 
 local function CaptureAllowed()
-    if not PersistEnabled() then
+    if not HistoryOn() then
         return false
     end
     if GetCVarBool and GetCVarBool("addonChatRestrictionsForced") then
@@ -540,7 +540,7 @@ local function ClearSavedSessionHistory()
 end
 
 function CHAT.SnapshotChatSessionHistory()
-    if not PersistEnabled() then
+    if not HistoryOn() then
         return
     end
     SanitizeSV()
@@ -682,7 +682,7 @@ TryRestore = function(token, attempt)
     if token ~= restoreToken then
         return
     end
-    if not PersistEnabled() then
+    if not HistoryOn() then
         return
     end
     if not SessionHistorySafe() then
@@ -708,7 +708,7 @@ function CHAT.RestoreChatSessionHistory()
     restoreToken = restoreToken + 1
     wipe(restoredFrames)
     local token = restoreToken
-    if not PersistEnabled() then
+    if not HistoryOn() then
         return
     end
     C_Timer.After(RESTORE_DELAY_SEC, function()
@@ -731,7 +731,7 @@ local function ScheduleSessionEpochAfterLogin()
 end
 
 function CHAT.InitChatSessionHistory()
-    if not PersistEnabled() then
+    if not HistoryOn() then
         UninstallCapture()
         ClearSavedSessionHistory()
         return
@@ -749,7 +749,7 @@ eventFrame:RegisterEvent("PLAYER_LEAVING_WORLD")
 
 eventFrame:SetScript("OnEvent", function(_, evt, ...)
     if evt == "PLAYER_LOGOUT" or evt == "PLAYER_LEAVING_WORLD" then
-        if PersistEnabled() then
+        if HistoryOn() then
             CHAT.SnapshotChatSessionHistory()
         else
             ClearSavedSessionHistory()
@@ -768,7 +768,7 @@ eventFrame:SetScript("OnEvent", function(_, evt, ...)
         sessionEpochTime = nil
         captureSeq = 0
         CHAT.InitChatSessionHistory()
-        if PersistEnabled() then
+        if HistoryOn() then
             CHAT.RestoreChatSessionHistory()
             ScheduleSessionEpochAfterLogin()
         end

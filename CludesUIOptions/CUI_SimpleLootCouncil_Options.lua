@@ -446,7 +446,7 @@ CludesUI.AtLogin(function()
     local function SugOpen()
         return sugPopup ~= nil and sugPopup:IsShown()
     end
-    local function CloseSuggestions()
+    local function HideSuggestions()
         if sugPopup then
             sugPopup:Hide()
             sugPopup.selected = 0
@@ -492,10 +492,10 @@ CludesUI.AtLogin(function()
                 end
             end)
             addBox:SetScript("OnEscapePressed", function(widget)
-                CloseSuggestions()
+                HideSuggestions()
                 widget:ClearFocus()
             end)
-            addBox:SetScript("OnHide", CloseSuggestions)
+            addBox:SetScript("OnHide", HideSuggestions)
             addBox:SetScript("OnTextChanged", function(b, userInput)
                 if addHandlers.typed then
                     addHandlers.typed(b, userInput)
@@ -1305,17 +1305,17 @@ CludesUI.AtLogin(function()
                         end
                         Pix.Size(auto, math.ceil(labelW) + 6 + 18, 24)
                         local hovering = false
-                        local function Paint()
+                        local function PaintAutoroll()
                             apply(entry.autoroll == true, hovering)
                         end
                         auto:SetScript("OnEnter", function(b)
                             hovering = true
-                            Paint()
+                            PaintAutoroll()
                             CludesUI.ShowWidgetTooltip(b, specInfo.autorollHelp)
                         end)
                         auto:SetScript("OnLeave", function()
                             hovering = false
-                            Paint()
+                            PaintAutoroll()
                             CludesUI.HideWidgetTooltip()
                         end)
                         auto:SetScript("OnClick", function()
@@ -1323,11 +1323,11 @@ CludesUI.AtLogin(function()
                                 return
                             end
                             specInfo.setAutoroll(entry, not (entry.autoroll == true))
-                            Paint()
+                            PaintAutoroll()
                             InvalidateOptions()
                         end)
-                        AddRefresh(Paint)
-                        Paint()
+                        AddRefresh(PaintAutoroll)
+                        PaintAutoroll()
                         auto:ClearAllPoints()
                         Pix.Point(auto, "LEFT", boxFrame, "RIGHT", 8, 0)
                         colorSwatch:ClearAllPoints()
@@ -1473,7 +1473,7 @@ CludesUI.AtLogin(function()
             local boxFrame = AddBox(Row(50), math.min(260, Width() - 20 - 8 - 90 - 20), specInfo.addText())
 
             local function AddTyped()
-                CloseSuggestions()
+                HideSuggestions()
                 local name = boxFrame:GetText():trim()
                 if name == "" then
                     return
@@ -1500,14 +1500,14 @@ CludesUI.AtLogin(function()
                 widget:SetFocus()
             end
             local function ShowList(widget)
-                CloseSuggestions()
+                HideSuggestions()
                 if #isShown == 0 then
                     return
                 end
                 local p = SugPopup()
                 p.owner = widget
                 p.onPick = function(entry)
-                    CloseSuggestions()
+                    HideSuggestions()
                     isShown = {}
                     Fill(widget, entry)
                 end
@@ -1545,7 +1545,7 @@ CludesUI.AtLogin(function()
                 if not userInput then
                     return
                 end
-                CloseSuggestions()
+                HideSuggestions()
                 isShown = {}
                 local textValue = (widget:GetText() or ""):trim()
 
@@ -1575,7 +1575,7 @@ CludesUI.AtLogin(function()
             local function Enter()
                 local entry = SugOpen() and isShown[sugPopup.selected]
                 if entry then
-                    CloseSuggestions()
+                    HideSuggestions()
                     isShown = {}
                     Fill(boxFrame, entry)
                 else
@@ -1706,26 +1706,26 @@ CludesUI.AtLogin(function()
                     labelText:SetWordWrap(false)
                     labelText:SetText(RankText(name))
                     local hovering = false
-                    local function Paint()
+                    local function PaintAutoroll()
                         apply(specInfo.isEmpowered(name) and true or false, hovering)
                     end
                     button:SetScript("OnEnter", function()
                         hovering = true
-                        Paint()
+                        PaintAutoroll()
                     end)
                     button:SetScript("OnLeave", function()
                         hovering = false
-                        Paint()
+                        PaintAutoroll()
                     end)
                     button:SetScript("OnClick", function()
                         specInfo.setEmpowered(name, not specInfo.isEmpowered(name))
-                        Paint()
+                        PaintAutoroll()
 
                         councilDirty = true
                         InvalidateOptions()
                     end)
-                    AddRefresh(Paint)
-                    Paint()
+                    AddRefresh(PaintAutoroll)
+                    PaintAutoroll()
                 end
             end
             local empty = specInfo.empty()

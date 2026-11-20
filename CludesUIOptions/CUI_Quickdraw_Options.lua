@@ -1509,7 +1509,7 @@ CludesUI.AtOptionsLogin(function()
 
     local ShowPickerCategories, ShowPickerCategory, ShowPickerCustom
 
-    local function HidePicker()
+    local function ClosePicker()
         if pickerMenu then
             pickerMenu:Hide()
         end
@@ -1544,7 +1544,7 @@ CludesUI.AtOptionsLogin(function()
             -- fall through into a Refresh that has nothing to show.
             return false
         end
-        HidePicker()
+        ClosePicker()
         Reapply()
         return true
     end
@@ -1959,7 +1959,7 @@ CludesUI.AtOptionsLogin(function()
                 -- nothing to remove and the menu stays up.
                 local pmenu = MenuTable(editingMenu)
                 if pmenu and pickerReplaceIndex and mod.RemoveSlot(pmenu, pickerReplaceIndex) then
-                    HidePicker()
+                    ClosePicker()
                     Reapply()
                 end
             end)
@@ -2106,7 +2106,7 @@ CludesUI.AtOptionsLogin(function()
     local function TogglePicker(wdg, replaceIndex)
         local dropMenu = EnsurePickerMenu()
         if dropMenu:IsShown() and pickerAnchor == wdg then
-            HidePicker()
+            ClosePicker()
             return
         end
         -- Dropped per open, not per category view: bags, macros and collections
@@ -2548,7 +2548,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         editingMenu = total + 1
-        HidePicker()
+        ClosePicker()
         RedrawPage()
     end
 
@@ -2586,7 +2586,7 @@ CludesUI.AtOptionsLogin(function()
         end
         local dropMenu = EnsurePickerMenu()
         if dropMenu:IsShown() and pickerAnchor == anchor then
-            HidePicker()
+            ClosePicker()
             return nil
         end
         pickerAnchor = anchor
@@ -3356,7 +3356,7 @@ CludesUI.AtOptionsLogin(function()
         -- A rebuild re-fans the palette, so the entry the picker is anchored to may
         -- not be the "+" any more -- and an already-open menu would then be
         -- pointing at an unrelated slot.
-        HidePicker()
+        ClosePicker()
 
         if not previewHost then
             previewHost = CreateFrame("Frame", nil, hostFrame)
@@ -3443,7 +3443,7 @@ CludesUI.AtOptionsLogin(function()
                 -- The picker is parented to UIParent, so it does not follow the
                 -- panel down by itself. OnHide propagates from the wrapper, so
                 -- this covers closing the window and switching page alike.
-                HidePicker()
+                ClosePicker()
             end)
 
             -- Blocks the preview outright while the module is off, matching the

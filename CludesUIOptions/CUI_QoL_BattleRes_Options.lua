@@ -25,7 +25,7 @@ local function P()
     return profile and profile.profile and profile.profile.battleRes
 end
 
-local function Cfg(key, fallback)
+local function ResCfg(key, fallback)
     local profile = P()
     if not profile then
         return fallback
@@ -112,7 +112,7 @@ local function MakeBorderColorSwatches()
             tooltip = "Custom Color",
             hasAlpha = false,
             getValue = function()
-                local color = Cfg("borderColor")
+                local color = ResCfg("borderColor")
                 if color then
                     return color.r or 0, color.g or 0, color.b or 0
                 end
@@ -123,7 +123,7 @@ local function MakeBorderColorSwatches()
                 ApplyBattleRes()
             end,
             onClick = function(self)
-                if Cfg("borderUseClass") then
+                if ResCfg("borderUseClass") then
                     Set("borderUseClass", false)
                     ApplyBattleRes()
                     CludesUI:RefreshPage()
@@ -134,10 +134,10 @@ local function MakeBorderColorSwatches()
                 end
             end,
             refreshAlpha = function()
-                if Cfg("enabled") == false or Cfg("visibility") == "NEVER" then
+                if ResCfg("enabled") == false or ResCfg("visibility") == "NEVER" then
                     return 0.15
                 end
-                return Cfg("borderUseClass") and 0.3 or 1
+                return ResCfg("borderUseClass") and 0.3 or 1
             end,
         },
         {
@@ -158,10 +158,10 @@ local function MakeBorderColorSwatches()
                 CludesUI:RefreshPage()
             end,
             refreshAlpha = function()
-                if Cfg("enabled") == false or Cfg("visibility") == "NEVER" then
+                if ResCfg("enabled") == false or ResCfg("visibility") == "NEVER" then
                     return 0.15
                 end
-                return Cfg("borderUseClass") and 1 or 0.3
+                return ResCfg("borderUseClass") and 1 or 0.3
             end,
         },
     }
@@ -170,7 +170,7 @@ end
 -- Text display mode ("2 | 4:14"): shared predicates + swatches for the
 -- Display Style controls.
 local function ShowsText()
-    return (Cfg("displayMode") or "icon") == "text"
+    return (ResCfg("displayMode") or "icon") == "text"
 end
 
 local ICON_ROWS_TIP = "This option requires Display Style to be set to Icon"
@@ -211,7 +211,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         values = VIS_VALUES,
         order = VIS_ORDER,
         getValue = function()
-            return Cfg("visibility") or "MPLUS_AND_RAID"
+            return ResCfg("visibility") or "MPLUS_AND_RAID"
         end,
         setValue = function(val)
             Set("visibility", val)
@@ -222,7 +222,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         type = "slider",
         text = "Icon Size",
         disabled = function()
-            return Cfg("visibility") == "NEVER"
+            return ResCfg("visibility") == "NEVER"
         end,
         disabledTooltip = "BattleRes Icon",
         min = 16,
@@ -230,7 +230,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         step = 1,
         isPercent = false,
         getValue = function()
-            return Cfg("iconSize") or 40
+            return ResCfg("iconSize") or 40
         end,
         setValue = SetRowThen("iconSize"),
     })
@@ -241,20 +241,20 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         type = "dropdown",
         text = "Icon Shape",
         disabled = function()
-            return Cfg("visibility") == "NEVER"
+            return ResCfg("visibility") == "NEVER"
         end,
         disabledTooltip = "BattleRes Icon",
         values = SHAPE_VALUES,
         order = SHAPE_ORDER,
         getValue = function()
-            return Cfg("shape") or "none"
+            return ResCfg("shape") or "none"
         end,
         setValue = SetRowThen("shape"),
     }, {
         type = "multiSwatch",
         text = "Border Color",
         disabled = function()
-            return Cfg("visibility") == "NEVER"
+            return ResCfg("visibility") == "NEVER"
         end,
         disabledTooltip = "BattleRes Icon",
         swatches = MakeBorderColorSwatches(),
@@ -265,21 +265,21 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
     row, height = W:DualRow(
         hostFrame,
         cursorY,
-        BorderSizeSliderCfg(Cfg, Set, ApplyBattleRes, function()
-            return Cfg("visibility") == "NEVER"
+        BorderSizeSliderCfg(ResCfg, Set, ApplyBattleRes, function()
+            return ResCfg("visibility") == "NEVER"
         end, "BattleRes Icon"),
         {
             type = "slider",
             text = "Icon Zoom",
             disabled = function()
-                if Cfg("visibility") == "NEVER" then
+                if ResCfg("visibility") == "NEVER" then
                     return true
                 end
-                local s = Cfg("shape") or "none"
+                local s = ResCfg("shape") or "none"
                 return s ~= "none" and s ~= "cropped"
             end,
             disabledTooltip = function()
-                if Cfg("visibility") == "NEVER" then
+                if ResCfg("visibility") == "NEVER" then
                     return "BattleRes Icon"
                 end
                 return "This option requires Icon Shape to be set to None or Cropped"
@@ -289,7 +289,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
             step = 0.5,
             isPercent = false,
             getValue = function()
-                return Cfg("iconZoom") or 11
+                return ResCfg("iconZoom") or 11
             end,
             setValue = SetRowThen("iconZoom"),
         }
@@ -301,7 +301,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         type = "slider",
         text = "Duration Size",
         disabled = function()
-            return Cfg("visibility") == "NEVER"
+            return ResCfg("visibility") == "NEVER"
         end,
         disabledTooltip = "BattleRes Icon",
         min = 8,
@@ -309,14 +309,14 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         step = 1,
         isPercent = false,
         getValue = function()
-            return Cfg("durationSize") or 12
+            return ResCfg("durationSize") or 12
         end,
         setValue = SetRowThen("durationSize"),
     }, {
         type = "slider",
         text = "Count Size",
         disabled = function()
-            return Cfg("visibility") == "NEVER"
+            return ResCfg("visibility") == "NEVER"
         end,
         disabledTooltip = "BattleRes Icon",
         min = 8,
@@ -324,7 +324,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         step = 1,
         isPercent = false,
         getValue = function()
-            return Cfg("countSize") or 11
+            return ResCfg("countSize") or 11
         end,
         setValue = SetRowThen("countSize"),
     })
@@ -343,7 +343,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
                         max = 50,
                         step = 1,
                         get = function()
-                            return Cfg(xKey) or 0
+                            return ResCfg(xKey) or 0
                         end,
                         set = function(val)
                             Set(xKey, val)
@@ -357,7 +357,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
                         max = 50,
                         step = 1,
                         get = function()
-                            return Cfg(yKey) or 0
+                            return ResCfg(yKey) or 0
                         end,
                         set = function(val)
                             Set(yKey, val)
@@ -368,7 +368,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
                 gap = 6,
                 chain = false,
                 disabled = function()
-                    return Cfg("visibility") == "NEVER"
+                    return ResCfg("visibility") == "NEVER"
                 end,
             })
         end
@@ -435,7 +435,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
     CludesUI.BuildSectionUnlockJump(heading, {
         key = "CUI_BattleRes",
         disabled = function()
-            return Cfg("visibility") == "NEVER"
+            return ResCfg("visibility") == "NEVER"
         end,
         disabledTooltip = "BattleRes Icon",
     })
@@ -469,12 +469,12 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         values = VIS_VALUES,
         order = VIS_ORDER,
         getValue = function()
-            return Cfg("visibility") or "MPLUS_AND_RAID"
+            return ResCfg("visibility") or "MPLUS_AND_RAID"
         end,
         -- DependentSetValue: the rows below Row 1 are hidden while Never;
         -- only the Never <-> shown flip forces the full rebuild.
         setValue = CludesUI.DependentSetValue(function()
-            return Cfg("visibility") ~= "NEVER"
+            return ResCfg("visibility") ~= "NEVER"
         end, function(val)
             Set("visibility", val)
             ApplyBattleRes()
@@ -484,10 +484,10 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         type = "slider",
         text = "Icon Size",
         disabled = function()
-            return Cfg("visibility") == "NEVER" or ShowsText()
+            return ResCfg("visibility") == "NEVER" or ShowsText()
         end,
         disabledTooltip = function()
-            if Cfg("visibility") == "NEVER" then
+            if ResCfg("visibility") == "NEVER" then
                 return "BattleRes Icon"
             end
             return ICON_ROWS_TIP
@@ -497,7 +497,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         step = 1,
         isPercent = false,
         getValue = function()
-            return Cfg("iconSize") or 40
+            return ResCfg("iconSize") or 40
         end,
         setValue = SetRowThen("iconSize"),
     })
@@ -505,7 +505,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
 
     -- Rows below are HIDDEN entirely while the icon is set to Never (the
     -- dropdown's DependentSetValue forces the rebuild on flips).
-    if Cfg("visibility") ~= "NEVER" then
+    if ResCfg("visibility") ~= "NEVER" then
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Icon Shape",
@@ -514,7 +514,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             values = SHAPE_VALUES,
             order = SHAPE_ORDER,
             getValue = function()
-                return Cfg("shape") or "none"
+                return ResCfg("shape") or "none"
             end,
             setValue = SetRowThen("shape"),
         }, {
@@ -537,14 +537,14 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         cursorY = cursorY - height
 
         row, height =
-            W:DualRow(hostFrame, cursorY, BorderSizeSliderCfg(Cfg, Set, ApplyBattleRes, ShowsText, ICON_ROWS_TIP), {
+            W:DualRow(hostFrame, cursorY, BorderSizeSliderCfg(ResCfg, Set, ApplyBattleRes, ShowsText, ICON_ROWS_TIP), {
                 type = "slider",
                 text = "Icon Zoom",
                 disabled = function()
                     if ShowsText() then
                         return true
                     end
-                    local s = Cfg("shape") or "none"
+                    local s = ResCfg("shape") or "none"
                     return s ~= "none" and s ~= "cropped"
                 end,
                 disabledTooltip = function()
@@ -558,7 +558,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 step = 0.5,
                 isPercent = false,
                 getValue = function()
-                    return Cfg("iconZoom") or 11
+                    return ResCfg("iconZoom") or 11
                 end,
                 setValue = SetRowThen("iconZoom"),
             })
@@ -574,7 +574,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             step = 1,
             isPercent = false,
             getValue = function()
-                return Cfg("durationSize") or 12
+                return ResCfg("durationSize") or 12
             end,
             setValue = SetRowThen("durationSize"),
         }, {
@@ -587,7 +587,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             step = 1,
             isPercent = false,
             getValue = function()
-                return Cfg("countSize") or 11
+                return ResCfg("countSize") or 11
             end,
             setValue = SetRowThen("countSize"),
         })
@@ -605,7 +605,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                             max = 50,
                             step = 1,
                             get = function()
-                                return Cfg(xKey) or 0
+                                return ResCfg(xKey) or 0
                             end,
                             set = function(val)
                                 Set(xKey, val)
@@ -619,7 +619,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                             max = 50,
                             step = 1,
                             get = function()
-                                return Cfg(yKey) or 0
+                                return ResCfg(yKey) or 0
                             end,
                             set = function(val)
                                 Set(yKey, val)
@@ -646,7 +646,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             values = { icon = "Icon", text = "Text" },
             order = { "icon", "text" },
             getValue = function()
-                return Cfg("displayMode") or "icon"
+                return ResCfg("displayMode") or "icon"
             end,
             setValue = function(val)
                 Set("displayMode", val)
@@ -665,7 +665,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             step = 1,
             isPercent = false,
             getValue = function()
-                return Cfg("textSize") or 14
+                return ResCfg("textSize") or 14
             end,
             setValue = SetRowThen("textSize"),
         })
@@ -681,7 +681,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                     region,
                     region:GetFrameLevel() + 5,
                     function()
-                        local color = Cfg(colorKey)
+                        local color = ResCfg(colorKey)
                         if color then
                             return color.r or 1, color.g or 1, color.b or 1
                         end
@@ -725,7 +725,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 return colorSwatch
             end
             AttachToggleCog(region, "Icon Settings", "Desaturate when No Charges", function()
-                return Cfg("desaturateNoCharges") ~= false
+                return ResCfg("desaturateNoCharges") ~= false
             end, function(val)
                 Set("desaturateNoCharges", val)
                 ApplyBattleRes()
@@ -760,7 +760,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 values = fontValues,
                 order = fontOrder,
                 getValue = function()
-                    return Cfg("font") or "__global"
+                    return ResCfg("font") or "__global"
                 end,
                 setValue = SetRowThen("font"),
             }, {
@@ -773,7 +773,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 values = outlineValues,
                 order = outlineOrder,
                 getValue = function()
-                    return Cfg("outlineMode") or "__global"
+                    return ResCfg("outlineMode") or "__global"
                 end,
                 setValue = SetRowThen("outlineMode"),
             })

@@ -270,7 +270,7 @@ do
     -- through the unit watch), and the ticker while one shows. Own frames (your target): your target's
     -- events while one shows with Include Own Target on. Nameplates and every other unit stay out.
     -- except: a frame on its way off screen.
-    local function PT_Recount(except)
+    local function PT_CountWanted(except)
         local wanted, poll, own = PT.tgtWant, 0, 0
         wipe(wanted)
         if mod._ptEnabled then
@@ -402,7 +402,7 @@ do
         else
             PT_SeedAttrs()
         end
-        PT_Recount()
+        PT_CountWanted()
         mod._PT_RepaintVisible()
     end
 
@@ -753,10 +753,10 @@ do
         end
         PT_Classify(self)
         PT_Paint(self)
-        PT_Recount()
+        PT_CountWanted()
     end
     local function PT_OnHide(self)
-        PT_Recount(self)
+        PT_CountWanted(self)
     end
 
     -- The party header re-assigned an owner's unit (in combat too): its target frame follows at once.
@@ -768,7 +768,7 @@ do
         local widget = PT.frameOf[ownerFrame]
         if widget and PT_Classify(widget) and widget:IsVisible() then
             PT_Paint(widget)
-            PT_Recount()
+            PT_CountWanted()
         end
     end
 
@@ -899,7 +899,7 @@ do
         mod._ptNoSelf = (mod._ptEnabled and not inc) and true or nil
         PT_SeedAttrs()
         mod.PF_SyncUnitSnippet()
-        PT_Recount()
+        PT_CountWanted()
     end
 
     -- The combat-end flush (ns.PF_Flush) of a deferred include edge or attribute seed.
@@ -967,7 +967,7 @@ do
             mod._ptLayoutDirty, mod._ptSelfDirty = nil, nil
             -- Every listener and the ticker off; the gate attributes cleared, so a unit snippet kept for
             -- the pets leaves the target frames alone.
-            PT_Recount()
+            PT_CountWanted()
             PT_SeedAttrs()
             mod.PF_SyncUnitSnippet()
             -- The party frames close the pitch the frames held along the stack, and the attached

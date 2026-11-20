@@ -124,7 +124,7 @@ end
 -------------------------------------------------------------------------------
 --  The secure cast button
 -------------------------------------------------------------------------------
-local function HideCast()
+local function HideCastButton()
     if castBtn and not InCombatLockdown() then
         if GameTooltip:IsOwned(castBtn) then
             GameTooltip:Hide()
@@ -140,12 +140,12 @@ local function OnEvent(_, evt)
         if IsAltKeyDown() then
             TryAlt()
         elseif not isActive then
-            HideCast()
+            HideCastButton()
         end
     elseif isActive then -- PLAYER_REGEN_DISABLED fires before the lockdown
         SetActive(false)
     else
-        HideCast()
+        HideCastButton()
         StopHover()
     end
 end
@@ -192,7 +192,7 @@ end
 
 local function CastOnLeave()
     GameTooltip:Hide()
-    HideCast()
+    HideCastButton()
     if hovered and not hovered:IsMouseOver() then
         StopHover()
     end
@@ -328,7 +328,7 @@ local function Paint(button, payload)
     end
     -- The item under the cast button changed: look again.
     if castBtn and castBtn.owner == button and not InCombatLockdown() then
-        HideCast()
+        HideCastButton()
         if button:IsMouseOver() then
             OnSlotEnter(button)
         end
@@ -357,7 +357,7 @@ function SetActive(on)
     end
     isActive = on or nil
     StopHover()
-    HideCast()
+    HideCastButton()
     if on then
         CUI_Bags:RefreshInventory() -- only the bag window: the bank keeps its look
     else
@@ -415,7 +415,7 @@ local function SyncEnabled(on)
             hideHooked = true
             CUI_Bags:HookScript("OnHide", function()
                 SetActive(false)
-                HideCast()
+                HideCastButton()
                 StopHover()
             end)
         end
@@ -427,7 +427,7 @@ local function SyncEnabled(on)
         SetActive(false)
         CUI_Bags.UnregisterItemOverlayIcon("CUI_QuickActions")
         StopHover()
-        HideCast()
+        HideCastButton()
         wipe(slots)
     end
 end

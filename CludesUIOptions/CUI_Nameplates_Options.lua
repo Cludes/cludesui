@@ -95,12 +95,12 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  DB helper reads from the centralized profile via ns.db
     ---------------------------------------------------------------------------
-    local function DB()
+    local function PlatesProfile()
         return mod.db and mod.db.profile
     end
 
     local function DBVal(key)
-        local saved = DB()
+        local saved = PlatesProfile()
         if saved and saved[key] ~= nil then
             return saved[key]
         end
@@ -108,7 +108,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function DBColor(key)
-        local saved = DB()
+        local saved = PlatesProfile()
         local color = (saved and saved[key]) or defaultSet[key]
         return color.r, color.g, color.b
     end
@@ -285,7 +285,7 @@ CludesUI.AtOptionsLogin(function()
             colorDisabledTooltip = "Color by Type (Magic/Enrage)",
             onChange = RefreshAuraGlows,
             get = function(f)
-                local profile = DB()
+                local profile = PlatesProfile()
                 if f == "style" then
                     return mod.GetDispelGlowStyle and mod.GetDispelGlowStyle() or defaultSet.dispelGlowStyle
                 elseif f == "mode" then
@@ -294,7 +294,7 @@ CludesUI.AtOptionsLogin(function()
                 return CludesUI.GlowOptions.FlatGet(profile, "dispelGlow", f)
             end,
             set = function(f, a, b2, c2)
-                local profile = DB()
+                local profile = PlatesProfile()
                 if f == "style" then
                     if a == 0 then
                         profile.dispelGlow = false
@@ -318,7 +318,7 @@ CludesUI.AtOptionsLogin(function()
                         return DBVal("dispelGlowUseTypeColor") or false
                     end,
                     set = function(value)
-                        DB().dispelGlowUseTypeColor = value
+                        PlatesProfile().dispelGlowUseTypeColor = value
                         RefreshAuraGlows()
                         CludesUI:RefreshPage()
                     end,
@@ -344,7 +344,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 onChange = RefreshCastGlows,
                 get = function(f)
-                    local profile = DB()
+                    local profile = PlatesProfile()
                     if f == "style" then
                         return profile[keyName.style] or defaultSet[keyName.style] or 1
                     elseif f == "mode" then
@@ -353,7 +353,7 @@ CludesUI.AtOptionsLogin(function()
                     return GO.FlatGet(profile, prefixText, f, defaultSet)
                 end,
                 set = function(f, a, b2, c2)
-                    local profile = DB()
+                    local profile = PlatesProfile()
                     if f == "style" then
                         if a == 0 then
                             profile[prefixText] = false
@@ -394,7 +394,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             onChange = RefreshAuraGlows,
             get = function(f)
-                local profile = DB()
+                local profile = PlatesProfile()
                 if f == "style" then
                     return mod.GetPandemicGlowStyle()
                 elseif f == "mode" then
@@ -403,7 +403,7 @@ CludesUI.AtOptionsLogin(function()
                 return CludesUI.GlowOptions.FlatGet(profile, "pandemicGlow", f, defaultSet)
             end,
             set = function(f, a, b2, c2)
-                local profile = DB()
+                local profile = PlatesProfile()
                 if f == "style" then
                     if a == 0 then
                         profile.pandemicGlow = false
@@ -547,7 +547,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local function GetElementAtPosition(place)
-            local saved = DB()
+            local saved = PlatesProfile()
             for _, key in ipairs(slotKeys) do
                 -- A leftover Faction slot is ignored while Rare/Quest + Faction is on
                 -- (the badge rides the classification slot), so it is not shown here either.
@@ -570,10 +570,10 @@ CludesUI.AtOptionsLogin(function()
         local function SetElementAtPosition(place, element)
             -- The Quest Objective Text view reads the Rare/Quest slot and its Quest
             -- half: fix its own keys before either can move.
-            mod.NP_MaterializeQuestText(DB())
+            mod.NP_MaterializeQuestText(PlatesProfile())
             if element == "none" then
                 -- Clear: find whatever element is at this position and move it to "none"
-                local saved = DB()
+                local saved = PlatesProfile()
                 for _, key in ipairs(slotKeys) do
                     if (saved[key] or defaultSet[key]) == place then
                         saved[key] = "none"
@@ -586,26 +586,26 @@ CludesUI.AtOptionsLogin(function()
             end
             -- "Debuffs + CC" rides the debuff slot key; the two entries differ only by debuffIncludeCC.
             if element == "debuffsccs" then
-                DB().debuffIncludeCC = true
+                PlatesProfile().debuffIncludeCC = true
                 element = "debuffs"
             elseif element == "debuffs" then
-                DB().debuffIncludeCC = false
+                PlatesProfile().debuffIncludeCC = false
             end
             -- "Rare/Quest + Faction" rides the classification slot key and takes the
             -- faction badge with it (its own Faction slot is cleared); picking either
             -- one alone splits them again.
             if element == "classfaction" then
-                DB().classificationIncludeFaction = true
-                DB().factionSlot = "none"
+                PlatesProfile().classificationIncludeFaction = true
+                PlatesProfile().factionSlot = "none"
                 element = "classification"
             elseif element == "classification" or element == "faction" then
-                DB().classificationIncludeFaction = false
+                PlatesProfile().classificationIncludeFaction = false
             end
             local key = elementToKey[element]
             if not key then
                 return
             end
-            local saved = DB()
+            local saved = PlatesProfile()
             -- Clear old holder of this position (set to "none"), no swapping
             for _, otherKey in ipairs(slotKeys) do
                 if otherKey ~= key and (saved[otherKey] or defaultSet[otherKey]) == place then
@@ -650,7 +650,7 @@ CludesUI.AtOptionsLogin(function()
         -- Exclusive slot assignment for the new Core Text Positions system.
         local textSlotKeys = mod.textSlotKeys
         local function SetTextElementAtSlot(slotKey, element)
-            local saved = DB()
+            local saved = PlatesProfile()
             -- Custom keeps its template per slot: any number of slots may show it.
             if element ~= "none" and element ~= "custom" then
                 for _, key in ipairs(textSlotKeys) do
@@ -680,7 +680,7 @@ CludesUI.AtOptionsLogin(function()
         local timerPosOrder = { "none", "topleft", "topright", "bottomleft", "bottomright", "center" }
 
         local function AuraDurationVal(kind, suffix)
-            local saved = DB()
+            local saved = PlatesProfile()
             local key = kind .. "DurationText" .. suffix
             local oldKey = "auraDurationText" .. suffix
             if saved and saved[key] ~= nil then
@@ -753,7 +753,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Reverse lookup: find which Core Position slot holds a given element
         local function FindCorePosForElement(element)
-            local saved = DB()
+            local saved = PlatesProfile()
             local key = elementToKey[element]
             if not key then
                 return nil
@@ -767,7 +767,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Reverse lookup: find which text slot holds a given element
         local function FindTextSlotForElement(element)
-            local saved = DB()
+            local saved = PlatesProfile()
             for _, key in ipairs(textSlotKeys) do
                 if (saved[key] or defaultSet[key]) == element then
                     return key
@@ -853,11 +853,11 @@ CludesUI.AtOptionsLogin(function()
             end,
             -- The Quest Objective Text's effective slot.
             questText = function()
-                return ResolveCorePos(mod.NP_GetQuestTextSlot(DB()))
+                return ResolveCorePos(mod.NP_GetQuestTextSlot(PlatesProfile()))
             end,
             -- Combined with Rare/Quest, the badge's settings live on that row.
             factionIcon = function()
-                if DB().classificationIncludeFaction then
+                if PlatesProfile().classificationIncludeFaction then
                     return ResolveCoreMapping("classification")
                 end
                 return ResolveCoreMapping("faction")
@@ -1541,7 +1541,7 @@ CludesUI.AtOptionsLogin(function()
                 return DBVal(key) == true
             end,
             set = function(value)
-                DB()[key] = value and true or false
+                PlatesProfile()[key] = value and true or false
                 apply()
             end,
         })
@@ -1553,7 +1553,7 @@ CludesUI.AtOptionsLogin(function()
         _colorPagePreviews = _colorPagePreviews,
         ADDON_NAME = ADDON_NAME,
         BAR_W = BAR_W,
-        DB = DB,
+        DB = PlatesProfile,
         DBColor = DBColor,
         DBVal = DBVal,
         defaults = defaultSet,
@@ -1692,7 +1692,7 @@ CludesUI.AtOptionsLogin(function()
             -- Invalidate page cache so pages are rebuilt with fresh defaults
             CludesUI:InvalidatePageCache()
             -- Preserve user-saved presets (display + color), Custom presets, AND spec assignments across reset
-            local old = DB()
+            local old = PlatesProfile()
             if old then
                 local pD = old._presets
                 local oD = old._presetOrder
@@ -1749,7 +1749,7 @@ CludesUI.AtOptionsLogin(function()
         if msg == "reset" then
             -- The reload first (RequestReload); the reset below lands before it.
             CludesUI.RequestReload()
-            local _db = DB()
+            local _db = PlatesProfile()
             if _db then
                 local pD = _db._presets
                 local oD = _db._presetOrder

@@ -403,7 +403,7 @@ local function InitBuffBarsPage(
         DOWN = { "TOP", "BOTTOM", 0, -1 },
     }
 
-    local function RefreshTBBPopout()
+    local function SyncBuffBarPopout()
         if not TBBPreviewAllowed() then
             HideTBBPopout()
             return
@@ -616,7 +616,7 @@ local function InitBuffBarsPage(
         local ap = CludesUI:GetActivePage()
         if am == "CludesUICooldownManager" and ap == PAGE_BUFF_BARS then
             UpdateTBBPlaceholder()
-            RefreshTBBPopout()
+            SyncBuffBarPopout()
         end
     end
     CludesUI:RegisterOnShow(ReassertTBBPreviews)
@@ -1825,7 +1825,7 @@ local function InitBuffBarsPage(
                 _tbbRefreshTimer = nil
                 Refresh()
                 mod.BuildTrackedBuffBars()
-                RefreshTBBPopout()
+                SyncBuffBarPopout()
                 UpdateTBBPlaceholder()
             end)
         end
@@ -3479,7 +3479,7 @@ local function InitBuffBarsPage(
             -- page refresh takes the fast path past it) and refresh the page.
             local function GroupLayoutChanged()
                 mod.BuildTrackedBuffBars()
-                RefreshTBBPopout()
+                SyncBuffBarPopout()
                 CludesUI:RefreshPage()
             end
             local function GlobalKey()
@@ -3654,7 +3654,7 @@ local function InitBuffBarsPage(
             -- The bar frames exist before the placeholders show.
             mod.BuildTrackedBuffBars()
             UpdateTBBPlaceholder()
-            RefreshTBBPopout()
+            SyncBuffBarPopout()
             return math.abs(cursorY)
         end
 
@@ -3775,7 +3775,7 @@ local function InitBuffBarsPage(
                         b[barKey] = value
                     end)
                     mod.BuildTrackedBuffBars()
-                    RefreshTBBPopout()
+                    SyncBuffBarPopout()
                     CludesUI:RefreshPage()
                 end,
             }
@@ -5301,11 +5301,11 @@ local function InitBuffBarsPage(
         -- Ensure bar frames exist before showing placeholders
         mod.BuildTrackedBuffBars()
         UpdateTBBPlaceholder()
-        RefreshTBBPopout()
+        SyncBuffBarPopout()
         return math.abs(cursorY)
     end
 
-    return BuildBuffBarsPage, RefreshTBBPopout
+    return BuildBuffBarsPage, SyncBuffBarPopout
 end
 
 -- Used by CUI_CooldownManager_Options.lua
