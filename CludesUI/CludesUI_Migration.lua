@@ -95,11 +95,11 @@ local function RunMigration(specInfo)
         RunOne(specInfo, { db = CludesUIDB }, CludesUIDB)
     elseif specInfo.scope == "profile" then
         if CludesUIDB.profiles then
-            for profName, profileRec in pairs(CludesUIDB.profiles) do
+            for profileName, profileRec in pairs(CludesUIDB.profiles) do
                 if type(profileRec) == "table" then
                     RunOne(specInfo, {
                         profile = profileRec,
-                        profileName = profName,
+                        profileName = profileName,
                     }, profileRec)
                 end
             end
@@ -111,16 +111,16 @@ local function RunMigration(specInfo)
         local assignments = CludesUIDB.spellAssignments
         local profileSet = assignments and assignments.profiles
         if profileSet then
-            for profName, specBucket in pairs(profileSet) do
+            for profileName, specBucket in pairs(profileSet) do
                 local specList = type(specBucket) == "table" and specBucket.specProfiles
                 if type(specList) == "table" then
-                    for specKey, specProfData in pairs(specList) do
-                        if type(specProfData) == "table" then
+                    for specKey, specProfile in pairs(specList) do
+                        if type(specProfile) == "table" then
                             RunOne(specInfo, {
-                                specProfile = specProfData,
+                                specProfile = specProfile,
                                 specKey = specKey,
-                                profileName = profName,
-                            }, specProfData)
+                                profileName = profileName,
+                            }, specProfile)
                         end
                     end
                 end
@@ -173,24 +173,24 @@ CludesUI.RegisterMigration({
     description = "Keep existing hovercast macro bindings unfiltered now that Friendly/Enemy applies to them",
     body = function(context)
         local raidCfg = context.profile.addons and context.profile.addons.CludesUIRaidFrames
-        local cc = raidCfg and raidCfg.clickCast
-        if type(cc) ~= "table" then
+        local clickCfg = raidCfg and raidCfg.clickCast
+        if type(clickCfg) ~= "table" then
             return
         end
         local function seedValue(entryList)
             if type(entryList) ~= "table" then
                 return
             end
-            for _, b in ipairs(entryList) do
-                if type(b) == "table" and b.type == "macro" and b.hovercast then
-                    b.hoverFriendly = true
-                    b.hoverEnemy = true
+            for _, bind in ipairs(entryList) do
+                if type(bind) == "table" and bind.type == "macro" and bind.hovercast then
+                    bind.hoverFriendly = true
+                    bind.hoverEnemy = true
                 end
             end
         end
-        seedValue(cc.globals)
-        if type(cc.specs) == "table" then
-            for _, entryList in pairs(cc.specs) do
+        seedValue(clickCfg.globals)
+        if type(clickCfg.specs) == "table" then
+            for _, entryList in pairs(clickCfg.specs) do
                 seedValue(entryList)
             end
         end
@@ -212,16 +212,16 @@ CludesUI.RegisterMigration({
     scope = "global",
     description = "Preserve legacy click-cast reaction behavior when the Friendly/Enemy toggles become active for all reaction bindings",
     body = function(context)
-        local cc = context.db.clickCast
-        if type(cc) ~= "table" then
+        local clickCfg = context.db.clickCast
+        if type(clickCfg) ~= "table" then
             return
         end
-        local function LegacyHover(b)
-            local f, e = b.hoverFriendly, b.hoverEnemy
-            if f and not e then
+        local function LegacyHover(bind)
+            local friendlySpell, e = bind.hoverFriendly, bind.hoverEnemy
+            if friendlySpell and not e then
                 return true, false
             end
-            if e and not f then
+            if e and not friendlySpell then
                 return false, true
             end
             return true, true
@@ -232,16 +232,16 @@ CludesUI.RegisterMigration({
             end
             local total = #entryList
             for index = 1, total do
-                local b = entryList[index]
+                local bind = entryList[index]
                 if
-                    type(b) == "table"
-                    and not b.reactionSeeded
-                    and (b.type == "spell" or b.type == "item" or (b.type == "macro" and b.hovercast))
+                    type(bind) == "table"
+                    and not bind.reactionSeeded
+                    and (bind.type == "spell" or bind.type == "item" or (bind.type == "macro" and bind.hovercast))
                 then
-                    if b.hovercast == "both" then
+                    if bind.hovercast == "both" then
                         -- Frame copy: flags were ignored on the frame path.
                         local frameBind = {}
-                        for fieldKey, value in pairs(b) do
+                        for fieldKey, value in pairs(bind) do
                             frameBind[fieldKey] = value
                         end
                         frameBind.hovercast = false
@@ -249,22 +249,22 @@ CludesUI.RegisterMigration({
                         frameBind.hoverEnemy = true
                         frameBind.reactionSeeded = true
                         entryList[#entryList + 1] = frameBind
-                        b.hovercast = true
+                        bind.hovercast = true
                     end
-                    if not b.hovercast or b.type == "item" then
+                    if not bind.hovercast or bind.type == "item" then
                         -- Frame path (any type) and hover items ignored the flags.
-                        b.hoverFriendly, b.hoverEnemy = true, true
+                        bind.hoverFriendly, bind.hoverEnemy = true, true
                     else
                         -- Hover spells / macros: reproduce the old conditional.
-                        b.hoverFriendly, b.hoverEnemy = LegacyHover(b)
+                        bind.hoverFriendly, bind.hoverEnemy = LegacyHover(bind)
                     end
-                    b.reactionSeeded = true
+                    bind.reactionSeeded = true
                 end
             end
         end
-        migrate(cc.globals)
-        if type(cc.specs) == "table" then
-            for _, entryList in pairs(cc.specs) do
+        migrate(clickCfg.globals)
+        if type(clickCfg.specs) == "table" then
+            for _, entryList in pairs(clickCfg.specs) do
                 migrate(entryList)
             end
         end
@@ -412,9 +412,9 @@ local function CollectSpecProfiles(assignments)
         for _, specBucket in pairs(profileSet) do
             local specList = type(specBucket) == "table" and specBucket.specProfiles
             if type(specList) == "table" then
-                for _, specProfData in pairs(specList) do
-                    if type(specProfData) == "table" then
-                        result[#result + 1] = specProfData
+                for _, specProfile in pairs(specList) do
+                    if type(specProfile) == "table" then
+                        result[#result + 1] = specProfile
                     end
                 end
             end
@@ -649,23 +649,23 @@ CludesUI.RegisterMigration({
 
         -- Deep value-equality IGNORING "_"-prefixed bookkeeping keys (e.g.
         -- _migrations), so copies differing only in flags count as identical.
-        local function ContentEqual(a, b)
-            if type(a) ~= type(b) then
+        local function ContentEqual(lhs, rhs)
+            if type(lhs) ~= type(rhs) then
                 return false
             end
-            if type(a) ~= "table" then
-                return a == b
+            if type(lhs) ~= "table" then
+                return lhs == rhs
             end
-            for k, val in pairs(a) do
-                if not (type(k) == "string" and k:sub(1, 1) == "_") then
-                    if not ContentEqual(val, b[k]) then
+            for key, val in pairs(lhs) do
+                if not (type(key) == "string" and key:sub(1, 1) == "_") then
+                    if not ContentEqual(val, rhs[key]) then
                         return false
                     end
                 end
             end
-            for k in pairs(b) do
-                if not (type(k) == "string" and k:sub(1, 1) == "_") then
-                    if a[k] == nil then
+            for key in pairs(rhs) do
+                if not (type(key) == "string" and key:sub(1, 1) == "_") then
+                    if lhs[key] == nil then
                         return false
                     end
                 end
@@ -857,18 +857,18 @@ CludesUI.RegisterMigration({
 
         for _, profileTbl in pairs(profileSet) do
             if type(profileTbl) == "table" and type(profileTbl.questTracker) == "table" then
-                local qt = profileTbl.questTracker
-                local legacy = qt._legacy or {}
+                local trackerCfg = profileTbl.questTracker
+                local legacy = trackerCfg._legacy or {}
                 local moved = false
                 for _, k in ipairs(OBSOLETE) do
-                    if qt[k] ~= nil then
-                        legacy[k] = qt[k]
-                        qt[k] = nil
+                    if trackerCfg[k] ~= nil then
+                        legacy[k] = trackerCfg[k]
+                        trackerCfg[k] = nil
                         moved = true
                     end
                 end
                 if moved then
-                    qt._legacy = legacy
+                    trackerCfg._legacy = legacy
                 end
             end
         end
@@ -1698,20 +1698,20 @@ CludesUI.RegisterMigration({
         -- Resolves BUFF bar keys from this profile's bar config (barType); "buffs"
         -- is always seeded even if config is absent. Only buff bars are stripped --
         -- cooldown/utility bars keep legitimate trinket/potion markers.
-        local buffKeys = { buffs = true }
+        local buffKeySet = { buffs = true }
         local profileTbl = CludesUIDB.profiles and CludesUIDB.profiles[context.profileName]
         local cdmStore = profileTbl and profileTbl.addons and profileTbl.addons.CludesUICooldownManager
         local barList = cdmStore and cdmStore.cdmBars and cdmStore.cdmBars.bars
         if type(barList) == "table" then
             for _, b in ipairs(barList) do
                 if type(b) == "table" and b.barType == "buffs" and type(b.key) == "string" then
-                    buffKeys[b.key] = true
+                    buffKeySet[b.key] = true
                 end
             end
         end
 
         for barId, barConf in pairs(barSpellMap) do
-            if buffKeys[barId] and type(barConf) == "table" and type(barConf.assignedSpells) == "table" then
+            if buffKeySet[barId] and type(barConf) == "table" and type(barConf.assignedSpells) == "table" then
                 local as = barConf.assignedSpells
                 for index = #as, 1, -1 do
                     local ident = as[index]
@@ -1748,7 +1748,7 @@ CludesUI.RegisterMigration({
             return
         end
 
-        local buffKeys = {}
+        local buffKeySet = {}
         if context.db.profiles then
             for _, profileRec in pairs(context.db.profiles) do
                 local cdmStore = profileRec.addons and profileRec.addons.CludesUICooldownManager
@@ -1760,17 +1760,17 @@ CludesUI.RegisterMigration({
                             or edge.key == "buffs"
                             or edge.barType == "custom_buff"
                         then
-                            buffKeys["CDM_" .. edge.key] = true
+                            buffKeySet["CDM_" .. edge.key] = true
                         end
                     end
                 end
             end
         end
         -- AuraBuff Reminders is also dynamic regardless of profile.
-        buffKeys["EABR_Reminders"] = true
+        buffKeySet["EABR_Reminders"] = true
 
         for childKey, details in pairs(anchorMap) do
-            if details.target and buffKeys[details.target] then
+            if details.target and buffKeySet[details.target] then
                 anchorMap[childKey] = nil
             end
         end
@@ -1904,13 +1904,13 @@ CludesUI.RegisterMigration({
         if type(addonStores) ~= "table" then
             return
         end
-        local qt = addonStores.CludesUIQuestTracker and addonStores.CludesUIQuestTracker.questTracker
-        if type(qt) == "table" then
-            if not qt.enabled then
-                qt.enabled = true
+        local trackerCfg = addonStores.CludesUIQuestTracker and addonStores.CludesUIQuestTracker.questTracker
+        if type(trackerCfg) == "table" then
+            if not trackerCfg.enabled then
+                trackerCfg.enabled = true
             end
-            if not qt.visibility then
-                qt.visibility = "always"
+            if not trackerCfg.visibility then
+                trackerCfg.visibility = "always"
             end
         end
         local minimapCfg = addonStores.CludesUIMinimap and addonStores.CludesUIMinimap.minimap
@@ -1951,8 +1951,8 @@ CludesUI.RegisterMigration({
     scope = "global",
     description = "Migrate users on old power color defaults (Mana/Rage/Focus/Energy) to new defaults",
     body = function(context)
-        local cc = context.db.customColors
-        if not cc or not cc.power then
+        local clickCfg = context.db.customColors
+        if not clickCfg or not clickCfg.power then
             return
         end
         -- Old defaults that shipped before this migration
@@ -1972,10 +1972,10 @@ CludesUI.RegisterMigration({
             MAELSTROM = { { r = 0.000, g = 0.500, b = 1.000 } },
         }
         for fieldKey, oldList in pairs(OLD) do
-            local current = cc.power[fieldKey]
+            local current = clickCfg.power[fieldKey]
             for _, old in ipairs(oldList) do
                 if matchesOld(current, old) then
-                    cc.power[fieldKey] = nil
+                    clickCfg.power[fieldKey] = nil
                     break
                 end
             end
@@ -1988,11 +1988,11 @@ CludesUI.RegisterMigration({
     scope = "global",
     description = "Migrate Fury (DH) power color from old purple default to DH class color (A330C9).",
     body = function(context)
-        local cc = context.db.customColors
-        if not cc or not cc.power then
+        local clickCfg = context.db.customColors
+        if not clickCfg or not clickCfg.power then
             return
         end
-        local current = cc.power.FURY
+        local current = clickCfg.power.FURY
         if not current then
             return
         end
@@ -2000,7 +2000,7 @@ CludesUI.RegisterMigration({
             return math.abs(a - b) < 0.01
         end
         if near(current.r, 0.788) and near(current.g, 0.259) and near(current.b, 0.992) then
-            cc.power.FURY = nil
+            clickCfg.power.FURY = nil
         end
     end,
 })
@@ -2355,15 +2355,15 @@ CludesUI.RegisterMigration({
             return
         end
         -- Self-contained deep copy (do not depend on an external helper).
-        local function DCopy(t)
-            if type(t) ~= "table" then
-                return t
+        local function DCopy(src)
+            if type(src) ~= "table" then
+                return src
             end
-            local c = {}
-            for k, val in pairs(t) do
-                c[k] = DCopy(val)
+            local copy = {}
+            for k, val in pairs(src) do
+                copy[k] = DCopy(val)
             end
-            return c
+            return copy
         end
         -- Copies old shared overrides into BOTH new tables so each mini renders
         -- identically. Overwrites unconditionally: totPet only exists pre-split, so
@@ -2518,13 +2518,13 @@ CludesUI.RegisterMigration({
             return
         end
         for _, place in pairs(cdmPositions) do
-            local ge = place.growEdge
-            if ge and ge.anchor and ge.x and ge.y then
-                place.point = ge.anchor
-                place.x = ge.x
-                place.y = ge.y
+            local growEdge = place.growEdge
+            if growEdge and growEdge.anchor and growEdge.x and growEdge.y then
+                place.point = growEdge.anchor
+                place.x = growEdge.x
+                place.y = growEdge.y
                 place.growEdge = nil
-            elseif ge then
+            elseif growEdge then
                 place.growEdge = nil -- incomplete: drop it
             end
         end
@@ -2754,15 +2754,15 @@ CludesUI.RegisterMigration({
             return
         end
 
-        local function DCopy(t)
-            if type(t) ~= "table" then
-                return t
+        local function DCopy(src)
+            if type(src) ~= "table" then
+                return src
             end
-            local c = {}
-            for k, val in pairs(t) do
-                c[k] = DCopy(val)
+            local copy = {}
+            for k, val in pairs(src) do
+                copy[k] = DCopy(val)
             end
-            return c
+            return copy
         end
 
         local PROFILE_KEYS = {
@@ -2807,7 +2807,7 @@ CludesUI.RegisterMigration({
             "currencyOrder",
         }
 
-        for profName, profileRec in pairs(saved.profiles) do
+        for profileName, profileRec in pairs(saved.profiles) do
             if type(profileRec) == "table" then
                 if not profileRec.addons then
                     profileRec.addons = {}
@@ -3186,14 +3186,14 @@ CludesUI.RegisterMigration({
         local carried, total = {}, 0
         if saved.profiles then
             if oldBags == true then
-                for profName in pairs(saved.profiles) do
-                    carried[profName] = true
+                for profileName in pairs(saved.profiles) do
+                    carried[profileName] = true
                     total = total + 1
                 end
             elseif type(oldBags) == "table" then
-                for profName, val in pairs(oldBags) do
-                    if val and saved.profiles[profName] then
-                        carried[profName] = true
+                for profileName, val in pairs(oldBags) do
+                    if val and saved.profiles[profileName] then
+                        carried[profileName] = true
                         total = total + 1
                     end
                 end
@@ -3956,12 +3956,12 @@ CludesUI.RegisterMigration({
             return
         end
         local saProfiles = saved.spellAssignments and saved.spellAssignments.profiles
-        for profName, profileRec in pairs(saved.profiles) do
+        for profileName, profileRec in pairs(saved.profiles) do
             local cdmStore = type(profileRec) == "table"
                 and type(profileRec.addons) == "table"
                 and profileRec.addons.CludesUICooldownManager
             if type(cdmStore) == "table" then
-                local specBucket = type(saProfiles) == "table" and saProfiles[profName]
+                local specBucket = type(saProfiles) == "table" and saProfiles[profileName]
                 local specList = type(specBucket) == "table" and specBucket.specProfiles or nil
                 CludesUI.MigrateCdmThresholdText(cdmStore, specList)
             end
