@@ -207,8 +207,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local function Rebuild()
             local filter = (P.search:GetText() or ""):lower()
             local isShown = 0
-            for _, r in ipairs(P.rows) do
-                r:Hide()
+            for _, row in ipairs(P.rows) do
+                row:Hide()
             end
             for _, s in ipairs(details) do
                 local nm = s.name or ""
@@ -772,18 +772,18 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 return math.max(1, math.min(slot, #customRows + 1))
             end
 
-            for _, b in ipairs(displayList) do
-                local position = realIdx[b]
-                if b.isGhostBar then
+            for _, bar in ipairs(displayList) do
+                local position = realIdx[bar]
+                if bar.isGhostBar then
                     -- skip ghost bar in dropdown
                 else
                     -- FocusKick is treated as a built-in: cannot be deleted
                     -- or renamed even though its barType is "cooldowns".
-                    local focusKickBar = (b.key == "focuskick")
-                    local isCustom = not BUILT_IN[b.key] and not focusKickBar
+                    local focusKickBar = (bar.key == "focuskick")
+                    local isCustom = not BUILT_IN[bar.key] and not focusKickBar
 
                     -- Hint above the custom-bar band (only when reorderable).
-                    if reorderable and not hintShown and ordByKey[b.key] then
+                    if reorderable and not hintShown and ordByKey[bar.key] then
                         hintShown = true
                         local ht = dropMenu:CreateFontString(nil, "OVERLAY")
                         ht:SetFont(FONT_PATH, 10, GetCDMOptOutline())
@@ -798,8 +798,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     entry:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -menuH)
                     entry:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -menuH)
                     entry:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    if reorderable and ordByKey[b.key] then
-                        customRows[#customRows + 1] = { item = entry, key = b.key, topY = -menuH }
+                    if reorderable and ordByKey[bar.key] then
+                        customRows[#customRows + 1] = { item = entry, key = bar.key, topY = -menuH }
                     end
 
                     local itemCaption = entry:CreateFontString(nil, "OVERLAY")
@@ -809,7 +809,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     itemCaption:SetWordWrap(false)
                     itemCaption:SetMaxLines(1)
                     itemCaption:SetPoint("LEFT", entry, "LEFT", 10, 0)
-                    local displayName = CludesUI.L(b.name or b.key)
+                    local displayName = CludesUI.L(bar.name or bar.key)
                     itemCaption:SetText(displayName)
 
                     local iHl = entry:CreateTexture(nil, "ARTWORK")
@@ -878,7 +878,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- 3px threshold + insertion-line mechanics as the
                         -- shared reorder widget. Drop writes the display key
                         -- list and re-renders this menu in place.
-                        if reorderable and ordByKey[b.key] then
+                        if reorderable and ordByKey[bar.key] then
                             itemCaption:SetPoint("LEFT", entry, "LEFT", 24, 0)
                             local gripButton = CreateFrame("Button", nil, entry)
                             gripButton:SetSize(16, ITEM_H)
@@ -979,8 +979,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
                         delBtn:SetScript("OnClick", function()
                             dropMenu:Hide()
-                            local delName = b.name or b.key
-                            local delKey = b.key
+                            local delName = bar.name or bar.key
+                            local delKey = bar.key
                             CludesUI:ShowConfirmPopup({
                                 title = "Delete Bar",
                                 message = CludesUI.Lf('Are you sure you want to delete "%1$s"?', delName),
@@ -1007,7 +1007,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         end)
                         editBtn:SetScript("OnClick", function()
                             dropMenu:Hide()
-                            local oldName = b.name or b.key
+                            local oldName = bar.name or bar.key
                             CludesUI:ShowInputPopup({
                                 title = "Rename Bar",
                                 message = CludesUI.Lf('Enter a new name for "%1$s":', oldName),
@@ -1019,7 +1019,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                     if newName == "" or newName == oldName then
                                         return
                                     end
-                                    b.name = newName
+                                    bar.name = newName
                                     -- Other pages' saved headers name the bars; this
                                     -- page's header is built by its own rebuild below.
                                     CludesUI:InvalidateContentHeaderCache()
@@ -1309,8 +1309,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 isSynced = function()
                     local source = BD()
                     local inSync = true
-                    ForEachSyncBar(function(b)
-                        if not CludesUI.VisFullEquals(source, "barVisibility", b, "barVisibility") then
+                    ForEachSyncBar(function(bar)
+                        if not CludesUI.VisFullEquals(source, "barVisibility", bar, "barVisibility") then
                             inSync = false
                         end
                     end)
@@ -1318,9 +1318,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end,
                 onClick = function()
                     local source = BD()
-                    ForEachSyncBar(function(b)
-                        if b ~= source then
-                            CludesUI.VisFullCopy(b, source, "barVisibility")
+                    ForEachSyncBar(function(bar)
+                        if bar ~= source then
+                            CludesUI.VisFullCopy(bar, source, "barVisibility")
                         end
                     end)
                     mod.CDMApplyVisibility()
@@ -2486,11 +2486,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local zoom = edge.iconZoom or 0.08
                 local crop = mod.CdmCropPercent(edge)
                 local inSync = true
-                ForEachSyncBar(function(b)
+                ForEachSyncBar(function(bar)
                     if
-                        (b.iconShape or "none") ~= value
-                        or (b.iconZoom or 0.08) ~= zoom
-                        or mod.CdmCropPercent(b) ~= crop
+                        (bar.iconShape or "none") ~= value
+                        or (bar.iconZoom or 0.08) ~= zoom
+                        or mod.CdmCropPercent(bar) ~= crop
                     then
                         inSync = false
                     end
@@ -2502,19 +2502,19 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local value = edge.iconShape or "none"
                 local zoom = edge.iconZoom or 0.08
                 local crop = edge.iconCropPercent
-                ForEachSyncBar(function(b)
-                    b.iconShape = value
-                    b.iconZoom = zoom
-                    b.iconCropPercent = crop
+                ForEachSyncBar(function(bar)
+                    bar.iconShape = value
+                    bar.iconZoom = zoom
+                    bar.iconCropPercent = crop
                     local isCS = (value ~= "none" and value ~= "cropped")
                     if isCS then
-                        b.borderThickness = "strong"
-                        b.borderSize = BORDER_SIZES["strong"]
+                        bar.borderThickness = "strong"
+                        bar.borderSize = BORDER_SIZES["strong"]
                     else
-                        b.borderThickness = "thin"
-                        b.borderSize = BORDER_SIZES["thin"]
+                        bar.borderThickness = "thin"
+                        bar.borderSize = BORDER_SIZES["thin"]
                     end
-                    ClearMatchDims(b)
+                    ClearMatchDims(bar)
                 end)
                 RebuildBars(true)
                 CludesUI:RefreshPage()
@@ -2531,8 +2531,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             isSynced = function()
                 local value = BD().iconZoom or 0.08
                 local inSync = true
-                ForEachSyncBar(function(b)
-                    if (b.iconZoom or 0.08) ~= value then
+                ForEachSyncBar(function(bar)
+                    if (bar.iconZoom or 0.08) ~= value then
                         inSync = false
                     end
                 end)
@@ -2540,8 +2540,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end,
             onClick = function()
                 local value = BD().iconZoom or 0.08
-                ForEachSyncBar(function(b)
-                    b.iconZoom = value
+                ForEachSyncBar(function(bar)
+                    bar.iconZoom = value
                 end)
                 RebuildBars()
                 CludesUI:RefreshPage()
@@ -2568,25 +2568,25 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local bh = edge.borderBehind
                 local br, backdrop, bb, ba = edge.borderR, edge.borderG, edge.borderB, edge.borderA
                 local classColor = edge.borderClassColor
-                ForEachSyncBar(function(b)
-                    b.borderTexture = bt
-                    b.borderTextureOffset = ox
-                    b.borderTextureOffsetY = oy
-                    b.borderTextureShiftX = sx
-                    b.borderTextureShiftY = sy
-                    b.borderThickness = th
-                    b.borderSize = sz
+                ForEachSyncBar(function(bar)
+                    bar.borderTexture = bt
+                    bar.borderTextureOffset = ox
+                    bar.borderTextureOffsetY = oy
+                    bar.borderTextureShiftX = sx
+                    bar.borderTextureShiftY = sy
+                    bar.borderThickness = th
+                    bar.borderSize = sz
                     local pxv = px
-                    if pxv == nil and b.borderSizePx ~= nil then
+                    if pxv == nil and bar.borderSizePx ~= nil then
                         pxv = false
                     end
-                    b.borderSizePx = pxv
-                    b.borderBehind = bh
-                    b.borderR = br
-                    b.borderG = backdrop
-                    b.borderB = bb
-                    b.borderA = ba
-                    b.borderClassColor = classColor
+                    bar.borderSizePx = pxv
+                    bar.borderBehind = bh
+                    bar.borderR = br
+                    bar.borderG = backdrop
+                    bar.borderB = bb
+                    bar.borderA = ba
+                    bar.borderClassColor = classColor
                 end)
                 RebuildBars()
                 CludesUI:RefreshPage()
@@ -2600,17 +2600,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local sy = edge.borderTextureShiftY
                 local bh = edge.borderBehind or false
                 local inSync = true
-                ForEachSyncBar(function(b)
-                    if (b.borderTexture or "solid") ~= bt then
+                ForEachSyncBar(function(bar)
+                    if (bar.borderTexture or "solid") ~= bt then
                         inSync = false
                     end
-                    if b.borderTextureOffset ~= ox or b.borderTextureOffsetY ~= oy then
+                    if bar.borderTextureOffset ~= ox or bar.borderTextureOffsetY ~= oy then
                         inSync = false
                     end
-                    if b.borderTextureShiftX ~= sx or b.borderTextureShiftY ~= sy then
+                    if bar.borderTextureShiftX ~= sx or bar.borderTextureShiftY ~= sy then
                         inSync = false
                     end
-                    if (b.borderBehind or false) ~= bh then
+                    if (bar.borderBehind or false) ~= bh then
                         inSync = false
                     end
                 end)
@@ -3135,11 +3135,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         local px = edge.borderSizePx or false
                         local classColor = edge.borderClassColor
                         local inSync = true
-                        ForEachSyncBar(function(b)
+                        ForEachSyncBar(function(bar)
                             if
-                                (b.borderThickness or "thin") ~= value
-                                or (b.borderSizePx or false) ~= px
-                                or b.borderClassColor ~= classColor
+                                (bar.borderThickness or "thin") ~= value
+                                or (bar.borderSizePx or false) ~= px
+                                or bar.borderClassColor ~= classColor
                             then
                                 inSync = false
                             end
@@ -3152,15 +3152,15 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         local sz = edge.borderSize or 1
                         local px = edge.borderSizePx
                         local classColor = edge.borderClassColor
-                        ForEachSyncBar(function(b)
-                            b.borderThickness = value
-                            b.borderSize = sz
+                        ForEachSyncBar(function(bar)
+                            bar.borderThickness = value
+                            bar.borderSize = sz
                             local pxv = px
-                            if pxv == nil and b.borderSizePx ~= nil then
+                            if pxv == nil and bar.borderSizePx ~= nil then
                                 pxv = false
                             end
-                            b.borderSizePx = pxv
-                            b.borderClassColor = classColor
+                            bar.borderSizePx = pxv
+                            bar.borderClassColor = classColor
                         end)
                         RebuildBars()
                         CludesUI:RefreshPage()
@@ -3233,8 +3233,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 isSynced = function()
                     local value = BD().spacing or 2
                     local inSync = true
-                    ForEachSyncBar(function(b)
-                        if (b.spacing or 2) ~= value then
+                    ForEachSyncBar(function(bar)
+                        if (bar.spacing or 2) ~= value then
                             inSync = false
                         end
                     end)
@@ -3242,10 +3242,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end,
                 onClick = function()
                     local value = BD().spacing or 2
-                    ForEachSyncBar(function(b)
-                        b.spacing = value
+                    ForEachSyncBar(function(bar)
+                        bar.spacing = value
                         -- Spacing change invalidates each bar's match cache.
-                        ClearMatchDims(b)
+                        ClearMatchDims(bar)
                     end)
                     RebuildBars(true)
                     CludesUI:RefreshPage()
@@ -3624,23 +3624,23 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         local br, backdrop, bb, ba =
                             edge.borderR or 0, edge.borderG or 0, edge.borderB or 0, edge.borderA or 1
                         local inSync = true
-                        ForEachSyncBar(function(b)
+                        ForEachSyncBar(function(bar)
                             if
-                                (b.borderThickness or "thin") ~= value
-                                or (b.borderSizePx or false) ~= px
-                                or b.borderClassColor ~= classColor
-                                or (b.borderTexture or "solid") ~= bt
+                                (bar.borderThickness or "thin") ~= value
+                                or (bar.borderSizePx or false) ~= px
+                                or bar.borderClassColor ~= classColor
+                                or (bar.borderTexture or "solid") ~= bt
                             then
                                 inSync = false
                             end
-                            if b.borderTextureShiftX ~= sx or b.borderTextureShiftY ~= sy then
+                            if bar.borderTextureShiftX ~= sx or bar.borderTextureShiftY ~= sy then
                                 inSync = false
                             end
                             if
-                                (b.borderR or 0) ~= br
-                                or (b.borderG or 0) ~= backdrop
-                                or (b.borderB or 0) ~= bb
-                                or (b.borderA or 1) ~= ba
+                                (bar.borderR or 0) ~= br
+                                or (bar.borderG or 0) ~= backdrop
+                                or (bar.borderB or 0) ~= bb
+                                or (bar.borderA or 1) ~= ba
                             then
                                 inSync = false
                             end
@@ -3657,22 +3657,22 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         local sx = edge.borderTextureShiftX
                         local sy = edge.borderTextureShiftY
                         local br, backdrop, bb, ba = edge.borderR, edge.borderG, edge.borderB, edge.borderA
-                        ForEachSyncBar(function(b)
-                            b.borderThickness = value
-                            b.borderSize = sz
+                        ForEachSyncBar(function(bar)
+                            bar.borderThickness = value
+                            bar.borderSize = sz
                             local pxv = px
-                            if pxv == nil and b.borderSizePx ~= nil then
+                            if pxv == nil and bar.borderSizePx ~= nil then
                                 pxv = false
                             end
-                            b.borderSizePx = pxv
-                            b.borderClassColor = classColor
-                            b.borderTexture = bt
-                            b.borderTextureShiftX = sx
-                            b.borderTextureShiftY = sy
-                            b.borderR = br
-                            b.borderG = backdrop
-                            b.borderB = bb
-                            b.borderA = ba
+                            bar.borderSizePx = pxv
+                            bar.borderClassColor = classColor
+                            bar.borderTexture = bt
+                            bar.borderTextureShiftX = sx
+                            bar.borderTextureShiftY = sy
+                            bar.borderR = br
+                            bar.borderG = backdrop
+                            bar.borderB = bb
+                            bar.borderA = ba
                         end)
                         RebuildBars()
                         CludesUI:RefreshPage()

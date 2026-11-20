@@ -159,8 +159,8 @@ CludesUI.AtOptionsLogin(function()
     -- bar: no preview segment and no settings section. The entry stays in the
     -- bar's saved list untouched, so the profile still carries it back to
     -- the other client.
-    local function BlockHidden(b)
-        return not mod.BlockFactories[b.type]
+    local function BlockHidden(block)
+        return not mod.BlockFactories[block.type]
     end
 
     -- Typical content extents (real-bar px) for auto-fit blocks that have no
@@ -209,9 +209,9 @@ CludesUI.AtOptionsLogin(function()
             return nil
         end
         if profile.selectedBarId then
-            local b = mod.GetBar(profile.selectedBarId)
-            if b then
-                return b
+            local bar = mod.GetBar(profile.selectedBarId)
+            if bar then
+                return bar
             end
         end
         profile.selectedBarId = barList[1].id
@@ -713,18 +713,18 @@ CludesUI.AtOptionsLogin(function()
             local barList = mod.BarsInOrder()
             local rowList = dropMenu._rows
             for position = 1, #barList do
-                local b = barList[position]
+                local bar = barList[position]
                 local entry = rowList[position]
                 if not entry then
                     entry = dropMenu._makeRow()
                     rowList[position] = entry
                 end
-                entry._bar = b
-                entry._isSel = rowConf ~= nil and b.id == rowConf.id
+                entry._bar = bar
+                entry._isSel = rowConf ~= nil and bar.id == rowConf.id
                 entry:ClearAllPoints()
                 entry:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -menuH)
                 entry:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -menuH)
-                entry._lbl:SetText(b.name or "")
+                entry._lbl:SetText(bar.name or "")
                 entry._rest()
                 entry:Show()
                 menuH = menuH + ITEM_H
@@ -931,7 +931,7 @@ CludesUI.AtOptionsLogin(function()
         local dragEndTime = 0
         local segBtns, shareFSs = {}, {}
         for i = 1, nBlocks do
-            local b = blocks[i]
+            local block = blocks[i]
             local button = CreateFrame("Button", nil, barStrip)
             button:SetFrameLevel(barStrip:GetFrameLevel() + 5)
             local hb = Pix.CreateBorder(button, EGc.r, EGc.g, EGc.b, 1, 2, "OVERLAY", 7)
@@ -944,14 +944,14 @@ CludesUI.AtOptionsLogin(function()
                 s2._brd:Show()
                 -- Hovering a preview segment lights the real bar's block
                 -- the same way hovering its Width % setting does.
-                _edbSegHoverId = b.id
+                _edbSegHoverId = block.id
                 if mod.SetBlockEditHighlight then
-                    mod.SetBlockEditHighlight(rowConf.id, b.id)
+                    mod.SetBlockEditHighlight(rowConf.id, block.id)
                 end
             end)
             button:SetScript("OnLeave", function(s2)
                 s2._brd:Hide()
-                if _edbSegHoverId == b.id then
+                if _edbSegHoverId == block.id then
                     _edbSegHoverId = nil
                     if mod.SetBlockEditHighlight then
                         mod.SetBlockEditHighlight(nil, nil)
@@ -970,7 +970,7 @@ CludesUI.AtOptionsLogin(function()
                 fs:SetMaxLines(1)
                 return fs
             end
-            Label(10, 0.85, 6):SetText(L(TYPE_LABEL[b.type] or b.type))
+            Label(10, 0.85, 6):SetText(L(TYPE_LABEL[block.type] or block.type))
             local shareFS = Label(9, 0.5, -7)
 
             -- Settings-section hover wash (driven by the body watcher).
@@ -982,7 +982,7 @@ CludesUI.AtOptionsLogin(function()
 
             segBtns[i] = button
             shareFSs[i] = shareFS
-            if BlockHidden(b) then
+            if BlockHidden(block) then
                 button:Hide()
             end
         end
@@ -2316,9 +2316,9 @@ CludesUI.AtOptionsLogin(function()
         end
         local blockHoverRegions = {} -- { id, rgn } Width % control regions
         for i = 1, #blocks do
-            local b = blocks[i]
-            local blockId = b.id
-            local cfg = b.settings
+            local block = blocks[i]
+            local blockId = block.id
+            local cfg = block.settings
             -- Row accessors over s: a key read (or its default) and written.
             local function SFieldThen(barKey)
                 return function(value)
@@ -2333,12 +2333,12 @@ CludesUI.AtOptionsLogin(function()
             end
             if not cfg then
                 cfg = {}
-                b.settings = cfg
+                block.settings = cfg
             end
-            local isSpacer = b.type == "spacer"
-            local typeLabel = TYPE_LABEL[b.type]
+            local isSpacer = block.type == "spacer"
+            local typeLabel = TYPE_LABEL[block.type]
             if not typeLabel then
-                typeLabel = b.type
+                typeLabel = block.type
             end
 
             local secHdr
@@ -2367,11 +2367,11 @@ CludesUI.AtOptionsLogin(function()
                     step = 1,
                     tooltip = "Empty space reserved on this side of the block's content.",
                     getValue = function()
-                        local l = mod.ContentGapsOf(b)
+                        local l = mod.ContentGapsOf(block)
                         return l
                     end,
                     setValue = function(val)
-                        b.contentGapL = val
+                        block.contentGapL = val
                         Apply()
                         if _edbStripRelayout then
                             _edbStripRelayout()
@@ -2385,11 +2385,11 @@ CludesUI.AtOptionsLogin(function()
                     step = 1,
                     tooltip = "Empty space reserved on this side of the block's content.",
                     getValue = function()
-                        local _, r = mod.ContentGapsOf(b)
+                        local _, r = mod.ContentGapsOf(block)
                         return r
                     end,
                     setValue = function(val)
-                        b.contentGapR = val
+                        block.contentGapR = val
                         Apply()
                         if _edbStripRelayout then
                             _edbStripRelayout()
@@ -2467,7 +2467,7 @@ CludesUI.AtOptionsLogin(function()
                 -- hideSocialText key (default enabled). The Text Position cog still
                 -- moves the counter texts.
                 local alignLeftCfg
-                if b.type == "micromenu" then
+                if block.type == "micromenu" then
                     alignLeftCfg = {
                         type = "toggle",
                         text = "Enable Text",
@@ -2488,18 +2488,18 @@ CludesUI.AtOptionsLogin(function()
                         values = alignValues,
                         order = { "LEFT", "CENTER", "RIGHT" },
                         getValue = function()
-                            local a = b.align
+                            local a = block.align
                             if a == nil then
                                 a = "CENTER"
                             end
                             return a
                         end,
                         setValue = function(val)
-                            b.align = val
+                            block.align = val
                             -- XP / Rep: a picked alignment also places the bar's
                             -- label (unset keeps the label left, as it always was).
-                            if b.type == "xprep" then
-                                b.labelAlign = val
+                            if block.type == "xprep" then
+                                block.labelAlign = val
                             end
                             Apply()
                         end,
@@ -2514,14 +2514,14 @@ CludesUI.AtOptionsLogin(function()
                     step = 5,
                     tooltip = "Scales this block's content as a group inside its slot.",
                     getValue = function()
-                        local val = b.scale
+                        local val = block.scale
                         if val == nil then
                             val = 100
                         end
                         return val
                     end,
                     setValue = function(val)
-                        b.scale = val
+                        block.scale = val
                         Apply()
                     end,
                 })
@@ -2539,14 +2539,14 @@ CludesUI.AtOptionsLogin(function()
                                 max = 50,
                                 step = 1,
                                 get = function()
-                                    local val = b.textXOff
+                                    local val = block.textXOff
                                     if val == nil then
                                         val = 0
                                     end
                                     return val
                                 end,
                                 set = function(val)
-                                    b.textXOff = val
+                                    block.textXOff = val
                                     if mod.ReflowBlocks then
                                         mod.ReflowBlocks(barId)
                                     end
@@ -2559,14 +2559,14 @@ CludesUI.AtOptionsLogin(function()
                                 max = 50,
                                 step = 1,
                                 get = function()
-                                    local val = b.textYOff
+                                    local val = block.textYOff
                                     if val == nil then
                                         val = 0
                                     end
                                     return val
                                 end,
                                 set = function(val)
-                                    b.textYOff = val
+                                    block.textYOff = val
                                     if mod.ReflowBlocks then
                                         mod.ReflowBlocks(barId)
                                     end
@@ -2587,14 +2587,14 @@ CludesUI.AtOptionsLogin(function()
                                 max = 50,
                                 step = 1,
                                 get = function()
-                                    local val = b.xOff
+                                    local val = block.xOff
                                     if val == nil then
                                         val = 0
                                     end
                                     return val
                                 end,
                                 set = function(val)
-                                    b.xOff = val
+                                    block.xOff = val
                                     Apply()
                                 end,
                             },
@@ -2605,14 +2605,14 @@ CludesUI.AtOptionsLogin(function()
                                 max = 50,
                                 step = 1,
                                 get = function()
-                                    local val = b.yOff
+                                    local val = block.yOff
                                     if val == nil then
                                         val = 0
                                     end
                                     return val
                                 end,
                                 set = function(val)
-                                    b.yOff = val
+                                    block.yOff = val
                                     Apply()
                                 end,
                             },
@@ -2640,20 +2640,20 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Custom Color",
                         hasAlpha = false,
                         getValue = function()
-                            local color = b.color
+                            local color = block.color
                             if color then
                                 return color.r or 1, color.g or 1, color.b or 1
                             end
                             return 1, 1, 1
                         end,
                         setValue = function(red, green, blue)
-                            b.color = { r = red, g = green, b = blue }
+                            block.color = { r = red, g = green, b = blue }
                             ApplyBlockColor()
                         end,
                         onClick = function(self)
-                            if b.useClassColor or b.useAccentColor then
-                                b.useClassColor = nil
-                                b.useAccentColor = nil
+                            if block.useClassColor or block.useAccentColor then
+                                block.useClassColor = nil
+                                block.useAccentColor = nil
                                 ApplyBlockColor()
                                 CludesUI:RefreshPage()
                                 return
@@ -2663,7 +2663,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                         end,
                         refreshAlpha = function()
-                            return (b.useClassColor or b.useAccentColor) and 0.3 or 1
+                            return (block.useClassColor or block.useAccentColor) and 0.3 or 1
                         end,
                     },
                     {
@@ -2679,13 +2679,13 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function() end,
                         onClick = function()
-                            b.useClassColor = true
-                            b.useAccentColor = nil
+                            block.useClassColor = true
+                            block.useAccentColor = nil
                             ApplyBlockColor()
                             CludesUI:RefreshPage()
                         end,
                         refreshAlpha = function()
-                            return b.useClassColor and 1 or 0.3
+                            return block.useClassColor and 1 or 0.3
                         end,
                     },
                     {
@@ -2696,13 +2696,13 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function() end,
                         onClick = function()
-                            b.useAccentColor = true
-                            b.useClassColor = nil
+                            block.useAccentColor = true
+                            block.useClassColor = nil
                             ApplyBlockColor()
                             CludesUI:RefreshPage()
                         end,
                         refreshAlpha = function()
-                            return b.useAccentColor and 1 or 0.3
+                            return block.useAccentColor and 1 or 0.3
                         end,
                     },
                 },
@@ -2717,14 +2717,14 @@ CludesUI.AtOptionsLogin(function()
             local function ModeSwatch(flag, tip, getValue, opts)
                 opts = opts or {}
                 local function Flag()
-                    return b[flag]
+                    return block[flag]
                 end
                 local off, on = opts.off or Flag, opts.on or Flag
                 local sw = colorCfg.swatches
                 local customClick, customAlpha = sw[1].onClick, sw[1].refreshAlpha
                 sw[1].onClick = function(self)
                     if off() then
-                        b[flag] = nil
+                        block[flag] = nil
                         if opts.toCustom then
                             opts.toCustom()
                         end
@@ -2743,7 +2743,7 @@ CludesUI.AtOptionsLogin(function()
                 for i = 2, 3 do
                     local click = sw[i].onClick
                     sw[i].onClick = function(...)
-                        b[flag] = nil
+                        block[flag] = nil
                         return click(...)
                     end
                 end
@@ -2753,9 +2753,9 @@ CludesUI.AtOptionsLogin(function()
                     getValue = getValue,
                     setValue = function() end,
                     onClick = function()
-                        b[flag] = true
-                        b.useClassColor = nil
-                        b.useAccentColor = nil
+                        block[flag] = true
+                        block.useClassColor = nil
+                        block.useAccentColor = nil
                         ApplyBlockColor()
                         CludesUI:RefreshPage()
                     end,
@@ -2767,7 +2767,7 @@ CludesUI.AtOptionsLogin(function()
             -- Gold: "Coin Colored" -- white numbers, coin-tinted g/s/c
             -- letters; the forced default (see the factory's coinForced
             -- one-shot).
-            if b.type == "gold" then
+            if block.type == "gold" then
                 -- E2AC7A -- matches DENOMINATIONS' gold letter (user-set).
                 ModeSwatch("useCoinColor", "Coin Colored", function()
                     return 0.886, 0.675, 0.478
@@ -2778,24 +2778,24 @@ CludesUI.AtOptionsLogin(function()
             -- DEFAULT, resolved by ns.CrestColorMode rather than a forced
             -- write, so Custom has to SEED b.color to take the selection
             -- (same shape as the Icon Color row's Custom/Default pair below).
-            if b.type == "crests" then
+            if block.type == "crests" then
                 -- Myth gold: the top crest, and the most recognizable of the
                 -- five as a single preview swatch.
                 ModeSwatch("useCrestColor", "Crest Colors", function()
                     return 1, 0.82, 0
                 end, {
                     off = function()
-                        return mod.CrestColorMode(b) or b.useClassColor or b.useAccentColor
+                        return mod.CrestColorMode(block) or block.useClassColor or block.useAccentColor
                     end,
                     toCustom = function()
-                        b.useClassColor = nil
-                        b.useAccentColor = nil
-                        if b.color == nil then
-                            b.color = { r = 1, g = 1, b = 1 }
+                        block.useClassColor = nil
+                        block.useAccentColor = nil
+                        if block.color == nil then
+                            block.color = { r = 1, g = 1, b = 1 }
                         end
                     end,
                     on = function()
-                        return mod.CrestColorMode(b)
+                        return mod.CrestColorMode(block)
                     end,
                 })
             end
@@ -2810,9 +2810,9 @@ CludesUI.AtOptionsLogin(function()
                 coords = "Reactive",
                 ilvl = "Band",
             }
-            if DYNAMIC_TEXT_BLOCKS[b.type] then
-                ModeSwatch("useDynamicColor", DYNAMIC_TEXT_BLOCKS[b.type], function()
-                    return mod.BlockTextDynamic(b.type)
+            if DYNAMIC_TEXT_BLOCKS[block.type] then
+                ModeSwatch("useDynamicColor", DYNAMIC_TEXT_BLOCKS[block.type], function()
+                    return mod.BlockTextDynamic(block.type)
                 end)
             end
             local bgRow
@@ -2827,15 +2827,15 @@ CludesUI.AtOptionsLogin(function()
                 text = "Block Background",
                 tooltip = "Tints this block's slot with its own color.",
                 getValue = function()
-                    return b.bg ~= nil
+                    return block.bg ~= nil
                 end,
                 setValue = function(val)
                     if val then
-                        if not b.bg then
-                            b.bg = { r = 0, g = 0, b = 0, a = 0.5 }
+                        if not block.bg then
+                            block.bg = { r = 0, g = 0, b = 0, a = 0.5 }
                         end
                     else
-                        b.bg = nil
+                        block.bg = nil
                     end
                     Apply()
                     CludesUI:RefreshPage()
@@ -2849,7 +2849,7 @@ CludesUI.AtOptionsLogin(function()
                     region,
                     bgRow:GetFrameLevel() + 3,
                     function()
-                        local color = b.bg
+                        local color = block.bg
                         if not color then
                             return 0, 0, 0, 0.5
                         end
@@ -2872,7 +2872,7 @@ CludesUI.AtOptionsLogin(function()
                         return r, g, b2, a
                     end,
                     function(red, green, blue, a)
-                        b.bg = { r = red, g = green, b = blue, a = a }
+                        block.bg = { r = red, g = green, b = blue, a = a }
                         Apply()
                     end,
                     true,
@@ -2880,7 +2880,7 @@ CludesUI.AtOptionsLogin(function()
                 )
                 Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
                 GatedSwatch(colorSwatch, updateSwatch, "Enable Block Background", 10, function()
-                    return b.bg
+                    return block.bg
                 end)
             end
 
@@ -2929,9 +2929,9 @@ CludesUI.AtOptionsLogin(function()
                 ldb = true,
                 supplies = true,
             }
-            if ICON_COLOR_BLOCKS[b.type] then
+            if ICON_COLOR_BLOCKS[block.type] then
                 local function IconFlagsOff()
-                    return not b.useIconClassColor and not b.useIconAccentColor and not b.useIconDefaultColor
+                    return not block.useIconClassColor and not block.useIconAccentColor and not block.useIconDefaultColor
                 end
                 local iconColorCfg = {
                     type = "multiSwatch",
@@ -2941,14 +2941,14 @@ CludesUI.AtOptionsLogin(function()
                             tooltip = "Custom Color",
                             hasAlpha = false,
                             getValue = function()
-                                local color = b.iconColor
+                                local color = block.iconColor
                                 if color then
                                     return color.r or 1, color.g or 1, color.b or 1
                                 end
-                                return mod.BlockIconDefault(b.type, cfg)
+                                return mod.BlockIconDefault(block.type, cfg)
                             end,
                             setValue = function(red, green, blue)
-                                b.iconColor = { r = red, g = green, b = blue }
+                                block.iconColor = { r = red, g = green, b = blue }
                                 ApplyBlockColor()
                             end,
                             onClick = function(self)
@@ -2958,13 +2958,13 @@ CludesUI.AtOptionsLogin(function()
                                 -- stored means DEFAULT here, so clearing flags alone landed
                                 -- the selection on Default until the picker stored a color.
                                 -- Second click opens the picker as usual.
-                                if not IconFlagsOff() or b.iconColor == nil then
-                                    b.useIconClassColor = nil
-                                    b.useIconAccentColor = nil
-                                    b.useIconDefaultColor = nil
-                                    if b.iconColor == nil then
-                                        local dr, dg2, db2 = mod.BlockIconDefault(b.type, cfg)
-                                        b.iconColor = { r = dr, g = dg2, b = db2 }
+                                if not IconFlagsOff() or block.iconColor == nil then
+                                    block.useIconClassColor = nil
+                                    block.useIconAccentColor = nil
+                                    block.useIconDefaultColor = nil
+                                    if block.iconColor == nil then
+                                        local dr, dg2, db2 = mod.BlockIconDefault(block.type, cfg)
+                                        block.iconColor = { r = dr, g = dg2, b = db2 }
                                     end
                                     ApplyBlockColor()
                                     CludesUI:RefreshPage()
@@ -2975,7 +2975,7 @@ CludesUI.AtOptionsLogin(function()
                                 end
                             end,
                             refreshAlpha = function()
-                                return (IconFlagsOff() and b.iconColor ~= nil) and 1 or 0.3
+                                return (IconFlagsOff() and block.iconColor ~= nil) and 1 or 0.3
                             end,
                         },
                         {
@@ -2991,14 +2991,14 @@ CludesUI.AtOptionsLogin(function()
                             end,
                             setValue = function() end,
                             onClick = function()
-                                b.useIconClassColor = true
-                                b.useIconAccentColor = nil
-                                b.useIconDefaultColor = nil
+                                block.useIconClassColor = true
+                                block.useIconAccentColor = nil
+                                block.useIconDefaultColor = nil
                                 ApplyBlockColor()
                                 CludesUI:RefreshPage()
                             end,
                             refreshAlpha = function()
-                                return b.useIconClassColor and 1 or 0.3
+                                return block.useIconClassColor and 1 or 0.3
                             end,
                         },
                         {
@@ -3009,74 +3009,74 @@ CludesUI.AtOptionsLogin(function()
                             end,
                             setValue = function() end,
                             onClick = function()
-                                b.useIconAccentColor = true
-                                b.useIconClassColor = nil
-                                b.useIconDefaultColor = nil
+                                block.useIconAccentColor = true
+                                block.useIconClassColor = nil
+                                block.useIconDefaultColor = nil
                                 ApplyBlockColor()
                                 CludesUI:RefreshPage()
                             end,
                             refreshAlpha = function()
-                                return b.useIconAccentColor and 1 or 0.3
+                                return block.useIconAccentColor and 1 or 0.3
                             end,
                         },
                         {
                             tooltip = "Default",
                             hasAlpha = false,
                             getValue = function()
-                                return mod.BlockIconDefault(b.type, cfg)
+                                return mod.BlockIconDefault(block.type, cfg)
                             end,
                             setValue = function() end,
                             onClick = function()
                                 -- Mode switch only -- the stored custom color stays
                                 -- stashed for the Custom swatch.
-                                b.useIconDefaultColor = true
-                                b.useIconClassColor = nil
-                                b.useIconAccentColor = nil
+                                block.useIconDefaultColor = true
+                                block.useIconClassColor = nil
+                                block.useIconAccentColor = nil
                                 ApplyBlockColor()
                                 CludesUI:RefreshPage()
                             end,
                             refreshAlpha = function()
-                                return (b.useIconDefaultColor or (IconFlagsOff() and b.iconColor == nil))
+                                return (block.useIconDefaultColor or (IconFlagsOff() and block.iconColor == nil))
                                         and 1
                                     or 0.3
                             end,
                         },
                     },
                 }
-                if b.type == "durability" then
+                if block.type == "durability" then
                     -- Durability's default tint is DYNAMIC (red -> green by
                     -- lowest durability); same mode semantics, clearer name.
                     iconColorCfg.swatches[4].tooltip = "Dynamic"
                 end
-                if b.type == "spec" and cfg.iconStyle ~= "wow" then
+                if block.type == "spec" and cfg.iconStyle ~= "wow" then
                     -- Spec defaults to CLASS color: no Default swatch; the Class swatch
                     -- reads as selected in the nothing-stored state, and a legacy
                     -- stored Default-mode flag (from when the swatch existed) lights it
                     -- too -- both render class color.
                     iconColorCfg.swatches[4] = nil
                     iconColorCfg.swatches[2].refreshAlpha = function()
-                        if b.useIconClassColor or b.useIconDefaultColor then
+                        if block.useIconClassColor or block.useIconDefaultColor then
                             return 1
                         end
-                        return (IconFlagsOff() and b.iconColor == nil) and 1 or 0.3
+                        return (IconFlagsOff() and block.iconColor == nil) and 1 or 0.3
                     end
                 end
-                if (b.type == "profession" or b.type == "profession2") and cfg.iconStyle ~= "wow" then
+                if (block.type == "profession" or block.type == "profession2") and cfg.iconStyle ~= "wow" then
                     -- Professions default to ACCENT (matches the skill-bar
                     -- fill), so they carry no Default swatch -- and Accent
                     -- reads as selected in the nothing-stored state too.
                     iconColorCfg.swatches[4] = nil
                     iconColorCfg.swatches[3].refreshAlpha = function()
-                        if b.useIconAccentColor then
+                        if block.useIconAccentColor then
                             return 1
                         end
-                        return (IconFlagsOff() and b.iconColor == nil) and 1 or 0.3
+                        return (IconFlagsOff() and block.iconColor == nil) and 1 or 0.3
                     end
                 end
                 -- Gold / travel: a type row rides the Icon Color row's
                 -- otherwise-empty right slot instead of trailing alone below.
                 local iconRowRight = { type = "label", text = "" }
-                if b.type == "travel" and not CludesUI.IS_FOREVER then
+                if block.type == "travel" and not CludesUI.IS_FOREVER then
                     -- Default ON (nil = shown), so this can't use MkToggle's
                     -- `== true` read.
                     iconRowRight = {
@@ -3092,7 +3092,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     }
                 end
-                if b.type == "audio" then
+                if block.type == "audio" then
                     -- Default ON (nil = shown), so this can't use MkToggle's
                     -- `== true` read.
                     iconRowRight = {
@@ -3108,7 +3108,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     }
                 end
-                if b.type == "profession" or b.type == "profession2" then
+                if block.type == "profession" or block.type == "profession2" then
                     -- Default ON (nil = shown), so this can't use MkToggle's
                     -- `== true` read.
                     iconRowRight = {
@@ -3124,7 +3124,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     }
                 end
-                if b.type == "spec" then
+                if block.type == "spec" then
                     -- Default ON (nil = shown), so this can't use MkToggle's
                     -- `== true` read.
                     iconRowRight = {
@@ -3140,19 +3140,19 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     }
                 end
-                if b.type == "supplies" then
+                if block.type == "supplies" then
                     iconRowRight = MkToggleOn("Show Icon", "showIcon")
-                elseif b.type == "location" then
+                elseif block.type == "location" then
                     iconRowRight =
                         MkToggleOn("Show Icon", "showIcon", "Shows the map pin next to the zone name.")
-                elseif b.type == "coords" then
+                elseif block.type == "coords" then
                     iconRowRight =
                         MkToggleOn("Show Icon", "showIcon", "Shows the marker icon next to the coordinates.")
-                elseif b.type == "bags" then
+                elseif block.type == "bags" then
                     iconRowRight =
                         MkToggleOn("Show Icon", "showIcon", "Shows the bag icon next to the slot count.")
                 end
-                if b.type == "durability" then
+                if block.type == "durability" then
                     iconRowRight = {
                         type = "toggle",
                         text = "Show Icon",
@@ -3166,7 +3166,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     }
                 end
-                if b.type == "ilvl" then
+                if block.type == "ilvl" then
                     -- The icon is one of four prefix modes, so the choice
                     -- rides the Icon Color row rather than a toggle.
                     iconRowRight = {
@@ -3190,7 +3190,7 @@ CludesUI.AtOptionsLogin(function()
                         setValue = SFieldThen("prefix"),
                     }
                 end
-                if b.type == "gold" then
+                if block.type == "gold" then
                     iconRowRight = {
                         type = "toggle",
                         text = "Show Silver and Copper",
@@ -3204,7 +3204,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     }
                 end
-                if b.type == "travel" and CludesUI.IS_FOREVER then
+                if block.type == "travel" and CludesUI.IS_FOREVER then
                     travelIconCfg = iconColorCfg
                 else
                     _, height = W:DualRow(hostFrame, cursorY, iconColorCfg, iconRowRight)
@@ -3232,7 +3232,7 @@ CludesUI.AtOptionsLogin(function()
             local typeRowList = {}
             -- Travel: its three click dropdowns, set by the row loop below.
             local travelClickDD
-            if b.type == "audio" then
+            if block.type == "audio" then
                 typeRowList = {
                     {
                         type = "dropdown",
@@ -3250,7 +3250,7 @@ CludesUI.AtOptionsLogin(function()
                         setValue = SFieldThen("channel"),
                     },
                 }
-            elseif b.type == "clock" then
+            elseif block.type == "clock" then
                 -- The two time toggles show the EFFECTIVE mode: untouched,
                 -- the clock follows the game's Time Manager CVars (same as
                 -- the minimap clock); toggling stores a per-block override.
@@ -3292,7 +3292,7 @@ CludesUI.AtOptionsLogin(function()
                         "Shows a rest icon while your character is resting."
                     ),
                 }
-            elseif b.type == "combat" then
+            elseif block.type == "combat" then
                 typeRowList = {
                     MkToggle(
                         "Show Only In Combat",
@@ -3300,7 +3300,7 @@ CludesUI.AtOptionsLogin(function()
                         "Shows the combat status text only while your character is in combat."
                     ),
                 }
-            elseif b.type == "ms" then
+            elseif block.type == "ms" then
                 typeRowList = {
                     {
                         type = "segmented",
@@ -3330,7 +3330,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     },
                 }
-            elseif b.type == "location" then
+            elseif block.type == "location" then
                 -- Width only reaches the layout when the solver actually reads
                 -- this block's measured extent. Even Split hands every block an
                 -- equal share, and the Fill Remaining block gets the leftover:
@@ -3365,7 +3365,7 @@ CludesUI.AtOptionsLogin(function()
                             -- the block is new or was already configured: the
                             -- slider is the control that just took over, so it
                             -- has to announce itself each time.
-                            _edbWidthPulse[b] = (val == "manual") or nil
+                            _edbWidthPulse[block] = (val == "manual") or nil
                             Apply()
                             -- The slider's disabled state keys off this value.
                             CludesUI:RefreshPage()
@@ -3413,7 +3413,7 @@ CludesUI.AtOptionsLogin(function()
                         setValue = function(val)
                             cfg.maxWidth = val
                             -- Touched: the pulse has done its job.
-                            _edbWidthPulse[b] = nil
+                            _edbWidthPulse[block] = nil
                             Apply()
                         end,
                     },
@@ -3423,7 +3423,7 @@ CludesUI.AtOptionsLogin(function()
                         "Shows the zone and the subzone together instead of the subzone alone."
                     ),
                 }
-            elseif b.type == "coords" then
+            elseif block.type == "coords" then
                 typeRowList = {
                     {
                         type = "dropdown",
@@ -3446,7 +3446,7 @@ CludesUI.AtOptionsLogin(function()
                         "Removes the block from the bar in instanced content, where player coordinates are unavailable."
                     ),
                 }
-            elseif b.type == "gold" then
+            elseif block.type == "gold" then
                 typeRowList = {
                     MkToggle("Show Icon", "showIcons", "Shows the coin icon next to the amount."),
                     MkToggle("Show Bag Space", "showBagSpace", "Shows your free bag slots."),
@@ -3502,7 +3502,7 @@ CludesUI.AtOptionsLogin(function()
                         "Always use K/M/B instead of localized units."
                     )
                 end
-            elseif b.type == "profession" or b.type == "profession2" then
+            elseif block.type == "profession" or block.type == "profession2" then
                 typeRowList = {
                     {
                         type = "segmented",
@@ -3513,7 +3513,7 @@ CludesUI.AtOptionsLogin(function()
                         setValue = SFieldThen("textDisplay"),
                     },
                 }
-            elseif b.type == "xprep" then
+            elseif block.type == "xprep" then
                 typeRowList = {
                     {
                         type = "dropdown",
@@ -3552,12 +3552,12 @@ CludesUI.AtOptionsLogin(function()
                         setValue = SFieldThen("mode"),
                     },
                 }
-            elseif b.type == "spec" then
+            elseif block.type == "spec" then
                 typeRowList = {
                     MkToggle("Show Loadout Name", "showLoadout", "Shows the active talent loadout name."),
                     MkToggle("Uppercase Text", "useUppercase", "Renders the spec text in uppercase."),
                 }
-            elseif b.type == "travel" then
+            elseif block.type == "travel" then
                 local function ChoiceOf(button)
                     return mod.TravelClickChoice(cfg, button)
                 end
@@ -3721,7 +3721,7 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end)
                 end
-            elseif b.type == "micromenu" then
+            elseif block.type == "micromenu" then
                 -- Align Content returns here as a type row (its shared-row
                 -- slot hosts the Enable Text toggle instead): anchors the
                 -- whole icon strip within the block's slot via b.align.
@@ -3739,14 +3739,14 @@ CludesUI.AtOptionsLogin(function()
                         values = mmAlignValues,
                         order = { "LEFT", "CENTER", "RIGHT" },
                         getValue = function()
-                            local a = b.align
+                            local a = block.align
                             if a == nil then
                                 a = "CENTER"
                             end
                             return a
                         end,
                         setValue = function(val)
-                            b.align = val
+                            block.align = val
                             Apply()
                         end,
                     },
@@ -3792,7 +3792,7 @@ CludesUI.AtOptionsLogin(function()
                     -- Individual button toggles live in the "Menu Elements"
                     -- checklist dropdown appended after the shared row loop.
                 }
-            elseif b.type == "supplies" then
+            elseif block.type == "supplies" then
                 typeRowList = {
                     {
                         type = "dropdown",
@@ -3806,7 +3806,7 @@ CludesUI.AtOptionsLogin(function()
                     },
                     MkToggle("Show Label", "showLabel"),
                 }
-            elseif b.type == "currency" then
+            elseif block.type == "currency" then
                 local cValues, cOrder = mod.BuildCurrencyList()
                 cValues._noLoc = true
                 cValues._menuOpts = { searchable = true, itemHeight = 26 }
@@ -3842,7 +3842,7 @@ CludesUI.AtOptionsLogin(function()
                         "Shows the currency's description text in the tooltip. Turn off for a compact tooltip with just the name and the amount."
                     ),
                 }
-            elseif b.type == "crests" then
+            elseif block.type == "crests" then
                 typeRowList = {
                     -- Placeholder: the checklist dropdown swaps into this slot
                     -- after the row loop (crestListRow capture), same idiom as
@@ -3910,7 +3910,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     },
                 }
-            elseif b.type == "bags" then
+            elseif block.type == "bags" then
                 -- Show Icon rides the Icon Color row's right slot above.
                 typeRowList = {
                     {
@@ -3952,7 +3952,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     },
                 }
-            elseif b.type == "mplussummary" then
+            elseif block.type == "mplussummary" then
                 typeRowList = {
                     MkToggle(
                         "Hide When Empty",
@@ -3960,7 +3960,7 @@ CludesUI.AtOptionsLogin(function()
                         "Removes the block from the bar until a Mythic+ run has been recorded."
                     ),
                 }
-            elseif b.type == "timeplayed" then
+            elseif block.type == "timeplayed" then
                 typeRowList = {
                     MkToggle(
                         "Always Show Total",
@@ -3968,7 +3968,7 @@ CludesUI.AtOptionsLogin(function()
                         "Shows this character's total time played instead of the time played at the current level."
                     ),
                 }
-            elseif b.type == "ilvl" then
+            elseif block.type == "ilvl" then
                 -- Prefix rides the Icon Color row's right slot above.
                 typeRowList = {
                     {
@@ -4002,7 +4002,7 @@ CludesUI.AtOptionsLogin(function()
                         setValue = SFieldThen("precision"),
                     },
                 }
-            elseif b.type == "ldb" then
+            elseif block.type == "ldb" then
                 -- Rebuilt on every page draw, never cached: plugins register on
                 -- their own schedule and some only appear once their addon has
                 -- finished loading.
@@ -4081,7 +4081,7 @@ CludesUI.AtOptionsLogin(function()
             -- Menu Elements instead. The page refresh re-evaluates the
             -- style-dependent swatches.
             local iconStyleCfg
-            if mod.BlockHasIconStyle(b.type) then
+            if mod.BlockHasIconStyle(block.type) then
                 iconStyleCfg = {
                     type = "segmented",
                     text = "Icon Style",
@@ -4089,15 +4089,15 @@ CludesUI.AtOptionsLogin(function()
                     order = { "custom", "wow" },
                     -- Item Level shows its icon only as the "Icon" prefix.
                     disabled = function()
-                        if b.type == "ilvl" then
+                        if block.type == "ilvl" then
                             return cfg.prefix ~= "icon"
                         end
-                        if b.type == "gold" then
+                        if block.type == "gold" then
                             return cfg.showIcons == false
                         end
                         return cfg.showIcon == false
                     end,
-                    disabledTooltip = b.type == "ilvl" and "Prefix: Icon" or "Show Icon",
+                    disabledTooltip = block.type == "ilvl" and "Prefix: Icon" or "Show Icon",
                     getValue = SFieldOr("iconStyle", "custom"),
                     setValue = function(val)
                         cfg.iconStyle = val
@@ -4106,7 +4106,7 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI:RefreshPage(true)
                     end,
                 }
-                if b.type ~= "micromenu" then
+                if block.type ~= "micromenu" then
                     typeRowList[#typeRowList + 1] = iconStyleCfg
                 end
             end
@@ -4121,7 +4121,7 @@ CludesUI.AtOptionsLogin(function()
                 if travelClickDD and keyName <= 5 then
                     travelClickDD[(keyName + 1) / 2] = row._leftRegion._control
                 end
-                if b.type == "supplies" and keyName == 1 and not CludesUI._prebuilding then
+                if block.type == "supplies" and keyName == 1 and not CludesUI._prebuilding then
                     local regionFrame = row._leftRegion
                     if regionFrame._control then
                         regionFrame._control:Hide()
@@ -4154,20 +4154,20 @@ CludesUI.AtOptionsLogin(function()
                 end
                 -- Latency: the Show Icon toggle rides this row's right slot and
                 -- carries the inline icon-color swatches built after the loop.
-                if b.type == "ms" and keyName == 1 then
+                if block.type == "ms" and keyName == 1 then
                     msIconRow = row
                 end
                 -- Gold: Show Tooltip Data rides the Coin Icons row's right slot.
-                if b.type == "gold" and keyName == 3 then
+                if block.type == "gold" and keyName == 3 then
                     goldTipRow = row
                 end
                 -- Crests: the Crests Shown checklist heads the type rows, so
                 -- its placeholder is this row's LEFT slot.
-                if b.type == "crests" and keyName == 1 then
+                if block.type == "crests" and keyName == 1 then
                     crestListRow = row
                 end
                 -- Bags: Low Space Warning heads the second row (left slot).
-                if b.type == "bags" and keyName == 3 then
+                if block.type == "bags" and keyName == 3 then
                     bagsLowRow = row
                 end
                 -- Deep-link target for an unconfigured currency block: clicking
@@ -4175,7 +4175,7 @@ CludesUI.AtOptionsLogin(function()
                 -- the picker itself, not just the section (ns.OpenBlockSettings).
                 -- k == 1 IS the Currency dropdown: it heads the currency
                 -- typeRows built above. Prepend a row there and retarget here.
-                if b.type == "currency" and keyName == 1 then
+                if block.type == "currency" and keyName == 1 then
                     hostFrame._edbClickTargets["block:" .. blockId .. ":currency"] = {
                         section = secHdr,
                         target = row,
@@ -4194,7 +4194,7 @@ CludesUI.AtOptionsLogin(function()
                 -- Same contract for a broker block with no plugin picked:
                 -- clicking its placeholder on the live bar lands on the picker,
                 -- which pulses until it is filled in.
-                if b.type == "ldb" and keyName == 1 then
+                if block.type == "ldb" and keyName == 1 then
                     hostFrame._edbClickTargets["block:" .. blockId .. ":ldb"] = {
                         section = secHdr,
                         target = row,
@@ -4204,13 +4204,13 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     }
                 end
-                if b.type == "location" and keyName == 1 then
+                if block.type == "location" and keyName == 1 then
                     hostFrame._edbClickTargets["block:" .. blockId .. ":maxwidth"] = {
                         section = secHdr,
                         target = row,
                         slotSide = "right",
                         holdWhile = function()
-                            return _edbWidthPulse[b] == true
+                            return _edbWidthPulse[block] == true
                         end,
                     }
                 end
@@ -4229,12 +4229,12 @@ CludesUI.AtOptionsLogin(function()
                     return cfg.showIcon == true
                 end
                 local function FlagsOff()
-                    return not b.useIconClassColor and not b.useIconAccentColor and not b.useIconDefaultColor
+                    return not block.useIconClassColor and not block.useIconAccentColor and not block.useIconDefaultColor
                 end
                 local function ClearFlags()
-                    b.useIconClassColor = nil
-                    b.useIconAccentColor = nil
-                    b.useIconDefaultColor = nil
+                    block.useIconClassColor = nil
+                    block.useIconAccentColor = nil
+                    block.useIconDefaultColor = nil
                 end
 
                 -- Built right-to-left off the toggle so they read
@@ -4247,12 +4247,12 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         click = function()
                             ClearFlags()
-                            b.useIconAccentColor = true
+                            block.useIconAccentColor = true
                             ApplyBlockColor()
                             CludesUI:RefreshPage()
                         end,
                         on = function()
-                            return b.useIconAccentColor == true
+                            return block.useIconAccentColor == true
                         end,
                     },
                     {
@@ -4267,25 +4267,25 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         click = function()
                             ClearFlags()
-                            b.useIconClassColor = true
+                            block.useIconClassColor = true
                             ApplyBlockColor()
                             CludesUI:RefreshPage()
                         end,
                         on = function()
-                            return b.useIconClassColor == true
+                            return block.useIconClassColor == true
                         end,
                     },
                     {
                         tip = "Custom Color",
                         get = function()
-                            local color = b.iconColor
+                            local color = block.iconColor
                             if color then
                                 return color.r or 1, color.g or 1, color.b or 1
                             end
                             return 1, 1, 1
                         end,
                         set = function(red, green, blue)
-                            b.iconColor = { r = red, g = green, b = blue }
+                            block.iconColor = { r = red, g = green, b = blue }
                             ApplyBlockColor()
                         end,
                         -- House multiSwatch convention: a click on an inactive
@@ -4370,7 +4370,7 @@ CludesUI.AtOptionsLogin(function()
                 region._lastInline = colorSwatch
             end
 
-            if b.type == "gold" and goldTipRow then
+            if block.type == "gold" and goldTipRow then
                 -- Show Tooltip Data: ONE checklist dropdown for the gold
                 -- tooltip's sections (same placeholder-swap idiom as the
                 -- micro menu's Menu Elements below). Characters includes the
@@ -4411,7 +4411,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
 
-            if b.type == "crests" and crestListRow then
+            if block.type == "crests" and crestListRow then
                 -- Crests Shown: ONE checklist dropdown for the season's crest
                 -- tiers (same placeholder-swap idiom as Menu Elements below).
                 -- Labels come from the live currency names so they follow the
@@ -4466,7 +4466,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
 
-            if b.type == "micromenu" then
+            if block.type == "micromenu" then
                 -- Menu Elements: ONE checklist dropdown for the individual
                 -- micro menu buttons (same placeholder-swap idiom as the
                 -- bar's Visibility Options row above).

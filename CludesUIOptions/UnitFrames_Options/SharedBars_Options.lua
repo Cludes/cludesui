@@ -354,14 +354,14 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
             applyTo = ApplyBgTo,
             isSynced = function()
                 local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                local function colEq(a, b)
-                    if a == nil and b == nil then
+                local function colEq(lhs, rhs)
+                    if lhs == nil and rhs == nil then
                         return true
                     end
-                    if a == nil or b == nil then
+                    if lhs == nil or rhs == nil then
                         return false
                     end
-                    return a.r == b.r and a.g == b.g and a.b == b.b
+                    return lhs.r == rhs.r and lhs.g == rhs.g and lhs.b == rhs.b
                 end
                 for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
                     local unitCfg = UNIT_DB_MAP[settingKey]()
@@ -427,14 +427,14 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
             applyTo = ApplyColorTo,
             isSynced = function()
                 local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                local function colEq(a, b)
-                    if a == nil and b == nil then
+                local function colEq(lhs, rhs)
+                    if lhs == nil and rhs == nil then
                         return true
                     end
-                    if a == nil or b == nil then
+                    if lhs == nil or rhs == nil then
                         return false
                     end
-                    return a.r == b.r and a.g == b.g and a.b == b.b
+                    return lhs.r == rhs.r and lhs.g == rhs.g and lhs.b == rhs.b
                 end
                 for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
                     local unitCfg = UNIT_DB_MAP[settingKey]()
@@ -2601,14 +2601,14 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             applyTo = ApplyBgTo,
             isSynced = function()
                 local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                local function colEq(a, b)
-                    if a == nil and b == nil then
+                local function colEq(lhs, rhs)
+                    if lhs == nil and rhs == nil then
                         return true
                     end
-                    if a == nil or b == nil then
+                    if lhs == nil or rhs == nil then
                         return false
                     end
-                    return a.r == b.r and a.g == b.g and a.b == b.b
+                    return lhs.r == rhs.r and lhs.g == rhs.g and lhs.b == rhs.b
                 end
                 for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
                     local unitCfg = UNIT_DB_MAP[settingKey]()
@@ -2666,14 +2666,14 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             applyTo = ApplyColorTo,
             isSynced = function()
                 local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                local function colEq(a, b)
-                    if a == nil and b == nil then
+                local function colEq(lhs, rhs)
+                    if lhs == nil and rhs == nil then
                         return true
                     end
-                    if a == nil or b == nil then
+                    if lhs == nil or rhs == nil then
                         return false
                     end
-                    return a.r == b.r and a.g == b.g and a.b == b.b
+                    return lhs.r == rhs.r and lhs.g == rhs.g and lhs.b == rhs.b
                 end
                 local val = source.powerPercentPowerColor
                 if val == nil then

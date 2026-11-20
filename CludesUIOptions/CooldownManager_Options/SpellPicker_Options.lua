@@ -1022,9 +1022,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local hosted = barSpellData.hostedBuffSpellIDs
                         for _, memberId in ipairs(barSpellData.assignedSpells) do
                             if not (hosted and hosted[memberId]) then
-                                local e = familyStore[memberId]
-                                if type(e) == "table" then
-                                    func(memberId, e)
+                                local entry = familyStore[memberId]
+                                if type(entry) == "table" then
+                                    func(memberId, entry)
                                 end
                             end
                         end
@@ -1225,22 +1225,22 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         if not familyStore then
                             return
                         end
-                        local e, fresh = familyStore[hkey], false
-                        if not e then
-                            e = {}
-                            familyStore[hkey] = e
+                        local entry, fresh = familyStore[hkey], false
+                        if not entry then
+                            entry = {}
+                            familyStore[hkey] = entry
                             fresh = true
                         end
-                        applyWrite(e, value)
+                        applyWrite(entry, value)
                         -- Only the keys this apply wrote: reaching across the whole set would
                         -- drop blocking-false values the apply never touched, and the un-stamp
                         -- walks `keys` too, so it could not put them back.
                         for _, keyName in ipairs(keyList) do
-                            if rawget(e, keyName) == false then
-                                e[keyName] = nil
+                            if rawget(entry, keyName) == false then
+                                entry[keyName] = nil
                             end
                         end
-                        if next(e) == nil then
+                        if next(entry) == nil then
                             familyStore[hkey] = nil
                         elseif fresh and type(hkey) == "string" then
                             mintedCdKey = true
@@ -1417,8 +1417,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             local familyStore = profileTbl[AB.hostedFamKey]
                             if familyStore then
                                 AB.ForEachHostedKey(barSpellData, function(hkey)
-                                    local e = familyStore[hkey]
-                                    if type(e) == "table" and entryLoses(e, true) then
+                                    local entry = familyStore[hkey]
+                                    if type(entry) == "table" and entryLoses(entry, true) then
                                         count = count + 1
                                     end
                                 end)
@@ -1773,13 +1773,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 local familyStore = profileTbl and profileTbl[AB.hostedFamKey]
                                 if familyStore then
                                     AB.ForEachHostedKey(barSpellData, function(hkey)
-                                        local e = familyStore[hkey]
-                                        if not e then
+                                        local entry = familyStore[hkey]
+                                        if not entry then
                                             return
                                         end
-                                        unstampEntry(e)
+                                        unstampEntry(entry)
                                         -- Mirror the stamp: an entry the un-stamp empties is dropped, so it cannot linger and defeat the resolver's empty-store shortcut.
-                                        if next(e) == nil then
+                                        if next(entry) == nil then
                                             familyStore[hkey] = nil
                                         end
                                     end)
@@ -4865,14 +4865,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     rIco:SetSize(ITEM_H - 6, ITEM_H - 6)
                                     rIco:SetPoint("RIGHT", r, "RIGHT", -26, 0)
                                     rIco:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                                    local rLbl = r:CreateFontString(nil, "OVERLAY")
-                                    rLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                                    rLbl:SetPoint("LEFT", 10, 0)
-                                    rLbl:SetPoint("RIGHT", rIco, "LEFT", -5, 0)
-                                    rLbl:SetJustifyH("LEFT")
-                                    rLbl:SetWordWrap(false)
-                                    rLbl:SetMaxLines(1)
-                                    labels[#labels + 1] = rLbl
+                                    local rowLabel = r:CreateFontString(nil, "OVERLAY")
+                                    rowLabel:SetFont(FONT_PATH, 11, GetCDMOptOutline())
+                                    rowLabel:SetPoint("LEFT", 10, 0)
+                                    rowLabel:SetPoint("RIGHT", rIco, "LEFT", -5, 0)
+                                    rowLabel:SetJustifyH("LEFT")
+                                    rowLabel:SetWordWrap(false)
+                                    rowLabel:SetMaxLines(1)
+                                    labels[#labels + 1] = rowLabel
                                     -- The three-dash drag handle of the reorder dropdowns.
                                     for g = 1, 3 do
                                         local bar = r:CreateTexture(nil, "ARTWORK")
@@ -4885,8 +4885,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     rHl:SetColorTexture(1, 1, 1, hlA)
                                     rHl:SetAlpha(0)
                                     local function Paint()
-                                        rLbl:SetText(CludesUI.L(r._item.label))
-                                        rLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                                        rowLabel:SetText(CludesUI.L(r._item.label))
+                                        rowLabel:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                                         rIco:SetTexture(CludesUI.ClientIcon(r._item.icon))
                                     end
                                     Paint()
@@ -4895,14 +4895,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if dragState.dragging then
                                             return
                                         end
-                                        rLbl:SetTextColor(1, 1, 1, 1)
+                                        rowLabel:SetTextColor(1, 1, 1, 1)
                                         rHl:SetAlpha(1)
                                     end)
                                     r:SetScript("OnLeave", function()
                                         if dragState.dragging then
                                             return
                                         end
-                                        rLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                                        rowLabel:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                                         rHl:SetAlpha(0)
                                     end)
                                     rowList[idx] = r
