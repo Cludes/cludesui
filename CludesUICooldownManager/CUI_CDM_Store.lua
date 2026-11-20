@@ -817,12 +817,12 @@ function mod.GetCustomActiveState(spellId, create)
     if not storage then
         return nil
     end
-    local e = storage[spellId]
-    if not e and create then
-        e = {}
-        storage[spellId] = e
+    local entry = storage[spellId]
+    if not entry and create then
+        entry = {}
+        storage[spellId] = entry
     end
-    return e
+    return entry
 end
 
 -- Map an icon's identity token to its SETTINGS key. Equipment SLOTS key their per-spell

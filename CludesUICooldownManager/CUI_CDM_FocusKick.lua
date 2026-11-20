@@ -184,9 +184,9 @@ local function GetScaledPlateHealth(backing)
     end
     local children = { backing:GetChildren() }
     for index = 1, #children do
-        local c = children[index]
-        if c and c._mixedIn and c.health then
-            return c.health, c
+        local child = children[index]
+        if child and child._mixedIn and child.health then
+            return child.health, child
         end
     end
     return nil

@@ -550,10 +550,10 @@ local function GRefresh()
         region.name:SetWidth(nameW - 4)
         CludesUI.Kit.Font(region.text, size - 1, "essentials")
         region.bar:SetPoint("TOPLEFT", nameW, 0)
-        local c = m.class and RAID_CLASS_COLORS[m.class]
+        local color = m.class and RAID_CLASS_COLORS[m.class]
         region.name:SetText(m.name)
-        if c then
-            region.name:SetTextColor(c.r, c.g, c.b)
+        if color then
+            region.name:SetTextColor(color.r, color.g, color.b)
         else
             region.name:SetTextColor(1, 1, 1)
         end

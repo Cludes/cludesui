@@ -282,9 +282,9 @@ local function PaintRows(entries)
         region.name:SetPoint("LEFT", drinks and (size + ICON_GAP) or 0, 0)
         region.name:SetPoint("RIGHT", region.pct, "LEFT", -8, 0)
         region.name:SetText(m.name)
-        local c = RAID_CLASS_COLORS[m.class]
-        if c then
-            region.name:SetTextColor(c.r, c.g, c.b)
+        local color = RAID_CLASS_COLORS[m.class]
+        if color then
+            region.name:SetTextColor(color.r, color.g, color.b)
         else
             region.name:SetTextColor(1, 1, 1)
         end

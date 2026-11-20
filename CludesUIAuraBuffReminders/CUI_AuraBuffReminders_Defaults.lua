@@ -295,20 +295,20 @@ function REMIND.ResolveReminderSound(dk)
     if not prefixText then
         return nil
     end
-    local p = saved.profile
+    local profile = saved.profile
     if prefixText == "raidbuff" then
-        return p.raidBuffs.sectionSound
+        return profile.raidBuffs.sectionSound
     elseif prefixText == "aura" then
-        return p.auras.sectionSound
+        return profile.auras.sectionSound
     elseif prefixText == "consumable" then
-        local co = p.consumables
+        local co = profile.consumables
         local field = REMIND.SpecialSoundField(key)
         if field then
             return REMIND.SpecialsSound(co, field)
         end
         return co.sectionSound
     elseif prefixText == "forever" then
-        local fo = p.forever
+        local fo = profile.forever
         return fo and fo.sectionSound
     end
     return nil

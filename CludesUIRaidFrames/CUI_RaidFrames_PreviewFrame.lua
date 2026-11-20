@@ -405,8 +405,8 @@ local function CreatePreviewFrame(index, party)
         if frame._pvDispelBdrC and cfg.borderBehind then
             -- Show Behind: the live copy sits over the never-raised base border, so the
             -- type color covers hover/target there too.
-            local c = frame._pvDispelBdrC
-            red, green, blue, a = c.r, c.g, c.b, c.a or 1
+            local color = frame._pvDispelBdrC
+            red, green, blue, a = color.r, color.g, color.b, color.a or 1
         elseif frame._hovered and cfg.hoverBorderEnabled ~= false then
             local color = cfg.hoverBorderColor or { r = 1, g = 1, b = 1 }
             red, green, blue, a = color.r, color.g, color.b, cfg.hoverBorderAlpha or 1
@@ -424,8 +424,8 @@ local function CreatePreviewFrame(index, party)
             raised = true
         elseif frame._pvDispelBdrC then
             -- Color Custom Borders (set by ApplyPreviewData): the type color, below hover/target.
-            local c = frame._pvDispelBdrC
-            red, green, blue, a = c.r, c.g, c.b, c.a or 1
+            local color = frame._pvDispelBdrC
+            red, green, blue, a = color.r, color.g, color.b, color.a or 1
         else
             local color = cfg.borderColor or { r = 0, g = 0, b = 0 }
             red, green, blue, a = color.r, color.g, color.b, cfg.borderAlpha or 1

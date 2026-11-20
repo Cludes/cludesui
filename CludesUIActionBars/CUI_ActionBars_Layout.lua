@@ -343,8 +343,8 @@ local function LayoutBar(key)
     -- never leave a stale valid stamp.
     local _lbStamp
     do
-        local p = ABAR.db.profile
-        local place = p.barPositions and p.barPositions[key]
+        local profile = ABAR.db.profile
+        local place = profile.barPositions and profile.barPositions[key]
         local base0 = barBaseSize[key]
         local PPm = CludesUI and CludesUI.PP
         local growDirS = ABAR:ResolveGrowDirectionForLayout(key, cfg)
@@ -400,7 +400,7 @@ local function LayoutBar(key)
             tostring(cfg.mouseoverEnabled),
             mod.AB_Forever() and "forever" or mod.AB_Style(),
             mod.AB_ChromeStamp(key),
-            tostring(p.procGlowEnabled),
+            tostring(profile.procGlowEnabled),
             place and tostring(place.point) or "-",
             place and tostring(place.relPoint) or "-",
             place and tostring(place.x) or "-",

@@ -750,11 +750,11 @@ if not CludesUI.IS_FOREVER then
         if not (C_Housing and C_Housing.GetPlayerOwnedHouses) then
             return false
         end
-        local p = ABAR.db and ABAR.db.profile
-        if not p or p.useBlizzardDataBars then
+        local profile = ABAR.db and ABAR.db.profile
+        if not profile or profile.useBlizzardDataBars then
             return false
         end
-        local s = p.bars and p.bars.FavorBar
+        local s = profile.bars and profile.bars.FavorBar
         return (s and not ABAR.VisibilityCompat.IsNever(s)) and true or false
     end
 
@@ -1195,8 +1195,8 @@ end
 -- built at login only while the switch is off), or Blizzard's bars come back
 -- after their events were dropped this session. On ns.
 function mod.SetUseBlizzardDataBars(val)
-    local p = ABAR.db.profile
-    p.useBlizzardDataBars = val
+    local profile = ABAR.db.profile
+    profile.useBlizzardDataBars = val
     local needsReload = false
     for _, details in ipairs(EXTRA_BARS) do
         local k = details.key
@@ -1213,7 +1213,7 @@ function mod.SetUseBlizzardDataBars(val)
                     widget._updateFunc()
                 end
             else
-                local s = p.bars[k]
+                local s = profile.bars[k]
                 if not s or not ABAR.VisibilityCompat.IsNever(s) then
                     widget:Show()
                     if widget._updateFunc then

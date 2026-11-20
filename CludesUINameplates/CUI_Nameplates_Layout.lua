@@ -225,9 +225,9 @@ do
     -- dispelType is "magic", "enrage", or nil for the undifferentiated row.
     mod.GetDispelGlowColor = function(dispelType)
         if dispelType and mod.GetDispelGlowUseTypeColor() then
-            local c = TYPE_COLOR[dispelType]
-            if c then
-                return c.r, c.g, c.b
+            local color = TYPE_COLOR[dispelType]
+            if color then
+                return color.r, color.g, color.b
             end
         end
         -- Never customized = "default": no tint request (nil), the suite's

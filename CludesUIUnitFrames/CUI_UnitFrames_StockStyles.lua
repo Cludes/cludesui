@@ -518,16 +518,16 @@ mod._ufAtlasMemo = {}
 function mod.UF_Style()
     local val = mod._ufStyle
     if val == nil then
-        local p = saved and saved.profile
-        if not p then
+        local profile = saved and saved.profile
+        if not profile then
             return "cui"
         end
-        val = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
+        val = (profile.useClassicStyle and "classic") or (profile.useBlizzardStyle and "blizzard") or "cui"
         mod._ufStyle = val
         -- The WoW Forever variant of Blizzard Style, latched with it: the
         -- Forever client, Blizzard Style, and the sibling useForeverStyle
         -- flag set together with the Blizzard one.
-        mod._ufForever = val == "blizzard" and CludesUI.IS_FOREVER == true and p.useForeverStyle == true
+        mod._ufForever = val == "blizzard" and CludesUI.IS_FOREVER == true and profile.useForeverStyle == true
         if val == "classic" then
             mod.UF_BLIZZ = mod.UF_KITS.classic
         end
@@ -1428,17 +1428,17 @@ function mod.UF_PaintBlizzArt(widget, atlasName)
     local cut, keepLeft = widget._blizzMergeCut, nil
     if not cut and widget._blizzMerged and type(atlasName) == "string" then
         local byName = mod.UF_ATLAS_MERGE[file]
-        local c = byName and byName[atlasName]
-        if c then
+        local crop = byName and byName[atlasName]
+        if crop then
             cut = artFrame._atlasCut
             if not cut then
                 cut = {}
                 artFrame._atlasCut = cut
             end
-            local dv, du = (b - t) / c.h, (region - l) / c.w
-            cut.t, cut.b, cut.src = t + c.t * dv, t + c.b * dv, t + c.src * dv
-            cut.x = l + c.x * du
-            keepLeft = c.ringLeft == true
+            local dv, du = (b - t) / crop.h, (region - l) / crop.w
+            cut.t, cut.b, cut.src = t + crop.t * dv, t + crop.b * dv, t + crop.src * dv
+            cut.x = l + crop.x * du
+            keepLeft = crop.ringLeft == true
         end
     end
     if cut and anchorPoint == "CENTER" and not widget._blizzMirror then

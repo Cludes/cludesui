@@ -163,11 +163,11 @@ local _gliding = false
 function mod.EDR_Style()
     local val = mod._edrStyle
     if val == nil then
-        local p = saved and saved.profile
-        if not p then
+        local profile = saved and saved.profile
+        if not profile then
             return "cui"
         end
-        val = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
+        val = (profile.useClassicStyle and "classic") or (profile.useBlizzardStyle and "blizzard") or "cui"
         mod._edrStyle = val
     end
     return val
@@ -296,8 +296,8 @@ function UpdateVisibility()
     if not rootHost then
         return
     end
-    local p = saved and saved.profile
-    if not p or not p.enabled or IsInLockedContent() then
+    local profile = saved and saved.profile
+    if not profile or not profile.enabled or IsInLockedContent() then
         rootHost:Hide()
         rootHost:SetScript("OnUpdate", nil)
         UnregisterSpellEvents()
@@ -314,7 +314,7 @@ function UpdateVisibility()
         return
     end
     local onSky = IsOnSkyridingMount()
-    local hideCombat = p.hideInCombat and UnitAffectingCombat("player")
+    local hideCombat = profile.hideInCombat and UnitAffectingCombat("player")
     local visible = onSky and not hideCombat
     rootHost:SetShown(visible)
     if visible then
@@ -473,23 +473,23 @@ function OnUpdate(self, dt)
     end
     elapsed = 0
 
-    local p = saved.profile
+    local profile = saved.profile
 
     -- Speed poll only while airborne or while the landing decay drains; the
     -- decay floors to exactly 0 so the final empty-bar state paints once.
     -- Nothing to poll while the speed bar is hidden.
-    if (_gliding or smoothedSpeed > 0) and p.showSpeed ~= false then
+    if (_gliding or smoothedSpeed > 0) and profile.showSpeed ~= false then
         local _, curSpeed = GetSkyridingSpeed()
         local speedPct = curSpeed / BASE_RUN_SPEED * 100
-        local fraction = (p.maxSpeed > 0) and (speedPct / p.maxSpeed) or 0
+        local fraction = (profile.maxSpeed > 0) and (speedPct / profile.maxSpeed) or 0
         fraction = max(0, min(1, fraction))
         if fraction ~= lastSpeedApplied then
             speedBar:SetValue(fraction)
-            if p.speedText.enabled ~= false then
+            if profile.speedText.enabled ~= false then
                 speedBar.text:SetText(FormatSpeedText(speedPct))
             end
-            local aboveThrill = (speedPct >= (p.thrillThreshold or 0))
-            local color = (p.thrillColorToggle and aboveThrill) and p.thrillColor or p.normalColor
+            local aboveThrill = (speedPct >= (profile.thrillThreshold or 0))
+            local color = (profile.thrillColorToggle and aboveThrill) and profile.thrillColor or profile.normalColor
             speedBar:SetStatusBarColor(color.r, color.g, color.b, color.a)
             lastSpeedApplied = fraction
         end
@@ -504,11 +504,11 @@ function OnUpdate(self, dt)
             local e = GetTime() - (details.cooldownStartTime or 0)
             fillProgress = max(0, min(1, e / details.cooldownDuration))
         end
-        if p.chargeSound and lastSoundCur >= 0 and current > lastSoundCur and FULL_CHARGE_SOUND then
+        if profile.chargeSound and lastSoundCur >= 0 and current > lastSoundCur and FULL_CHARGE_SOUND then
             PlaySound(FULL_CHARGE_SOUND)
         end
         lastSoundCur = current
-        if p.vigorStyle == "gems" and classicFrame then
+        if profile.vigorStyle == "gems" and classicFrame then
             lastClassicCur, lastClassicProgress = ApplyClassicRow(current, maxC, fillProgress)
         else
             lastSkyCur, lastSkyProgress = ApplyPipRow(
@@ -519,14 +519,14 @@ function OnUpdate(self, dt)
                 fillProgress,
                 lastSkyCur,
                 lastSkyProgress,
-                p.skyridingFilled,
+                profile.skyridingFilled,
                 0.4
             )
         end
         skyridingStale = (current < maxC)
     end
 
-    if secondWindStale and p.showSecondWind == false then
+    if secondWindStale and profile.showSecondWind == false then
         secondWindStale = false -- hidden; showing it again redraws it
     elseif secondWindStale then
         local details = C_Spell.GetSpellCharges(SPELL.SECOND_WIND)
@@ -545,13 +545,13 @@ function OnUpdate(self, dt)
             fillProgress,
             lastSwCur,
             lastSwProgress,
-            p.secondWindFilled,
+            profile.secondWindFilled,
             0.4
         )
         secondWindStale = (current < maxC)
     end
 
-    if whirlStale and p.showWhirlingSurge == false then
+    if whirlStale and profile.showWhirlingSurge == false then
         whirlStale = false -- hidden; showing it again redraws it
     elseif whirlStale then
         local details = C_Spell.GetSpellCooldown(SPELL.WHIRLING_SURGE)
@@ -564,7 +564,7 @@ function OnUpdate(self, dt)
             end
             local remaining = start + dur - GetTime()
             if remaining > 0 then
-                if p.whirlingSurgeText.enabled ~= false then
+                if profile.whirlingSurgeText.enabled ~= false then
                     whirlIcon.text:SetText(FormatCooldownText(remaining))
                 end
                 whirlStale = true
@@ -825,10 +825,10 @@ local function ApplyBordersAll(S, L)
     if not Pix then
         return
     end
-    local p = saved.profile
-    local color = p.borderColor
+    local profile = saved.profile
+    local color = profile.borderColor
     -- The Blizzard and Classic WoW UI bar styles draw their own frames instead.
-    local thick = L.chrome and 0 or (p.borderThickness or 0)
+    local thick = L.chrome and 0 or (profile.borderThickness or 0)
     for _, frame in ipairs(S.bordered) do
         if thick > 0 then
             Pix.UpdateBorder(frame, thick, color.r, color.g, color.b, color.a)
@@ -848,15 +848,15 @@ local function ApplyBordersAll(S, L)
         -- HUD has always drawn), and a row lying wholly beside the icon drops
         -- its right edge (the icon can be shorter than the column, so rows
         -- above or below it keep theirs).
-        local gapTouch = p.gap == 0
-        local stackTouch = p.stackSpacing == 0
+        local gapTouch = profile.gap == 0
+        local stackTouch = profile.stackSpacing == 0
         local iconLo, iconHi = L.iconY - 0.01, L.iconY + L.iconSize + 0.01
         local rowList = L.rows
         local posY = L.colY + L.ov
         for idx, key in ipairs(rowList) do
-            local hgt = p[ROW_FIELD[key]]
+            local hgt = profile[ROW_FIELD[key]]
             local iconTouch = gapTouch and L.icon and posY >= iconLo and posY + hgt <= iconHi
-            posY = posY + hgt + p.gap
+            posY = posY + hgt + profile.gap
             local hideB = gapTouch and idx > 1 and rowList[idx - 1] ~= "speed"
             if key == "speed" then
                 ApplyBorderEdges(S.speed, false, iconTouch, gapTouch and idx < #rowList, hideB)
@@ -1667,9 +1667,9 @@ function Rebuild()
     if not rootHost then
         return
     end
-    local p = saved.profile
-    local L = ComputeLayout(p)
-    LayoutSet(liveCells, p, L)
+    local profile = saved.profile
+    local L = ComputeLayout(profile)
+    LayoutSet(liveCells, profile, L)
     classicFrame = liveCells.classic
     Redraw(L)
     ApplyPos()
@@ -1681,9 +1681,9 @@ function Redraw(L)
     if not rootHost then
         return
     end
-    local p = saved.profile
-    L = L or ComputeLayout(p)
-    PaintSet(liveCells, p, L)
+    local profile = saved.profile
+    L = L or ComputeLayout(profile)
+    PaintSet(liveCells, profile, L)
 
     skyridingStale = true
     secondWindStale = true
@@ -1712,25 +1712,25 @@ local sampleSet, samplePlace
 local SAMPLE_SPEED_PCT = 650
 
 local function PaintSample()
-    local p = saved and saved.profile
-    if not (sampleSet and p) then
+    local profile = saved and saved.profile
+    if not (sampleSet and profile) then
         return
     end
     local S = sampleSet
-    local L = ComputeLayout(p)
+    local L = ComputeLayout(profile)
     -- The options page scales and anchors the root first: the pixel snaps
     -- below read the scale the sample shows at.
     if samplePlace then
         samplePlace(S.root, L.totalW, L.totalH)
     end
-    LayoutSet(S, p, L)
-    PaintSet(S, p, L)
+    LayoutSet(S, profile, L)
+    PaintSet(S, profile, L)
 
-    local fraction = (p.maxSpeed > 0) and (SAMPLE_SPEED_PCT / p.maxSpeed) or 0
+    local fraction = (profile.maxSpeed > 0) and (SAMPLE_SPEED_PCT / profile.maxSpeed) or 0
     S.speed:SetValue(max(0, min(1, fraction)))
     S.speed.text:SetText(FormatSpeedText(SAMPLE_SPEED_PCT))
-    local color = (p.thrillColorToggle and SAMPLE_SPEED_PCT >= (p.thrillThreshold or 0)) and p.thrillColor
-        or p.normalColor
+    local color = (profile.thrillColorToggle and SAMPLE_SPEED_PCT >= (profile.thrillThreshold or 0)) and profile.thrillColor
+        or profile.normalColor
     S.speed:SetStatusBarColor(color.r, color.g, color.b, color.a)
 
     if L.classic then
@@ -1749,9 +1749,9 @@ local function PaintSample()
             pipCell.spark:SetShown(val > 0 and val < 1)
         end
     else
-        ApplyPipRow(S.stack.pips, SKYRIDING_PIPS, 4, SKYRIDING_PIPS, 0.5, -1, -1, p.skyridingFilled, 0.4)
+        ApplyPipRow(S.stack.pips, SKYRIDING_PIPS, 4, SKYRIDING_PIPS, 0.5, -1, -1, profile.skyridingFilled, 0.4)
     end
-    ApplyPipRow(S.sw.pips, SECONDWIND_PIPS, 2, SECONDWIND_PIPS, 0.6, -1, -1, p.secondWindFilled, 0.4)
+    ApplyPipRow(S.sw.pips, SECONDWIND_PIPS, 2, SECONDWIND_PIPS, 0.6, -1, -1, profile.secondWindFilled, 0.4)
 
     local nowTime = GetTime()
     S.icon.cd:SetCooldown(nowTime - 8, 20)
@@ -1793,34 +1793,34 @@ local function SavePos(_, anchorPoint, relPoint, posX, posY)
     if not anchorPoint then
         return
     end
-    local p = saved and saved.profile
-    if not p then
+    local profile = saved and saved.profile
+    if not profile then
         return
     end
-    p.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
+    profile.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
     if not CludesUI._unlockActive and rootHost then
         rootHost:ClearAllPoints()
         rootHost:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
     end
 end
 local function LoadPos()
-    local p = saved and saved.profile
-    local position = p and p.unlockPos
+    local profile = saved and saved.profile
+    local position = profile and profile.unlockPos
     if not position then
         return nil
     end
     return { point = position.point, relPoint = position.relPoint or position.point, x = position.x, y = position.y }
 end
 local function ClearPos()
-    local p = saved and saved.profile
-    if not p then
+    local profile = saved and saved.profile
+    if not profile then
         return
     end
-    p.unlockPos = nil
+    profile.unlockPos = nil
 end
 function ApplyPos()
-    local p = saved and saved.profile
-    local position = p and p.unlockPos
+    local profile = saved and saved.profile
+    local position = profile and profile.unlockPos
     if not position or not rootHost then
         return
     end
@@ -1856,12 +1856,12 @@ function RegisterUnlockElements()
                 return L.totalW, L.totalH
             end,
             setWidth = function(_, wid)
-                local p = saved.profile
-                local L = ComputeLayout(p)
+                local profile = saved.profile
+                local L = ComputeLayout(profile)
                 if L.colW == 0 then
                     -- No bars in the column: the handle scales the gems, if any.
                     if L.classic then
-                        p.classicScale = max(0.5, min(2, floor(wid / CLASSIC_W * 100 + 0.5) / 100))
+                        profile.classicScale = max(0.5, min(2, floor(wid / CLASSIC_W * 100 + 0.5) / 100))
                         Rebuild()
                     end
                     return
@@ -1878,8 +1878,8 @@ function RegisterUnlockElements()
                 if L.classicW > L.clusterW and clusterW <= L.classicW then
                     return
                 end
-                local iconPart = L.icon and (p.gap + L.iconSize) or 0
-                p.width = max(60, PPSnap(clusterW - iconPart - 2 * L.padX))
+                local iconPart = L.icon and (profile.gap + L.iconSize) or 0
+                profile.width = max(60, PPSnap(clusterW - iconPart - 2 * L.padX))
                 Rebuild()
             end,
             -- Height is built from independently-sized bars (Second Wind, modern
@@ -1891,11 +1891,11 @@ function RegisterUnlockElements()
             -- (bars 2-24 / 2-24 / 4-40, icon 16-80) so a drag can't push one to
             -- zero or past its usable size.
             setHeight = function(_, hgt)
-                local p = saved.profile
-                local L = ComputeLayout(p)
+                local profile = saved.profile
+                local L = ComputeLayout(profile)
                 if L.clusterH == 0 then
                     if L.classic then
-                        p.classicScale = max(0.5, min(2, floor(hgt / CLASSIC_H * 100 + 0.5) / 100))
+                        profile.classicScale = max(0.5, min(2, floor(hgt / CLASSIC_H * 100 + 0.5) / 100))
                         Rebuild()
                     end
                     return
@@ -1905,10 +1905,10 @@ function RegisterUnlockElements()
                     return
                 end
                 local newTotalH = PPSnap(hgt)
-                local classicPart = L.classic and (L.classicH + p.gap) or 0
+                local classicPart = L.classic and (L.classicH + profile.gap) or 0
                 local keyName = max(8, newTotalH - classicPart) / L.clusterH
-                if L.icon and p.iconSize then
-                    p.iconSize = max(16, min(80, floor(L.iconSize * keyName + 0.5)))
+                if L.icon and profile.iconSize then
+                    profile.iconSize = max(16, min(80, floor(L.iconSize * keyName + 0.5)))
                 end
                 local rowList = L.rows
                 if #rowList == 0 then
@@ -1931,7 +1931,7 @@ function RegisterUnlockElements()
                 -- the exact pixel-snapped height, as they always have.
                 local whole = L.colH == L.clusterH
                 local colTarget = whole and (newTotalH - classicPart) or L.colH * keyName
-                local targetSum = colTarget - (#rowList - 1) * p.gap - 2 * L.ov
+                local targetSum = colTarget - (#rowList - 1) * profile.gap - 2 * L.ov
                 if L.chrome or L.classic or not whole then
                     targetSum = floor(targetSum + 0.5)
                 end
@@ -1939,7 +1939,7 @@ function RegisterUnlockElements()
 
                 local oldSum = 0
                 for _, button in ipairs(barList) do
-                    button.old = p[button.field]
+                    button.old = profile[button.field]
                     oldSum = oldSum + button.old
                 end
                 if oldSum <= 0 then
@@ -1947,7 +1947,7 @@ function RegisterUnlockElements()
                     -- with every shown height at/under zero: reset to defaults so
                     -- the control self-heals instead of silently no-op'ing forever.
                     for _, button in ipairs(barList) do
-                        p[button.field] = DB_DEFAULTS.profile[button.field]
+                        profile[button.field] = DB_DEFAULTS.profile[button.field]
                     end
                     Rebuild()
                     return
@@ -1999,7 +1999,7 @@ function RegisterUnlockElements()
                 end
 
                 for _, button in ipairs(barList) do
-                    p[button.field] = button.new
+                    profile[button.field] = button.new
                 end
                 Rebuild()
             end,
@@ -2122,10 +2122,10 @@ end
 -- rim included), whatever Icon Size holds: the options show it while Auto Size
 -- is on and hand it over when Auto Size is turned off.
 mod.edrIconSize = function()
-    local p = saved and saved.profile
-    if not p then
+    local profile = saved and saved.profile
+    if not profile then
         return 34
     end
-    local L = ComputeLayout(p)
-    return StackHeight(p, L.classic and STYLE_ROWS_GEMS or STYLE_ROWS_BARS, L.ov)
+    local L = ComputeLayout(profile)
+    return StackHeight(profile, L.classic and STYLE_ROWS_GEMS or STYLE_ROWS_BARS, L.ov)
 end

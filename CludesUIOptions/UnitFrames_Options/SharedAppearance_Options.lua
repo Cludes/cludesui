@@ -269,18 +269,18 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     do
         local sn = portraitArtValues["class"].subnav
         sn.onSelect = function(styleKey)
-            local d = UNIT_DB_MAP[optionState.selectedUnit]()
-            d.portraitMode = "class"
-            d.classThemeStyle = styleKey
-            d.showPortrait = true
+            local unitCfg = UNIT_DB_MAP[optionState.selectedUnit]()
+            unitCfg.portraitMode = "class"
+            unitCfg.classThemeStyle = styleKey
+            unitCfg.showPortrait = true
             -- The Art Style's leave-3D resets: Shape None and the Inside
             -- positions are 3D-only.
-            if d.detachedPortraitShape == "none" then
-                d.detachedPortraitShape = "portrait"
+            if unitCfg.detachedPortraitShape == "none" then
+                unitCfg.detachedPortraitShape = "portrait"
             end
-            local edgeSide = d.portraitSide
+            local edgeSide = unitCfg.portraitSide
             if edgeSide == "insideleft" or edgeSide == "insideright" or edgeSide == "insidecenter" then
-                d.portraitSide = "left"
+                unitCfg.portraitSide = "left"
             end
             ReloadAndUpdate()
             UpdatePreview()
@@ -1338,9 +1338,9 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         end, function(red, green, blue, a)
             -- Shared across all 3 main frames (see Highlight enable above).
             for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
-                local d = UNIT_DB_MAP[settingKey]()
-                d.highlightColor = { r = red, g = green, b = blue }
-                d.highlightAlpha = a
+                local unitCfg = UNIT_DB_MAP[settingKey]()
+                unitCfg.highlightColor = { r = red, g = green, b = blue }
+                unitCfg.highlightAlpha = a
             end
             ReloadAndUpdate()
         end, true, 20)
@@ -3755,9 +3755,9 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                 tooltip = tipText,
                 getValue = function()
                     local ec = saved.profile.enemyColors or {}
-                    local c = ec[settingKey]
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = ec[settingKey]
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     local f = defIdx and FACTION_BAR_COLORS[defIdx]
                     if f then

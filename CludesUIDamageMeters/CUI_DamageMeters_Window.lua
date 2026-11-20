@@ -212,8 +212,8 @@ local function LayoutMenu(dropMenu, itemList, onDismiss, isChild)
                 row._timer:SetFont(fontFile, CTX_FONT_SZ, outline)
                 local ar, ag, ab
                 if fv then
-                    local c = mod.DM_FV.tan
-                    ar, ag, ab = c.r, c.g, c.b
+                    local color = mod.DM_FV.tan
+                    ar, ag, ab = color.r, color.g, color.b
                 else
                     ar, ag, ab = GetAccentRGB()
                 end

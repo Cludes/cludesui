@@ -25,9 +25,9 @@ local GAP = 4
 local STYLE = "cui:rlead:auraglows"
 
 function mod.AuraGlowSettings()
-    local p = mod.RaidLeadDB()
-    p.auraGlows = p.auraGlows or {}
-    local cfg = p.auraGlows
+    local profile = mod.RaidLeadDB()
+    profile.auraGlows = profile.auraGlows or {}
+    local cfg = profile.auraGlows
     if cfg.enabled == nil then
         cfg.enabled = true
     end

@@ -156,9 +156,9 @@ local function CategoryColor(categoryName)
         and saved.statCategoryUseColor[key]
         and saved.statCategoryColors
         and saved.statCategoryColors[key]
-    local c = custom or (key and DEFAULT_COLORS[key])
-    if c and c.r then
-        return c.r, c.g, c.b
+    local color = custom or (key and DEFAULT_COLORS[key])
+    if color and color.r then
+        return color.r, color.g, color.b
     end
     local ACC = CludesUI.CLUDES_GREEN
     if ACC then

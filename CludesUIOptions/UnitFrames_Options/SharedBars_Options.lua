@@ -341,10 +341,10 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
             local bgClass = source.bgClassColored or false
             for _, settingKey in ipairs(keyList) do
                 if settingKey ~= optionState.selectedUnit then
-                    local d = UNIT_DB_MAP[settingKey]()
-                    d.customBgColor = { r = bc.r, g = bc.g, b = bc.b }
-                    d.customBgAlpha = bgA
-                    d.bgClassColored = bgClass
+                    local unitCfg = UNIT_DB_MAP[settingKey]()
+                    unitCfg.customBgColor = { r = bc.r, g = bc.g, b = bc.b }
+                    unitCfg.customBgAlpha = bgA
+                    unitCfg.bgClassColored = bgClass
                 end
             end
             ReloadAndUpdate()
@@ -364,14 +364,14 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     return a.r == b.r and a.g == b.g and a.b == b.b
                 end
                 for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
-                    local d = UNIT_DB_MAP[settingKey]()
-                    if not colEq(d.customBgColor, source.customBgColor) then
+                    local unitCfg = UNIT_DB_MAP[settingKey]()
+                    if not colEq(unitCfg.customBgColor, source.customBgColor) then
                         return false
                     end
-                    if (d.customBgAlpha or 100) ~= (source.customBgAlpha or 100) then
+                    if (unitCfg.customBgAlpha or 100) ~= (source.customBgAlpha or 100) then
                         return false
                     end
-                    if (d.bgClassColored or false) ~= (source.bgClassColored or false) then
+                    if (unitCfg.bgClassColored or false) ~= (source.bgClassColored or false) then
                         return false
                     end
                 end
@@ -395,27 +395,27 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
             local dynMode = source.healthColorMode or "none"
             for _, settingKey in ipairs(keyList) do
                 if settingKey ~= optionState.selectedUnit then
-                    local d = UNIT_DB_MAP[settingKey]()
-                    d.healthClassColored = classColor
+                    local unitCfg = UNIT_DB_MAP[settingKey]()
+                    unitCfg.healthClassColored = classColor
                     if fc then
-                        d.customFillColor = { r = fc.r, g = fc.g, b = fc.b }
+                        unitCfg.customFillColor = { r = fc.r, g = fc.g, b = fc.b }
                     else
-                        d.customFillColor = nil
+                        unitCfg.customFillColor = nil
                     end
-                    d.gradientEnabled = gEn
-                    d.gradientDir = gDir
+                    unitCfg.gradientEnabled = gEn
+                    unitCfg.gradientDir = gDir
                     if gc then
-                        d.gradientColor = { r = gc.r, g = gc.g, b = gc.b }
+                        unitCfg.gradientColor = { r = gc.r, g = gc.g, b = gc.b }
                     else
-                        d.gradientColor = nil
+                        unitCfg.gradientColor = nil
                     end
-                    d.healthColorMode = dynMode
+                    unitCfg.healthColorMode = dynMode
                     for _, ck in ipairs(DYN_STOP_KEYS) do
                         local sc = source[ck]
                         if sc then
-                            d[ck] = { r = sc.r, g = sc.g, b = sc.b }
+                            unitCfg[ck] = { r = sc.r, g = sc.g, b = sc.b }
                         else
-                            d[ck] = nil
+                            unitCfg[ck] = nil
                         end
                     end
                 end
@@ -437,27 +437,27 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     return a.r == b.r and a.g == b.g and a.b == b.b
                 end
                 for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
-                    local d = UNIT_DB_MAP[settingKey]()
-                    if (d.healthClassColored or false) ~= (source.healthClassColored or false) then
+                    local unitCfg = UNIT_DB_MAP[settingKey]()
+                    if (unitCfg.healthClassColored or false) ~= (source.healthClassColored or false) then
                         return false
                     end
-                    if not colEq(d.customFillColor, source.customFillColor) then
+                    if not colEq(unitCfg.customFillColor, source.customFillColor) then
                         return false
                     end
-                    if (d.gradientEnabled or false) ~= (source.gradientEnabled or false) then
+                    if (unitCfg.gradientEnabled or false) ~= (source.gradientEnabled or false) then
                         return false
                     end
-                    if not colEq(d.gradientColor, source.gradientColor) then
+                    if not colEq(unitCfg.gradientColor, source.gradientColor) then
                         return false
                     end
-                    if (d.gradientDir or "HORIZONTAL") ~= (source.gradientDir or "HORIZONTAL") then
+                    if (unitCfg.gradientDir or "HORIZONTAL") ~= (source.gradientDir or "HORIZONTAL") then
                         return false
                     end
-                    if (d.healthColorMode or "none") ~= (source.healthColorMode or "none") then
+                    if (unitCfg.healthColorMode or "none") ~= (source.healthColorMode or "none") then
                         return false
                     end
                     for _, ck in ipairs(DYN_STOP_KEYS) do
-                        if not colEq(d[ck], source[ck]) then
+                        if not colEq(unitCfg[ck], source[ck]) then
                             return false
                         end
                     end
@@ -559,8 +559,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 region,
                 sharedHealthColorRow:GetFrameLevel() + 3,
                 function()
-                    local c = SGet(dropdown.key) or dropdown.def
-                    return c.r, c.g, c.b, 1
+                    local color = SGet(dropdown.key) or dropdown.def
+                    return color.r, color.g, color.b, 1
                 end,
                 function(red, green, blue)
                     UNIT_DB_MAP[optionState.selectedUnit]()[dropdown.key] = { r = red, g = green, b = blue }
@@ -753,8 +753,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     local val = source.leftTextContent or "name"
                     for _, settingKey in ipairs(keyList) do
                         if settingKey ~= optionState.selectedUnit then
-                            local d = UNIT_DB_MAP[settingKey]()
-                            d.leftTextContent = (
+                            local unitCfg = UNIT_DB_MAP[settingKey]()
+                            unitCfg.leftTextContent = (
                                 (
                                     val == "absorb"
                                     or val == "absorbshort"
@@ -765,14 +765,14 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             )
                                     and "none"
                                 or val
-                            d.leftTextClassColor = source.leftTextClassColor
-                            d.leftTextColorR, d.leftTextColorG, d.leftTextColorB =
+                            unitCfg.leftTextClassColor = source.leftTextClassColor
+                            unitCfg.leftTextColorR, unitCfg.leftTextColorG, unitCfg.leftTextColorB =
                                 source.leftTextColorR, source.leftTextColorG, source.leftTextColorB
-                            d.leftTextSize = source.leftTextSize
-                            d.leftTextX, d.leftTextY = source.leftTextX, source.leftTextY
-                            d.leftTextWidthPct = source.leftTextWidthPct
+                            unitCfg.leftTextSize = source.leftTextSize
+                            unitCfg.leftTextX, unitCfg.leftTextY = source.leftTextX, source.leftTextY
+                            unitCfg.leftTextWidthPct = source.leftTextWidthPct
                             if val == "custom" then
-                                d.leftTextCustomFormat = source.leftTextCustomFormat
+                                unitCfg.leftTextCustomFormat = source.leftTextCustomFormat
                             end
                         end
                     end
@@ -785,7 +785,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                         local source = UNIT_DB_MAP[optionState.selectedUnit]()
                         local val = source.leftTextContent or "name"
                         for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
-                            local d = UNIT_DB_MAP[settingKey]()
+                            local unitCfg = UNIT_DB_MAP[settingKey]()
                             local expected = (
                                 (
                                     val == "absorb"
@@ -797,36 +797,36 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             )
                                     and "none"
                                 or val
-                            if (d.leftTextContent or "name") ~= expected then
+                            if (unitCfg.leftTextContent or "name") ~= expected then
                                 return false
                             end
-                            if (d.leftTextClassColor or false) ~= (source.leftTextClassColor or false) then
+                            if (unitCfg.leftTextClassColor or false) ~= (source.leftTextClassColor or false) then
                                 return false
                             end
-                            if (d.leftTextColorR or 1) ~= (source.leftTextColorR or 1) then
+                            if (unitCfg.leftTextColorR or 1) ~= (source.leftTextColorR or 1) then
                                 return false
                             end
-                            if (d.leftTextColorG or 1) ~= (source.leftTextColorG or 1) then
+                            if (unitCfg.leftTextColorG or 1) ~= (source.leftTextColorG or 1) then
                                 return false
                             end
-                            if (d.leftTextColorB or 1) ~= (source.leftTextColorB or 1) then
+                            if (unitCfg.leftTextColorB or 1) ~= (source.leftTextColorB or 1) then
                                 return false
                             end
-                            if (d.leftTextSize or 0) ~= (source.leftTextSize or 0) then
+                            if (unitCfg.leftTextSize or 0) ~= (source.leftTextSize or 0) then
                                 return false
                             end
-                            if (d.leftTextX or 0) ~= (source.leftTextX or 0) then
+                            if (unitCfg.leftTextX or 0) ~= (source.leftTextX or 0) then
                                 return false
                             end
-                            if (d.leftTextY or 0) ~= (source.leftTextY or 0) then
+                            if (unitCfg.leftTextY or 0) ~= (source.leftTextY or 0) then
                                 return false
                             end
-                            if (d.leftTextWidthPct or 100) ~= (source.leftTextWidthPct or 100) then
+                            if (unitCfg.leftTextWidthPct or 100) ~= (source.leftTextWidthPct or 100) then
                                 return false
                             end
                             if
                                 val == "custom"
-                                and (d.leftTextCustomFormat or "") ~= (source.leftTextCustomFormat or "")
+                                and (unitCfg.leftTextCustomFormat or "") ~= (source.leftTextCustomFormat or "")
                             then
                                 return false
                             end
@@ -1102,8 +1102,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     local val = source.rightTextContent or "both"
                     for _, settingKey in ipairs(keyList) do
                         if settingKey ~= optionState.selectedUnit then
-                            local d = UNIT_DB_MAP[settingKey]()
-                            d.rightTextContent = (
+                            local unitCfg = UNIT_DB_MAP[settingKey]()
+                            unitCfg.rightTextContent = (
                                 (
                                     val == "absorb"
                                     or val == "absorbshort"
@@ -1114,14 +1114,14 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             )
                                     and "none"
                                 or val
-                            d.rightTextClassColor = source.rightTextClassColor
-                            d.rightTextColorR, d.rightTextColorG, d.rightTextColorB =
+                            unitCfg.rightTextClassColor = source.rightTextClassColor
+                            unitCfg.rightTextColorR, unitCfg.rightTextColorG, unitCfg.rightTextColorB =
                                 source.rightTextColorR, source.rightTextColorG, source.rightTextColorB
-                            d.rightTextSize = source.rightTextSize
-                            d.rightTextX, d.rightTextY = source.rightTextX, source.rightTextY
-                            d.rightTextWidthPct = source.rightTextWidthPct
+                            unitCfg.rightTextSize = source.rightTextSize
+                            unitCfg.rightTextX, unitCfg.rightTextY = source.rightTextX, source.rightTextY
+                            unitCfg.rightTextWidthPct = source.rightTextWidthPct
                             if val == "custom" then
-                                d.rightTextCustomFormat = source.rightTextCustomFormat
+                                unitCfg.rightTextCustomFormat = source.rightTextCustomFormat
                             end
                         end
                     end
@@ -1134,7 +1134,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                         local source = UNIT_DB_MAP[optionState.selectedUnit]()
                         local val = source.rightTextContent or "both"
                         for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
-                            local d = UNIT_DB_MAP[settingKey]()
+                            local unitCfg = UNIT_DB_MAP[settingKey]()
                             local expected = (
                                 (
                                     val == "absorb"
@@ -1146,36 +1146,36 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             )
                                     and "none"
                                 or val
-                            if (d.rightTextContent or "both") ~= expected then
+                            if (unitCfg.rightTextContent or "both") ~= expected then
                                 return false
                             end
-                            if (d.rightTextClassColor or false) ~= (source.rightTextClassColor or false) then
+                            if (unitCfg.rightTextClassColor or false) ~= (source.rightTextClassColor or false) then
                                 return false
                             end
-                            if (d.rightTextColorR or 1) ~= (source.rightTextColorR or 1) then
+                            if (unitCfg.rightTextColorR or 1) ~= (source.rightTextColorR or 1) then
                                 return false
                             end
-                            if (d.rightTextColorG or 1) ~= (source.rightTextColorG or 1) then
+                            if (unitCfg.rightTextColorG or 1) ~= (source.rightTextColorG or 1) then
                                 return false
                             end
-                            if (d.rightTextColorB or 1) ~= (source.rightTextColorB or 1) then
+                            if (unitCfg.rightTextColorB or 1) ~= (source.rightTextColorB or 1) then
                                 return false
                             end
-                            if (d.rightTextSize or 0) ~= (source.rightTextSize or 0) then
+                            if (unitCfg.rightTextSize or 0) ~= (source.rightTextSize or 0) then
                                 return false
                             end
-                            if (d.rightTextX or 0) ~= (source.rightTextX or 0) then
+                            if (unitCfg.rightTextX or 0) ~= (source.rightTextX or 0) then
                                 return false
                             end
-                            if (d.rightTextY or 0) ~= (source.rightTextY or 0) then
+                            if (unitCfg.rightTextY or 0) ~= (source.rightTextY or 0) then
                                 return false
                             end
-                            if (d.rightTextWidthPct or 100) ~= (source.rightTextWidthPct or 100) then
+                            if (unitCfg.rightTextWidthPct or 100) ~= (source.rightTextWidthPct or 100) then
                                 return false
                             end
                             if
                                 val == "custom"
-                                and (d.rightTextCustomFormat or "")
+                                and (unitCfg.rightTextCustomFormat or "")
                                     ~= (source.rightTextCustomFormat or "")
                             then
                                 return false
@@ -1446,8 +1446,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     local val = source.centerTextContent or "none"
                     for _, settingKey in ipairs(keyList) do
                         if settingKey ~= optionState.selectedUnit then
-                            local d = UNIT_DB_MAP[settingKey]()
-                            d.centerTextContent = (
+                            local unitCfg = UNIT_DB_MAP[settingKey]()
+                            unitCfg.centerTextContent = (
                                 (
                                     val == "absorb"
                                     or val == "absorbshort"
@@ -1458,14 +1458,14 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             )
                                     and "none"
                                 or val
-                            d.centerTextClassColor = source.centerTextClassColor
-                            d.centerTextColorR, d.centerTextColorG, d.centerTextColorB =
+                            unitCfg.centerTextClassColor = source.centerTextClassColor
+                            unitCfg.centerTextColorR, unitCfg.centerTextColorG, unitCfg.centerTextColorB =
                                 source.centerTextColorR, source.centerTextColorG, source.centerTextColorB
-                            d.centerTextSize = source.centerTextSize
-                            d.centerTextX, d.centerTextY = source.centerTextX, source.centerTextY
-                            d.centerTextWidthPct = source.centerTextWidthPct
+                            unitCfg.centerTextSize = source.centerTextSize
+                            unitCfg.centerTextX, unitCfg.centerTextY = source.centerTextX, source.centerTextY
+                            unitCfg.centerTextWidthPct = source.centerTextWidthPct
                             if val == "custom" then
-                                d.centerTextCustomFormat = source.centerTextCustomFormat
+                                unitCfg.centerTextCustomFormat = source.centerTextCustomFormat
                             end
                         end
                     end
@@ -1478,7 +1478,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                         local source = UNIT_DB_MAP[optionState.selectedUnit]()
                         local val = source.centerTextContent or "none"
                         for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
-                            local d = UNIT_DB_MAP[settingKey]()
+                            local unitCfg = UNIT_DB_MAP[settingKey]()
                             local expected = (
                                 (
                                     val == "absorb"
@@ -1490,38 +1490,38 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             )
                                     and "none"
                                 or val
-                            if (d.centerTextContent or "none") ~= expected then
+                            if (unitCfg.centerTextContent or "none") ~= expected then
                                 return false
                             end
                             if
-                                (d.centerTextClassColor or false) ~= (source.centerTextClassColor or false)
+                                (unitCfg.centerTextClassColor or false) ~= (source.centerTextClassColor or false)
                             then
                                 return false
                             end
-                            if (d.centerTextColorR or 1) ~= (source.centerTextColorR or 1) then
+                            if (unitCfg.centerTextColorR or 1) ~= (source.centerTextColorR or 1) then
                                 return false
                             end
-                            if (d.centerTextColorG or 1) ~= (source.centerTextColorG or 1) then
+                            if (unitCfg.centerTextColorG or 1) ~= (source.centerTextColorG or 1) then
                                 return false
                             end
-                            if (d.centerTextColorB or 1) ~= (source.centerTextColorB or 1) then
+                            if (unitCfg.centerTextColorB or 1) ~= (source.centerTextColorB or 1) then
                                 return false
                             end
-                            if (d.centerTextSize or 0) ~= (source.centerTextSize or 0) then
+                            if (unitCfg.centerTextSize or 0) ~= (source.centerTextSize or 0) then
                                 return false
                             end
-                            if (d.centerTextX or 0) ~= (source.centerTextX or 0) then
+                            if (unitCfg.centerTextX or 0) ~= (source.centerTextX or 0) then
                                 return false
                             end
-                            if (d.centerTextY or 0) ~= (source.centerTextY or 0) then
+                            if (unitCfg.centerTextY or 0) ~= (source.centerTextY or 0) then
                                 return false
                             end
-                            if (d.centerTextWidthPct or 100) ~= (source.centerTextWidthPct or 100) then
+                            if (unitCfg.centerTextWidthPct or 100) ~= (source.centerTextWidthPct or 100) then
                                 return false
                             end
                             if
                                 val == "custom"
-                                and (d.centerTextCustomFormat or "")
+                                and (unitCfg.centerTextCustomFormat or "")
                                     ~= (source.centerTextCustomFormat or "")
                             then
                                 return false
@@ -1772,8 +1772,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     local val = source.extraTextContent or "none"
                     for _, settingKey in ipairs(keyList) do
                         if settingKey ~= optionState.selectedUnit then
-                            local d = UNIT_DB_MAP[settingKey]()
-                            d.extraTextContent = (
+                            local unitCfg = UNIT_DB_MAP[settingKey]()
+                            unitCfg.extraTextContent = (
                                 (
                                     val == "absorb"
                                     or val == "absorbshort"
@@ -1784,15 +1784,15 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             )
                                     and "none"
                                 or val
-                            d.extraTextClassColor = source.extraTextClassColor
-                            d.extraTextColorR, d.extraTextColorG, d.extraTextColorB =
+                            unitCfg.extraTextClassColor = source.extraTextClassColor
+                            unitCfg.extraTextColorR, unitCfg.extraTextColorG, unitCfg.extraTextColorB =
                                 source.extraTextColorR, source.extraTextColorG, source.extraTextColorB
-                            d.extraTextSize = source.extraTextSize
-                            d.extraTextX, d.extraTextY = source.extraTextX, source.extraTextY
-                            d.extraTextAlign = source.extraTextAlign
-                            d.extraTextWidthPct = source.extraTextWidthPct
+                            unitCfg.extraTextSize = source.extraTextSize
+                            unitCfg.extraTextX, unitCfg.extraTextY = source.extraTextX, source.extraTextY
+                            unitCfg.extraTextAlign = source.extraTextAlign
+                            unitCfg.extraTextWidthPct = source.extraTextWidthPct
                             if val == "custom" then
-                                d.extraTextCustomFormat = source.extraTextCustomFormat
+                                unitCfg.extraTextCustomFormat = source.extraTextCustomFormat
                             end
                         end
                     end
@@ -1805,7 +1805,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                         local source = UNIT_DB_MAP[optionState.selectedUnit]()
                         local val = source.extraTextContent or "none"
                         for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
-                            local d = UNIT_DB_MAP[settingKey]()
+                            local unitCfg = UNIT_DB_MAP[settingKey]()
                             local expected = (
                                 (
                                     val == "absorb"
@@ -1817,39 +1817,39 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             )
                                     and "none"
                                 or val
-                            if (d.extraTextContent or "none") ~= expected then
+                            if (unitCfg.extraTextContent or "none") ~= expected then
                                 return false
                             end
-                            if (d.extraTextClassColor or false) ~= (source.extraTextClassColor or false) then
+                            if (unitCfg.extraTextClassColor or false) ~= (source.extraTextClassColor or false) then
                                 return false
                             end
-                            if (d.extraTextColorR or 1) ~= (source.extraTextColorR or 1) then
+                            if (unitCfg.extraTextColorR or 1) ~= (source.extraTextColorR or 1) then
                                 return false
                             end
-                            if (d.extraTextColorG or 1) ~= (source.extraTextColorG or 1) then
+                            if (unitCfg.extraTextColorG or 1) ~= (source.extraTextColorG or 1) then
                                 return false
                             end
-                            if (d.extraTextColorB or 1) ~= (source.extraTextColorB or 1) then
+                            if (unitCfg.extraTextColorB or 1) ~= (source.extraTextColorB or 1) then
                                 return false
                             end
-                            if (d.extraTextSize or 0) ~= (source.extraTextSize or 0) then
+                            if (unitCfg.extraTextSize or 0) ~= (source.extraTextSize or 0) then
                                 return false
                             end
-                            if (d.extraTextX or 0) ~= (source.extraTextX or 0) then
+                            if (unitCfg.extraTextX or 0) ~= (source.extraTextX or 0) then
                                 return false
                             end
-                            if (d.extraTextY or 0) ~= (source.extraTextY or 0) then
+                            if (unitCfg.extraTextY or 0) ~= (source.extraTextY or 0) then
                                 return false
                             end
-                            if (d.extraTextAlign or "left") ~= (source.extraTextAlign or "left") then
+                            if (unitCfg.extraTextAlign or "left") ~= (source.extraTextAlign or "left") then
                                 return false
                             end
-                            if (d.extraTextWidthPct or 100) ~= (source.extraTextWidthPct or 100) then
+                            if (unitCfg.extraTextWidthPct or 100) ~= (source.extraTextWidthPct or 100) then
                                 return false
                             end
                             if
                                 val == "custom"
-                                and (d.extraTextCustomFormat or "")
+                                and (unitCfg.extraTextCustomFormat or "")
                                     ~= (source.extraTextCustomFormat or "")
                             then
                                 return false
@@ -2588,10 +2588,10 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             local bgPwr = source.powerBgPowerColored or false
             for _, settingKey in ipairs(keyList) do
                 if settingKey ~= optionState.selectedUnit then
-                    local d = UNIT_DB_MAP[settingKey]()
-                    d.customPowerBgColor = { r = bc.r, g = bc.g, b = bc.b }
-                    d.customPowerBgAlpha = bgA
-                    d.powerBgPowerColored = bgPwr
+                    local unitCfg = UNIT_DB_MAP[settingKey]()
+                    unitCfg.customPowerBgColor = { r = bc.r, g = bc.g, b = bc.b }
+                    unitCfg.customPowerBgAlpha = bgA
+                    unitCfg.powerBgPowerColored = bgPwr
                 end
             end
             ReloadAndUpdate()
@@ -2611,14 +2611,14 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     return a.r == b.r and a.g == b.g and a.b == b.b
                 end
                 for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
-                    local d = UNIT_DB_MAP[settingKey]()
-                    if not colEq(d.customPowerBgColor, source.customPowerBgColor) then
+                    local unitCfg = UNIT_DB_MAP[settingKey]()
+                    if not colEq(unitCfg.customPowerBgColor, source.customPowerBgColor) then
                         return false
                     end
-                    if (d.customPowerBgAlpha or 100) ~= (source.customPowerBgAlpha or 100) then
+                    if (unitCfg.customPowerBgAlpha or 100) ~= (source.customPowerBgAlpha or 100) then
                         return false
                     end
-                    if (d.powerBgPowerColored or false) ~= (source.powerBgPowerColored or false) then
+                    if (unitCfg.powerBgPowerColored or false) ~= (source.powerBgPowerColored or false) then
                         return false
                     end
                 end
@@ -2642,20 +2642,20 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             local gc = source.powerGradientColor
             for _, settingKey in ipairs(keyList) do
                 if settingKey ~= optionState.selectedUnit then
-                    local d = UNIT_DB_MAP[settingKey]()
-                    d.powerPercentPowerColor = pc
-                    d.powerClassColored = pcc
+                    local unitCfg = UNIT_DB_MAP[settingKey]()
+                    unitCfg.powerPercentPowerColor = pc
+                    unitCfg.powerClassColored = pcc
                     if fc then
-                        d.customPowerFillColor = { r = fc.r, g = fc.g, b = fc.b }
+                        unitCfg.customPowerFillColor = { r = fc.r, g = fc.g, b = fc.b }
                     else
-                        d.customPowerFillColor = nil
+                        unitCfg.customPowerFillColor = nil
                     end
-                    d.powerGradientEnabled = gEn
-                    d.powerGradientDir = gDir
+                    unitCfg.powerGradientEnabled = gEn
+                    unitCfg.powerGradientDir = gDir
                     if gc then
-                        d.powerGradientColor = { r = gc.r, g = gc.g, b = gc.b }
+                        unitCfg.powerGradientColor = { r = gc.r, g = gc.g, b = gc.b }
                     else
-                        d.powerGradientColor = nil
+                        unitCfg.powerGradientColor = nil
                     end
                 end
             end
@@ -2680,27 +2680,27 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     val = true
                 end
                 for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
-                    local d = UNIT_DB_MAP[settingKey]()
-                    local shade = d.powerPercentPowerColor
+                    local unitCfg = UNIT_DB_MAP[settingKey]()
+                    local shade = unitCfg.powerPercentPowerColor
                     if shade == nil then
                         shade = true
                     end
                     if shade ~= val then
                         return false
                     end
-                    if (d.powerClassColored or false) ~= (source.powerClassColored or false) then
+                    if (unitCfg.powerClassColored or false) ~= (source.powerClassColored or false) then
                         return false
                     end
-                    if not colEq(d.customPowerFillColor, source.customPowerFillColor) then
+                    if not colEq(unitCfg.customPowerFillColor, source.customPowerFillColor) then
                         return false
                     end
-                    if (d.powerGradientEnabled or false) ~= (source.powerGradientEnabled or false) then
+                    if (unitCfg.powerGradientEnabled or false) ~= (source.powerGradientEnabled or false) then
                         return false
                     end
-                    if not colEq(d.powerGradientColor, source.powerGradientColor) then
+                    if not colEq(unitCfg.powerGradientColor, source.powerGradientColor) then
                         return false
                     end
-                    if (d.powerGradientDir or "HORIZONTAL") ~= (source.powerGradientDir or "HORIZONTAL") then
+                    if (unitCfg.powerGradientDir or "HORIZONTAL") ~= (source.powerGradientDir or "HORIZONTAL") then
                         return false
                     end
                 end
@@ -4890,8 +4890,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
             local region = healPredRow._leftRegion
             local function PredSwatch(settingKey, default, tipText)
                 local colorSwatch = CludesUI.BuildColorSwatch(region, healPredRow:GetFrameLevel() + 3, function()
-                    local c = SGetSupported(settingKey) or default
-                    return c.r, c.g, c.b, 1
+                    local color = SGetSupported(settingKey) or default
+                    return color.r, color.g, color.b, 1
                 end, function(red, green, blue)
                     UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] = { r = red, g = green, b = blue }
                     ReloadAndUpdate()

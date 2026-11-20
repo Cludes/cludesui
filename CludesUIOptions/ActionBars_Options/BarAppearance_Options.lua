@@ -97,9 +97,9 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             local barCfg = SB()
             return { c = barCfg[COLOR], sz = barCfg[SIZE] or 12, ox = barCfg[OX] or 0, oy = barCfg[OY] or 0, an = barCfg[ANCHOR] }
         end, function(bar, value, key)
-            local c = value.c
-            if c then
-                bar[COLOR] = { r = c.r, g = c.g, b = c.b }
+            local color = value.c
+            if color then
+                bar[COLOR] = { r = color.r, g = color.g, b = color.b }
             end
             bar[SIZE] = value.sz
             bar[OX] = value.ox
@@ -747,10 +747,10 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     bar.borderEnabled = record.regular > 0
                 end
             end
-            local c = value.c
-            if c then
-                bar.borderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
-                bar.shapeBorderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
+            local color = value.c
+            if color then
+                bar.borderColor = { r = color.r, g = color.g, b = color.b, a = color.a }
+                bar.shapeBorderColor = { r = color.r, g = color.g, b = color.b, a = color.a }
             end
             bar.borderClassColor = value.cc
             ABAR:ApplyBordersForBar(key)
@@ -1734,9 +1734,9 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             return ABAR.db.profile.desaturateOnCooldown or false
         end,
         setValue = function(value)
-            local p = ABAR.db.profile
-            local was = p.desaturateOnCooldown or false
-            p.desaturateOnCooldown = value
+            local profile = ABAR.db.profile
+            local was = profile.desaturateOnCooldown or false
+            profile.desaturateOnCooldown = value
             if was ~= (value or false) and ABAR._DesatSettingChanged then
                 ABAR._DesatSettingChanged(value and true or false)
             end
@@ -2504,11 +2504,11 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         CludesUI.BuildInlineSwatches(region, {
             {
                 getValue = function()
-                    local c = SGet(key)
-                    if not c then
+                    local color = SGet(key)
+                    if not color then
                         return 1, 1, 1
                     end
-                    return c.r, c.g, c.b
+                    return color.r, color.g, color.b
                 end,
                 setValue = function(red, green, blue)
                     SSetColor(key, red, green, blue, nil, apply)
@@ -2627,9 +2627,9 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 fit = barCfg.cooldownFontFit or false,
             }
         end, function(bar, value, key)
-            local c = value.c
-            if c then
-                bar.cooldownTextColor = { r = c.r, g = c.g, b = c.b }
+            local color = value.c
+            if color then
+                bar.cooldownTextColor = { r = color.r, g = color.g, b = color.b }
             end
             bar.cooldownFontSize = value.sz
             bar.cooldownTextXOffset = value.ox

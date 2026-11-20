@@ -16,9 +16,9 @@ local W, H = 260, 22
 local MAX_MINUTES = 60
 
 function mod.BreakSettings()
-    local p = mod.RaidLeadDB()
-    p.breakTimer = p.breakTimer or {}
-    local cfg = p.breakTimer
+    local profile = mod.RaidLeadDB()
+    profile.breakTimer = profile.breakTimer or {}
+    local cfg = profile.breakTimer
     if cfg.enabled == nil then
         cfg.enabled = true
     end

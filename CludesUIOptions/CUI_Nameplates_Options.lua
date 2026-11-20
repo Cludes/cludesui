@@ -109,8 +109,8 @@ CludesUI.AtOptionsLogin(function()
 
     local function DBColor(key)
         local saved = DB()
-        local c = (saved and saved[key]) or defaultSet[key]
-        return c.r, c.g, c.b
+        local color = (saved and saved[key]) or defaultSet[key]
+        return color.r, color.g, color.b
     end
 
     local FOCUS_LETTER_ANCHORS = {

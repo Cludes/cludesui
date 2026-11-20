@@ -366,11 +366,11 @@ CludesUI.AtOptionsLogin(function()
         -- A colour stored as { r, g, b } under key, def* for what is unset.
         local function StoredRgb(key, defR, defG, defB)
             return function()
-                local c = Cfg(key)
-                if not c then
+                local color = Cfg(key)
+                if not color then
                     return defR, defG, defB, 1
                 end
-                return c.r or defR, c.g or defG, c.b or defB, 1
+                return color.r or defR, color.g or defG, color.b or defB, 1
             end
         end
 

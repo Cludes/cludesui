@@ -226,8 +226,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             disabled = disabled,
             disabledTooltip = disabledTooltip,
             getValue = function()
-                local c = Get(key)
-                return c.r, c.g, c.b
+                local color = Get(key)
+                return color.r, color.g, color.b
             end,
             setValue = function(red, green, blue)
                 Set(key, { r = red, g = green, b = blue })
@@ -245,8 +245,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             end
         else
             sc.getValue = function()
-                local c = GetStyle(set, key)
-                return c.r, c.g, c.b
+                local color = GetStyle(set, key)
+                return color.r, color.g, color.b
             end
             sc.setValue = function(red, green, blue)
                 mod.SetStyleValue(set, key, { r = red, g = green, b = blue, a = 1 })
@@ -624,9 +624,9 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                             disabled = ColorOff,
                             disabledTooltip = "Color by Threat",
                             getValue = function()
-                                local c = PGet(key)
-                                if c then
-                                    return c.r, c.g, c.b
+                                local color = PGet(key)
+                                if color then
+                                    return color.r, color.g, color.b
                                 end
                                 return 1, 1, 1
                             end,

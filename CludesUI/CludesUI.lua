@@ -5366,24 +5366,24 @@ initFrame:SetScript("OnEvent", function(self, evt)
             -- Controller Back (a real Hide, the gamepad pointer in control):
             -- close everything now, newest controller-counted window first.
             if not self:IsShown() and PadNative() and CanAutoSetGamePadCursorControl(false) then
-                local n = 0
+                local count = 0
                 for i = #padShown, 1, -1 do
                     local frame = padShown[i]
                     if frame:IsShown() and not IsModal(frame) then
-                        n = n + 1
-                        closeList[n] = frame
+                        count = count + 1
+                        closeList[count] = frame
                     end
                 end
                 for i = #escapeFrames, 1, -1 do
                     local frame = escapeFrames[i]
                     if frame:IsShown() and not IsModal(frame) then
-                        n = n + 1
-                        closeList[n] = frame
+                        count = count + 1
+                        closeList[count] = frame
                     end
                 end
                 -- A failing onEscape must not leave the proxy stuck in `closing`.
                 closing = true
-                local success, err = pcall(CloseListed, n)
+                local success, err = pcall(CloseListed, count)
                 closing = false
                 wipe(closeList)
                 RefreshProxy()

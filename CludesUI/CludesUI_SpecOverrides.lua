@@ -803,10 +803,10 @@ function CludesUI.SpecOverrides_OnCDMBarsRestructured()
         end
         local removed = false
         for idx = #storage, 1, -1 do
-            local e = storage[idx]
+            local entry = storage[idx]
             local hit = false
-            if e.values and e.values.default then
-                for fkey in pairs(e.values.default) do
+            if entry.values and entry.values.default then
+                for fkey in pairs(entry.values.default) do
                     -- CDM bars ONLY: NumAllowedFKey also matches the raid-size tier
                     -- subtree; sweeping on it here would destroy captured raid-size
                     -- overrides whenever a CDM bar is deleted.

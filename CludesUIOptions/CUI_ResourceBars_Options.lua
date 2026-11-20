@@ -641,17 +641,17 @@ CludesUI.AtOptionsLogin(function()
             inset = CludesUI.BorderPx(cfg.borderSizePx, inset, style) or inset
         end
         inset = math.min(inset * PP.mult, math.max(0, (height - 1) / 2))
-        local n = 0
+        local count = 0
         for part in (src.hashValues or ""):gmatch("[^,]+") do
             local value = tonumber(part:match("^%s*(.-)%s*$"))
             local frac = value and value > 0 and value / (percent and 100 or maxValue)
             if frac and frac <= 1 then
-                n = n + 1
-                local tick = ticks[n]
+                count = count + 1
+                local tick = ticks[count]
                 if not tick then
                     tick = barRef._tickHost:CreateTexture(nil, "OVERLAY", nil, 7)
                     UnsnapTex(tick)
-                    ticks[n] = tick
+                    ticks[count] = tick
                 end
                 tick:SetColorTexture(
                     src.hashColorR or 1,
@@ -5060,9 +5060,9 @@ CludesUI.AtOptionsLogin(function()
         local red, green, blue = checkBtn.fillR, checkBtn.fillG, checkBtn.fillB
         if checkBtn.classColored == true then
             local _, class = UnitClass("player")
-            local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-            if c then
-                red, green, blue = c.r, c.g, c.b
+            local color = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+            if color then
+                red, green, blue = color.r, color.g, color.b
             end
         end
         local opacity = (checkBtn.fillOpacity or 100) / 100
@@ -5739,13 +5739,13 @@ CludesUI.AtOptionsLogin(function()
             if not (profile and popFrame.bar) then
                 return
             end
-            local g = profile.gcdBar
+            local gcdCfg = profile.gcdBar
             local boxHolder = popFrame.container
             local heading = boxHolder:GetParent()
 
             -- Scale down to fit when the bar is wider than the panel; snap on
             -- the grid of that final scale.
-            local rawW = g.width or 220
+            local rawW = gcdCfg.width or 220
             local PAD = CludesUI.CONTENT_PAD
             local availW = ((popFrame.hdrW or heading:GetWidth()) - PAD * 2) / popFrame.scale
             local fitScale = 1
@@ -5761,11 +5761,11 @@ CludesUI.AtOptionsLogin(function()
             local function Snap(val)
                 return math.floor(val / pixel + 0.5) * pixel
             end
-            local wid, height = Snap(rawW), Snap(g.height or 12)
+            local wid, height = Snap(rawW), Snap(gcdCfg.height or 12)
             boxHolder:SetSize(wid, height)
             boxHolder:ClearAllPoints()
             boxHolder:SetPoint("CENTER", heading, "CENTER", 0, 0)
-            local on = g.enabled and true or false
+            local on = gcdCfg.enabled and true or false
             PreviewBar.Lock(boxHolder, on, popFrame.hits)
             if not building then
                 PreviewBar.HintFor(on, heading)
@@ -5774,33 +5774,33 @@ CludesUI.AtOptionsLogin(function()
 
             -- Border + Bottom Separator, as BuildGCDBar
             local bdr = popFrame.border
-            local bs = g.borderSize or 0
+            local bs = gcdCfg.borderSize or 0
             bdr:SetFrameLevel(
-                g.borderBehind and math.max(0, boxHolder:GetFrameLevel() - 1)
+                gcdCfg.borderBehind and math.max(0, boxHolder:GetFrameLevel() - 1)
                     or (boxHolder:GetFrameLevel() + 5)
             )
-            mod.ERB_AnchorBorderHost(bdr, boxHolder, mod.ERB_BorderExtents(g))
+            mod.ERB_AnchorBorderHost(bdr, boxHolder, mod.ERB_BorderExtents(gcdCfg))
             CludesUI.ApplyBorderStyle(
                 bdr,
                 bs,
-                g.borderR or 0,
-                g.borderG or 0,
-                g.borderB or 0,
-                g.borderA or 1,
-                g.borderTexture or "solid",
-                g.borderTextureOffset,
-                g.borderTextureOffsetY,
-                g.borderTextureShiftX,
-                g.borderTextureShiftY,
+                gcdCfg.borderR or 0,
+                gcdCfg.borderG or 0,
+                gcdCfg.borderB or 0,
+                gcdCfg.borderA or 1,
+                gcdCfg.borderTexture or "solid",
+                gcdCfg.borderTextureOffset,
+                gcdCfg.borderTextureOffsetY,
+                gcdCfg.borderTextureShiftX,
+                gcdCfg.borderTextureShiftY,
                 "resourcebars",
                 bs,
                 nil,
-                CludesUI.BorderPx(g.borderSizePx, bs, g.borderTexture or "solid")
+                CludesUI.BorderPx(gcdCfg.borderSizePx, bs, gcdCfg.borderTexture or "solid")
             )
             mod.ERB_Separators(
                 boxHolder,
-                g,
-                (g.edgeSep and mod.ERB_Textured(g)) and true or false,
+                gcdCfg,
+                (gcdCfg.edgeSep and mod.ERB_Textured(gcdCfg)) and true or false,
                 boxHolder:GetFrameLevel() + 7
             )
 
@@ -5812,40 +5812,40 @@ CludesUI.AtOptionsLogin(function()
             barRef:SetPoint("TOPLEFT", boxHolder, "TOPLEFT", inset, -inset)
             barRef:SetPoint("BOTTOMRIGHT", boxHolder, "BOTTOMRIGHT", -inset, inset)
             barRef:SetStatusBarTexture(
-                CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.texture, "Interface\\Buttons\\WHITE8x8")
+                CludesUI.ResolveTexturePath(_G._CURB_BarTextures, gcdCfg.texture, "Interface\\Buttons\\WHITE8x8")
             )
             backdrop:SetTexture(nil)
-            backdrop:SetColorTexture(g.bgR, g.bgG, g.bgB, g.bgA)
-            if g.textureBg or backdrop._erbBgTex then
+            backdrop:SetColorTexture(gcdCfg.bgR, gcdCfg.bgG, gcdCfg.bgB, gcdCfg.bgA)
+            if gcdCfg.textureBg or backdrop._erbBgTex then
                 mod.ERB_BgTexture(
                     backdrop,
-                    g.textureBg and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.texture, nil),
-                    g.bgR,
-                    g.bgG,
-                    g.bgB,
-                    g.bgA
+                    gcdCfg.textureBg and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, gcdCfg.texture, nil),
+                    gcdCfg.bgR,
+                    gcdCfg.bgG,
+                    gcdCfg.bgB,
+                    gcdCfg.bgA
                 )
             end
 
-            local leftward = g.orientation == "HORIZONTAL_LEFT"
+            local leftward = gcdCfg.orientation == "HORIZONTAL_LEFT"
             barRef:SetReverseFill(leftward)
             barRef:SetValue(gcdFill)
 
             -- Fill color / gradient
             local fillTex = barRef:GetStatusBarTexture()
-            local fR, fG, fB, fA = g.fillR, g.fillG, g.fillB, g.fillA or 1
-            if g.classColored then
+            local fR, fG, fB, fA = gcdCfg.fillR, gcdCfg.fillG, gcdCfg.fillB, gcdCfg.fillA or 1
+            if gcdCfg.classColored then
                 local _, castFrame = UnitClass("player")
                 local classColor = castFrame and CLASS_COLORS[castFrame]
                 if classColor then
                     fR, fG, fB = classColor[1], classColor[2], classColor[3]
                 end
             end
-            if g.gradientEnabled then
+            if gcdCfg.gradientEnabled then
                 fillTex:SetGradient(
-                    g.gradientDir or "HORIZONTAL",
+                    gcdCfg.gradientDir or "HORIZONTAL",
                     CreateColor(fR, fG, fB, fA),
-                    CreateColor(g.gradientR, g.gradientG, g.gradientB, g.gradientA or 1)
+                    CreateColor(gcdCfg.gradientR, gcdCfg.gradientG, gcdCfg.gradientB, gcdCfg.gradientA or 1)
                 )
             else
                 fillTex:SetVertexColor(fR, fG, fB, fA)
@@ -5853,7 +5853,7 @@ CludesUI.AtOptionsLogin(function()
 
             -- Spark on the fill's leading edge
             local sparkTex = popFrame.spark
-            if g.showSpark then
+            if gcdCfg.showSpark then
                 sparkTex:SetSize(8, height)
                 sparkTex:ClearAllPoints()
                 sparkTex:SetPoint("CENTER", fillTex, leftward and "LEFT" or "RIGHT", 0, 0)

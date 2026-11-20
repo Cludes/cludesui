@@ -318,34 +318,34 @@ CludesUI.RegisterDarkModeToggle({
         if not (saved and saved.profile) then
             return
         end
-        local p = saved.profile
+        local profile = saved.profile
         if enabled then
-            if p.healthColorMode ~= "dark" then
-                p._darkPrevHealthColorMode = p.healthColorMode or "class"
-                p.healthColorMode = "dark"
+            if profile.healthColorMode ~= "dark" then
+                profile._darkPrevHealthColorMode = profile.healthColorMode or "class"
+                profile.healthColorMode = "dark"
             end
-            if rawget(p, "party_healthColorMode") ~= nil and p.party_healthColorMode ~= "dark" then
-                p._darkPrevPartyHealthColorMode = p.party_healthColorMode
-                p.party_healthColorMode = "dark"
+            if rawget(profile, "party_healthColorMode") ~= nil and profile.party_healthColorMode ~= "dark" then
+                profile._darkPrevPartyHealthColorMode = profile.party_healthColorMode
+                profile.party_healthColorMode = "dark"
             end
             -- The party target frames' own Fill Color flips the same way.
-            if p.partyTargetHealthColorMode ~= "dark" then
-                p._darkPrevPartyTargetHealthColorMode = p.partyTargetHealthColorMode or "class"
-                p.partyTargetHealthColorMode = "dark"
+            if profile.partyTargetHealthColorMode ~= "dark" then
+                profile._darkPrevPartyTargetHealthColorMode = profile.partyTargetHealthColorMode or "class"
+                profile.partyTargetHealthColorMode = "dark"
             end
         else
-            if p.healthColorMode == "dark" then
-                p.healthColorMode = p._darkPrevHealthColorMode or "class"
+            if profile.healthColorMode == "dark" then
+                profile.healthColorMode = profile._darkPrevHealthColorMode or "class"
             end
-            p._darkPrevHealthColorMode = nil
-            if rawget(p, "party_healthColorMode") == "dark" then
-                p.party_healthColorMode = p._darkPrevPartyHealthColorMode or "class"
+            profile._darkPrevHealthColorMode = nil
+            if rawget(profile, "party_healthColorMode") == "dark" then
+                profile.party_healthColorMode = profile._darkPrevPartyHealthColorMode or "class"
             end
-            p._darkPrevPartyHealthColorMode = nil
-            if p.partyTargetHealthColorMode == "dark" then
-                p.partyTargetHealthColorMode = p._darkPrevPartyTargetHealthColorMode or "class"
+            profile._darkPrevPartyHealthColorMode = nil
+            if profile.partyTargetHealthColorMode == "dark" then
+                profile.partyTargetHealthColorMode = profile._darkPrevPartyTargetHealthColorMode or "class"
             end
-            p._darkPrevPartyTargetHealthColorMode = nil
+            profile._darkPrevPartyTargetHealthColorMode = nil
         end
         if mod.ReloadFrames then
             mod.ReloadFrames()

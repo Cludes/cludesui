@@ -340,13 +340,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         -- Count checked (excluding current) for disabled state
         local function CountChecked()
-            local n = 0
+            local count = 0
             for _, key in ipairs(keys) do
                 if key ~= currentKey and checked[key] then
-                    n = n + 1
+                    count = count + 1
                 end
             end
-            return n
+            return count
         end
 
         local function UpdateApplyState()

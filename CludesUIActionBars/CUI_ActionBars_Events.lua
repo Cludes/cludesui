@@ -318,9 +318,9 @@ end
 -- existing spinner. Called by the options widgets; spinners on buttons that
 -- have never held the assist action don't exist and cost nothing.
 function mod.RefreshAssistSpinners()
-    local p = ABAR.db and ABAR.db.profile
-    local enabled = not p or p.obaIconEnabled ~= false
-    local outset = (p and p.obaIconOutset) or 9
+    local profile = ABAR.db and ABAR.db.profile
+    local enabled = not profile or profile.obaIconEnabled ~= false
+    local outset = (profile and profile.obaIconOutset) or 9
     for _, details in ipairs(BAR_CONFIG) do
         if not details.isStance and not details.isPetBar then
             local buttons = barButtons[details.key]
@@ -1751,8 +1751,8 @@ do
         -- buttons unconditionally. Payload events fire at chatter rate, so a probe
         -- costs a handful of sink calls on the one named group.
         local function DispProbe(g, buttonKey)
-            local p = ABAR.db.profile
-            local visOn = p.desaturateOnCooldown or (p.alphaWhenOnCD or 100) ~= 100
+            local profile = ABAR.db.profile
+            local visOn = profile.desaturateOnCooldown or (profile.alphaWhenOnCD or 100) ~= 100
             local GetSpellCd = C_Spell and C_Spell.GetSpellCooldown
             local GetSpellCdDur = C_Spell and C_Spell.GetSpellCooldownDuration
             local live = false
@@ -1798,8 +1798,8 @@ do
         -- caller ORs it into its settled-detection flag).
         local function DispCooldownPass()
             local liveSeen = false
-            local p = ABAR.db.profile
-            local visOn = p.desaturateOnCooldown or (p.alphaWhenOnCD or 100) ~= 100
+            local profile = ABAR.db.profile
+            local visOn = profile.desaturateOnCooldown or (profile.alphaWhenOnCD or 100) ~= 100
             local GetSpellCd = C_Spell and C_Spell.GetSpellCooldown
             local GetSpellCdDur = C_Spell and C_Spell.GetSpellCooldownDuration
             -- One duration-object fetch per GROUP (unique spell), never
@@ -1893,8 +1893,8 @@ do
         -- a lull; following chatter re-asserts it), and arm the bar-wide wave+kick so
         -- every ready button's GCD starts at the press. Runs at user press rate.
         mod._EABPressPush = function(button)
-            local p = ABAR.db.profile
-            local visOn = p.desaturateOnCooldown or (p.alphaWhenOnCD or 100) ~= 100
+            local profile = ABAR.db.profile
+            local visOn = profile.desaturateOnCooldown or (profile.alphaWhenOnCD or 100) ~= 100
             PushButtonCooldown(button, visOn)
             -- Prime the button-keyed hot ring (no ids read -- see
             -- HotPushRecent): the pressed button gets event-rate re-pushes
@@ -2224,8 +2224,8 @@ do
                 end
                 local mac = mod._cdMacroFast
                 if mac and mac[1] then
-                    local p = ABAR.db.profile
-                    local visOn = p.desaturateOnCooldown or (p.alphaWhenOnCD or 100) ~= 100
+                    local profile = ABAR.db.profile
+                    local visOn = profile.desaturateOnCooldown or (profile.alphaWhenOnCD or 100) ~= 100
                     if RunMacros(mac, visOn, firstArg, arg2) then
                         mod._cdDirtyUntil = GetTime() + 2
                     end

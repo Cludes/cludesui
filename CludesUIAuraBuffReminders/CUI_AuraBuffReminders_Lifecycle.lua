@@ -115,8 +115,8 @@ function REMIND:OnInitialize()
     --  the new keys cannot detect an old profile); fresh installs carry no
     --  legacy keys and every block no-ops.
     ---------------------------------------------------------------------------
-    local p = saved.profile
-    local collector = p and p.consumables
+    local profile = saved.profile
+    local collector = profile and profile.consumables
     -- Old single Augment Rune dropdown -> the dormant per-item "Show In"
     -- tier set (kept for the future per-item conditions cog).
     if collector and collector.runeDisplayMode ~= nil then
@@ -151,13 +151,13 @@ function REMIND:OnInitialize()
     -- Per-spell/open-world/others-missing model -> per-section "Where to
     -- Show" + "Show When". Open-world masters map to the open_world bucket;
     -- everything else is retired.
-    local rebuild = p and p.raidBuffs
+    local rebuild = profile and profile.raidBuffs
     if rebuild and (rebuild.showOthersMissing ~= nil or rebuild.showNonInstanced ~= nil) then
         rebuild.showWhen = { othersMissing = (rebuild.showOthersMissing ~= false), iAmMissing = false }
         rebuild.whereToShow = { open_world = (rebuild.showNonInstanced == true) }
         rebuild.showOthersMissing, rebuild.showNonInstanced = nil, nil
     end
-    local auraRec = p and p.auras
+    local auraRec = profile and profile.auras
     if auraRec and auraRec.showNonInstanced ~= nil then
         auraRec.whereToShow = { open_world = (auraRec.showNonInstanced ~= false) }
         auraRec.showNonInstanced = nil
@@ -167,7 +167,7 @@ function REMIND:OnInitialize()
         collector.showSpecialsNonInstanced = nil
     end
     -- Old party/raid consumable thresholds -> the global timing pair.
-    local display = p and p.display
+    local display = profile and profile.display
     if display then
         if display.showUnderDurationDungeon ~= nil or display.showUnderDurationRaid ~= nil then
             if display.showUnder == nil then

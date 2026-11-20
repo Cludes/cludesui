@@ -793,10 +793,10 @@ local function BuildPreviewSlots(buffSide, conf, entries, listLen, count)
                     if num >= numFiller then
                         break
                     end
-                    local e = entries[scan]
-                    if not subSet[e] then
+                    local entry = entries[scan]
+                    if not subSet[entry] then
                         num = num + 1
-                        fillerSelected[num] = e
+                        fillerSelected[num] = entry
                     end
                 end
             else
@@ -1122,8 +1122,8 @@ local function RenderPreviewIcons(box, icons, buffSide, conf, fontFile, pool)
                 local br, backdrop, bb, ba =
                     look.border[1], look.border[2], look.border[3], look.border[4]
                 if dispelType and dcMap and dcMap[dispelType] then
-                    local c = dcMap[dispelType]
-                    br, backdrop, bb, ba = c.r, c.g, c.b, 1
+                    local color = dcMap[dispelType]
+                    br, backdrop, bb, ba = color.r, color.g, color.b, 1
                 end
                 local size = look.border.size or 1
                 if shapeActive and look.shapeBorderPath and Pix.ApplyMaskedShapeBorder then

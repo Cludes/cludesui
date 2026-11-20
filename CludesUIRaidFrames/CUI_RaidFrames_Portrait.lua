@@ -448,9 +448,9 @@ local function TintBorder(edge, unitToken, ctOverride)
             end
         else
             local re = UnitReaction(unitToken, "player")
-            local c = (not issecretvalue(re)) and re and FACTION_BAR_COLORS and FACTION_BAR_COLORS[re]
-            if c then
-                red, green, blue = c.r, c.g, c.b
+            local color = (not issecretvalue(re)) and re and FACTION_BAR_COLORS and FACTION_BAR_COLORS[re]
+            if color then
+                red, green, blue = color.r, color.g, color.b
             end
         end
     end

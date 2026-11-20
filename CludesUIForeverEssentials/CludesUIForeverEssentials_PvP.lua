@@ -1487,11 +1487,11 @@ local function DrawFights()
     local mapID = WorldMapFrame:GetMapID()
     local w, h = mapLayer:GetWidth(), mapLayer:GetHeight()
     local scale = 1 / math.max(WorldMapFrame:GetCanvasScale() or 1, 0.1)
-    local n = 0
+    local count = 0
     for _, frame in ipairs(Store().fights) do
         if frame.map == mapID then
-            n = n + 1
-            local pin = mapPins[n]
+            count = count + 1
+            local pin = mapPins[count]
             if not pin then
                 pin = CreateFrame("Frame", nil, mapLayer)
                 pin.tex = pin:CreateTexture(nil, "OVERLAY")
@@ -1510,7 +1510,7 @@ local function DrawFights()
                 pin:SetScript("OnLeave", function()
                     GameTooltip:Hide()
                 end)
-                mapPins[n] = pin
+                mapPins[count] = pin
             end
             pin.fight = frame
             pin:SetSize(16 * scale, 16 * scale)
@@ -1771,9 +1771,9 @@ SlashCmdList.CUIPVP = function(message)
         end
         module.PvPToggleWatch(name, reason)
     elseif cmd == "watchlist" then
-        local n = 0
+        local count = 0
         for name, entry in pairs(Store().watch) do
-            n = n + 1
+            count = count + 1
             Say(
                 ("%s%s%s"):format(
                     name:gsub("%-", " "),
@@ -1782,7 +1782,7 @@ SlashCmdList.CUIPVP = function(message)
                 )
             )
         end
-        if n == 0 then
+        if count == 0 then
             Say("your watch list is empty.")
         end
     elseif cmd == "clear" then

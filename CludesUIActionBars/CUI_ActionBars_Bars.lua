@@ -840,14 +840,14 @@ function mod.AB_CaptureCapSpan(captured)
         while true do
             local best, bestGap
             for i = 1, #cands do
-                local c = cands[i]
-                if not used[c] then
-                    local region = c.r
+                local color = cands[i]
+                if not used[color] then
+                    local region = color.r
                     local shade = min(current[3], region[3]) - max(current[4], region[4])
                     if shade >= 0.5 * min(current[3] - current[4], region[3] - region[4]) then
                         local gap = (direction > 0) and (region[1] - current[2]) or (current[1] - region[2])
                         if gap >= -8 and gap <= 12 and (not bestGap or gap < bestGap) then
-                            best, bestGap = c, gap
+                            best, bestGap = color, gap
                         end
                     end
                 end

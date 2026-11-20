@@ -1174,9 +1174,9 @@ do
             end
             -- Label in the class colour at the given alpha.
             local function Tint(line, a)
-                local c = line._fvClr
-                if c then
-                    line._lbl:SetTextColor(c.r, c.g, c.b, a)
+                local color = line._fvClr
+                if color then
+                    line._lbl:SetTextColor(color.r, color.g, color.b, a)
                 else
                     line._lbl:SetTextColor(1, 1, 1, a)
                 end

@@ -49,9 +49,9 @@ end
 -- Automatic (focus > target > player; boss frames always). Returns the key;
 -- ns.GetMiniDonorSettings returns its settings table.
 function mod.UF_MiniDonorKey(unitKey)
-    local p = saved.profile
-    local own = unitKey and p[unitKey]
-    return DonorPick(p, own and own.lookSource) or DonorPick(p, "focus") or DonorPick(p, "target") or "player"
+    local profile = saved.profile
+    local own = unitKey and profile[unitKey]
+    return DonorPick(profile, own and own.lookSource) or DonorPick(profile, "focus") or DonorPick(profile, "target") or "player"
 end
 function mod.GetMiniDonorSettings(unitKey)
     return saved.profile[mod.UF_MiniDonorKey(unitKey)]
@@ -62,9 +62,9 @@ local GetMiniDonorSettings = mod.GetMiniDonorSettings
 -- From, auraSource, no default): its pick while that frame can lend its look,
 -- else the frame its Copy Look From uses. Returns the key.
 function mod.UF_MiniAuraSourceKey(unitKey)
-    local p = saved.profile
-    local own = p[unitKey]
-    return DonorPick(p, own and own.auraSource) or mod.UF_MiniDonorKey(unitKey)
+    local profile = saved.profile
+    local own = profile[unitKey]
+    return DonorPick(profile, own and own.auraSource) or mod.UF_MiniDonorKey(unitKey)
 end
 
 -- The two live tables behind a mini frame's aura settings view
@@ -72,9 +72,9 @@ end
 -- that source's key. Read on every call: a profile switch, import or layer
 -- paint can replace either table.
 function mod.UF_MiniAuraTables(unitKey)
-    local p = saved.profile
+    local profile = saved.profile
     local key = mod.UF_MiniAuraSourceKey(unitKey)
-    return p[unitKey], p[key], key
+    return profile[unitKey], profile[key], key
 end
 
 -- The settings whose border keys paint the boss frames' unified border (and

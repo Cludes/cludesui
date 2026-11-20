@@ -166,14 +166,14 @@ function PaletteView:AdvanceGrid(noPointer)
     -- would suggest a nearness that decides nothing here.
     local claims = self.claims
     for ck = 1, (claims and #claims or 0) do
-        local c = claims[ck]
-        for jdx = 1, c.n do
-            local cell = c.cells and c.cells[jdx]
-            local wid = c.base and self.widgets[c.base + jdx]
+        local claim = claims[ck]
+        for jdx = 1, claim.n do
+            local cell = claim.cells and claim.cells[jdx]
+            local wid = claim.base and self.widgets[claim.base + jdx]
             if cell and wid then
                 wid:SetAlpha(1)
-                wid.baseSize = c.icon
-                wid:SetSize(c.icon, c.icon)
+                wid.baseSize = claim.icon
+                wid:SetSize(claim.icon, claim.icon)
                 wid:ClearAllPoints()
                 wid:SetPoint("CENTER", widget, "CENTER", cell.x, cell.y)
             end
@@ -470,10 +470,10 @@ function PaletteView:AdvanceFan(elapsed)
         local pitch = self:Pitch()
         local horiz = self:FanHoriz()
         for key = 1, #claims do
-            local c = claims[key]
+            local claim = claims[key]
             local sx, sy = 0, 0
             if mouseSel then
-                local dp = self:FanSlotOffset(c.parent)
+                local dp = self:FanSlotOffset(claim.parent)
                 if dp then
                     if horiz then
                         sx = dp * pitch
@@ -482,16 +482,16 @@ function PaletteView:AdvanceFan(elapsed)
                     end
                 end
             end
-            for jdx = 1, c.n do
-                local wid = c.base and self.widgets[c.base + jdx]
+            for jdx = 1, claim.n do
+                local wid = claim.base and self.widgets[claim.base + jdx]
                 if wid then
                     wid:ClearAllPoints()
                     wid:SetPoint(
                         "CENTER",
                         self.frame,
                         "CENTER",
-                        ox + sx + c.cells[jdx].x,
-                        oy + sy + c.cells[jdx].y
+                        ox + sx + claim.cells[jdx].x,
+                        oy + sy + claim.cells[jdx].y
                     )
                 end
             end

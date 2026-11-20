@@ -23,9 +23,9 @@ mod.IMMUNITY_DEFAULTS = {
 }
 
 function mod.ImmunitySettings()
-    local p = mod.RaidLeadDB()
-    p.immunities = p.immunities or {}
-    local cfg = p.immunities
+    local profile = mod.RaidLeadDB()
+    profile.immunities = profile.immunities or {}
+    local cfg = profile.immunities
     if cfg.enabled == nil then
         cfg.enabled = true
     end

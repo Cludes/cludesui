@@ -390,7 +390,7 @@ function mod._ApplyHealthBg(skinData, health, cfg, unitToken, connected, deadOrG
     -- state clears the alive-path anchor/color stamps AND the fill-color
     -- stamp in _UpdateButtonHealth (the tint here overwrote its work).
     if not connected or deadOrGhost then
-        local c = not connected
+        local color = not connected
                 and (cfg.statusColorOffline or { r = 0x66 / 255, g = 0x66 / 255, b = 0x66 / 255 })
             or (cfg.statusColorDead or { r = 0x24 / 255, g = 0x17 / 255, b = 0x17 / 255 })
         local st = (not connected) and 3 or 2
@@ -400,14 +400,14 @@ function mod._ApplyHealthBg(skinData, health, cfg, unitToken, connected, deadOrG
         if hideFill then
             st = st + 2
         end
-        if skinData._bgSt ~= st or skinData._bgR ~= c.r or skinData._bgG ~= c.g or skinData._bgB ~= c.b then
-            skinData._bgSt, skinData._bgR, skinData._bgG, skinData._bgB = st, c.r, c.g, c.b
+        if skinData._bgSt ~= st or skinData._bgR ~= color.r or skinData._bgG ~= color.g or skinData._bgB ~= color.b then
+            skinData._bgSt, skinData._bgR, skinData._bgG, skinData._bgB = st, color.r, color.g, color.b
             skinData._bgTex, skinData._bgA = nil, nil
             skinData._hcR = nil
             if backdrop then
                 backdrop:ClearAllPoints()
                 backdrop:SetAllPoints(health)
-                backdrop:SetColorTexture(c.r, c.g, c.b, 1)
+                backdrop:SetColorTexture(color.r, color.g, color.b, 1)
             end
             if health then
                 if hideFill then

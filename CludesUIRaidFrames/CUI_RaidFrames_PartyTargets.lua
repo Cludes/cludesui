@@ -176,9 +176,9 @@ do
         if tap then
             return true, 0.6, 0.6, 0.6
         end
-        local c = re and FACTION_BAR_COLORS[re]
-        if c then
-            return true, c.r, c.g, c.b
+        local color = re and FACTION_BAR_COLORS[re]
+        if color then
+            return true, color.r, color.g, color.b
         end
         return false
     end
@@ -698,14 +698,14 @@ do
         if not changed then
             return
         end
-        local p = saved.profile
-        local fc = p.partyTargetCustomFillColor or PT.DEF_FILL
-        local bc = p.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
-        PT.mode = p.partyTargetHealthColorMode or "class"
+        local profile = saved.profile
+        local fc = profile.partyTargetCustomFillColor or PT.DEF_FILL
+        local bc = profile.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
+        PT.mode = profile.partyTargetHealthColorMode or "class"
         PT.fr, PT.fg, PT.fb = fc.r, fc.g, fc.b
-        PT.bgClass = p.partyTargetBgClassColored and true or nil
+        PT.bgClass = profile.partyTargetBgClassColored and true or nil
         PT.br, PT.bgg, PT.bb = bc.r, bc.g, bc.b
-        PT.bgA = (p.partyTargetBgDarkness or 50) / 100
+        PT.bgA = (profile.partyTargetBgDarkness or 50) / 100
         local interp = Enum.StatusBarInterpolation
         PT.smooth = (cfg.smoothBars and interp and interp.ExponentialEaseOut) or nil
         -- 0: nothing styled yet (new frames); up to STYLE_N: a shared input changed.

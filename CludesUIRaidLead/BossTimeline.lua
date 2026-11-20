@@ -62,9 +62,9 @@ local HEALER = {
 local TANK = { ["tankbuster"] = true, ["tank debuff"] = true, ["frontal"] = true }
 
 local function Settings()
-    local p = mod.RaidLeadDB()
-    p.timeline = p.timeline or {}
-    local cfg = p.timeline
+    local profile = mod.RaidLeadDB()
+    profile.timeline = profile.timeline or {}
+    local cfg = profile.timeline
     if cfg.bars == nil then
         cfg.bars = true
     end

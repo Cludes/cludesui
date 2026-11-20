@@ -1204,7 +1204,7 @@ do
         tipText:AddLine(" ")
         tipText:AddLine("Drops", unpack(GOLD))
         for _, entry in ipairs(loot) do
-            local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[entry[LOOT_QUALITY]]
+            local color = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[entry[LOOT_QUALITY]]
                 or { r = 1, g = 1, b = 1 }
             local iconTex = C_Item.GetItemIconByID(entry[LOOT_ID])
             local name = (iconTex and ("|T%s:14:14|t "):format(iconTex) or "")
@@ -1215,9 +1215,9 @@ do
             tipText:AddDoubleLine(
                 name,
                 chance >= 1 and ("%d%%"):format(math.floor(chance + 0.5)) or ("%.1f%%"):format(chance),
-                c.r,
-                c.g,
-                c.b,
+                color.r,
+                color.g,
+                color.b,
                 unpack(MUTED)
             )
         end

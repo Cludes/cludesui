@@ -374,9 +374,9 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 vis()
             end
             AddSwatch(function()
-                local c = SVal(tbl.col)
-                if c then
-                    return c.r or 1, c.g or 1, c.b or 1, 1
+                local color = SVal(tbl.col)
+                if color then
+                    return color.r or 1, color.g or 1, color.b or 1, 1
                 end
                 return 1, 1, 1, 1
             end, function(red, green, blue)

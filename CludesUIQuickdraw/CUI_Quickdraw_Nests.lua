@@ -502,8 +502,8 @@ function PaletteView:PerimeterNest(claims, isShown, m)
     local axisOnly = (m.rows <= 1 and "X") or (m.cols <= 1 and "Y") or nil
 
     for index = 1, #claims do
-        local c = claims[index]
-        local bx, by = self:GridBase(c.parent, m.cols, m.rows, m.pitch, isShown)
+        local claim = claims[index]
+        local bx, by = self:GridBase(claim.parent, m.cols, m.rows, m.pitch, isShown)
         -- c.icon is not set here: what this style may draw a child at depends
         -- on how tightly that run ends up packed, which is not known until its
         -- cells are placed below.
@@ -511,18 +511,18 @@ function PaletteView:PerimeterNest(claims, isShown, m)
         -- pitch the palette's own entries get, so two neighbouring captions
         -- overlap long before their icons do. Unlabelled, like every other
         -- style's nest.
-        c.label = false
-        c._bx, c._by = bx, by
+        claim.label = false
+        claim._bx, claim._by = bx, by
         -- The clear distance this style actually held its children out by, which
         -- is what CellChildGeom sizes the arming grace from. Nest Distance is
         -- only part of it here, and at the bottom of that slider's travel none
         -- of it -- a grace read off the slider instead would go on shrinking
         -- after the children had stopped moving.
-        c.standoff = clear
+        claim.standoff = clear
         -- The nearest point of the lane, from the parent's own CELL rather than
         -- from anywhere on the screen: the push runs long before the open that
         -- will use it, and the two have to agree.
-        c.t0 = PerimeterNearest(bx, by, HX, HY, R, m.positive, axisOnly)
+        claim.t0 = PerimeterNearest(bx, by, HX, HY, R, m.positive, axisOnly)
     end
 
     -- How much of the lane each nest may take: the WHOLE of it. Only one nest is
@@ -538,7 +538,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
     -- lane would wrap past its own first cell and put two children on the same
     -- ground.
     for index = 1, #claims do
-        local c = claims[index]
+        local claim = claims[index]
         -- A crowded nest EXTENDS along the perimeter first, as far as the lane
         -- goes: wrapping further round the block costs the user nothing, and one
         -- long run is the shape this style is for. Only a nest whose children do
@@ -549,8 +549,8 @@ function PaletteView:PerimeterNest(claims, isShown, m)
         -- could wrap past its own first cell exactly when the lane is full
         -- enough for it to matter.
         local room, walked = 1, 0
-        while room < c.n do
-            local step = PerimeterStep(c.t0 + walked, HX, HY, R, childPitch)
+        while room < claim.n do
+            local step = PerimeterStep(claim.t0 + walked, HX, HY, R, childPitch)
             if walked + step > L - childPitch then
                 break
             end
@@ -562,26 +562,26 @@ function PaletteView:PerimeterNest(claims, isShown, m)
         -- the path length it really spends, then again from the start that
         -- puts half of that either side of t0.
         local rowTs = {}
-        for cr = 0, ceil(c.n / cols) - 1 do
-            local inRow = min(cols, c.n - cr * cols)
-            local start = c.t0 - (inRow - 1) * 0.5 * childPitch
+        for cr = 0, ceil(claim.n / cols) - 1 do
+            local inRow = min(cols, claim.n - cr * cols)
+            local start = claim.t0 - (inRow - 1) * 0.5 * childPitch
             local row
             for _ = 1, 2 do
                 row = { start }
                 for jr = 2, inRow do
                     row[jr] = row[jr - 1] + PerimeterStep(row[jr - 1], HX, HY, R, childPitch)
                 end
-                start = c.t0 - (row[inRow] - row[1]) * 0.5
+                start = claim.t0 - (row[inRow] - row[1]) * 0.5
             end
             rowTs[cr + 1] = row
         end
-        c.cells = {}
+        claim.cells = {}
         -- The sides the run came down on, in the order it reached them. A run
         -- that wrapped a corner has cells on two of them, and its regions are
         -- one tight box per side rather than one across the L -- see
         -- CellChildGeom, which is where that matters.
         local groups, bySide = {}, {}
-        for jdx = 1, c.n do
+        for jdx = 1, claim.n do
             local cr = floor((jdx - 1) / cols)
             local cc = (jdx - 1) % cols
             local t = rowTs[cr + 1][cc + 1]
@@ -591,7 +591,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
             -- around a corner.
             local outw = cr * (childIcon + m.gap)
             local box = RunBox(posX + nx * outw, posY + ny * outw, axis, childPitch, depth)
-            c.cells[jdx] = box
+            claim.cells[jdx] = box
             -- PerimeterPoint hands a cell more than halfway round a corner to
             -- the side it is heading onto, so these come out as the runs the eye
             -- actually reads rather than as a split at the corner's own edge.
@@ -615,9 +615,9 @@ function PaletteView:PerimeterNest(claims, isShown, m)
         -- the size it asks for. nestScale is the ceiling either way: this only
         -- ever takes size away.
         local tight = childIcon
-        for ja = 1, c.n - 1 do
-            for jb = ja + 1, c.n do
-                local pa, pb = c.cells[ja], c.cells[jb]
+        for ja = 1, claim.n - 1 do
+            for jb = ja + 1, claim.n do
+                local pa, pb = claim.cells[ja], claim.cells[jb]
                 -- Square icons drawn on the cell centres, so a pair clears as
                 -- soon as ONE axis separates them by a whole icon.
                 local sep = max(abs(pa.x - pb.x), abs(pa.y - pb.y))
@@ -626,7 +626,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
                 end
             end
         end
-        c.icon = tight
+        claim.icon = tight
 
         -- Nearest side first, measured to the nearest cell on it: that is the
         -- side the claim reports as its own axis, and a run long enough to wrap
@@ -636,7 +636,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
             local near = math.huge
             local cells = groups[gi].cells
             for ci = 1, #cells do
-                local dx, dy = cells[ci].x - c._bx, cells[ci].y - c._by
+                local dx, dy = cells[ci].x - claim._bx, cells[ci].y - claim._by
                 near = min(near, dx * dx + dy * dy)
             end
             groups[gi].near = near
@@ -647,8 +647,8 @@ function PaletteView:PerimeterNest(claims, isShown, m)
             end
             return g1.order < g2.order
         end)
-        c.groups = groups
-        c.axis, c.sign = groups[1].axis, groups[1].sign
+        claim.groups = groups
+        claim.axis, claim.sign = groups[1].axis, groups[1].sign
     end
     return claims
 end
@@ -669,28 +669,28 @@ function PaletteView:HaloNest(claims, isShown, m)
     -- crowding it.
     local iconTex = min(m.childIcon, hp * 0.62)
     for index = 1, #claims do
-        local c = claims[index]
-        local bx, by = self:GridBase(c.parent, m.cols, m.rows, m.pitch, isShown)
+        local claim = claims[index]
+        local bx, by = self:GridBase(claim.parent, m.cols, m.rows, m.pitch, isShown)
         -- No axis and no side: a halo surrounds its parent rather than coming
         -- out of one edge of the block, so there is no "other side" for the hub
         -- caption to move to and it keeps the placement it would have had.
-        c.icon, c.dim = iconTex, true
+        claim.icon, claim.dim = iconTex, true
         -- The parent draws back to leave the ring somewhere to be. It keeps its
         -- full colour, unlike the rest of the block: it is what the ring is
         -- about, and dimming it would leave nothing saying which entry opened.
-        c.parentScale = 0.6
+        claim.parentScale = 0.6
         -- Eight captions around one icon are eight captions on top of each
         -- other. At this size the icon is the whole of what can be read.
-        c.label = false
-        c.cells = {}
-        for jdx = 1, min(c.n, #HALO_DIRS) do
+        claim.label = false
+        claim.cells = {}
+        for jdx = 1, min(claim.n, #HALO_DIRS) do
             local skinData = HALO_DIRS[jdx]
-            c.cells[jdx] = { x = bx + skinData[1] * hp, y = by + skinData[2] * hp, hw = hp * 0.5, hh = hp * 0.5 }
+            claim.cells[jdx] = { x = bx + skinData[1] * hp, y = by + skinData[2] * hp, hw = hp * 0.5, hh = hp * 0.5 }
         end
         -- The centre is left to the parent, which fires nothing: a pointer that
         -- comes to rest back on the entry it opened does nothing, rather than
         -- picking whichever child happened to be nearest.
-        c.n = #c.cells
+        claim.n = #claim.cells
     end
     return claims
 end
@@ -711,22 +711,22 @@ function PaletteView:StripCellNest(claims, isShown, m)
     local result = m.icon * 0.5 + m.band + m.childIcon * 0.5
 
     for index = 1, #claims do
-        local c = claims[index]
-        local bx, by = self:GridBase(c.parent, m.cols, m.rows, m.pitch, isShown)
-        c.icon = m.childIcon
+        local claim = claims[index]
+        local bx, by = self:GridBase(claim.parent, m.cols, m.rows, m.pitch, isShown)
+        claim.icon = m.childIcon
         -- Packed at child pitch like every other nest style's captions, a run
         -- of them along a strip collides just as readily as PERIMETER's lane
         -- does, so this style goes unlabelled too.
-        c.label = false
-        c.axis, c.sign = axis, sign
-        c._bx, c._by = bx, by
+        claim.label = false
+        claim.axis, claim.sign = axis, sign
+        claim._bx, claim._by = bx, by
         -- Position along the strip's own axis, so two claims that are close
         -- together can be told apart from two that are not.
-        c.t0 = (axis == "X") and bx or by
+        claim.t0 = (axis == "X") and bx or by
     end
 
     for index = 1, #claims do
-        local c = claims[index]
+        local claim = claims[index]
         -- Half the room this claim's block may spread into along the strip:
         -- out to the midpoint with the nearest OTHER nest's own parent. A
         -- strip is a straight line, not PERIMETER's closed loop, so this is a
@@ -737,28 +737,28 @@ function PaletteView:StripCellNest(claims, isShown, m)
         local room = math.huge
         for jdx = 1, #claims do
             if jdx ~= index then
-                room = min(room, abs(claims[jdx].t0 - c.t0) * 0.5)
+                room = min(room, abs(claims[jdx].t0 - claim.t0) * 0.5)
             end
         end
-        local ccols = min(MAX_SLOTS, max(1, ceil(sqrt(c.n))))
+        local ccols = min(MAX_SLOTS, max(1, ceil(sqrt(claim.n))))
         if room < math.huge then
             ccols = min(ccols, max(1, floor(room * 2 / m.childPitch)))
         end
 
-        c.cells = {}
-        for jdx = 1, c.n do
+        claim.cells = {}
+        for jdx = 1, claim.n do
             local cr = floor((jdx - 1) / ccols)
             local cc = (jdx - 1) % ccols
-            local row = min(ccols, c.n - cr * ccols)
+            local row = min(ccols, claim.n - cr * ccols)
             local a = (cc - (row - 1) * 0.5) * m.childPitch
             local skinData = result + cr * m.childPitch
             local posX, posY
             if axis == "X" then
-                posX, posY = c._bx + a, c._by + sign * skinData
+                posX, posY = claim._bx + a, claim._by + sign * skinData
             else
-                posX, posY = c._bx + sign * skinData, c._by + a
+                posX, posY = claim._bx + sign * skinData, claim._by + a
             end
-            c.cells[jdx] = { x = posX, y = posY, hw = m.childPitch * 0.5, hh = m.childPitch * 0.5 }
+            claim.cells[jdx] = { x = posX, y = posY, hw = m.childPitch * 0.5, hh = m.childPitch * 0.5 }
         end
     end
     return claims
@@ -787,29 +787,29 @@ function PaletteView:StripNest(claims, isShown)
     local result = m.icon * 0.5 + m.band + m.childIcon * 0.5
 
     for index = 1, #claims do
-        local c = claims[index]
-        c.icon = m.childIcon
-        c.axis, c.sign = axis, sign
+        local claim = claims[index]
+        claim.icon = m.childIcon
+        claim.axis, claim.sign = axis, sign
         -- Unlabelled, like the strip's own entries: at strip spacing the
         -- captions of neighbouring icons collide, and a nest is drawn at the
         -- same spacing or tighter.
-        c.label = false
-        c.cells = {}
-        for jdx = 1, c.n do
-            local a = (jdx - (c.n + 1) * 0.5) * m.childPitch
+        claim.label = false
+        claim.cells = {}
+        for jdx = 1, claim.n do
+            local a = (jdx - (claim.n + 1) * 0.5) * m.childPitch
             local posX, posY
             if horiz then
                 posX, posY = a, sign * result
             else
                 posX, posY = sign * result, a
             end
-            c.cells[jdx] = RunBox(posX, posY, axis, m.childPitch, m.depth)
+            claim.cells[jdx] = RunBox(posX, posY, axis, m.childPitch, m.depth)
         end
         -- How far across the strip the pointer may travel toward this nest
         -- before it counts as thrown clear. Without it the strip's own cancel
         -- sits in the gap between an entry and its children, and reaching for
         -- one of them closes the palette instead.
-        c.across = result + m.depth * 0.5
+        claim.across = result + m.depth * 0.5
     end
     return claims
 end
@@ -865,54 +865,54 @@ function PaletteView:CellChildGeom(claims, isShown)
     -- out of their own coverage (see ParentHoles), so they all have to exist
     -- before the first of them is built.
     for index = 1, #claims do
-        local c = claims[index]
-        local bx, by = self:GridBase(c.parent, m.cols, m.rows, m.pitch, isShown)
-        c.parentBox = { x = bx, y = by, hw = m.pitch * 0.5, hh = m.pitch * 0.5 }
+        local claim = claims[index]
+        local bx, by = self:GridBase(claim.parent, m.cols, m.rows, m.pitch, isShown)
+        claim.parentBox = { x = bx, y = by, hw = m.pitch * 0.5, hh = m.pitch * 0.5 }
     end
 
     for index = 1, #claims do
-        local c = claims[index]
+        local claim = claims[index]
         local holes = ParentHoles(claims, index)
 
-        if c.axis then
+        if claim.axis then
             -- How far a claim's ground reaches past its own edges. c.standoff
             -- is a lane saying how far out it actually put its children, which
             -- for that style is not the Nest Distance at all -- it hugs the
             -- block, and the slider only adds to that -- and a grace read off
             -- the slider there would leave the bottom of its travel moving
             -- nothing but invisible slack.
-            local grace = max(c.standoff or m.band, 0.75 * m.childPitch)
-            local sides = c.groups
-            c.regions = { c.parentBox }
+            local grace = max(claim.standoff or m.band, 0.75 * m.childPitch)
+            local sides = claim.groups
+            claim.regions = { claim.parentBox }
             if sides then
                 -- Nearest side first, PerimeterNest having ordered them: a run
                 -- that reached more sides than there are region gates for then
                 -- drops the far ones rather than the one the reach crosses.
                 for gi = 1, #sides do
-                    local run = RunReach(c.parentBox, NestBBox(sides[gi].cells))
-                    AddRegion(c, GraceBox(run, grace, sides[gi].axis, sides[gi].sign), sides[gi].axis, holes)
+                    local run = RunReach(claim.parentBox, NestBBox(sides[gi].cells))
+                    AddRegion(claim, GraceBox(run, grace, sides[gi].axis, sides[gi].sign), sides[gi].axis, holes)
                 end
             else
-                local nest = NestBBox(c.cells)
+                local nest = NestBBox(claim.cells)
                 -- Measured from the TIGHT box, before the grace widens it: the
                 -- corridor is as wide as the nest it leads to, and inflating
                 -- the nest first would spread the corridor sideways across the
                 -- block's own ground as well.
-                local corridor = CorridorBox(c.parentBox, nest, c.axis, c.sign, m.childPitch)
-                AddRegion(c, GraceBox(nest, grace, c.axis, c.sign), c.axis, holes)
-                AddRegion(c, corridor, c.axis, holes)
+                local corridor = CorridorBox(claim.parentBox, nest, claim.axis, claim.sign, m.childPitch)
+                AddRegion(claim, GraceBox(nest, grace, claim.axis, claim.sign), claim.axis, holes)
+                AddRegion(claim, corridor, claim.axis, holes)
             end
         else
-            local pb = c.parentBox
+            local pb = claim.parentBox
             local x0, x1 = pb.x - m.pitch * 0.5, pb.x + m.pitch * 0.5
             local y0, y1 = pb.y - m.pitch * 0.5, pb.y + m.pitch * 0.5
-            for jdx = 1, c.n do
-                local b = c.cells[jdx]
+            for jdx = 1, claim.n do
+                local b = claim.cells[jdx]
                 x0, x1 = min(x0, b.x - b.hw), max(x1, b.x + b.hw)
                 y0, y1 = min(y0, b.y - b.hh), max(y1, b.y + b.hh)
             end
-            c.regions = {}
-            AddRegion(c, EdgeBox(x0, x1, y0, y1), c.axis, holes)
+            claim.regions = {}
+            AddRegion(claim, EdgeBox(x0, x1, y0, y1), claim.axis, holes)
         end
     end
     return claims

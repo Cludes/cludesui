@@ -4107,7 +4107,7 @@ local function CreateDispelSet(widget, record, fillTex)
         record[field] = boxHolder
     end
 
-    local n = 0
+    local count = 0
     for index = 1, #DISPEL_SLOTS do
         local slotIndex = DISPEL_SLOTS[index]
         local function ParkSlot(slotButton)
@@ -4118,8 +4118,8 @@ local function CreateDispelSet(widget, record, fillTex)
             -- path runs on in-instance reloads.
             slotButton:SetPoint("CENTER", widget.Health or widget, "CENTER")
         end
-        n = n + 1
-        if n > (record[addsField] or 0) then
+        count = count + 1
+        if count > (record[addsField] or 0) then
             AK.AddSlotToContainer(boxHolder, {
                 key = slotIndex.key,
                 filter = { "HARMFUL" },
@@ -4127,14 +4127,14 @@ local function CreateDispelSet(widget, record, fillTex)
                 style = DispelStyleKey(slotIndex.key, fillTex),
                 extraInit = ParkSlot,
             })
-            record[addsField] = n
+            record[addsField] = count
         end
         -- "Only Dispellable by You" variant: identical slot with the engine
         -- by-me filter token added. Declared upfront -- slot filters cannot
         -- change after declaration -- and mutually exclusive with the plain
         -- slot via its style (BuildDispelStyles blanks the inactive one).
-        n = n + 1
-        if n > (record[addsField] or 0) then
+        count = count + 1
+        if count > (record[addsField] or 0) then
             AK.AddSlotToContainer(boxHolder, {
                 key = slotIndex.key .. "_byme",
                 filter = { "HARMFUL", "RAID_PLAYER_DISPELLABLE" },
@@ -4142,7 +4142,7 @@ local function CreateDispelSet(widget, record, fillTex)
                 style = DispelStyleKey(slotIndex.key .. "_byme", fillTex),
                 extraInit = ParkSlot,
             })
-            record[addsField] = n
+            record[addsField] = count
         end
     end
     AK.FinishContainer(boxHolder, "player")

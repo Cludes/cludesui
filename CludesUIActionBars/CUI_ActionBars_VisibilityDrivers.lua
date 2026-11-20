@@ -468,18 +468,18 @@ end
 -- in CUI_ActionBars_Pushed.lua with the rest of Match Bar Border: it reads
 -- _isApplyingAll, a chunk local that ApplyAll rewrites.
 mod._ixBarSync = function(barId, eligOnly)
-    local p = ABAR.db and ABAR.db.profile
-    if not p then
+    local profile = ABAR.db and ABAR.db.profile
+    if not profile then
         return
     end
-    local push, hover, cast = mod._ixRolesOn(p)
+    local push, hover, cast = mod._ixRolesOn(profile)
     if not (push or hover or cast) then
         return
     end
     local elig, changed = mod._ixBarEligible(barId)
     if elig and not eligOnly then
         local buttons = barButtons[barId]
-        local s = p.bars[barId]
+        local s = profile.bars[barId]
         if buttons and s then
             if InCombatLockdown() then
                 mod._eabApplyDeferred = true

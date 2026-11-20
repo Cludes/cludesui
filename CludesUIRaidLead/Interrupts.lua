@@ -25,9 +25,9 @@ local _, mod = ...
 local W, H = 180, 34
 
 function mod.KickSettings()
-    local p = mod.RaidLeadDB()
-    p.kicks = p.kicks or {}
-    local cfg = p.kicks
+    local profile = mod.RaidLeadDB()
+    profile.kicks = profile.kicks or {}
+    local cfg = profile.kicks
     if cfg.enabled == nil then
         cfg.enabled = true
     end

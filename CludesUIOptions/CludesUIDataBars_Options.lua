@@ -2849,23 +2849,23 @@ CludesUI.AtOptionsLogin(function()
                     region,
                     bgRow:GetFrameLevel() + 3,
                     function()
-                        local c = b.bg
-                        if not c then
+                        local color = b.bg
+                        if not color then
                             return 0, 0, 0, 0.5
                         end
-                        local r = c.r
+                        local r = color.r
                         if r == nil then
                             r = 0
                         end
-                        local g = c.g
+                        local g = color.g
                         if g == nil then
                             g = 0
                         end
-                        local b2 = c.b
+                        local b2 = color.b
                         if b2 == nil then
                             b2 = 0
                         end
-                        local a = c.a
+                        local a = color.a
                         if a == nil then
                             a = 0.5
                         end

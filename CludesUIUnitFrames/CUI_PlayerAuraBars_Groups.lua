@@ -319,9 +319,9 @@ do
                 inSet[cats[index]] = true
             end
             for index = 1, #entries do
-                local e = entries[index]
-                local frame = e.filters
-                if frame and PAB_FxEntryActive(e) then
+                local entry = entries[index]
+                local frame = entry.filters
+                if frame and PAB_FxEntryActive(entry) then
                     -- First block wins: one naming a category the rest already
                     -- belongs to paints all of it, and no later block reaches it.
                     local hit = false

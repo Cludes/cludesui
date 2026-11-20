@@ -1257,11 +1257,11 @@ function mod.RF_Style()
     if val then
         return val
     end
-    local p = saved and saved.profile
-    if not p then
+    local profile = saved and saved.profile
+    if not profile then
         return "cui"
     end
-    val = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
+    val = (profile.useClassicStyle and "classic") or (profile.useBlizzardStyle and "blizzard") or "cui"
     mod._rfStyle = val
     return val
 end
@@ -1280,12 +1280,12 @@ function mod.RF_PartyKit()
     if val ~= nil then
         return val
     end
-    local p = saved and saved.profile
-    if not p then
+    local profile = saved and saved.profile
+    if not profile then
         return false
     end
     local st = mod.RF_Style()
-    val = (st ~= "cui" and p.partyFrameStyle == "party") and st or false
+    val = (st ~= "cui" and profile.partyFrameStyle == "party") and st or false
     mod._rfPartyKit = val
     return val
 end

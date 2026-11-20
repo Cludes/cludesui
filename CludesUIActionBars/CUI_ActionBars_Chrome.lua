@@ -132,16 +132,16 @@ end
 -- Bar 1's caps (the first-install span below) reads bar 1's where unset, so
 -- the pair matches.
 function mod.AB_CapsVal(key, k)
-    local p = ABAR.db and ABAR.db.profile
-    if not p then
+    local profile = ABAR.db and ABAR.db.profile
+    if not profile then
         return nil
     end
-    local cfg = p.bars and p.bars[key]
+    local cfg = profile.bars and profile.bars[key]
     local val = cfg and cfg[k]
     if val == nil then
         if key == "MainBar" then
-            val = p[(k == "endCapArt") and "cuiEndCaps" or k]
-        elseif p.endCapSpanLeft == key or p.endCapSpanRight == key then
+            val = profile[(k == "endCapArt") and "cuiEndCaps" or k]
+        elseif profile.endCapSpanLeft == key or profile.endCapSpanRight == key then
             val = mod.AB_CapsVal("MainBar", k)
         end
     end
@@ -170,20 +170,20 @@ end
 -- beside bar 1 on that side) moves bar 1's default for that side onto the
 -- named bar's same side. Checklist choices always win.
 function mod.AB_CapsSides(key)
-    local p = ABAR.db and ABAR.db.profile
-    local cfg = p and p.bars and p.bars[key]
+    local profile = ABAR.db and ABAR.db.profile
+    local cfg = profile and profile.bars and profile.bars[key]
     if not cfg then
         return false, false
     end
     local l, region = cfg.endCapLeft, cfg.endCapRight
     if l == nil or region == nil then
-        local sl, sr = p.endCapSpanLeft, p.endCapSpanRight
+        local sl, sr = profile.endCapSpanLeft, profile.endCapSpanRight
         local dl, dr = false, false
         if key == "MainBar" then
-            local skinData = mod.AB_CapsMainDefault(p)
+            local skinData = mod.AB_CapsMainDefault(profile)
             dl, dr = skinData and sl == nil, skinData and sr == nil
         elseif sl == key or sr == key then
-            local skinData = mod.AB_CapsMainDefault(p)
+            local skinData = mod.AB_CapsMainDefault(profile)
             dl, dr = skinData and sl == key, skinData and sr == key
         end
         if l == nil then
@@ -943,11 +943,11 @@ end
 
 -- Repaints the bars that carry Action Bar 1's caps (its cap settings reach them).
 function mod.AB_CapsSpanApply()
-    local p = ABAR.db and ABAR.db.profile
-    if not p then
+    local profile = ABAR.db and ABAR.db.profile
+    if not profile then
         return
     end
-    local l, region = p.endCapSpanLeft, p.endCapSpanRight
+    local l, region = profile.endCapSpanLeft, profile.endCapSpanRight
     for index = 1, 2 do
         local k = (index == 1) and l or region
         if k and not (index == 2 and k == l) then

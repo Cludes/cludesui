@@ -898,14 +898,14 @@ end
 -- CludesUI bar, "prof" = in the Professions frame, "forever" = in WoW
 -- Forever's border.
 function CludesUI._GetXPBarStyle()
-    local p = ABAR.db and ABAR.db.profile
-    if not p then
+    local profile = ABAR.db and ABAR.db.profile
+    if not profile then
         return "cui"
     end
-    if p.useBlizzardDataBars then
+    if profile.useBlizzardDataBars then
         return "default"
     end
-    local cfg = p.bars and p.bars.XPBar
+    local cfg = profile.bars and profile.bars.XPBar
     return (cfg and cfg.xpArt) or "cui"
 end
 
@@ -914,17 +914,17 @@ end
 -- swap needs a reload (our bars wanted but never built, or Blizzard's bars
 -- back after their events were dropped), so the caller can offer it.
 function CludesUI._SetXPBarStyle(look)
-    local p = ABAR.db and ABAR.db.profile
-    if not p then
+    local profile = ABAR.db and ABAR.db.profile
+    if not profile then
         return false
     end
     local wantBlizz = look == "default"
-    local cfg = p.bars and p.bars.XPBar
+    local cfg = profile.bars and profile.bars.XPBar
     if cfg and not wantBlizz then
         cfg.xpArt = (look == "prof" or look == "forever") and look or nil
     end
     local reload = false
-    if (p.useBlizzardDataBars and true or false) ~= wantBlizz then
+    if (profile.useBlizzardDataBars and true or false) ~= wantBlizz then
         reload = mod.SetUseBlizzardDataBars(wantBlizz)
     end
     if not wantBlizz and dataBarFrames.XPBar then
@@ -1291,34 +1291,34 @@ end
 -- the XP into the new one. A lower reading on the same level is taken mid
 -- level-up and waits for the settled one. Returns true when XP was added.
 local function XPTrackRate()
-    local e = XPCharEntry(false)
-    if not (e and e.rStart) then
+    local entry = XPCharEntry(false)
+    if not (entry and entry.rStart) then
         return
     end
     local current, lv = UnitXP("player"), UnitLevel("player")
-    local lastXP, lastLv = e.lastXP, e.lastLevel
+    local lastXP, lastLv = entry.lastXP, entry.lastLevel
     local added
     if lastXP and lastLv then
         if lv == lastLv then
             if current <= lastXP then
                 return
             end
-            e.gained = (e.gained or 0) + (current - lastXP)
+            entry.gained = (entry.gained or 0) + (current - lastXP)
             added = true
         elseif lv > lastLv then
-            e.gained = (e.gained or 0) + max(0, (e.lastMax or lastXP) - lastXP) + current
+            entry.gained = (entry.gained or 0) + max(0, (entry.lastMax or lastXP) - lastXP) + current
             added = true
         end
     end
-    e.lastXP, e.lastMax, e.lastLevel = current, UnitXPMax("player"), lv
+    entry.lastXP, entry.lastMax, entry.lastLevel = current, UnitXPMax("player"), lv
     return added
 end
 
 -- XP per hour since the rate started: 0 until a minute has passed with XP
 -- gained.
 local function XPRate(nowTime)
-    local e = XPCharEntry(false)
-    local start, gained = e and e.rStart, e and e.gained
+    local entry = XPCharEntry(false)
+    local start, gained = entry and entry.rStart, entry and entry.gained
     if not (start and gained) or gained <= 0 or nowTime - start < 60 then
         return 0
     end
@@ -1413,8 +1413,8 @@ local function XPItemText(widget, ident, current, mx, rested, level, nowTime, re
             xpLvlBase and FmtDur(xpLvlBase + (nowTime - xpLvlStamp)) or "--"
         )
     elseif ident == "timeSession" then
-        local e = XPCharEntry(false)
-        local start = e and e.sStart or xpLoginAt
+        local entry = XPCharEntry(false)
+        local start = entry and entry.sStart or xpLoginAt
         return format(CludesUI.L("Time this session: %s"), start and FmtDur(nowTime - start) or "--")
     end
     return ""
@@ -1634,8 +1634,8 @@ local function XPSyncClock(widget, vis)
         if xpClock then
             return
         end
-        local e = XPCharEntry(false)
-        local start = e and e.sStart or xpLoginAt
+        local entry = XPCharEntry(false)
+        local start = entry and entry.sStart or xpLoginAt
         local nowTime = GetTime()
         xpClock = C_Timer.NewTimer(start and (60 - (nowTime - start) % 60) or 60, OnXPClockAlign)
     elseif xpClock then
@@ -1666,8 +1666,8 @@ end
 -- bars, not Never, not at max level, XP not turned off. Plain field reads
 -- (the visibility passes normalize the settings table).
 local function XPBarCanShow(cfg)
-    local p = ABAR.db and ABAR.db.profile
-    if not (p and cfg) or p.useBlizzardDataBars then
+    local profile = ABAR.db and ABAR.db.profile
+    if not (profile and cfg) or profile.useBlizzardDataBars then
         return false
     end
     if cfg.enabled == false or ABAR.VisibilityCompat.IsNever(cfg) then
@@ -1941,14 +1941,14 @@ function mod.XPBarTextSlots(widget, cfg)
     -- than now is from an earlier boot and restarts) and the rate, whose count
     -- starts again when XP per Hour is turned on (a /reload keeps it running).
     if clock then
-        local e = XPCharEntry(true)
-        if e then
+        local entry = XPCharEntry(true)
+        if entry then
             local nowTime = GetTime()
-            if type(e.sStart) ~= "number" or e.sStart > nowTime then
-                e.sStart = nowTime
+            if type(entry.sStart) ~= "number" or entry.sStart > nowTime then
+                entry.sStart = nowTime
             end
-            if rate and (wasRate == false or not e.rStart) then
-                XPRateBaseline(e)
+            if rate and (wasRate == false or not entry.rStart) then
+                XPRateBaseline(entry)
             end
         end
     end
@@ -1990,23 +1990,23 @@ local function XPOnFirstWorld(isInitialLogin)
     if isInitialLogin then
         xpLoginAt = nowTime
     end
-    local e = XPCharEntry(false)
+    local entry = XPCharEntry(false)
     local widget = dataBarFrames.XPBar
-    if e then
+    if entry then
         if isInitialLogin then
-            e.sStart = nowTime
-            e.rStart, e.gained, e.lastXP, e.lastMax, e.lastLevel = nil, nil, nil, nil, nil
+            entry.sStart = nowTime
+            entry.rStart, entry.gained, entry.lastXP, entry.lastMax, entry.lastLevel = nil, nil, nil, nil, nil
             if widget and widget._xpNeedRate then
-                XPRateBaseline(e)
+                XPRateBaseline(entry)
             end
         end
-        local t, at = e.lvlTime, e.lvlAt
-        e.lvlTime, e.lvlAt = nil, nil
-        if type(t) == "number" and e.lvl == UnitLevel("player") then
+        local t, at = entry.lvlTime, entry.lvlAt
+        entry.lvlTime, entry.lvlAt = nil, nil
+        if type(t) == "number" and entry.lvl == UnitLevel("player") then
             if not isInitialLogin and type(at) == "number" and at <= nowTime then
                 t = t + (nowTime - at)
             end
-            xpLvl, xpLvlBase, xpLvlStamp = e.lvl, t, nowTime
+            xpLvl, xpLvlBase, xpLvlStamp = entry.lvl, t, nowTime
         end
     end
     if widget then
@@ -2035,10 +2035,10 @@ xpTextEv:SetScript("OnEvent", function(self, evt, arg1, arg2)
     elseif evt == "PLAYER_LOGOUT" then
         -- Also fires on /reload, before SavedVariables are written.
         if xpLvlBase then
-            local e = XPCharEntry(true)
-            if e then
+            local entry = XPCharEntry(true)
+            if entry then
                 local nowTime = GetTime()
-                e.lvl, e.lvlTime, e.lvlAt = xpLvl, xpLvlBase + (nowTime - xpLvlStamp), nowTime
+                entry.lvl, entry.lvlTime, entry.lvlAt = xpLvl, xpLvlBase + (nowTime - xpLvlStamp), nowTime
             end
         end
     else

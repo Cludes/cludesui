@@ -157,39 +157,39 @@ local function LayoutIcons()
         _layoutGeom.fixed = 0
         return
     end
-    local p = saved.profile.display
-    local spacing = p.iconSpacing or 8
-    local baseScale = p.scale or 1.0
+    local display = saved.profile.display
+    local spacing = display.iconSpacing or 8
+    local baseScale = display.scale or 1.0
     local iconSz = floor(ICON_SIZE * baseScale + 0.5)
     local iconH = iconSz
-    if p.iconShape and p.iconShape ~= "none" then
-        iconSz, iconH = mod.IconDimensions(iconSz, p)
+    if display.iconShape and display.iconShape ~= "none" then
+        iconSz, iconH = mod.IconDimensions(iconSz, display)
     end
     local totalW = (total * iconSz) + ((total - 1) * spacing)
     local textH = 0
-    if p.showText then
-        textH = (p.textSize or 11) + abs(p.textYOffset or -2)
+    if display.showText then
+        textH = (display.textSize or 11) + abs(display.textYOffset or -2)
     end
     -- Icons hang off the anchor's grow edge. Center-grow spreads them symmetrically so the row's center stays fixed
     -- as icons are added/removed; +textH/2 keeps the row at the icon+text box's top, matching the combat pool.
     -- Grow Right/Left hang them from the TOPLEFT/TOPRIGHT corner so that edge stays fixed instead.
     local pt, startX, yOff = "CENTER", -(totalW / 2) + (iconSz / 2), textH / 2
-    if p.growDirection == "RIGHT" then
+    if display.growDirection == "RIGHT" then
         pt, startX, yOff = "TOPLEFT", 0, 0
-    elseif p.growDirection == "LEFT" then
+    elseif display.growDirection == "LEFT" then
         pt, startX, yOff = "TOPRIGHT", -(total - 1) * (iconSz + spacing), 0
     end
     local g = _layoutGeom
     g.pt, g.startX, g.yOff, g.sz, g.spacing, g.alpha, g.fixed =
-        pt, startX, yOff, iconSz, spacing, p.opacity or 1.0, fixed
-    if p.iconShape and p.iconShape ~= "none" then
+        pt, startX, yOff, iconSz, spacing, display.opacity or 1.0, fixed
+    if display.iconShape and display.iconShape ~= "none" then
         g.iconH = iconH
     elseif g.iconH then
         g.iconH = nil
     end
     for index, button in ipairs(allIcons) do
         button:SetSize(iconSz, iconH)
-        button:SetAlpha(p.opacity or 1.0)
+        button:SetAlpha(display.opacity or 1.0)
         -- This layout is OOC-only, so treating every entry as protected also
         -- covers the provider/main secure buttons without needing pool scans.
         REMIND.ApplyIconBorder(button, true)
@@ -233,10 +233,10 @@ local function ShowIcon(iconIdx, m)
     end
     REMIND.SetIconHighlight(button, not receiver)
     ApplySetup(button, m)
-    local p = saved.profile.display
-    local baseScale = p.scale or 1.0
+    local display = saved.profile.display
+    local baseScale = display.scale or 1.0
     local iconSz = floor(ICON_SIZE * baseScale + 0.5)
-    ApplyGlow(button, p, iconSz)
+    ApplyGlow(button, display, iconSz)
     REMIND.ApplyEatingVisual(button, m)
     REMIND.ApplyIconExpiry(button, m)
     REMIND.ApplyIconQuality(button, (not m.isEating) and m.qualityAtlas or nil)
@@ -251,15 +251,15 @@ local function ShowIcon(iconIdx, m)
             m.spellRank
         )
     end
-    if p.showText and not m.isEating then
-        local tc = p.textColor or DEFAULT_TEXT_COLOR
-        local fontFile = ResolveFontPath(p.nameFont)
-        local textSize = p.textSize or 11
-        local xOff = p.textXOffset or 0
-        local yOff = p.textYOffset or -2
+    if display.showText and not m.isEating then
+        local tc = display.textColor or DEFAULT_TEXT_COLOR
+        local fontFile = ResolveFontPath(display.nameFont)
+        local textSize = display.textSize or 11
+        local xOff = display.textXOffset or 0
+        local yOff = display.textYOffset or -2
         SetABRFont(button._text, fontFile, textSize)
         button._text:ClearAllPoints()
-        local tp, ip = GetTextAnchorPoints(p)
+        local tp, ip = GetTextAnchorPoints(display)
         button._text:SetPoint(tp, button, ip, xOff, yOff)
         button._text:SetTextColor(tc.r, tc.g, tc.b, 1)
         button._text:Show()

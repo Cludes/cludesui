@@ -2478,8 +2478,8 @@ local function ApplyBlockDecor(slotFrame, blockCfg, barConf)
             slotFrame._edbBg = slotFrame:CreateTexture(nil, "BACKGROUND", nil, -5)
             slotFrame._edbBg:SetAllPoints(slotFrame)
         end
-        local c = blockCfg.bg
-        slotFrame._edbBg:SetColorTexture(c.r or 0, c.g or 0, c.b or 0, c.a or 0.5)
+        local color = blockCfg.bg
+        slotFrame._edbBg:SetColorTexture(color.r or 0, color.g or 0, color.b or 0, color.a or 0.5)
         slotFrame._edbBg:Show()
     elseif slotFrame._edbBg then
         slotFrame._edbBg:Hide()

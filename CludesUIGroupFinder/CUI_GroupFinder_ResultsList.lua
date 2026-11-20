@@ -83,8 +83,8 @@ function mod.OwnListBorderColor()
     end
     local btex = mod.OwnListGet("borderTexture") or "solid"
     if btex ~= "solid" and mod.OwnListGet("iconShape") == "square" then
-        local c = CUI.GetBorderStyleSelectDefaults(btex)
-        return c.r, c.g, c.b
+        local color = CUI.GetBorderStyleSelectDefaults(btex)
+        return color.r, color.g, color.b
     end
     if mod.ThemeBorder then
         return mod.ThemeBorder()
@@ -577,9 +577,9 @@ mod.STATUS_LINES = {
 }
 -- a status's color: the user's, else its own
 local function StatusColor(line)
-    local c = mod.OwnListGet(line[5])
-    if type(c) == "table" then
-        return c.r or 1, c.g or 1, c.b or 1
+    local color = mod.OwnListGet(line[5])
+    if type(color) == "table" then
+        return color.r or 1, color.g or 1, color.b or 1
     end
     return line[2], line[3], line[4]
 end
@@ -1311,8 +1311,8 @@ local function Fill(region, ident, source)
     if type(bc) == "table" then
         br, backdrop, bb = bc.r or 1, bc.g or 1, bc.b or 1
     elseif btex ~= "solid" and square then
-        local c = CUI.GetBorderStyleSelectDefaults(btex)
-        br, backdrop, bb = c.r, c.g, c.b
+        local color = CUI.GetBorderStyleSelectDefaults(btex)
+        br, backdrop, bb = color.r, color.g, color.b
     elseif mod.ThemeBorder then
         br, backdrop, bb = mod.ThemeBorder()
     end

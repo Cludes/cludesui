@@ -2294,9 +2294,9 @@ local function NewCell(class)
     CludesUI.Kit.Font(cell.label, LABEL_SIZE, "essentials")
     cell.label:SetWordWrap(false)
     cell.label:SetText(ClassName(class))
-    local c = RAID_CLASS_COLORS[class]
-    if c then
-        cell.label:SetTextColor(c.r, c.g, c.b)
+    local color = RAID_CLASS_COLORS[class]
+    if color then
+        cell.label:SetTextColor(color.r, color.g, color.b)
     end
     cell.header, cell.cast = Recipient(cell, "CludesUIBless" .. class)
     cell.cast:RegisterForClicks("AnyUp")

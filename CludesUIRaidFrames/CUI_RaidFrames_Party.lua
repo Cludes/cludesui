@@ -687,8 +687,8 @@ mod._scaledPartyProxy = setmetatable({}, {
 -- caller (scales, tier size, sync sections, overlay, enable/profile swap) plus
 -- _BumpAbsorbGen (the SSet/SWrite options funnel).
 function mod._RefreshProxyModes()
-    local p = saved and saved.profile
-    if not p then
+    local profile = saved and saved.profile
+    if not profile then
         return
     end
     local scaleKeys = INDICATOR_SCALE_KEYS
@@ -696,7 +696,7 @@ function mod._RefreshProxyModes()
     -- _partyProxy: base profile + party_ overrides for custom sections.
     local pp = mod._partyProxy
     wipe(pp)
-    for k, v in pairs(p) do
+    for k, v in pairs(profile) do
         rawset(pp, k, v)
     end
     local keySection = mod._PARTY_KEY_SECTION
@@ -704,9 +704,9 @@ function mod._RefreshProxyModes()
     if keySection and mod._IsPartySectionCustom then
         for k, section in pairs(keySection) do
             if mod._IsPartySectionCustom(section) then
-                local pv = rawget(p, "party_" .. k)
+                local pv = rawget(profile, "party_" .. k)
                 local sib = pxSib[k]
-                if sib and rawget(p, "party_" .. sib) ~= nil then
+                if sib and rawget(profile, "party_" .. sib) ~= nil then
                     -- Companion of a stored party sibling: the party value only
                     -- (a nil unsets the raid copy; the __index rule answers nil too).
                     rawset(pp, k, pv)
@@ -721,7 +721,7 @@ function mod._RefreshProxyModes()
     local sp = mod._scaledProfile
     wipe(sp)
     local iScale = mod._indicatorScale or 1
-    for k, v in pairs(p) do
+    for k, v in pairs(profile) do
         if iScale ~= 1 and scaleKeys[k] and type(v) == "number" then
             rawset(sp, k, v * iScale)
         else

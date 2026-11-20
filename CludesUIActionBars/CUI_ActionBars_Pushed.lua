@@ -164,10 +164,10 @@ end
 -- textured Border Style that resolves to a file, Border Size above 0. Returns
 -- it and whether it differs from the stored value (stored here).
 mod._ixBarEligible = function(barId)
-    local p = ABAR.db.profile
-    local cfg = p.bars[barId]
+    local profile = ABAR.db.profile
+    local cfg = profile.bars[barId]
     local success = false
-    if cfg and p.squareIcons and mod.AB_Style() == "cui" then
+    if cfg and profile.squareIcons and mod.AB_Style() == "cui" then
         local shape = cfg.buttonShape or "none"
         local texture = cfg.borderTexture or "solid"
         if

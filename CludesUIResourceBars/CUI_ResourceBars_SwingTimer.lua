@@ -174,8 +174,8 @@ local S = {
 local function P()
     local ERB = mod.ERB
     local saved = ERB and ERB.db
-    local p = saved and saved.profile
-    return p and p.swingTimer or nil
+    local profile = saved and saved.profile
+    return profile and profile.swingTimer or nil
 end
 
 local _, playerClass = UnitClass("player")
@@ -732,15 +732,15 @@ local function StyleZones(swingRow, conf, texPath)
         7,
         0
     )
-    local c = AIM_COLOR
+    local color = AIM_COLOR
     StyleZone(
         swingRow,
         "aim",
         StillRow(swingRow, conf),
         texPath,
-        conf.aimR or c.r,
-        conf.aimG or c.g,
-        conf.aimB or c.b,
+        conf.aimR or color.r,
+        conf.aimG or color.g,
+        conf.aimB or color.b,
         conf.aimA or 0.6,
         6,
         -1
@@ -1151,11 +1151,11 @@ function ApplyRowFill(swingRow, conf)
     local act = not (pend or aimTex or q) and S.active[defaults.melee and "melee" or "ranged"]
     local fR, fG, fB, fA
     if pend then
-        local c = PENDING_COLOR
-        fR, fG, fB, fA = conf.pendingR or c.r, conf.pendingG or c.g, conf.pendingB or c.b, conf.pendingA or 1
+        local color = PENDING_COLOR
+        fR, fG, fB, fA = conf.pendingR or color.r, conf.pendingG or color.g, conf.pendingB or color.b, conf.pendingA or 1
     elseif aimTex then
-        local c = AIM_COLOR
-        fR, fG, fB, fA = conf.aimR or c.r, conf.aimG or c.g, conf.aimB or c.b, 1
+        local color = AIM_COLOR
+        fR, fG, fB, fA = conf.aimR or color.r, conf.aimG or color.g, conf.aimB or color.b, 1
     elseif q then
         local k = q.key
         -- Unset per-ability colour: the shared Queued colour (older profiles).
@@ -1165,8 +1165,8 @@ function ApplyRowFill(swingRow, conf)
         fR, fG, fB, fA =
             conf[k .. "R"] or q.r, conf[k .. "G"] or q.g, conf[k .. "B"] or q.b, conf[k .. "A"] or 1
     elseif act then
-        local c = ACTIVE_COLOR
-        fR, fG, fB, fA = conf.activeR or c.r, conf.activeG or c.g, conf.activeB or c.b, conf.activeA or 1
+        local color = ACTIVE_COLOR
+        fR, fG, fB, fA = conf.activeR or color.r, conf.activeG or color.g, conf.activeB or color.b, conf.activeA or 1
     else
         fR, fG, fB, fA = RowColor(conf, defaults)
     end
@@ -1862,9 +1862,9 @@ local function EnsureBuilt()
         for i = 1, #ids do
             local name = C_Spell.GetSpellName(ids[i])
             if Plain(name) and name then
-                local c = QUEUE_COLORS[ids[i]] or QUEUE_COLOR
+                local color = QUEUE_COLORS[ids[i]] or QUEUE_COLOR
                 S.queueSpells[#S.queueSpells + 1] =
-                    { id = ids[i], key = c.key, shared = c.shared, r = c.r, g = c.g, b = c.b, name = name }
+                    { id = ids[i], key = color.key, shared = color.shared, r = color.r, g = color.g, b = color.b, name = name }
             end
         end
     end

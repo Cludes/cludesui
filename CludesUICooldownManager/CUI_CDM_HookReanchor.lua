@@ -68,11 +68,11 @@ end
 
 local function ReleaseEntries(entries)
     for i = 1, #entries do
-        local e = entries[i]
-        if e then
-            e.frame = nil
+        local entry = entries[i]
+        if entry then
+            entry.frame = nil
             _entryPoolSize = _entryPoolSize + 1
-            _entryPool[_entryPoolSize] = e
+            _entryPool[_entryPoolSize] = entry
         end
         entries[i] = nil
     end

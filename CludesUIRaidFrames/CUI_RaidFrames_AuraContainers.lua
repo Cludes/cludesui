@@ -1328,8 +1328,8 @@ local function ApplyDispLocConfig(boxHolder, d, cfg)
     if isActive then
         local missing = false
         for i = 1, #DEBUFF_GROUPS do
-            local g = DEBUFF_GROUPS[i]
-            if DispLocGroupWanted(cfg, g.key) and not declared[g.key] then
+            local group = DEBUFF_GROUPS[i]
+            if DispLocGroupWanted(cfg, group.key) and not declared[group.key] then
                 missing = true
             end
         end
@@ -1351,15 +1351,15 @@ local function ApplyDispLocConfig(boxHolder, d, cfg)
                 AK.styles[dlStyleKey] = AK.styles[dlStyleKey] or BuildDebuffStyle(s2, DispLocSize(s2))
                 AK.styles[dlCCStyleKey] = AK.styles[dlCCStyleKey] or BuildDebuffCCStyle(s2, DispLocSize(s2))
                 for i = 1, #DEBUFF_GROUPS do
-                    local g = DEBUFF_GROUPS[i]
-                    if DispLocGroupWanted(s2, g.key) and not d.rfcDispLocGroups[g.key] then
+                    local group = DEBUFF_GROUPS[i]
+                    if DispLocGroupWanted(s2, group.key) and not d.rfcDispLocGroups[group.key] then
                         AK.AddGroupToContainer(c2, {
-                            key = g.key,
-                            filter = g.filter,
+                            key = group.key,
+                            filter = group.filter,
                             maxFrameCount = 0,
-                            style = (g.key == "cc") and dlCCStyleKey or dlStyleKey,
+                            style = (group.key == "cc") and dlCCStyleKey or dlStyleKey,
                         })
-                        d.rfcDispLocGroups[g.key] = true
+                        d.rfcDispLocGroups[group.key] = true
                     end
                 end
                 ApplyDispLocConfig(c2, d, s2)
@@ -1368,11 +1368,11 @@ local function ApplyDispLocConfig(boxHolder, d, cfg)
     end
 
     for i = 1, #DEBUFF_GROUPS do
-        local g = DEBUFF_GROUPS[i]
-        if declared[g.key] then
-            CludesUI.AuraKit.SetGroupCap(boxHolder, g.key, DispLocGroupWanted(cfg, g.key) and cap or 0)
-            boxHolder:SetAuraGroupCandidateFilters(g.key, cand)
-            boxHolder:SetAuraGroupLayout(g.key, layout)
+        local group = DEBUFF_GROUPS[i]
+        if declared[group.key] then
+            CludesUI.AuraKit.SetGroupCap(boxHolder, group.key, DispLocGroupWanted(cfg, group.key) and cap or 0)
+            boxHolder:SetAuraGroupCandidateFilters(group.key, cand)
+            boxHolder:SetAuraGroupLayout(group.key, layout)
         end
     end
 end
@@ -2923,12 +2923,12 @@ local function BmGeoFP(metaRec, iconScale, cfg)
     -- slot anchor pass (AnchorBmSlots swaps its anchor host on it).
     local t = { tostring(iconScale), tostring(cfg and cfg.powerUniformAnchors or false) }
     for i = 1, #metaRec do
-        local m = metaRec[i]
-        local indicator = m.ind
+        local meta = metaRec[i]
+        local indicator = meta.ind
         t[#t + 1] = FP(
-            m.key,
-            m.size,
-            m.count,
+            meta.key,
+            meta.size,
+            meta.count,
             indicator.spacing,
             indicator.growDirection,
             indicator.position,
@@ -2965,23 +2965,23 @@ local function AnchorBmSlots(d, healthBar, iconScale)
     local restricted = AK.AurasRestricted()
     local skipped = false
     for i = 1, #metaRec do
-        local m = metaRec[i]
+        local meta = metaRec[i]
         -- Anchored member metas share their root's container; the root's
         -- meta carries the member list and anchors once for the set.
-        if m.isChain and not m.anchored then
+        if meta.isChain and not meta.anchored then
             AnchorBmChainContainer(
-                d.rfcBmChain and d.rfcBmChain[m.chainKey],
+                d.rfcBmChain and d.rfcBmChain[meta.chainKey],
                 healthBar,
-                m.members or { { ind = m.ind, count = m.count or (m.ind.spells and #m.ind.spells) } },
+                meta.members or { { ind = meta.ind, count = meta.count or (meta.ind.spells and #meta.ind.spells) } },
                 iconScale
             )
         end
-        local f = (not m.isChain) and frameList and frameList[m.key] or nil
+        local f = (not meta.isChain) and frameList and frameList[meta.key] or nil
         if f then
             if restricted then
                 skipped = true
             else
-                BmAnchorOneSlot(f, m, healthBar, hugBar, iconScale)
+                BmAnchorOneSlot(f, meta, healthBar, hugBar, iconScale)
             end
         end
     end
@@ -3377,11 +3377,11 @@ local function CreateBmContainer(btnFrame, healthBar, d, unitToken)
     -- reload after a swap/login compares equal instead of storming.
     local font = (CludesUI.GetFontPath("raidFrames")) or ""
     for i = 1, #metaRec do
-        local m = metaRec[i]
-        if m.styleKey then
-            bmStyleFP[m.styleKey] = BmVisualKey(m.kind, m.ind, m.size, font, m.spellID)
-            if m.kind == "bgcolor" then
-                bmStyleFP[m.styleKey] = bmStyleFP[m.styleKey] .. mod.RFC_BmTexBgKey(ProxyFor(d))
+        local meta = metaRec[i]
+        if meta.styleKey then
+            bmStyleFP[meta.styleKey] = BmVisualKey(meta.kind, meta.ind, meta.size, font, meta.spellID)
+            if meta.kind == "bgcolor" then
+                bmStyleFP[meta.styleKey] = bmStyleFP[meta.styleKey] .. mod.RFC_BmTexBgKey(ProxyFor(d))
             end
         end
     end
@@ -3478,9 +3478,9 @@ end
 
 local function BmRefreshSizes(metaRec, iconScale)
     for i = 1, #metaRec do
-        local m = metaRec[i]
-        if m.kind == "icon" or m.kind == "square" then
-            m.size = mod.RFC_BmSize(m.ind, iconScale)
+        local meta = metaRec[i]
+        if meta.kind == "icon" or meta.kind == "square" then
+            meta.size = mod.RFC_BmSize(meta.ind, iconScale)
         end
     end
 end
@@ -3510,22 +3510,22 @@ local function BmCheckStyles(classFile, metaRec)
     classFile.stylesChecked = true
     local font = (CludesUI.GetFontPath("raidFrames")) or ""
     for i = 1, #metaRec do
-        local m = metaRec[i]
-        if m.styleKey then
-            local vk = BmVisualKey(m.kind, m.ind, m.size, font, m.spellID)
-            if m.kind == "bgcolor" then
+        local meta = metaRec[i]
+        if meta.styleKey then
+            local vk = BmVisualKey(meta.kind, meta.ind, meta.size, font, meta.spellID)
+            if meta.kind == "bgcolor" then
                 vk = vk .. mod.RFC_BmTexBgKey(classFile.s)
             end
-            if bmStyleFP[m.styleKey] ~= vk then
-                bmStyleFP[m.styleKey] = vk
-                local previousStyle = AK.styles[m.styleKey]
-                AK.styles[m.styleKey] = BuildBmStyleFor(m.kind, m.ind, classFile.iscale, m.size, m.spellID)
-                if m.kind == "bgcolor" then
-                    mod.RFC_BmTexBg(AK.styles[m.styleKey], classFile.s)
+            if bmStyleFP[meta.styleKey] ~= vk then
+                bmStyleFP[meta.styleKey] = vk
+                local previousStyle = AK.styles[meta.styleKey]
+                AK.styles[meta.styleKey] = BuildBmStyleFor(meta.kind, meta.ind, classFile.iscale, meta.size, meta.spellID)
+                if meta.kind == "bgcolor" then
+                    mod.RFC_BmTexBg(AK.styles[meta.styleKey], classFile.s)
                 end
                 -- Pool registration applies to every member, including disabled ones.
-                AK.styles[m.styleKey].bmPandemicRegister = previousStyle and previousStyle.bmPandemicRegister
-                AK.RestyleSoon(m.styleKey)
+                AK.styles[meta.styleKey].bmPandemicRegister = previousStyle and previousStyle.bmPandemicRegister
+                AK.RestyleSoon(meta.styleKey)
             end
         end
     end
@@ -3709,10 +3709,10 @@ local function QueueDebuffPhase(btnFrame, healthBar, d)
         return
     end
     for i = 1, #DEBUFF_GROUPS do
-        local g = DEBUFF_GROUPS[i]
+        local group = DEBUFF_GROUPS[i]
         AKWorker:Queue(function()
             local c = d.rfcDebuffShell
-            if not c or d.rfcDebuffGroups[g.key] then
+            if not c or d.rfcDebuffGroups[group.key] then
                 return
             end
             local nowSec = ProxyFor(d)
@@ -3722,15 +3722,15 @@ local function QueueDebuffPhase(btnFrame, healthBar, d)
             -- 12.1 redesign: Debuff Manager owns the debuff row; only the cc group
             -- (its Crowd Control record + glow carrier) is still declared here --
             -- retired preset groups would be permanent parse consumers even parked at 0.
-            if g.key ~= "cc" then
+            if group.key ~= "cc" then
                 return
             end
-            if g.lazy then
+            if group.lazy then
                 local need = DEBUFF_PRESET_GROUPS[nowSec.debuffFilter or "all"]
                 local wanted = false
                 if need then
                     for k = 1, #need do
-                        if need[k] == g.key then
+                        if need[k] == group.key then
                             wanted = true
                         end
                     end
@@ -3747,12 +3747,12 @@ local function QueueDebuffPhase(btnFrame, healthBar, d)
                 StoreDebuffStyles(lookKey, nowSec)
             end
             AK.AddGroupToContainer(c, {
-                key = g.key,
-                filter = g.filter,
+                key = group.key,
+                filter = group.filter,
                 maxFrameCount = 0,
-                style = (g.key == "cc") and ccStyleKey or lookKey,
+                style = (group.key == "cc") and ccStyleKey or lookKey,
             })
-            d.rfcDebuffGroups[g.key] = true
+            d.rfcDebuffGroups[group.key] = true
         end, "rf:debuff-group")
     end
     AKWorker:Queue(function()
@@ -3787,14 +3787,14 @@ local function QueueDispLocPhase(btnFrame, healthBar, d)
         return
     end
     for i = 1, #DEBUFF_GROUPS do
-        local g = DEBUFF_GROUPS[i]
+        local group = DEBUFF_GROUPS[i]
         AKWorker:Queue(function()
             local c = d.rfcDispLocShell
-            if not c or d.rfcDispLocGroups[g.key] then
+            if not c or d.rfcDispLocGroups[group.key] then
                 return
             end
             local nowSec = ProxyFor(d)
-            if not nowSec or not DispLocActive(nowSec) or not DispLocGroupWanted(nowSec, g.key) then
+            if not nowSec or not DispLocActive(nowSec) or not DispLocGroupWanted(nowSec, group.key) then
                 return
             end
             local lookKey = StyleKeyFor(d)
@@ -3803,12 +3803,12 @@ local function QueueDispLocPhase(btnFrame, healthBar, d)
             AK.styles[dlStyleKey] = AK.styles[dlStyleKey] or BuildDebuffStyle(nowSec, DispLocSize(nowSec))
             AK.styles[dlCCStyleKey] = AK.styles[dlCCStyleKey] or BuildDebuffCCStyle(nowSec, DispLocSize(nowSec))
             AK.AddGroupToContainer(c, {
-                key = g.key,
-                filter = g.filter,
+                key = group.key,
+                filter = group.filter,
                 maxFrameCount = 0,
-                style = (g.key == "cc") and dlCCStyleKey or dlStyleKey,
+                style = (group.key == "cc") and dlCCStyleKey or dlStyleKey,
             })
-            d.rfcDispLocGroups[g.key] = true
+            d.rfcDispLocGroups[group.key] = true
         end, "rf:disploc-group")
     end
     AKWorker:Queue(function()

@@ -505,8 +505,8 @@ local function ColorRow(desc, off)
                 refreshAlpha = modeAlpha("default"),
                 onClick = pick("default"),
                 getValue = function()
-                    local c = G.DEFAULT_COLOR
-                    return c.r, c.g, c.b, 1
+                    local color = G.DEFAULT_COLOR
+                    return color.r, color.g, color.b, 1
                 end,
             },
             {
@@ -1103,9 +1103,9 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
 
     -- One "ICON EFFECTS" section block per list entry.
     for bi = 1, #entries do
-        local e = entries[bi]
-        if not e.filters then
-            e.filters = {}
+        local entry = entries[bi]
+        if not entry.filters then
+            entry.filters = {}
         end
 
         local hdrRgn
@@ -1147,7 +1147,7 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
 
         -- Row 1: Filters | Icon Glow (shared glow controls)
         local glowDesc = GO.PrefixSite(function()
-            return e
+            return entry
         end, "glow", "engine", opts.apply)
         -- The half next to Filters is too narrow for the color swatches.
         glowDesc.colorInCog = true
@@ -1163,13 +1163,13 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
             setValue = function() end,
         }, GO.DropdownSpec(glowDesc, "Icon Glow"))
         sy = sy - hh
-        opts.filters(row._leftRegion, e)
+        opts.filters(row._leftRegion, entry)
         GO.AttachInline(row._rightRegion, glowDesc)
 
         -- Row 2: Border (+ swatch, the DISPLAY-section Border style) | Size
         -- (icon size for the matched filters; 0 = the grid's own size).
         local bRow
-        bRow, hh = W:DualRow(widget, sy, (opts.borderCfg and opts.borderCfg(e)) or {
+        bRow, hh = W:DualRow(widget, sy, (opts.borderCfg and opts.borderCfg(entry)) or {
             type = "slider",
             text = "Border",
             min = 0,
@@ -1177,10 +1177,10 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
             step = 1,
             trackWidth = 120,
             getValue = function()
-                return e.borderSize or 0
+                return entry.borderSize or 0
             end,
             setValue = function(val)
-                e.borderSize = val
+                entry.borderSize = val
                 opts.apply()
             end,
         }, {
@@ -1191,10 +1191,10 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
             step = 1,
             trackWidth = 120,
             getValue = function()
-                return e.size or 0
+                return entry.size or 0
             end,
             setValue = function(val)
-                e.size = (val and val > 0) and val or nil
+                entry.size = (val and val > 0) and val or nil
                 opts.apply()
             end,
         })
@@ -1202,10 +1202,10 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
         do
             local region = bRow._leftRegion
             local swatch = CludesUI.BuildColorSwatch(region, bRow:GetFrameLevel() + 3, function()
-                local color = e.borderColor or { r = 0, g = 0, b = 0 }
+                local color = entry.borderColor or { r = 0, g = 0, b = 0 }
                 return color.r or 0, color.g or 0, color.b or 0, 1
             end, function(red, green, blue)
-                e.borderColor = { r = red, g = green, b = blue }
+                entry.borderColor = { r = red, g = green, b = blue }
                 opts.apply()
             end, false, 20)
             swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)

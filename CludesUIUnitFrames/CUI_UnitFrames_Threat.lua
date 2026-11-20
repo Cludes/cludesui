@@ -166,10 +166,10 @@ if CludesUI.IS_FOREVER then
     local watcher = CreateFrame("Frame")
 
     local function Layout(widget, fontStr)
-        local p = saved.profile
-        local posKey = POS[p.threatPctPosition] and p.threatPctPosition or "CENTER"
-        local size = p.threatPctSize
-        local posX, posY = p.threatPctXOffset, p.threatPctYOffset
+        local profile = saved.profile
+        local posKey = POS[profile.threatPctPosition] and profile.threatPctPosition or "CENTER"
+        local size = profile.threatPctSize
+        local posX, posY = profile.threatPctXOffset, profile.threatPctYOffset
         local font = GetSelectedFont()
         local outline = CludesUI.GetFontOutlineFlag("unitFrames")
         if
@@ -206,8 +206,8 @@ if CludesUI.IS_FOREVER then
             return
         end
         local fontStr = widget._threatPctText
-        local p = saved.profile
-        if p.threatPctEnabled and (unitToken == "target" or p.threatPctFocus) then
+        local profile = saved.profile
+        if profile.threatPctEnabled and (unitToken == "target" or profile.threatPctFocus) then
             local isTanking, status, pct = UnitDetailedThreatSituation("player", unitToken)
             if type(pct) == "number" and (issecretvalue(pct) or pct ~= 0) then
                 if not fontStr then
@@ -216,7 +216,7 @@ if CludesUI.IS_FOREVER then
                     widget._threatPctText = fontStr
                 end
                 Layout(widget, fontStr)
-                CludesUI.PaintThreatPct(fontStr, pct, status, isTanking, p.threatPctColorByThreat)
+                CludesUI.PaintThreatPct(fontStr, pct, status, isTanking, profile.threatPctColorByThreat)
                 fontStr:Show()
                 return
             end

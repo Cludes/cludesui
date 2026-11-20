@@ -103,43 +103,43 @@ initFrame:SetScript("OnEvent", function(self)
     if not CludesUIDB then
         CludesUIDB = {}
     end
-    local p = saved.profile
+    local profile = saved.profile
 
     -- The bank grouping dropdowns were replaced by two toggles. Convert the
     -- short-lived string keys once, then drop them.
-    if p.bankGroupBy ~= nil then
-        if p.bankGroupBy == "category" then
-            p.bankGroupByCategory = true
-        elseif p.bankGroupBy == "expansion" then
-            p.bankNestByExpansion = true
+    if profile.bankGroupBy ~= nil then
+        if profile.bankGroupBy == "category" then
+            profile.bankGroupByCategory = true
+        elseif profile.bankGroupBy == "expansion" then
+            profile.bankNestByExpansion = true
         end
-        p.bankGroupBy = nil
-        p.bankSubGroupBy = nil
+        profile.bankGroupBy = nil
+        profile.bankSubGroupBy = nil
     end
 
     -- Default disabled categories: Housing and Quest Items off by default
     if CludesUIDB.bagDisabledCategoriesSeeded == nil then
         CludesUIDB.bagDisabledCategoriesSeeded = true
-        if not p.bagDisabledCategories then
-            p.bagDisabledCategories = {}
+        if not profile.bagDisabledCategories then
+            profile.bagDisabledCategories = {}
         end
-        p.bagDisabledCategories["Housing"] = true
-        p.bagDisabledCategories["Quest Items"] = true
+        profile.bagDisabledCategories["Housing"] = true
+        profile.bagDisabledCategories["Quest Items"] = true
     end
 
     -- Default category groups and order
     if not CludesUIDB.bagDefaultGroupsSeeded then
         CludesUIDB.bagDefaultGroupsSeeded = true
         -- Only seed if user has no existing customization
-        if not p.bagCategoryState and not p.bagCategoryOrder then
-            p.bagCategoryState = {
+        if not profile.bagCategoryState and not profile.bagCategoryOrder then
+            profile.bagCategoryState = {
                 ["Weapons / Trinkets"] = { groupName = "The Armory", groupNameCustom = true },
                 ["Armor"] = { groupName = "The Armory", groupNameCustom = true },
                 ["Item Set Gear"] = { groupName = "The Armory", groupNameCustom = true },
                 ["Consumables"] = { groupName = "Adventure Prep", groupNameCustom = true },
                 ["Gear Enhancements"] = { groupName = "Adventure Prep", groupNameCustom = true },
             }
-            p.bagCategoryOrder = {
+            profile.bagCategoryOrder = {
                 "Pinned Items",
                 "Recent Items",
                 "Weapons / Trinkets",
@@ -161,8 +161,8 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end
     -- Migrate old numeric-keyed disabled categories to name-keyed
-    if p.bagDisabledCategories and _G.CUI_CategoryManager then
-        local dc = p.bagDisabledCategories
+    if profile.bagDisabledCategories and _G.CUI_CategoryManager then
+        local dc = profile.bagDisabledCategories
         local cats = _G.CUI_CategoryManager:GetCategories()
         local migrated = {}
         local changed = false
@@ -177,7 +177,7 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
         if changed then
-            p.bagDisabledCategories = migrated
+            profile.bagDisabledCategories = migrated
         end
     end
 end)

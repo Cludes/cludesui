@@ -903,9 +903,9 @@ function CludesUI.GetLevelDifficultyColor(lvl, attackable)
         return 1, 0.1, 0.1
     end
     if not attackable then
-        local c = UNIT_LEVEL_NON_ATTACKABLE
-        if c then
-            return c.r, c.g, c.b
+        local color = UNIT_LEVEL_NON_ATTACKABLE
+        if color then
+            return color.r, color.g, color.b
         end
         return 1, 0.82, 0
     end
@@ -1643,25 +1643,25 @@ do
     local gaps = {}
     local function GridAxis(values)
         table.sort(values)
-        local n = 0
+        local count = 0
         for idx = 2, #values do
             local d = values[idx] - values[idx - 1]
             if d > 0 then
-                n = n + 1
-                gaps[n] = d
+                count = count + 1
+                gaps[count] = d
             end
         end
-        for idx = #gaps, n + 1, -1 do
+        for idx = #gaps, count + 1, -1 do
             gaps[idx] = nil
         end
         local first = values[1] or 0
-        if n == 0 then
+        if count == 0 then
             return first, 1, first
         end
         table.sort(gaps)
-        local least = gaps[math.floor(n / 2) + 1] / 4
+        local least = gaps[math.floor(count / 2) + 1] / 4
         local step
-        for idx = 1, n do
+        for idx = 1, count do
             if gaps[idx] > least then
                 step = gaps[idx]
                 break

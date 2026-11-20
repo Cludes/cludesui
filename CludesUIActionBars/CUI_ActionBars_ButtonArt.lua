@@ -1346,21 +1346,21 @@ local function ApplyShapeToButton(buttonFrame, shapeKey, brdOn, brdR, brdG, brdB
     local useCircular = (shapeKey ~= "square" and shapeKey ~= "csquare")
     do
         local edgeTex = "Interface\\AddOns\\CludesUIActionBars\\Media\\edge.png"
-        local p = ABAR.db and ABAR.db.profile
+        local profile = ABAR.db and ABAR.db.profile
         local cr, cg, callback, ca = 0.973, 0.839, 0.604, 1
-        if p then
-            if p.cooldownEdgeUseClassColor then
+        if profile then
+            if profile.cooldownEdgeUseClassColor then
                 local _, classTok = UnitClass("player")
                 local cc = RAID_CLASS_COLORS[classTok]
                 if cc then
                     cr, cg, callback = cc.r, cc.g, cc.b
                 end
-                ca = (p.cooldownEdgeColor and p.cooldownEdgeColor.a) or 1
-            elseif p.cooldownEdgeColor then
-                cr = p.cooldownEdgeColor.r or cr
-                cg = p.cooldownEdgeColor.g or cg
-                callback = p.cooldownEdgeColor.b or callback
-                ca = p.cooldownEdgeColor.a or ca
+                ca = (profile.cooldownEdgeColor and profile.cooldownEdgeColor.a) or 1
+            elseif profile.cooldownEdgeColor then
+                cr = profile.cooldownEdgeColor.r or cr
+                cg = profile.cooldownEdgeColor.g or cg
+                callback = profile.cooldownEdgeColor.b or callback
+                ca = profile.cooldownEdgeColor.a or ca
             end
         end
         for _, cd in ipairs({ buttonFrame.cooldown, buttonFrame.chargeCooldown }) do

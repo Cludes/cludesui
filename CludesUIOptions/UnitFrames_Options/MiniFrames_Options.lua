@@ -932,9 +932,9 @@ local function BuildMiniTextAndSize(
                     tooltip = "Custom Colored",
                     hasAlpha = false,
                     getValue = function()
-                        local c = MVal(sepKey, nil)
-                        if type(c) == "table" then
-                            return c.r or 1, c.g or 1, c.b or 1
+                        local color = MVal(sepKey, nil)
+                        if type(color) == "table" then
+                            return color.r or 1, color.g or 1, color.b or 1
                         end
                         return 1, 1, 1
                     end,
@@ -2389,9 +2389,9 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
     -- boss colour key, white when unset; dimmed and dead while off() holds.
     local function BossTextSwatch(region, settingKey, tip, off)
         local sw, upd = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
-            local c = saved.profile.boss[settingKey]
-            if c then
-                return c.r, c.g, c.b
+            local color = saved.profile.boss[settingKey]
+            if color then
+                return color.r, color.g, color.b
             end
             return 1, 1, 1
         end, function(red, green, blue)

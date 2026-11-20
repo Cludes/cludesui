@@ -22,9 +22,9 @@ local MAX_LINES = 4
 local HOLD = 1.5 -- seconds a reminder stays up after its time
 
 local function Settings()
-    local p = mod.RaidLeadDB()
-    p.reminders = p.reminders or {}
-    local r = p.reminders
+    local profile = mod.RaidLeadDB()
+    profile.reminders = profile.reminders or {}
+    local r = profile.reminders
     r.notes = r.notes or {}
     if r.lead == nil then
         r.lead = 5

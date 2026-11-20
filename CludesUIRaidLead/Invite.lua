@@ -19,9 +19,9 @@ local function Say(textValue)
 end
 
 local function Settings()
-    local p = mod.RaidLeadDB()
-    p.invites = p.invites or {}
-    local cfg = p.invites
+    local profile = mod.RaidLeadDB()
+    profile.invites = profile.invites or {}
+    local cfg = profile.invites
     cfg.list = cfg.list or ""
     cfg.promote = cfg.promote or ""
     if cfg.autoPromote == nil then

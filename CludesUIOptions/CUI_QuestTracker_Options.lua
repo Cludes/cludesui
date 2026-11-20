@@ -27,9 +27,9 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function DB()
-        local d = _G._CUQT_DB
-        if d and d.profile and d.profile.questTracker then
-            return d.profile.questTracker
+        local db = _G._CUQT_DB
+        if db and db.profile and db.profile.questTracker then
+            return db.profile.questTracker
         end
         return {}
     end
@@ -1458,9 +1458,9 @@ CludesUI.AtOptionsLogin(function()
             return BuildPage(page, p, yOffset)
         end,
         onReset = function()
-            local d = _G._CUQT_DB
-            if d and d.ResetProfile then
-                d:ResetProfile()
+            local db = _G._CUQT_DB
+            if db and db.ResetProfile then
+                db:ResetProfile()
             end
             RefreshAll()
             CludesUI:InvalidatePageCache()

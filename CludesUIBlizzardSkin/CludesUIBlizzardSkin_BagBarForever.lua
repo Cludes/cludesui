@@ -79,16 +79,16 @@ local function FadeKeyRingArt(frame, depth)
     end
     local children = { frame:GetChildren() }
     for idx = 1, #children do
-        local c = children[idx]
-        if c and not OURS[c] and not Skin.IsForeignFrame(c, frame) then
-            local regionList = { c:GetRegions() }
+        local child = children[idx]
+        if child and not OURS[child] and not Skin.IsForeignFrame(child, frame) then
+            local regionList = { child:GetRegions() }
             for jdx = 1, #regionList do
                 local region = regionList[jdx]
                 if region and region.GetObjectType and region:GetObjectType() == "Texture" then
                     region:SetAlpha(0)
                 end
             end
-            FadeKeyRingArt(c, depth + 1)
+            FadeKeyRingArt(child, depth + 1)
         end
     end
 end

@@ -175,9 +175,9 @@ end
 
 local function ClassColour()
     local _, class = UnitClass("player")
-    local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-    if c then
-        return c.r, c.g, c.b
+    local color = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+    if color then
+        return color.r, color.g, color.b
     end
 end
 
@@ -394,8 +394,8 @@ local TEXT_DYNAMIC = {
         for index = 1, #ILVL_BANDS do
             local band = ILVL_BANDS[index]
             if lvl >= band[1] then
-                local c = CRESTS[band[2]]
-                return c.r, c.g, c.b
+                local color = CRESTS[band[2]]
+                return color.r, color.g, color.b
             end
         end
         return 1, 1, 1

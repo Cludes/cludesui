@@ -308,8 +308,8 @@ Paint = function()
             for _, texture in ipairs(tab.inactive) do
                 texture:SetShown(not on)
             end
-            local c = on and HIGHLIGHT_FONT_COLOR or NORMAL_FONT_COLOR
-            tab.text:SetTextColor(c.r, c.g, c.b)
+            local color = on and HIGHLIGHT_FONT_COLOR or NORMAL_FONT_COLOR
+            tab.text:SetTextColor(color.r, color.g, color.b)
             tab.text:SetPoint("CENTER", 0, on and 4 or 2)
         end
     end

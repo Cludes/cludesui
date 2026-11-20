@@ -983,9 +983,9 @@ local function ActiveBuffColor(record)
         return nil
     end
     for i = 1, #entries do
-        local e = entries[i]
-        if e.spellID and PlayerHasBuff(e.spellID) then
-            return e.r, e.g, e.b, e.a, i
+        local entry = entries[i]
+        if entry.spellID and PlayerHasBuff(entry.spellID) then
+            return entry.r, entry.g, entry.b, entry.a, i
         end
     end
     return nil

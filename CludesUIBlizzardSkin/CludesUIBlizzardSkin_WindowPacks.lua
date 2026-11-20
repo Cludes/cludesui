@@ -942,14 +942,14 @@ local function WhitenTextIn(widget, nestDepth)
     if widget.GetChildren then
         local children = { widget:GetChildren() }
         for idx = 1, #children do
-            local c = children[idx]
-            if c and not Skin.IsForeignFrame(c, widget) then
-                if c.GetObjectType and c:GetObjectType() == "SimpleHTML" and c.SetTextColor then
+            local child = children[idx]
+            if child and not Skin.IsForeignFrame(child, widget) then
+                if child.GetObjectType and child:GetObjectType() == "SimpleHTML" and child.SetTextColor then
                     for _, part in ipairs({ "P", "H1", "H2", "H3" }) do
-                        pcall(c.SetTextColor, c, part, 1, 1, 1)
+                        pcall(child.SetTextColor, child, part, 1, 1, 1)
                     end
                 end
-                WhitenTextIn(c, nestDepth + 1)
+                WhitenTextIn(child, nestDepth + 1)
             end
         end
     end
@@ -1273,17 +1273,17 @@ do
         end
         local children = { widget:GetChildren() }
         for idx = 1, #children do
-            local c = children[idx]
-            if c and not Skin.IsForeignFrame(c, widget) then
+            local child = children[idx]
+            if child and not Skin.IsForeignFrame(child, widget) then
                 if
-                    c.creature
-                    and (c.text or c.name)
-                    and c.GetObjectType
-                    and c:GetObjectType() == "Button"
+                    child.creature
+                    and (child.text or child.name)
+                    and child.GetObjectType
+                    and child:GetObjectType() == "Button"
                 then
-                    SkinBossButton(c)
+                    SkinBossButton(child)
                 end
-                FlattenBossButtons(c, nestDepth + 1)
+                FlattenBossButtons(child, nestDepth + 1)
             end
         end
     end
@@ -1357,12 +1357,12 @@ do
         end
         local children = { widget:GetChildren() }
         for idx = 1, #children do
-            local c = children[idx]
-            if c and not Skin.IsForeignFrame(c, widget) then
-                if c.bgImage and c.name and c.GetObjectType and c:GetObjectType() == "Button" then
-                    SkinInstanceButton(c)
+            local child = children[idx]
+            if child and not Skin.IsForeignFrame(child, widget) then
+                if child.bgImage and child.name and child.GetObjectType and child:GetObjectType() == "Button" then
+                    SkinInstanceButton(child)
                 end
-                FlattenInstanceButtons(c, nestDepth + 1)
+                FlattenInstanceButtons(child, nestDepth + 1)
             end
         end
     end
@@ -1518,12 +1518,12 @@ do
         end
         local children = { widget:GetChildren() }
         for idx = 1, #children do
-            local c = children[idx]
-            if c and not Skin.IsForeignFrame(c, widget) then
-                if c.bossTexture and c.slot and c.GetObjectType and c:GetObjectType() == "Button" then
-                    SkinLootRow(c)
+            local child = children[idx]
+            if child and not Skin.IsForeignFrame(child, widget) then
+                if child.bossTexture and child.slot and child.GetObjectType and child:GetObjectType() == "Button" then
+                    SkinLootRow(child)
                 end
-                FlattenLootRows(c, nestDepth + 1)
+                FlattenLootRows(child, nestDepth + 1)
             end
         end
     end
@@ -1579,16 +1579,16 @@ do
         end
         local children = { widget:GetChildren() }
         for idx = 1, #children do
-            local c = children[idx]
-            if c and not Skin.IsForeignFrame(c, widget) then
-                if c.descriptionBG and c.descriptionBG.SetAlpha then
-                    c.descriptionBG:SetAlpha(0)
+            local child = children[idx]
+            if child and not Skin.IsForeignFrame(child, widget) then
+                if child.descriptionBG and child.descriptionBG.SetAlpha then
+                    child.descriptionBG:SetAlpha(0)
                 end
-                if c.descriptionBGBottom and c.descriptionBGBottom.SetAlpha then
-                    c.descriptionBGBottom:SetAlpha(0)
+                if child.descriptionBGBottom and child.descriptionBGBottom.SetAlpha then
+                    child.descriptionBGBottom:SetAlpha(0)
                 end
                 -- Description bullets -> round status orb (first cell of the lootroll reveal sheet), white.
-                local bulletTex = c.Bullet
+                local bulletTex = child.Bullet
                 if bulletTex and bulletTex.SetTexture and not GetFFD(bulletTex).orbed then
                     GetFFD(bulletTex).orbed = true
                     local details = C_Texture
@@ -1609,7 +1609,7 @@ do
                         bulletTex:SetSize(bw + 2, bh + 2)
                     end
                 end
-                local button = c.button
+                local button = child.button
                 local bTitle = button and (button.title or button.Title)
                 if button and bTitle then
                     local skinData = GetFFD(button)
@@ -1697,7 +1697,7 @@ do
                         end
                     end
                 end
-                SkinAbilityHeaders(c, nestDepth + 1)
+                SkinAbilityHeaders(child, nestDepth + 1)
             end
         end
     end
@@ -2728,27 +2728,27 @@ do
             end
             local children = { owner:GetChildren() }
             for idx = 1, #children do
-                local c = children[idx]
+                local child = children[idx]
                 if
-                    c
-                    and not Skin.IsForeignFrame(c, owner)
-                    and c.GetObjectType
-                    and c:GetObjectType() == "Button"
+                    child
+                    and not Skin.IsForeignFrame(child, owner)
+                    and child.GetObjectType
+                    and child:GetObjectType() == "Button"
                 then
-                    if not GetFFD(c).moved then
-                        local nt = c.GetNormalTexture and c:GetNormalTexture()
+                    if not GetFFD(child).moved then
+                        local nt = child.GetNormalTexture and child:GetNormalTexture()
                         local hay = nt and Skin.TexHay(nt)
                         if hay and hay:find("help-i", 1, true) then
-                            local top, fTop = c:GetTop(), win:GetTop()
+                            local top, fTop = child:GetTop(), win:GetTop()
                             if top and fTop then
-                                GetFFD(c).moved = true
-                                c:ClearAllPoints()
-                                c:SetPoint("TOPLEFT", win, "TOPLEFT", 4, top - fTop)
+                                GetFFD(child).moved = true
+                                child:ClearAllPoints()
+                                child:SetPoint("TOPLEFT", win, "TOPLEFT", 4, top - fTop)
                             end
                         end
                     end
-                elseif c then
-                    SeatProfHelp(c, nestDepth + 1)
+                elseif child then
+                    SeatProfHelp(child, nestDepth + 1)
                 end
             end
         end
@@ -5552,11 +5552,11 @@ do
                 if subPanel then
                     local children = { subPanel:GetChildren() }
                     for idx = 1, #children do
-                        local c = children[idx]
-                        if c and c.NineSlice and not Skin.IsForeignFrame(c, subPanel) then
-                            Skin.FadeNineSlice(c.NineSlice)
-                            Skin.FadeRegions(c)
-                            Skin.Register(c, true)
+                        local child = children[idx]
+                        if child and child.NineSlice and not Skin.IsForeignFrame(child, subPanel) then
+                            Skin.FadeNineSlice(child.NineSlice)
+                            Skin.FadeRegions(child)
+                            Skin.Register(child, true)
                         end
                     end
                 end
@@ -6611,11 +6611,11 @@ do
         local kids = {}
         local children = { btnFrame:GetChildren() }
         for idx = 1, #children do
-            local c = children[idx]
-            if c and c.SetAlpha then
-                kids[#kids + 1] = c
-                if not isLocked and c.GetRegions then
-                    local regions2 = { c:GetRegions() }
+            local child = children[idx]
+            if child and child.SetAlpha then
+                kids[#kids + 1] = child
+                if not isLocked and child.GetRegions then
+                    local regions2 = { child:GetRegions() }
                     for jdx = 1, #regions2 do
                         local r2 = regions2[jdx]
                         if r2 and r2.IsObjectType and r2:IsObjectType("Texture") then

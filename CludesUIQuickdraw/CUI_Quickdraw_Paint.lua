@@ -234,20 +234,20 @@ function PaletteView:Layout(paletteIndex)
     -- Half-extents a block layout's nests reach to, in the frame's own units.
     local nestX, nestY = 0, 0
     for key = 1, (claims and #claims or 0) do
-        local c = claims[key]
-        if c.cells then
-            for jdx = 1, c.n do
-                local b = c.cells[jdx]
+        local claim = claims[key]
+        if claim.cells then
+            for jdx = 1, claim.n do
+                local b = claim.cells[jdx]
                 -- The BOX, not the icon: it is the box a pointer has to be able
                 -- to reach, and a frame sized to the icons alone would put part
                 -- of a nest's own ground outside the palette.
-                nestX = max(nestX, abs(b.x) + max(b.hw, c.icon * 0.5))
-                nestY = max(nestY, abs(b.y) + max(b.hh, c.icon * 0.5))
+                nestX = max(nestX, abs(b.x) + max(b.hw, claim.icon * 0.5))
+                nestY = max(nestY, abs(b.y) + max(b.hh, claim.icon * 0.5))
             end
         else
             -- Plus the child's own half-width: a ring of icons reaches further
             -- than the circle their centres sit on, and that is what clips.
-            outer = max(outer, c.radius + c.icon * 0.5 - iconSize * 0.5)
+            outer = max(outer, claim.radius + claim.icon * 0.5 - iconSize * 0.5)
         end
     end
 
@@ -389,43 +389,43 @@ function PaletteView:Layout(paletteIndex)
     local cells = isShown
     if claims then
         for key = 1, #claims do
-            local c = claims[key]
-            c.base = cells
-            for jdx = 1, c.n do
+            local claim = claims[key]
+            claim.base = cells
+            for jdx = 1, claim.n do
                 cells = cells + 1
                 local wid = self:Widget(cells)
                 wid:SetAlpha(1)
                 wid:SetScale(1)
-                wid.baseSize = c.icon
+                wid.baseSize = claim.icon
                 wid:ClearAllPoints()
-                if c.cells then
+                if claim.cells then
                     -- A block layout rewrites these every frame in AdvanceGrid,
                     -- along with the falloff; placing them here too is what a
                     -- view that never steers -- a static frame -- shows.
-                    wid:SetPoint("CENTER", widget, "CENTER", c.cells[jdx].x, c.cells[jdx].y)
+                    wid:SetPoint("CENTER", widget, "CENTER", claim.cells[jdx].x, claim.cells[jdx].y)
                 else
-                    local region, a = self:ChildRingPos(c, jdx)
+                    local region, a = self:ChildRingPos(claim, jdx)
                     wid:SetPoint("CENTER", widget, "CENTER", region * sin(a), region * cos(a))
                 end
-                wid:SetSize(c.icon, c.icon)
+                wid:SetSize(claim.icon, claim.icon)
                 wid:EnableMouse(false)
                 PaintCell(
                     wid,
-                    c.slots[jdx],
+                    claim.slots[jdx],
                     false,
                     showLabels,
                     showCooldowns,
-                    c.label ~= false,
-                    c.icon,
+                    claim.label ~= false,
+                    claim.icon,
                     showUsability
                 )
-                if HasLiveIcon(c.slots[jdx]) then
+                if HasLiveIcon(claim.slots[jdx]) then
                     liveCells[#liveCells + 1] = cells
                 end
-                if mod.WarmSlot(c.slots[jdx]) then
+                if mod.WarmSlot(claim.slots[jdx]) then
                     pending[#pending + 1] = cells
                 end
-                if showUsability and HasMountTint(c.slots[jdx]) then
+                if showUsability and HasMountTint(claim.slots[jdx]) then
                     mountCells[#mountCells + 1] = cells
                 end
                 -- Hidden until its own claim is opened -- see UpdateNestShown.
@@ -816,9 +816,9 @@ function PaletteView:CellSlot(index)
     end
     local claims = self.claims
     for key = 1, (claims and #claims or 0) do
-        local c = claims[key]
-        if c.base and index > c.base and index <= c.base + c.n then
-            return c.slots[index - c.base], c, index - c.base
+        local claim = claims[key]
+        if claim.base and index > claim.base and index <= claim.base + claim.n then
+            return claim.slots[index - claim.base], claim, index - claim.base
         end
     end
     return nil
@@ -894,9 +894,9 @@ function PaletteView:UpdateNestShown(index)
     -- The claim the selection is standing on or inside.
     local touched
     for key = 1, #claims do
-        local c = claims[key]
-        if index and c.base and (index == c.parent or (index > c.base and index <= c.base + c.n)) then
-            touched = c
+        local claim = claims[key]
+        if index and claim.base and (index == claim.parent or (index > claim.base and index <= claim.base + claim.n)) then
+            touched = claim
         end
     end
 
@@ -932,10 +932,10 @@ function PaletteView:UpdateNestShown(index)
     self._openClaim = open
 
     for key = 1, #claims do
-        local c = claims[key]
-        local shownNest = (c == open)
-        for jdx = 1, c.n do
-            local wid = c.base and self.widgets[c.base + jdx]
+        local claim = claims[key]
+        local shownNest = (claim == open)
+        for jdx = 1, claim.n do
+            local wid = claim.base and self.widgets[claim.base + jdx]
             if wid then
                 if shownNest then
                     wid:SetAlpha(1)

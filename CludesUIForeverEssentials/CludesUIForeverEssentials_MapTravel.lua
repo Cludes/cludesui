@@ -354,16 +354,16 @@ local function DrawZone(zone)
         local entries = payload.instances[zone]
         if entries then
             for index = 1, #entries do
-                local e = entries[index]
+                local entry = entries[index]
                 Place(
-                    e[1] / 100,
-                    e[2] / 100,
-                    e[4] and "raid" or "dungeon",
+                    entry[1] / 100,
+                    entry[2] / 100,
+                    entry[4] and "raid" or "dungeon",
                     INSTANCE_SIZE,
-                    InstanceTip(e),
+                    InstanceTip(entry),
                     nil,
                     nil,
-                    InstanceLink(e)
+                    InstanceLink(entry)
                 )
             end
         end
@@ -372,17 +372,17 @@ local function DrawZone(zone)
         local entries = payload.exits[zone]
         if entries then
             for index = 1, #entries do
-                local e = entries[index]
-                local posX, posY = e[1] / 100, e[2] / 100
+                local entry = entries[index]
+                local posX, posY = entry[1] / 100, entry[2] / 100
                 Place(
                     posX,
                     posY,
                     "poi-traveldirections-arrow",
                     ARROW_SIZE,
-                    ZoneName(e[3]),
-                    ExitRotation(zone, posX, posY, e[3]),
+                    ZoneName(entry[3]),
+                    ExitRotation(zone, posX, posY, entry[3]),
                     nil,
-                    CludesUI.Lf("Path from %s to %s", ZoneName(zone), ZoneName(e[3]))
+                    CludesUI.Lf("Path from %s to %s", ZoneName(zone), ZoneName(entry[3]))
                 )
             end
         end
@@ -421,20 +421,20 @@ local function DrawWider(map, instances)
     if instances and On("instances") then
         for zone, entries in pairs(payload.instances) do
             for index = 1, #entries do
-                local e = entries[index]
-                local posX, posY = OnWiderMap(zone, map, e[1] / 100, e[2] / 100)
+                local entry = entries[index]
+                local posX, posY = OnWiderMap(zone, map, entry[1] / 100, entry[2] / 100)
                 if posX then
                     local p = Place(
                         posX,
                         posY,
-                        e[4] and "raid" or "dungeon",
+                        entry[4] and "raid" or "dungeon",
                         INSTANCE_SIZE,
-                        InstanceTip(e),
+                        InstanceTip(entry),
                         nil,
                         nil,
-                        InstanceLink(e)
+                        InstanceLink(entry)
                     )
-                    p.linkMap, p.linkX, p.linkY = zone, e[1] / 100, e[2] / 100
+                    p.linkMap, p.linkX, p.linkY = zone, entry[1] / 100, entry[2] / 100
                 end
             end
         end

@@ -2388,9 +2388,9 @@ local function BuildDispelColorFields(widget, fontFile, startY, rowConf, applyFn
 
     local function AddDispelSwatch(region, record)
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 3, function()
-            local c = rowConf[record.key]
-            if c then
-                return c.r or 1, c.g or 1, c.b or 1, 1
+            local color = rowConf[record.key]
+            if color then
+                return color.r or 1, color.g or 1, color.b or 1, 1
             end
             return record.fallback[1], record.fallback[2], record.fallback[3], 1
         end, function(red, green, blue)

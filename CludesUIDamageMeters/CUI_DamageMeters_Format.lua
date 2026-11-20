@@ -60,8 +60,8 @@ end
 -- (its kit carries no CludesUI accent), the accent otherwise.
 function mod.DMTitleRGB()
     if mod.DMForever() then
-        local c = mod.DM_FV.gold
-        return c.r, c.g, c.b
+        local color = mod.DM_FV.gold
+        return color.r, color.g, color.b
     end
     return GetAccentRGB()
 end

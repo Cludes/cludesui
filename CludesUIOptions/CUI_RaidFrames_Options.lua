@@ -586,9 +586,9 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 hasAlpha = false,
                 getValue = function()
                     local _, ct = UnitClass("player")
-                    local c = ct and RAID_CLASS_COLORS[ct]
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = ct and RAID_CLASS_COLORS[ct]
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 1, 1, 1
                 end,

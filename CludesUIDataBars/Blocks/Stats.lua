@@ -329,18 +329,18 @@ local function ScanMemory()
     end
     lastMemoryScan = now
     UpdateAddOnMemoryUsage()
-    local n = 0
+    local count = 0
     for i = 1, C_AddOns.GetNumAddOns() do
         local _, name = C_AddOns.GetAddOnInfo(i)
         local mem = GetAddOnMemoryUsage(i)
         if mem > 0 then
-            n = n + 1
-            local entry = memory[n] or {}
-            memory[n] = entry
+            count = count + 1
+            local entry = memory[count] or {}
+            memory[count] = entry
             entry.name, entry.mem = name, mem
         end
     end
-    for i = n + 1, #memory do
+    for i = count + 1, #memory do
         memory[i] = nil
     end
     table.sort(memory, MostMemory)

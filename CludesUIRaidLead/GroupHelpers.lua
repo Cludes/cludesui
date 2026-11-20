@@ -52,9 +52,9 @@ local function Secret(val)
 end
 
 function mod.HelperSettings()
-    local p = mod.RaidLeadDB()
-    p.helpers = p.helpers or {}
-    local cfg = p.helpers
+    local profile = mod.RaidLeadDB()
+    profile.helpers = profile.helpers or {}
+    local cfg = profile.helpers
     if cfg.drops == nil then
         cfg.drops = true
     end

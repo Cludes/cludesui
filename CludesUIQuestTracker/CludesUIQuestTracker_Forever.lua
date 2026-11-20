@@ -490,12 +490,12 @@ local function ApplySort(mode, isCompleted, thenBy)
         Watch(sortIDs[i])
     end
     -- Read the order back; the guard arms only if it did not take.
-    local n = 0
+    local count = 0
     for i = 1, C_QuestLog.GetNumQuestWatches() do
         local questId = C_QuestLog.GetQuestIDForQuestWatchIndex(i)
         if questId then
-            n = n + 1
-            if questId ~= sortIDs[n] then
+            count = count + 1
+            if questId ~= sortIDs[count] then
                 sortRefused = true
                 return
             end

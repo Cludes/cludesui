@@ -171,17 +171,17 @@ local function RegisterUnlockElements()
                 return iconAnchor
             end,
             getSize = function()
-                local p = saved.profile.display
-                local baseScale = p.scale or 1.0
+                local display = saved.profile.display
+                local baseScale = display.scale or 1.0
                 local iconSz = floor(ICON_SIZE * baseScale + 0.5)
                 local iconH = iconSz
-                if p.iconShape and p.iconShape ~= "none" then
-                    iconSz, iconH = mod.IconDimensions(iconSz, p)
+                if display.iconShape and display.iconShape ~= "none" then
+                    iconSz, iconH = mod.IconDimensions(iconSz, display)
                 end
-                local spacing = p.iconSpacing or 8
+                local spacing = display.iconSpacing or 8
                 -- Fits all active icons (same set LayoutIcons places: reminders + merged beacon icons unless cursor-routed); falls back to a 2-wide grabbable box when empty so the mover overlay stays draggable.
                 local total = #activeIcons
-                local beaconsOnCursor = CursorAttachActive(p) and cursorAnchor
+                local beaconsOnCursor = CursorAttachActive(display) and cursorAnchor
                 if _B.icons and not beaconsOnCursor then
                     for _, ident in ipairs(_B.ALL or {}) do
                         if _B.iconState and _B.iconState[ident] and _B.icons[ident] then
@@ -194,8 +194,8 @@ local function RegisterUnlockElements()
                 end
                 local wid = total * iconSz + (total - 1) * spacing
                 local textH = 0
-                if p.showText then
-                    textH = (p.textSize or 11) + abs(p.textYOffset or -2)
+                if display.showText then
+                    textH = (display.textSize or 11) + abs(display.textYOffset or -2)
                 end
                 local hgt = iconH + textH
                 -- Resizes the anchor for the overlay

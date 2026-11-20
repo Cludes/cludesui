@@ -162,9 +162,9 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             return color.r, color.g, color.b
         elseif modeName == "class" then
             local _, class = UnitClass("player")
-            local c = class and RAID_CLASS_COLORS[class]
-            if c then
-                return c.r, c.g, c.b
+            local color = class and RAID_CLASS_COLORS[class]
+            if color then
+                return color.r, color.g, color.b
             end
         end
         -- accent AND native both land here; only the Game Menu header calls this unconditionally under native (branded green) -- others gate first.

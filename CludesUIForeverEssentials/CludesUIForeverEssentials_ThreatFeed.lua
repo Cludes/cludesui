@@ -152,8 +152,8 @@ local function Build()
     local had = #sources
     local rank = 0
     for index = 1, total do
-        local e = entries[index]
-        if not e.pull then
+        local entry = entries[index]
+        if not entry.pull then
             rank = rank + 1
         end
         local region = pool[index]
@@ -161,7 +161,7 @@ local function Build()
             region = {}
             pool[index] = region
         end
-        FillRow(region, e, rank, c)
+        FillRow(region, entry, rank, c)
         sources[index] = region
     end
     for index = had, total + 1, -1 do

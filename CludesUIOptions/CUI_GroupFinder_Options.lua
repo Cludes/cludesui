@@ -436,9 +436,9 @@ CludesUI.AtLogin(function()
                     type = "colorpicker",
                     label = labelText,
                     get = function()
-                        local c = mod.OwnListGet(line[5])
-                        if type(c) == "table" then
-                            return c.r, c.g, c.b
+                        local color = mod.OwnListGet(line[5])
+                        if type(color) == "table" then
+                            return color.r, color.g, color.b
                         end
                         return line[2], line[3], line[4]
                     end,

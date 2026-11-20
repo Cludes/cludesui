@@ -567,8 +567,8 @@ end
 -- The party mode is live only while FrameSort is loaded: a saved choice with
 -- the addon gone runs the native order, and the self button keeps its job.
 function mod._FsPartyMode()
-    local p = saved and saved.profile
-    return p ~= nil and (p.partySortMode or p.sortMode) == "FRAMESORT" and mod._FrameSortApi() ~= nil
+    local profile = saved and saved.profile
+    return profile ~= nil and (profile.partySortMode or profile.sortMode) == "FRAMESORT" and mod._FrameSortApi() ~= nil
 end
 
 -- rank[token] = position in FrameSort's list, players only (pets and the
@@ -775,8 +775,8 @@ end
 function mod._FrameSortApply()
     -- Zero cost unless the mode is picked (FrameSort calls in on its own runs
     -- and settings edits whatever our choice).
-    local p = saved and saved.profile
-    if not (p and (p.sortMode == "FRAMESORT" or (p.partySortMode or p.sortMode) == "FRAMESORT")) then
+    local profile = saved and saved.profile
+    if not (profile and (profile.sortMode == "FRAMESORT" or (profile.partySortMode or profile.sortMode) == "FRAMESORT")) then
         return false
     end
     if InCombatLockdown() then
@@ -817,8 +817,8 @@ function mod._FrameSortRegister()
             return "CludesUI"
         end,
         Enabled = function()
-            local p = saved and saved.profile
-            return p ~= nil and (p.sortMode == "FRAMESORT" or (p.partySortMode or p.sortMode) == "FRAMESORT")
+            local profile = saved and saved.profile
+            return profile ~= nil and (profile.sortMode == "FRAMESORT" or (profile.partySortMode or profile.sortMode) == "FRAMESORT")
         end,
         IsVisible = function()
             return mod._raidFramesVisible == true or mod._partyFramesVisible == true

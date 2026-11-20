@@ -244,19 +244,19 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
             max = maxV,
             step = 1,
             getValue = function()
-                local p = saved()
-                local val = p and p[key]
-                if val == nil and legacyKey and p then
-                    val = p[legacyKey]
+                local profile = saved()
+                local val = profile and profile[key]
+                if val == nil and legacyKey and profile then
+                    val = profile[legacyKey]
                 end
                 return val or DEF[key] or def
             end,
             setValue = function(val)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p[key] = val
+                profile[key] = val
                 local func = (applyName and mod[applyName]) or mod.RefreshAllSettings
                 if func then
                     func()
@@ -327,15 +327,15 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
         max = 20,
         step = 1,
         getValue = function()
-            local p = saved()
-            return (p and p.auraStackTextSize) or DEF.auraStackTextSize or 11
+            local profile = saved()
+            return (profile and profile.auraStackTextSize) or DEF.auraStackTextSize or 11
         end,
         setValue = function(val)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.auraStackTextSize = val
+            profile.auraStackTextSize = val
             if mod.RefreshAllSettings then
                 mod.RefreshAllSettings()
             end
@@ -434,15 +434,15 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
             max = maxV,
             step = 1,
             getValue = function()
-                local p = saved()
-                return (p and p[key]) or def
+                local profile = saved()
+                return (profile and profile[key]) or def
             end,
             setValue = function(val)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p[key] = val
+                profile[key] = val
                 RFApply()
             end,
         }
@@ -482,19 +482,19 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         max = 24,
         step = 1,
         getValue = function()
-            local p = saved()
-            local hm = p and p.healerMana
+            local profile = saved()
+            local hm = profile and profile.healerMana
             return (hm and hm.textSize) or 12
         end,
         setValue = function(val)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            if not p.healerMana then
-                p.healerMana = {}
+            if not profile.healerMana then
+                profile.healerMana = {}
             end
-            p.healerMana.textSize = val
+            profile.healerMana.textSize = val
             if mod.HM_Rebuild then
                 mod.HM_Rebuild()
             else
@@ -569,13 +569,13 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
             max = maxV,
             step = 1,
             getValue = function()
-                local p = saved()
-                local tbl = p and p[tableKey]
+                local profile = saved()
+                local tbl = profile and profile[tableKey]
                 return (tbl and tbl[key]) or def
             end,
             setValue = function(val)
-                local p = saved()
-                local tbl = p and p[tableKey]
+                local profile = saved()
+                local tbl = profile and profile[tableKey]
                 if not tbl then
                     return
                 end
@@ -634,15 +634,15 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         values = nameFontValues,
         order = nameFontOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.display and p.display.nameFont) or "__global"
+            local profile = saved()
+            return (profile and profile.display and profile.display.nameFont) or "__global"
         end,
         setValue = function(val)
-            local p = saved()
-            if not (p and p.display) then
+            local profile = saved()
+            if not (profile and profile.display) then
                 return
             end
-            p.display.nameFont = (val ~= "__global") and val or nil
+            profile.display.nameFont = (val ~= "__global") and val or nil
             if _G._CUABR_RequestRefresh then
                 _G._CUABR_RequestRefresh()
             end
@@ -654,15 +654,15 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         max = 30,
         step = 1,
         getValue = function()
-            local p = saved()
-            return (p and p.display and p.display.textSize) or 11
+            local profile = saved()
+            return (profile and profile.display and profile.display.textSize) or 11
         end,
         setValue = function(val)
-            local p = saved()
-            if not (p and p.display) then
+            local profile = saved()
+            if not (profile and profile.display) then
                 return
             end
-            p.display.textSize = val
+            profile.display.textSize = val
             if _G._CUABR_RequestRefresh then
                 _G._CUABR_RequestRefresh()
             end
@@ -675,15 +675,15 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         values = nameFontValues,
         order = nameFontOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.display and p.display.countFont) or "__global"
+            local profile = saved()
+            return (profile and profile.display and profile.display.countFont) or "__global"
         end,
         setValue = function(val)
-            local p = saved()
-            if not (p and p.display) then
+            local profile = saved()
+            if not (profile and profile.display) then
                 return
             end
-            p.display.countFont = (val ~= "__global") and val or nil
+            profile.display.countFont = (val ~= "__global") and val or nil
             if _G._CUABR_RequestRefresh then
                 _G._CUABR_RequestRefresh()
             end
@@ -695,15 +695,15 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         max = 30,
         step = 1,
         getValue = function()
-            local p = saved()
-            return (p and p.display and p.display.countSize) or 16
+            local profile = saved()
+            return (profile and profile.display and profile.display.countSize) or 16
         end,
         setValue = function(val)
-            local p = saved()
-            if not (p and p.display) then
+            local profile = saved()
+            if not (profile and profile.display) then
                 return
             end
-            p.display.countSize = val
+            profile.display.countSize = val
             if _G._CUABR_RequestRefresh then
                 _G._CUABR_RequestRefresh()
             end
@@ -716,15 +716,15 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         values = nameFontValues,
         order = nameFontOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.consumables and p.consumables.rcManaWarnFont) or "__global"
+            local profile = saved()
+            return (profile and profile.consumables and profile.consumables.rcManaWarnFont) or "__global"
         end,
         setValue = function(val)
-            local p = saved()
-            if not (p and p.consumables) then
+            local profile = saved()
+            if not (profile and profile.consumables) then
                 return
             end
-            p.consumables.rcManaWarnFont = (val ~= "__global") and val or nil
+            profile.consumables.rcManaWarnFont = (val ~= "__global") and val or nil
             if _G._CUABR_RCWarnApply then
                 _G._CUABR_RCWarnApply()
             end
@@ -736,15 +736,15 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         max = 72,
         step = 1,
         getValue = function()
-            local p = saved()
-            return (p and p.consumables and p.consumables.rcManaWarnSize) or 48
+            local profile = saved()
+            return (profile and profile.consumables and profile.consumables.rcManaWarnSize) or 48
         end,
         setValue = function(val)
-            local p = saved()
-            if not (p and p.consumables) then
+            local profile = saved()
+            if not (profile and profile.consumables) then
                 return
             end
-            p.consumables.rcManaWarnSize = val
+            profile.consumables.rcManaWarnSize = val
             if _G._CUABR_RCWarnApply then
                 _G._CUABR_RCWarnApply()
             end
@@ -790,8 +790,8 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         }
     end
     local function brDB()
-        local d = _G._CUI_BattleRes_DB and _G._CUI_BattleRes_DB()
-        return d and d.profile and d.profile.battleRes
+        local db = _G._CUI_BattleRes_DB and _G._CUI_BattleRes_DB()
+        return db and db.profile and db.profile.battleRes
     end
     local function brSize(labelText, key, minV, maxV, def)
         return {
@@ -817,8 +817,8 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         }
     end
     local function blDB()
-        local d = _G._CUI_BattleRes_DB and _G._CUI_BattleRes_DB()
-        return d and d.profile and d.profile.bloodlust
+        local db = _G._CUI_BattleRes_DB and _G._CUI_BattleRes_DB()
+        return db and db.profile and db.profile.bloodlust
     end
     -- Bloodlust writes its own key but reads through the Battle Res value,
     -- exactly like the module's own sliders.
@@ -967,13 +967,13 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         step = 1,
         tooltip = "Sizes the movement alert's free text, bar number and icon countdown. Switching the alert's Display Mode re-seeds this value.",
         getValue = function()
-            local d = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
-            local ma = d and d.profile and d.profile.movementAlert
+            local db = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
+            local ma = db and db.profile and db.profile.movementAlert
             return (ma and ma.textSize) or 24
         end,
         setValue = function(val)
-            local d = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
-            local ma = d and d.profile and d.profile.movementAlert
+            local db = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
+            local ma = db and db.profile and db.profile.movementAlert
             if not ma then
                 return
             end
@@ -1033,15 +1033,15 @@ local function TileChat(hostFrame, cursorY, W, tile)
         values = fontValues,
         order = fontOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.font) or "__global"
+            local profile = saved()
+            return (profile and profile.font) or "__global"
         end,
         setValue = function(val)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.font = val
+            profile.font = val
             ChatReload("Font changed. A UI reload is needed to apply the new font.")
         end,
     })
@@ -1057,15 +1057,15 @@ local function TileChat(hostFrame, cursorY, W, tile)
         },
         order = { "__global", "none", "outline", "thick" },
         getValue = function()
-            local p = saved()
-            return (p and p.outlineMode) or "__global"
+            local profile = saved()
+            return (profile and profile.outlineMode) or "__global"
         end,
         setValue = function(val)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.outlineMode = val
+            profile.outlineMode = val
             ChatReload("Outline mode changed. A UI reload is needed to apply.")
         end,
     }, {
@@ -1075,9 +1075,9 @@ local function TileChat(hostFrame, cursorY, W, tile)
         max = 27,
         step = 1,
         getValue = function()
-            local p = saved()
-            if p and p.chatFontSize then
-                return p.chatFontSize
+            local profile = saved()
+            if profile and profile.chatFontSize then
+                return profile.chatFontSize
             end
             local castFrame = _G.ChatFrame1
             if castFrame and castFrame.GetFont then
@@ -1089,11 +1089,11 @@ local function TileChat(hostFrame, cursorY, W, tile)
             return 14
         end,
         setValue = function(val)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.chatFontSize = val
+            profile.chatFontSize = val
             if CHAT and CHAT.ApplyChatFontSize then
                 CHAT.ApplyChatFontSize(val)
             end
@@ -1118,15 +1118,15 @@ local function TileChat(hostFrame, cursorY, W, tile)
             values = fontValues,
             order = fontOrder,
             getValue = function()
-                local p = saved()
-                return (p and p.tabFont) or "__global"
+                local profile = saved()
+                return (profile and profile.tabFont) or "__global"
             end,
             setValue = function(val)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p.tabFont = val
+                profile.tabFont = val
                 if CHAT and CHAT.ApplyTabAppearance then
                     CHAT.ApplyTabAppearance()
                 end
@@ -1142,15 +1142,15 @@ local function TileChat(hostFrame, cursorY, W, tile)
             max = 24,
             step = 1,
             getValue = function()
-                local p = saved()
-                return (p and p.tabFontSize) or 11
+                local profile = saved()
+                return (profile and profile.tabFontSize) or 11
             end,
             setValue = function(val)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p.tabFontSize = val
+                profile.tabFontSize = val
                 if CHAT and CHAT.ApplyTabAppearance then
                     CHAT.ApplyTabAppearance()
                 end
@@ -1167,15 +1167,15 @@ local function TileChat(hostFrame, cursorY, W, tile)
         values = ebValues,
         order = ebOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.editBoxFont) or "__chat"
+            local profile = saved()
+            return (profile and profile.editBoxFont) or "__chat"
         end,
         setValue = function(val)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.editBoxFont = val
+            profile.editBoxFont = val
             if CHAT and CHAT.ApplyFonts then
                 CHAT.ApplyFonts()
             end
@@ -1187,9 +1187,9 @@ local function TileChat(hostFrame, cursorY, W, tile)
         max = 24,
         step = 1,
         getValue = function()
-            local p = saved()
-            if p and p.editBoxFontSize then
-                return p.editBoxFontSize
+            local profile = saved()
+            if profile and profile.editBoxFontSize then
+                return profile.editBoxFontSize
             end
             if FCF_GetChatWindowInfo then
                 local _, sz = FCF_GetChatWindowInfo(1)
@@ -1200,11 +1200,11 @@ local function TileChat(hostFrame, cursorY, W, tile)
             return 12
         end,
         setValue = function(val)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.editBoxFontSize = val
+            profile.editBoxFontSize = val
             if CHAT and CHAT.ApplyFonts then
                 CHAT.ApplyFonts()
             end
@@ -1242,18 +1242,18 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
             max = maxV,
             step = 1,
             getValue = function()
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return def
                 end
-                return p[key] or (fallbackKey and p[fallbackKey]) or def
+                return profile[key] or (fallbackKey and profile[fallbackKey]) or def
             end,
             setValue = function(val)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p[key] = val
+                profile[key] = val
                 MTApply()
             end,
         }
@@ -1285,20 +1285,20 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
         }
     end
     local function tsb()
-        local p = saved()
-        return p and p.tsb
+        local profile = saved()
+        return profile and profile.tsb
     end
     local function tfbT()
-        local p = saved()
-        return p and p.tfb and p.tfb.target
+        local profile = saved()
+        return profile and profile.tfb and profile.tfb.target
     end
     local function tfbF()
-        local p = saved()
-        return p and p.tfb and p.tfb.focus
+        local profile = saved()
+        return profile and profile.tfb and profile.tfb.focus
     end
     local function kt()
-        local p = saved()
-        return p and p.kickTracker
+        local profile = saved()
+        return profile and profile.kickTracker
     end
     local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
     _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), {
@@ -1308,15 +1308,15 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
         values = fontValues,
         order = fontOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.timerFont) or "__global"
+            local profile = saved()
+            return (profile and profile.timerFont) or "__global"
         end,
         setValue = function(val)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.timerFont = val
+            profile.timerFont = val
             MTApply()
         end,
     })
@@ -1416,15 +1416,15 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         max = 18,
         step = 1,
         getValue = function()
-            local p = saved()
-            return (p and p.hdrFontSize) or 11
+            local profile = saved()
+            return (profile and profile.hdrFontSize) or 11
         end,
         setValue = function(val)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.hdrFontSize = val
+            profile.hdrFontSize = val
             if mod.ApplyHeader then
                 mod.ApplyHeader()
             end
@@ -1439,15 +1439,15 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
             max = 18,
             step = 1,
             getValue = function()
-                local p = saved()
-                return (p and (p[key] or p.fontSize)) or 11
+                local profile = saved()
+                return (profile and (profile[key] or profile.fontSize)) or 11
             end,
             setValue = function(val)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p[key] = val
+                profile[key] = val
                 if mod.RefreshMeter then
                     mod.RefreshMeter()
                 end
@@ -1468,15 +1468,15 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         max = 40,
         step = 1,
         getValue = function()
-            local p = saved()
-            return (p and p.standaloneTimerSize) or 26
+            local profile = saved()
+            return (profile and profile.standaloneTimerSize) or 26
         end,
         setValue = function(val)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.standaloneTimerSize = val
+            profile.standaloneTimerSize = val
             if mod.ApplySATimer then
                 mod.ApplySATimer()
             end
@@ -1488,16 +1488,16 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         max = 16,
         step = 1,
         getValue = function()
-            local p = saved()
-            local sh = p and p.spellHistory
+            local profile = saved()
+            local sh = profile and profile.spellHistory
             return (sh and sh.textSize) or 11
         end,
         setValue = function(val)
-            local p = saved()
-            if not (p and p.spellHistory) then
+            local profile = saved()
+            if not (profile and profile.spellHistory) then
                 return
             end
-            p.spellHistory.textSize = val
+            profile.spellHistory.textSize = val
             if mod.ApplySpellHistory then
                 mod.ApplySpellHistory()
             end
@@ -1538,15 +1538,15 @@ local function TileBags(hostFrame, cursorY, W, tile)
             max = maxV,
             step = 1,
             getValue = function()
-                local p = saved()
-                return (p and p[key]) or def
+                local profile = saved()
+                return (profile and profile[key]) or def
             end,
             setValue = function(val)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p[key] = val
+                profile[key] = val
                 applyFn()
             end,
         }
@@ -1616,15 +1616,15 @@ local function TileMinimap(hostFrame, cursorY, W, tile)
             max = maxV,
             step = 1,
             getValue = function()
-                local p = saved()
-                return (p and p[key]) or def
+                local profile = saved()
+                return (profile and profile[key]) or def
             end,
             setValue = function(val)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p[key] = val
+                profile[key] = val
                 if _G._CUMM_ApplyMinimap then
                     _G._CUMM_ApplyMinimap()
                 end
@@ -1641,15 +1641,15 @@ local function TileMinimap(hostFrame, cursorY, W, tile)
             max = 2.0,
             step = 0.01,
             getValue = function()
-                local p = saved()
-                return (p and p[key]) or def
+                local profile = saved()
+                return (profile and profile[key]) or def
             end,
             setValue = function(val)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p[key] = val
+                profile[key] = val
                 local frame = _G[frameName]
                 if frame and frame.SetScale then
                     frame:SetScale(val)
@@ -1737,15 +1737,15 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
             max = 24,
             step = 1,
             getValue = function()
-                local p = saved()
-                return (p and p[key]) or def
+                local profile = saved()
+                return (profile and profile[key]) or def
             end,
             setValue = function(val)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p[key] = val
+                profile[key] = val
                 QTApply()
             end,
         }
@@ -1758,15 +1758,15 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
         values = fontValues,
         order = fontOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.font) or "__global"
+            local profile = saved()
+            return (profile and profile.font) or "__global"
         end,
         setValue = function(val)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.font = val
+            profile.font = val
             -- The custom tracker (WoW Forever) restyles live.
             if mod.UseCustomTracker and mod.UseCustomTracker() then
                 CludesUI.InvalidateFontCache()

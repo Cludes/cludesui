@@ -88,24 +88,24 @@ local function ERBProfile()
     return d and d.profile
 end
 local function MinimapProfile()
-    local d = _G._CUMM_DB
-    return d and d.profile and d.profile.minimap
+    local db = _G._CUMM_DB
+    return db and db.profile and db.profile.minimap
 end
 local function DMProfile()
-    local d = _G._CUDM_DB
-    return d and d.profile and d.profile.dm
+    local db = _G._CUDM_DB
+    return db and db.profile and db.profile.dm
 end
 local function QTProfile()
-    local d = _G._CUQT_DB
-    return d and d.profile and d.profile.questTracker
+    local db = _G._CUQT_DB
+    return db and db.profile and db.profile.questTracker
 end
 local function ChatProfile()
-    local d = _G._CUCHAT_DB
-    return d and d.profile and d.profile.chat
+    local db = _G._CUCHAT_DB
+    return db and db.profile and db.profile.chat
 end
 local function FriendsProfile()
-    local d = _G._CUFR_DB
-    return d and d.profile and d.profile.friends
+    local db = _G._CUFR_DB
+    return db and db.profile and db.profile.friends
 end
 -- The Skyriding HUD keeps its own per-profile DB inside Blizz UI Enhanced
 -- (created at PLAYER_LOGIN, even while the HUD itself is off).
@@ -1028,9 +1028,9 @@ end
 local function InferredStockStyle()
     local b, c = 0, 0
     for idx = 1, #MODULES do
-        local m = MODULES[idx]
-        if NS(m.folder) ~= nil then
-            local keyName = BaseKey(m.get())
+        local module = MODULES[idx]
+        if NS(module.folder) ~= nil then
+            local keyName = BaseKey(module.get())
             if keyName == "blizzard" then
                 b = b + 1
             elseif keyName == "classic" then
@@ -1203,9 +1203,9 @@ function BlizzStyle.ApplyAll(styleKey)
     end
     local legacy = InferredStockStyle()
     for idx = 1, #MODULES do
-        local m = MODULES[idx]
-        if m.firstInstall ~= false and SupportsStyle(m, styleKey) and m.profile() then
-            SwitchModuleStyle(m, styleKey)
+        local module = MODULES[idx]
+        if module.firstInstall ~= false and SupportsStyle(module, styleKey) and module.profile() then
+            SwitchModuleStyle(module, styleKey)
         end
     end
     ApplyWholeUIFont(styleKey, legacy)
@@ -1412,9 +1412,9 @@ end
 local function StyleChangesFor(styleKey)
     local changes = {}
     for idx = 1, #MODULES do
-        local m = MODULES[idx]
-        if SupportsStyle(m, styleKey) and NS(m.folder) ~= nil and m.get() ~= styleKey then
-            changes[#changes + 1] = { m = m, key = styleKey }
+        local module = MODULES[idx]
+        if SupportsStyle(module, styleKey) and NS(module.folder) ~= nil and module.get() ~= styleKey then
+            changes[#changes + 1] = { m = module, key = styleKey }
         end
     end
     return changes
@@ -1489,10 +1489,10 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
                 for key, handle in pairs(cards) do
                     local loaded, differ = 0, 0
                     for idx = 1, #MODULES do
-                        local m = MODULES[idx]
-                        if SupportsStyle(m, key) and NS(m.folder) ~= nil then
+                        local module = MODULES[idx]
+                        if SupportsStyle(module, key) and NS(module.folder) ~= nil then
                             loaded = loaded + 1
-                            if m.get() ~= key then
+                            if module.get() ~= key then
                                 differ = differ + 1
                             end
                         end
@@ -1546,17 +1546,17 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
             for styleKey, handle in pairs(cards) do
                 local itemList = {}
                 for idx = 1, #MODULES do
-                    local m = MODULES[idx]
-                    if SupportsStyle(m, styleKey) then
+                    local module = MODULES[idx]
+                    if SupportsStyle(module, styleKey) then
                         local function Off()
-                            return not Loaded(m)
+                            return not Loaded(module)
                         end
                         itemList[#itemList + 1] = {
-                            key = m.key,
-                            label = m.display,
+                            key = module.key,
+                            label = module.display,
                             excludeFromSummaryFn = Off,
                             lockedFn = function()
-                                return Off() or PickOf(m) == styleKey
+                                return Off() or PickOf(module) == styleKey
                             end,
                             -- Only a disabled module explains itself; a checked one
                             -- just reads as fixed here.
@@ -1566,7 +1566,7 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
                                 end
                                 return CludesUI.Lf(
                                     "Enable %1$s to change its style.",
-                                    CludesUI.L(m.enableName or m.display)
+                                    CludesUI.L(module.enableName or module.display)
                                 )
                             end,
                         }
@@ -1603,10 +1603,10 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
             CludesUI.MakeStyledButton(applyBtn, "Apply Styles", 16, CludesUI.WB_COLOURS, function()
                 local changes = {}
                 for idx = 1, #MODULES do
-                    local m = MODULES[idx]
-                    local s = pending[m.key]
-                    if s and Loaded(m) and s ~= m.get() then
-                        changes[#changes + 1] = { m = m, key = s }
+                    local module = MODULES[idx]
+                    local s = pending[module.key]
+                    if s and Loaded(module) and s ~= module.get() then
+                        changes[#changes + 1] = { m = module, key = s }
                     end
                 end
                 PromptStyleChanges(changes)

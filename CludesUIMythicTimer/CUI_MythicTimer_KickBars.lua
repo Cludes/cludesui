@@ -696,16 +696,16 @@ local function Layout()
     end
     Container()
     wipe(rowOf)
-    local n = 0
+    local count = 0
     if mode == PREVIEW_MODE then
         local now = GetTime()
         for _, sample in ipairs(SAMPLES) do
             local left = sample[4]
             local _, cd = KD.Cooldown(sample[2])
             local start = left > 0 and (now - (cd - left)) or nil
-            n = n + 1
+            count = count + 1
             ShowRow(
-                n,
+                count,
                 settings,
                 sample[1],
                 sample[2],
@@ -728,22 +728,22 @@ local function Layout()
                     marker = nil
                     markerOf[unit] = nil
                 end
-                n = n + 1
+                count = count + 1
                 rowOf[unit] =
-                    ShowRow(n, settings, member.class, member.kick, UnitName(unit), start, dur, unit, marker)
+                    ShowRow(count, settings, member.class, member.kick, UnitName(unit), start, dur, unit, marker)
             end
         end
     end
-    for i = n + 1, #rows do
+    for i = count + 1, #rows do
         local row = rows[i]
         row:Hide()
         row.readyAt, row.unit, row.markerIdx = nil, nil, nil
         row.marker:Hide()
     end
-    inUse = n
+    inUse = count
     Relay(settings)
     container:SetSize(GroupSize(settings))
-    container:SetShown(n > 0 or mode == PREVIEW_MODE)
+    container:SetShown(count > 0 or mode == PREVIEW_MODE)
 end
 
 --------------------------------------------------------------------------------

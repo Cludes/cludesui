@@ -4187,13 +4187,13 @@ CludesUI.AtOptionsLogin(function()
             name:SetText(reminder.spellName or CludesUI.L("Unknown"))
 
             local function ZoneCount(r)
-                local n = 0
+                local count = 0
                 for i = 1, #zones do
                     if ReminderHasZone(r, zones[i].name) then
-                        n = n + 1
+                        count = count + 1
                     end
                 end
-                return n
+                return count
             end
             local items = {
                 {

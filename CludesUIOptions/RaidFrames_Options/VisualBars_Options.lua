@@ -447,8 +447,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         for idx = #dynDefs, 1, -1 do
             local dropdown = dynDefs[idx]
             local sw = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-                local c = SGet(dropdown.key) or dropdown.def
-                return c.r, c.g, c.b, 1
+                local color = SGet(dropdown.key) or dropdown.def
+                return color.r, color.g, color.b, 1
             end, function(red, green, blue)
                 SWrite(dropdown.key, { r = red, g = green, b = blue })
                 ReloadAndUpdate()

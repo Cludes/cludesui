@@ -73,8 +73,8 @@ S.class = select(2, UnitClass("player"))
 local function P()
     local ERB = mod.ERB
     local saved = ERB and ERB.db
-    local p = saved and saved.profile
-    return p and p.arcaneSoul or nil
+    local profile = saved and saved.profile
+    return profile and profile.arcaneSoul or nil
 end
 
 -- countMode is one stored key so the options page keeps one dropdown, but the

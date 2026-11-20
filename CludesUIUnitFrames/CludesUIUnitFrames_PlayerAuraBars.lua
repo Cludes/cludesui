@@ -275,9 +275,9 @@ local function PAB_FxSizeFor(entries, category)
     end
     local many = type(category) == "table"
     for index = 1, #entries do
-        local e = entries[index]
-        if PAB_FxEntryActive(e) then
-            local frame = e.filters
+        local entry = entries[index]
+        if PAB_FxEntryActive(entry) then
+            local frame = entry.filters
             local hit = false
             if frame then
                 if many then
@@ -292,7 +292,7 @@ local function PAB_FxSizeFor(entries, category)
                 end
             end
             if hit then
-                local sz = tonumber(e.size)
+                local sz = tonumber(entry.size)
                 if sz and sz > 0 then
                     return sz
                 end
@@ -313,8 +313,8 @@ local function PAB_FxWantsCategory(entries, key)
         return false
     end
     for index = 1, #entries do
-        local e = entries[index]
-        if PAB_FxEntryActive(e) and e.filters and e.filters[key] then
+        local entry = entries[index]
+        if PAB_FxEntryActive(entry) and entry.filters and entry.filters[key] then
             return true
         end
     end

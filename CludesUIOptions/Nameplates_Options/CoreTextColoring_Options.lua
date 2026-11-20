@@ -238,8 +238,8 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                     region,
                     region:GetFrameLevel() + 5,
                     function()
-                        local c = (DB() and DB()[key]) or defaultSet[fallbackKey]
-                        return c.r, c.g, c.b
+                        local color = (DB() and DB()[key]) or defaultSet[fallbackKey]
+                        return color.r, color.g, color.b
                     end,
                     -- Read live by the per-unit painter, so a health colour pass repaints.
                     function(red, green, blue)

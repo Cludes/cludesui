@@ -865,9 +865,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 local bgA = source.castBgAlpha
                 for _, key in ipairs(keyList) do
                     if key ~= optionState.selectedUnit then
-                        local d = UNIT_DB_MAP[key]()
-                        d.castBgColor = { r = bc.r, g = bc.g, b = bc.b }
-                        d.castBgAlpha = bgA
+                        local unitCfg = UNIT_DB_MAP[key]()
+                        unitCfg.castBgColor = { r = bc.r, g = bc.g, b = bc.b }
+                        unitCfg.castBgAlpha = bgA
                     end
                 end
                 ReloadAndUpdate()
@@ -887,11 +887,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         return ar == cr and ag == cg and ab == cb
                     end
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local d = UNIT_DB_MAP[key]()
-                        if not colEq(d.castBgColor, source.castBgColor) then
+                        local unitCfg = UNIT_DB_MAP[key]()
+                        if not colEq(unitCfg.castBgColor, source.castBgColor) then
                             return false
                         end
-                        if (d.castBgAlpha or 0.5) ~= (source.castBgAlpha or 0.5) then
+                        if (unitCfg.castBgAlpha or 0.5) ~= (source.castBgAlpha or 0.5) then
                             return false
                         end
                     end
@@ -1342,8 +1342,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                             tbl[keyName] = from[keyName]
                         end
                         for _, keyName in ipairs(GLOW_COLOR_KEYS) do
-                            local c = from[keyName]
-                            tbl[keyName] = c and { r = c.r, g = c.g, b = c.b } or nil
+                            local color = from[keyName]
+                            tbl[keyName] = color and { r = color.r, g = color.g, b = color.b } or nil
                         end
                     end,
                     same = function(tbl, from)
@@ -3241,10 +3241,10 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             -- The palette also colours the Color Custom Borders copies and,
             -- with Use Dispel Colors, the player debuff rings.
             disabled = function()
-                local p = saved.profile
-                return (p.dispelOverlay or "none") == "none"
-                    and not (p.dispelCustomBorder == true and mod.UF_CustomBorderOn(p.player))
-                    and p.player.debuffDispelUsePalette ~= true
+                local profile = saved.profile
+                return (profile.dispelOverlay or "none") == "none"
+                    and not (profile.dispelCustomBorder == true and mod.UF_CustomBorderOn(profile.player))
+                    and profile.player.debuffDispelUsePalette ~= true
             end,
             disabledTooltip = "This option requires a Dispel Overlay, Color Custom Borders or Use Dispel Colors.",
             rawTooltip = true,
@@ -3395,19 +3395,19 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             values = CludesUI.POSITION_GRID_VALUES_NONE,
             order = iconPosOrder,
             getValue = function()
-                local p = saved.profile
-                if p.showDispelIcons ~= true then
+                local profile = saved.profile
+                if profile.showDispelIcons ~= true then
                     return "none"
                 end
-                return p.dispelIconPosition or "right"
+                return profile.dispelIconPosition or "right"
             end,
             setValue = function(value)
-                local p = saved.profile
+                local profile = saved.profile
                 if value == "none" then
-                    p.showDispelIcons = false
+                    profile.showDispelIcons = false
                 else
-                    p.showDispelIcons = true
-                    p.dispelIconPosition = value
+                    profile.showDispelIcons = true
+                    profile.dispelIconPosition = value
                 end
                 -- RefreshPage (fast path) so the cog's disabled state follows.
                 DispelRefresh()

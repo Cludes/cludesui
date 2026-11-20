@@ -415,16 +415,16 @@ function mod.AB_ForeverEyeParked()
     if not mod.AB_Forever() then
         return false
     end
-    local p = ABAR.db.profile
-    local qs = p.barPositions.QueueStatus
-    if not p.foreverEyeRingSeeded then
+    local profile = ABAR.db.profile
+    local qs = profile.barPositions.QueueStatus
+    if not profile.foreverEyeRingSeeded then
         if not (qs and qs.point) then
-            p.foreverEyeRingSeeded = true
+            profile.foreverEyeRingSeeded = true
         else
             local mm = CludesUI._ModuleNS.CludesUIMinimap
             if mm and mm.MinimapQueueEyeSpot() then
-                p.foreverEyeRingSeeded = true
-                p.barPositions.QueueStatus = nil
+                profile.foreverEyeRingSeeded = true
+                profile.barPositions.QueueStatus = nil
                 qs = nil
             end
         end

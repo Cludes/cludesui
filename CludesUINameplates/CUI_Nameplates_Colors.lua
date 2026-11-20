@@ -639,8 +639,8 @@ local function ResolveNeutralColor(unitToken)
         local color = _C(colorKey)
         return color.r, color.g, color.b
     end
-    local c = _C("neutral")
-    return c.r, c.g, c.b
+    local color = _C("neutral")
+    return color.r, color.g, color.b
 end
 -- The Hostile or Neutral name colour (enemyNameHostileColor / enemyNameNeutralColor, shared
 -- by every text slot) for an NPC in a Hostility / Class text slot, matching the unit's
@@ -920,10 +920,10 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
                 if e[1] ~= false then
                     e[1] = false
                     local ck = mod._npSlotLevelCK[index]
-                    local c = (p and p[ck]) or defaultSet[ck]
+                    local color = (p and p[ck]) or defaultSet[ck]
                     local fontStr = backing[colorKey]
                     if fontStr then
-                        fontStr:SetTextColor(c.r, c.g, c.b, 1)
+                        fontStr:SetTextColor(color.r, color.g, color.b, 1)
                     end
                 end
             elseif e[1] ~= red or e[2] ~= green or e[3] ~= blue then
@@ -1000,20 +1000,20 @@ function mod.ResolveThreatColor(unitToken, threatLevel)
         end
         if threatLevel >= 3 then
             mod._threatOkA = 0
-            local c = _C("dpsHasAggro")
-            return c.r, c.g, c.b, false
+            local color = _C("dpsHasAggro")
+            return color.r, color.g, color.b, false
         elseif threatLevel >= 2 then
             mod._threatOkA = 0
-            local c = _C("dpsNearAggro")
-            return c.r, c.g, c.b, false
+            local color = _C("dpsNearAggro")
+            return color.r, color.g, color.b, false
         end
         local en = defaultSet.dpsNoAggroEnabled
         if saved.dpsNoAggroEnabled ~= nil then
             en = saved.dpsNoAggroEnabled
         end
         if en then
-            local c = _C("dpsNoAggro")
-            return c.r, c.g, c.b, false
+            local color = _C("dpsNoAggro")
+            return color.r, color.g, color.b, false
         end
         return
     end
@@ -1033,15 +1033,15 @@ function mod.ResolveThreatColor(unitToken, threatLevel)
             end
         end
         if hae then
-            local c = _C("tankHasAggro")
-            return c.r, c.g, c.b, false
+            local color = _C("tankHasAggro")
+            return color.r, color.g, color.b, false
         end
         return
     end
     if threatLevel >= 2 then
         mod._threatOkA = 0
-        local c = _C("tankLosingAggro")
-        return c.r, c.g, c.b, false
+        local color = _C("tankLosingAggro")
+        return color.r, color.g, color.b, false
     end
     -- No aggro. Another TANK holding the mob is normal off-tank positioning, not a
     -- warning -- same read as the health arm, including the secret-role fallback: an
@@ -1082,8 +1082,8 @@ function mod.ResolveThreatColor(unitToken, threatLevel)
         if not otE then
             return
         end
-        local c = _C("offTankAggro")
-        return c.r, c.g, c.b, false
+        local color = _C("offTankAggro")
+        return color.r, color.g, color.b, false
     end
     mod._threatOkA = 0
     return baseColor.r, baseColor.g, baseColor.b, false
@@ -1116,8 +1116,8 @@ local function GetReactionColor(unitToken, castSeen)
     local saved = p or defaultSet
     -- 1. Tapped always highest
     if UnitIsTapDenied(unitToken) then
-        local c = _C("tapped")
-        return c.r, c.g, c.b
+        local color = _C("tapped")
+        return color.r, color.g, color.b
     end
     -- 2. Quest mob second highest (in instanced content only while the Quest Indicator's
     -- Show In Instances is on)
@@ -1162,13 +1162,13 @@ local function GetReactionColor(unitToken, castSeen)
                 if sharedThreat then
                     if threatLevel >= 3 then
                         mod._reactionBadThreat = true
-                        local c = _C("dpsHasAggro")
-                        return c.r, c.g, c.b
+                        local color = _C("dpsHasAggro")
+                        return color.r, color.g, color.b
                     elseif threatLevel >= 2 then
                         mod._reactionNearAggro = true
                         mod._reactionBadThreat = true
-                        local c = _C("dpsNearAggro")
-                        return c.r, c.g, c.b
+                        local color = _C("dpsNearAggro")
+                        return color.r, color.g, color.b
                     end
                 end
             else
@@ -1190,8 +1190,8 @@ local function GetReactionColor(unitToken, castSeen)
                 end
                 if threatLevel < 3 and threatLevel >= 2 then
                     mod._reactionBadThreat = true
-                    local c = _C("tankLosingAggro")
-                    return c.r, c.g, c.b
+                    local color = _C("tankLosingAggro")
+                    return color.r, color.g, color.b
                 elseif threatLevel < 3 then
                     -- Only show no-aggro warning if a non-tank has it.
                     -- If another tank holds aggro, this is normal offtank positioning.
@@ -1225,8 +1225,8 @@ local function GetReactionColor(unitToken, castSeen)
                     end
                     if targetRole ~= "TANK" then
                         mod._reactionBadThreat = true
-                        local c = _C("tankNoAggro")
-                        return c.r, c.g, c.b
+                        local color = _C("tankNoAggro")
+                        return color.r, color.g, color.b
                     end
                     -- Another tank has aggro -- show off-tank color if enabled
                     local otEnabled = saved.offTankAggroEnabled
@@ -1234,8 +1234,8 @@ local function GetReactionColor(unitToken, castSeen)
                         otEnabled = defaultSet.offTankAggroEnabled
                     end
                     if otEnabled then
-                        local c = _C("offTankAggro")
-                        return c.r, c.g, c.b
+                        local color = _C("offTankAggro")
+                        return color.r, color.g, color.b
                     end
                 end
                 -- Classic tank aggro: has-aggro overrides all mob-type colors
@@ -1245,8 +1245,8 @@ local function GetReactionColor(unitToken, castSeen)
                         classic = defaultSet.classicTankAggro
                     end
                     if classic then
-                        local c = _C("tankHasAggro")
-                        return c.r, c.g, c.b
+                        local color = _C("tankHasAggro")
+                        return color.r, color.g, color.b
                     end
                 end
                 -- Default: tank has aggro falls through to caster/miniboss colors
@@ -1308,9 +1308,9 @@ local function GetReactionColor(unitToken, castSeen)
             mod._reactionMirrorClass = true
             class = nil
         end
-        local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-        if c then
-            return c.r, c.g, c.b
+        local color = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+        if color then
+            return color.r, color.g, color.b
         end
     end
     -- Classify the mob-type tier once up front so the tank has-aggro overrides can reason about
@@ -1425,8 +1425,8 @@ local function GetReactionColor(unitToken, castSeen)
         end
         if hae and ovr then
             mod._reactionCastTier = nil
-            local c = _C("tankHasAggro")
-            return c.r, c.g, c.b
+            local color = _C("tankHasAggro")
+            return color.r, color.g, color.b
         end
     end
     -- 7. Mini-boss. Boss is intentionally LOWER priority than the low-priority threat colors
@@ -1441,12 +1441,12 @@ local function GetReactionColor(unitToken, castSeen)
             end
             if ovr then
                 mod._reactionCastTier = nil
-                local c = _C("dpsNoAggro")
-                return c.r, c.g, c.b
+                local color = _C("dpsNoAggro")
+                return color.r, color.g, color.b
             end
         end
-        local c = _C("miniboss")
-        return MaybeDarken(c.r, c.g, c.b, combatNow)
+        local color = _C("miniboss")
+        return MaybeDarken(color.r, color.g, color.b, combatNow)
     end
     -- 7b. Mini Enemies promoted ABOVE Caster -- but ONLY for DPS/healers and tanks that do NOT
     -- use the special Tank Has Aggro color. Tanks WITH that option enabled skip this and keep
@@ -1479,12 +1479,12 @@ local function GetReactionColor(unitToken, castSeen)
                 end
                 if dpsNA then
                     mod._reactionCastTier = nil
-                    local c = _C("dpsNoAggro")
-                    return c.r, c.g, c.b
+                    local color = _C("dpsNoAggro")
+                    return color.r, color.g, color.b
                 end
             end
-            local c = (p and p.miniEnemy) or _C("enemyInCombat")
-            return MaybeDarken(c.r, c.g, c.b, combatNow)
+            local color = (p and p.miniEnemy) or _C("enemyInCombat")
+            return MaybeDarken(color.r, color.g, color.b, combatNow)
         end
     end
     -- 8. Caster
@@ -1497,12 +1497,12 @@ local function GetReactionColor(unitToken, castSeen)
                 ovr = saved.dpsNoAggroOverrideCaster
             end
             if ovr then
-                local c = _C("dpsNoAggro")
-                return c.r, c.g, c.b
+                local color = _C("dpsNoAggro")
+                return color.r, color.g, color.b
             end
         end
-        local c = _C("caster")
-        return MaybeDarken(c.r, c.g, c.b, combatNow)
+        local color = _C("caster")
+        return MaybeDarken(color.r, color.g, color.b, combatNow)
     end
     -- 9. Tank has aggro (if enabled) below focus/caster/miniboss. Normally sits above the boss
     -- color (step 10b); with "Override Boss colors" disabled it's held below boss instead (the
@@ -1519,8 +1519,8 @@ local function GetReactionColor(unitToken, castSeen)
             end
             if ovrBoss or not _isBossUnit then
                 mod._reactionCastTier = nil
-                local c = _C("tankHasAggro")
-                return c.r, c.g, c.b
+                local color = _C("tankHasAggro")
+                return color.r, color.g, color.b
             end
         end
     end
@@ -1542,8 +1542,8 @@ local function GetReactionColor(unitToken, castSeen)
             end
             if ovrBoss or not _isBossUnit then
                 mod._reactionCastTier = nil
-                local c = _C("dpsNoAggro")
-                return c.r, c.g, c.b
+                local color = _C("dpsNoAggro")
+                return color.r, color.g, color.b
             end
         end
     end
@@ -1551,8 +1551,8 @@ local function GetReactionColor(unitToken, castSeen)
     -- dps-no-aggro takes precedence over boss -- unless "Override Boss colors" is disabled, in
     -- which case the has-aggro/no-aggro step above defers to this boss color for boss units).
     if _isBossUnit then
-        local c = _C("boss")
-        return MaybeDarken(c.r, c.g, c.b, combatNow)
+        local color = _C("boss")
+        return MaybeDarken(color.r, color.g, color.b, combatNow)
     end
     -- 10c. Mini Enemies: non-elite trash (normal/minus), DUNGEONS ONLY -- outside dungeons
     -- these fall through to the enemy color below. Elites handled at step 7, so same-level
@@ -1564,8 +1564,8 @@ local function GetReactionColor(unitToken, castSeen)
         and (classification == "normal" or classification == "minus" or classification == "trivial")
     then
         -- Views "Enemies" (enemyInCombat) until the user sets a Mini Enemies color explicitly.
-        local c = (p and p.miniEnemy) or _C("enemyInCombat")
-        return MaybeDarken(c.r, c.g, c.b, combatNow)
+        local color = (p and p.miniEnemy) or _C("enemyInCombat")
+        return MaybeDarken(color.r, color.g, color.b, combatNow)
     end
     -- 10d. Neutral, deferred (in dungeons, where step 5 skips it, and anywhere while it carries
     -- health-bar threat data): a neutral unit matching no mob-type/threat color lands here,

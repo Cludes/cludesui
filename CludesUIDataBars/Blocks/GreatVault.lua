@@ -298,14 +298,14 @@ local function PartyRows()
             local dungeon = entry and Dungeon(entry.mapID)
             if dungeon then
                 local _, class = UnitClass(u)
-                local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                local color = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                 AddRow(
                     GetUnitName(u) or u,
                     dungeon,
                     entry.level,
-                    c and c.r or 1,
-                    c and c.g or 1,
-                    c and c.b or 1
+                    color and color.r or 1,
+                    color and color.g or 1,
+                    color and color.b or 1
                 )
             end
         end

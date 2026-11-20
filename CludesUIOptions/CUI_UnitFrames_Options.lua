@@ -2160,9 +2160,9 @@ CludesUI.AtLogin(function()
             if useClassColor then
                 local _, classTok = UnitClass("player")
                 if classTok then
-                    local c = RAID_CLASS_COLORS[classTok]
-                    if c then
-                        bR, bG, bB = c.r, c.g, c.b
+                    local color = RAID_CLASS_COLORS[classTok]
+                    if color then
+                        bR, bG, bB = color.r, color.g, color.b
                     end
                 end
             end

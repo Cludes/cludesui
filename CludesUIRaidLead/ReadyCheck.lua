@@ -34,9 +34,9 @@ local ENCHANT_SLOTS = {
 }
 
 function mod.ReadyCheckSettings()
-    local p = mod.RaidLeadDB()
-    p.readyCheck = p.readyCheck or {}
-    local cfg = p.readyCheck
+    local profile = mod.RaidLeadDB()
+    profile.readyCheck = profile.readyCheck or {}
+    local cfg = profile.readyCheck
     if cfg.enabled == nil then
         cfg.enabled = true
     end

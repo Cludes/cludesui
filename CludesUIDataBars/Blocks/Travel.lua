@@ -538,25 +538,25 @@ local function TravelSaveMyHearth()
     end
     local bind = GetBindLocation()
     local readyAt = (cooldown > 0) and (time() + cooldown) or 0
-    local e = storage[_myHearthKey]
+    local entry = storage[_myHearthKey]
     -- Unchanged: same bind, same ready time give or take a second of drift.
     if
-        type(e) == "table"
+        type(entry) == "table"
         and bind == _savedBind
         and _savedReadyAt
         and math.abs(readyAt - _savedReadyAt) <= 1
     then
         return
     end
-    if type(e) ~= "table" then
-        e = {}
-        storage[_myHearthKey] = e
+    if type(entry) ~= "table" then
+        entry = {}
+        storage[_myHearthKey] = entry
     end
     local _, class = UnitClass("player")
-    e.name = _myHearthName
-    e.class = class
-    e.bind = bind
-    e.readyAt = readyAt
+    entry.name = _myHearthName
+    entry.class = class
+    entry.bind = bind
+    entry.readyAt = readyAt
     _savedBind, _savedReadyAt = bind, readyAt
 end
 

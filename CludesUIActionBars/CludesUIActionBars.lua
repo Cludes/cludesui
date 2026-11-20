@@ -304,11 +304,11 @@ end
 -- build-time gating is safe. "cui" without a profile; both flags set resolves
 -- classic. Stock-mode sites ask `~= "cui"`, kit sites ask `== "classic"`.
 function mod.AB_Style()
-    local p = ABAR.db and ABAR.db.profile
-    if not p then
+    local profile = ABAR.db and ABAR.db.profile
+    if not profile then
         return "cui"
     end
-    return (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
+    return (profile.useClassicStyle and "classic") or (profile.useBlizzardStyle and "blizzard") or "cui"
 end
 
 -- The WoW Forever variant of Blizzard Style (the Forever client only): the
@@ -320,8 +320,8 @@ function mod.AB_Forever()
     if CludesUI.IS_FOREVER ~= true then
         return false
     end
-    local p = ABAR.db and ABAR.db.profile
-    if not (p and p.useForeverStyle == true) then
+    local profile = ABAR.db and ABAR.db.profile
+    if not (profile and profile.useForeverStyle == true) then
         return false
     end
     return mod.AB_Style() == "blizzard"
@@ -335,11 +335,11 @@ function mod.AB_ForeverBg(key)
     if not mod.AB_Forever() then
         return false
     end
-    local p = ABAR.db.profile
-    local cfg = p.bars and p.bars[key]
+    local profile = ABAR.db.profile
+    local cfg = profile.bars and profile.bars[key]
     local val = cfg and cfg.foreverBarBg
     if val == nil then
-        val = key == "MainBar" and p.foreverHideBarBg ~= true
+        val = key == "MainBar" and profile.foreverHideBarBg ~= true
     end
     return val and true or false
 end

@@ -159,22 +159,22 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         if not profile then
                             return 0
                         end
-                        local g = profile.gcdBar
-                        if g.unlockPos and g.unlockPos.point then
-                            return g.unlockPos.x or 0
+                        local gcdCfg = profile.gcdBar
+                        if gcdCfg.unlockPos and gcdCfg.unlockPos.point then
+                            return gcdCfg.unlockPos.x or 0
                         end
-                        return g.anchorX or 0
+                        return gcdCfg.anchorX or 0
                     end,
                     set = function(val)
                         local profile = DB()
                         if not profile then
                             return
                         end
-                        local g = profile.gcdBar
-                        if g.unlockPos and g.unlockPos.point then
-                            g.unlockPos.x = val
+                        local gcdCfg = profile.gcdBar
+                        if gcdCfg.unlockPos and gcdCfg.unlockPos.point then
+                            gcdCfg.unlockPos.x = val
                         else
-                            g.anchorX = val
+                            gcdCfg.anchorX = val
                         end
                         RefreshGCD()
                     end,
@@ -190,22 +190,22 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         if not profile then
                             return 0
                         end
-                        local g = profile.gcdBar
-                        if g.unlockPos and g.unlockPos.point then
-                            return g.unlockPos.y or 0
+                        local gcdCfg = profile.gcdBar
+                        if gcdCfg.unlockPos and gcdCfg.unlockPos.point then
+                            return gcdCfg.unlockPos.y or 0
                         end
-                        return g.anchorY or -78
+                        return gcdCfg.anchorY or -78
                     end,
                     set = function(val)
                         local profile = DB()
                         if not profile then
                             return
                         end
-                        local g = profile.gcdBar
-                        if g.unlockPos and g.unlockPos.point then
-                            g.unlockPos.y = val
+                        local gcdCfg = profile.gcdBar
+                        if gcdCfg.unlockPos and gcdCfg.unlockPos.point then
+                            gcdCfg.unlockPos.y = val
                         else
-                            g.anchorY = val
+                            gcdCfg.anchorY = val
                         end
                         RefreshGCD()
                     end,

@@ -982,9 +982,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
         if sel then
             if optionState.showTargetGlowPreview then
-                local c = NAMEPLATE_BORDER_TARGET_COLOR
-                if c and c.r then
-                    sel:SetVertexColor(c.r, c.g, c.b)
+                local color = NAMEPLATE_BORDER_TARGET_COLOR
+                if color and color.r then
+                    sel:SetVertexColor(color.r, color.g, color.b)
                 else
                     sel:SetVertexColor(1, 1, 1)
                 end
@@ -1030,9 +1030,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 -- Font BEFORE any SetText: a FontString with no font raises.
                 SetPVFont(fontStr, FONT_PATH, L.font, GetNPOptOutline())
                 fontStr:SetText("60")
-                local c = FAIR_DIFFICULTY_COLOR
-                if c and c.r then
-                    fontStr:SetTextColor(c.r, c.g, c.b, 1)
+                local color = FAIR_DIFFICULTY_COLOR
+                if color and color.r then
+                    fontStr:SetTextColor(color.r, color.g, color.b, 1)
                 else
                     fontStr:SetTextColor(1, 0.82, 0, 1)
                 end
@@ -2984,10 +2984,10 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local pvTargetHex
         if useClassColor then
             local _, pClass = UnitClass("player")
-            local c = pClass and RAID_CLASS_COLORS and RAID_CLASS_COLORS[pClass]
-            if c then
-                castBits.targetFS:SetTextColor(c.r, c.g, c.b, 1)
-                pvTargetHex = (c.GenerateHexColor and c:GenerateHexColor()) or c.colorStr or "ffffffff"
+            local color = pClass and RAID_CLASS_COLORS and RAID_CLASS_COLORS[pClass]
+            if color then
+                castBits.targetFS:SetTextColor(color.r, color.g, color.b, 1)
+                pvTargetHex = (color.GenerateHexColor and color:GenerateHexColor()) or color.colorStr or "ffffffff"
             else
                 castBits.targetFS:SetTextColor(1, 1, 1, 1)
                 pvTargetHex = "ffffffff"

@@ -2021,8 +2021,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     minWidth = 320,
                     rows = function(current, redraw)
                         local function isBar()
-                            local e = current()
-                            return (e and mod.IsEntryBarType(e)) and true or false
+                            local entry = current()
+                            return (entry and mod.IsEntryBarType(entry)) and true or false
                         end
                         local function isStagger()
                             return HasSpec(current(), 268)
@@ -2033,19 +2033,19 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                 or false
                         end
                         local function enabled()
-                            local e = current()
-                            if not e then
+                            local entry = current()
+                            if not entry then
                                 return false
                             end
-                            local val = e.thresholdEnabled
+                            local val = entry.thresholdEnabled
                             if val == nil then
                                 val = true
                             end
                             return val
                         end
                         local function multiOn()
-                            local e = current()
-                            return (e and e.multiBandEnabled and not isEnhance()) and true or false
+                            local entry = current()
+                            return (entry and entry.multiBandEnabled and not isEnhance()) and true or false
                         end
                         local function usable()
                             return enabled() and not multiOn()
@@ -2057,8 +2057,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             return "Enable the Threshold toggle to use these options."
                         end
                         local function isUpTo()
-                            local e = current()
-                            return (e and e.thresholdReverse) and true or false
+                            local entry = current()
+                            return (entry and entry.thresholdReverse) and true or false
                         end
                         local function isWarrCharge()
                             -- Arms/Fury class-bar thresholds render on the engine-fed
@@ -2068,8 +2068,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             if (select(2, UnitClass("player"))) ~= "WARRIOR" then
                                 return false
                             end
-                            local e = current()
-                            local ids = e and e.specIDs
+                            local entry = current()
+                            local ids = entry and entry.specIDs
                             if not ids then
                                 return false
                             end
@@ -2105,15 +2105,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                     return STAGGER_PCT_TIP
                                 end,
                                 get = function()
-                                    local e = current()
-                                    return (e and e.thresholdMode) or "percent"
+                                    local entry = current()
+                                    return (entry and entry.thresholdMode) or "percent"
                                 end,
                                 set = function(val)
-                                    local e = current()
-                                    if not e then
+                                    local entry = current()
+                                    if not entry then
                                         return
                                     end
-                                    e.thresholdMode = val
+                                    entry.thresholdMode = val
                                     changed()
                                 end,
                             },
@@ -2136,15 +2136,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                     if isWarrCharge() then
                                         return "from"
                                     end
-                                    local e = current()
-                                    return (e and e.thresholdReverse) and "upto" or "from"
+                                    local entry = current()
+                                    return (entry and entry.thresholdReverse) and "upto" or "from"
                                 end,
                                 set = function(val)
-                                    local e = current()
-                                    if not e then
+                                    local entry = current()
+                                    if not entry then
                                         return
                                     end
-                                    e.thresholdReverse = (val == "upto")
+                                    entry.thresholdReverse = (val == "upto")
                                     changed()
                                 end,
                             },
@@ -2171,15 +2171,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                     if isWarrCharge() then
                                         return true
                                     end
-                                    local e = current()
-                                    return (e and e.thresholdPartialOnly) and true or false
+                                    local entry = current()
+                                    return (entry and entry.thresholdPartialOnly) and true or false
                                 end,
                                 set = function(val)
-                                    local e = current()
-                                    if not e then
+                                    local entry = current()
+                                    if not entry then
                                         return
                                     end
-                                    e.thresholdPartialOnly = val
+                                    entry.thresholdPartialOnly = val
                                     changed()
                                 end,
                             },

@@ -21,8 +21,8 @@ local ADDON_NAME, mod = ...
 local saved -- Lite DB handle, handed over by ns.TSB_OnEnable
 
 local function Cfg()
-    local p = saved and saved.profile
-    return p and p.tsb
+    local profile = saved and saved.profile
+    return profile and profile.tsb
 end
 
 --------------------------------------------------------------------------------
@@ -812,13 +812,13 @@ local function PaintTarget(e, conf)
 end
 
 local function Release(unitToken)
-    local e = unitEntry[unitToken]
-    if not e then
+    local entry = unitEntry[unitToken]
+    if not entry then
         return
     end
     unitEntry[unitToken] = nil
     for i = 1, #isShown do
-        if isShown[i] == e then
+        if isShown[i] == entry then
             table.remove(isShown, i)
             break
         end
@@ -826,7 +826,7 @@ local function Release(unitToken)
     -- Bars are pooled and reused forever: every piece of per-cast visual state
     -- set by the new features must be cleared here, or the next occupant
     -- inherits it.
-    local holderFrame = e.bar
+    local holderFrame = entry.bar
     ClearImportantGlow(holderFrame)
     holderFrame:SetAlpha(1)
     holderFrame.overlay:SetAlpha(0)
@@ -871,38 +871,38 @@ local function StartCast(unitToken)
         return
     end
 
-    local e = unitEntry[unitToken]
+    local entry = unitEntry[unitToken]
     local isNew = false
-    if not e then
+    if not entry then
         if #isShown >= (conf.maxBars or 5) then
             anyCastDropped = true -- promoted when a slot frees (O4)
             return
         end
-        e = { unit = unitToken, bar = AcquireBarFrame() }
-        unitEntry[unitToken] = e
-        isShown[#isShown + 1] = e
+        entry = { unit = unitToken, bar = AcquireBarFrame() }
+        unitEntry[unitToken] = entry
+        isShown[#isShown + 1] = entry
         isNew = true
-        PositionBar(e.bar, #isShown, conf)
+        PositionBar(entry.bar, #isShown, conf)
     end
     -- O3: a bar only needs a full restyle once per settings generation, not on
     -- every cast -- new/reused-from-pool bars never carry the current stamp.
-    if isNew or e.bar._styleGen ~= styleGen then
-        StyleBar(e.bar, conf)
+    if isNew or entry.bar._styleGen ~= styleGen then
+        StyleBar(entry.bar, conf)
     end
-    e.isChannel = isChannel
-    e.preview = nil
+    entry.isChannel = isChannel
+    entry.preview = nil
 
     if type(kickProtected) == "nil" then
         kickProtected = false
     end
-    e._kickProtected = kickProtected
+    entry._kickProtected = kickProtected
     -- Important flag may be SECRET: stored raw, fed only to color curves and
     -- SetAlphaFromBoolean, never branched on directly.
-    e._important = false
+    entry._important = false
     if C_Spell and C_Spell.IsSpellImportant then
         local impOK, imp = pcall(C_Spell.IsSpellImportant, castSpellID or 0)
         if impOK then
-            e._important = imp
+            entry._important = imp
         end
     end
 
@@ -910,32 +910,32 @@ local function StartCast(unitToken)
     -- snapshot. The live texture may be SECRET -- SetTexture accepts it.
     if conf.showIcon ~= false then
         if type(texture) ~= "nil" then
-            e.bar.icon:SetTexture(texture)
+            entry.bar.icon:SetTexture(texture)
         elseif type(castSpellID) ~= "nil" then
             local okInfo, details = pcall(C_Spell.GetSpellInfo, castSpellID)
             if okInfo and type(details) == "table" then
-                e.bar.icon:SetTexture(details.iconID)
+                entry.bar.icon:SetTexture(details.iconID)
             else
-                e.bar.icon:SetTexture(nil)
+                entry.bar.icon:SetTexture(nil)
             end
         else
-            e.bar.icon:SetTexture(nil)
+            entry.bar.icon:SetTexture(nil)
         end
     end
     -- PaintTarget/ApplyRaidMarker first: they size bar.name for this cast's
     -- target/marker state, and SetWidth after SetText does not reliably
     -- re-truncate an already-laid-out FontString.
-    PaintTarget(e, conf)
-    ApplyRaidMarker(e, conf)
+    PaintTarget(entry, conf)
+    ApplyRaidMarker(entry, conf)
     if conf.showSpellName ~= false then
-        e.bar.name:SetText(name)
+        entry.bar.name:SetText(name)
     end
-    ApplyCastColor(e, conf)
-    ApplyImportantGlow(e, conf)
-    e.bar.timer:SetText("")
-    ArmFill(e, isChannel)
-    ApplyRangeAlpha(e, conf)
-    e.bar:Show()
+    ApplyCastColor(entry, conf)
+    ApplyImportantGlow(entry, conf)
+    entry.bar.timer:SetText("")
+    ArmFill(entry, isChannel)
+    ApplyRangeAlpha(entry, conf)
+    entry.bar:Show()
     ArmTimerTicker()
 end
 
@@ -978,8 +978,8 @@ local function RefreshKickProtection(unitToken)
     if not conf then
         return
     end
-    local e = unitEntry[unitToken]
-    if not e then
+    local entry = unitEntry[unitToken]
+    if not entry then
         return
     end
     local kickProtected
@@ -997,8 +997,8 @@ local function RefreshKickProtection(unitToken)
     if type(kickProtected) == "nil" then
         kickProtected = false
     end
-    e._kickProtected = kickProtected
-    ApplyCastColor(e, conf)
+    entry._kickProtected = kickProtected
+    ApplyCastColor(entry, conf)
 end
 
 local function RefreshAllRaidMarkers()
@@ -1096,9 +1096,9 @@ evt:SetScript("OnEvent", function(_, event, unitToken)
     if START_EVENTS[event] then
         StartCast(unitToken)
     elseif UPDATE_EVENTS[event] then
-        local e = unitEntry[unitToken]
-        if e then
-            ArmFill(e, e.isChannel)
+        local entry = unitEntry[unitToken]
+        if entry then
+            ArmFill(entry, entry.isChannel)
         end
     elseif PROBE_EVENTS[event] then
         if unitEntry[unitToken] then

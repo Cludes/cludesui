@@ -116,20 +116,20 @@ local function ResolveModeColor(mode, stored, fallback)
     end
     if mode == "class" then
         local _, class = UnitClass("player")
-        local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-        if c then
-            return c.r, c.g, c.b, (stored and stored.a) or fallback.a or 1
+        local color = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+        if color then
+            return color.r, color.g, color.b, (stored and stored.a) or fallback.a or 1
         end
     end
-    local c = stored or fallback
-    local a = c.a
+    local color = stored or fallback
+    local a = color.a
     if a == nil then
         a = fallback.a
     end
     if a == nil then
         a = 1
     end
-    return c.r or 1, c.g or 1, c.b or 1, a
+    return color.r or 1, color.g or 1, color.b or 1, a
 end
 
 local function SelectedWindow()

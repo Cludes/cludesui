@@ -4368,11 +4368,11 @@ do
             local outOfRange = TargetOutOfRange()
             if outOfRange ~= self._meleeActive then
                 self._meleeActive = outOfRange
-                local c = outOfRange
+                local color = outOfRange
                         and (CrosshairGet("crosshairMeleeColor") or { r = 1, g = 0, b = 0, a = 1 })
                     or nameColor
-                self._hBar:SetColorTexture(c.r or 1, c.g or 0, c.b or 0, c.a or 1)
-                self._vBar:SetColorTexture(c.r or 1, c.g or 0, c.b or 0, c.a or 1)
+                self._hBar:SetColorTexture(color.r or 1, color.g or 0, color.b or 0, color.a or 1)
+                self._vBar:SetColorTexture(color.r or 1, color.g or 0, color.b or 0, color.a or 1)
             end
         end)
     end
@@ -5553,9 +5553,9 @@ do
             and store[which == "leave" and "combatAlertLeaveUseClassColor" or "combatAlertEnterUseClassColor"]
         if useClass then
             local _, classFile = UnitClass("player")
-            local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-            if c then
-                return c.r, c.g, c.b
+            local color = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+            if color then
+                return color.r, color.g, color.b
             end
         end
         local color = (store and store[which == "leave" and "combatAlertLeaveColor" or "combatAlertEnterColor"])

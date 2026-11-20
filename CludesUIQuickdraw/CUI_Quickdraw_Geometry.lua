@@ -324,15 +324,15 @@ end
 
 -- Every OTHER claim's parent cell, clipped off this claim's own children.
 local function ParentHoles(claims, index)
-    local c, holes = claims[index], nil
+    local claim, holes = claims[index], nil
     for jdx = 1, #claims do
         local hgt = (jdx ~= index) and claims[jdx].parentBox or nil
-        if hgt and BlocksReach(c, hgt) then
+        if hgt and BlocksReach(claim, hgt) then
             hgt = nil
         end
         if hgt then
-            if AnyBoxMeets(hgt, c.cells) then
-                hgt = ClipHole(hgt, c.cells)
+            if AnyBoxMeets(hgt, claim.cells) then
+                hgt = ClipHole(hgt, claim.cells)
             end
             if hgt then
                 holes = holes or {}
@@ -574,7 +574,7 @@ function PaletteView:ChildGeom(isShown, slots)
     local inner = radius + iconSize * 0.5 + childIcon * 0.5 + band
 
     for index = 1, total do
-        local c = claims[index]
+        local claim = claims[index]
         -- The whole cap by default. NONE stops at the midpoint with the nearest
         -- CLAIMANT either side, so two nests never share ground; a lone
         -- claimant on a full circle has no neighbour to meet, and on an open
@@ -585,22 +585,22 @@ function PaletteView:ChildGeom(isShown, slots)
             local previous = claims[index - 1] and claims[index - 1].angle
                 or (full and (claims[total].angle - TWO_PI))
             if nxt then
-                half = min(half, (nxt - c.angle) * 0.5)
+                half = min(half, (nxt - claim.angle) * 0.5)
             end
             if previous then
-                half = min(half, (c.angle - previous) * 0.5)
+                half = min(half, (claim.angle - previous) * 0.5)
             end
         end
         -- Never NARROWER than the parent's own sector: a claim always has at
         -- least the room the entry it hangs off already owns.
         half = max(half, step * 0.5)
 
-        c.icon = childIcon
-        c.half = half
+        claim.icon = childIcon
+        claim.half = half
         -- Halfway across the gap: clear of the parent's own icon, short of the
         -- first ring of children. The parent entry keeps everything inside
         -- this.
-        c.band = radius + iconSize * 0.5 + band * 0.5
+        claim.band = radius + iconSize * 0.5 + band * 0.5
 
         -- Ring the children rather than pushing them out: each ring sits one
         -- child pitch further out than the last, its children spaced roughly a
@@ -614,21 +614,21 @@ function PaletteView:ChildGeom(isShown, slots)
         -- except it no longer drifts the children away from the arc to make
         -- it.
         local rowList, placed, ri = {}, 0, 0
-        while placed < c.n and ri < MAX_CHILD_ROWS do
+        while placed < claim.n and ri < MAX_CHILD_ROWS do
             local rr = inner + ri * childPitch
             -- The arc length one child pitch buys at this ring's radius, in
             -- radians -- further out, the same angle spans more distance, so
             -- fewer degrees are needed to keep neighbours a pitch apart.
             local angStep = childPitch / rr
-            local capacity = (ri == MAX_CHILD_ROWS - 1) and (c.n - placed)
+            local capacity = (ri == MAX_CHILD_ROWS - 1) and (claim.n - placed)
                 or max(1, floor((half * 2) / angStep + 1e-6) + 1)
-            local m = min(c.n - placed, capacity)
+            local m = min(claim.n - placed, capacity)
             rowList[#rowList + 1] = {
                 radius = rr,
                 step = angStep,
                 n = m,
                 base = placed,
-                start = c.angle - (m - 1) * 0.5 * angStep,
+                start = claim.angle - (m - 1) * 0.5 * angStep,
             }
             placed = placed + m
             ri = ri + 1
@@ -637,15 +637,15 @@ function PaletteView:ChildGeom(isShown, slots)
         -- the further ring's children are the nearer ones underfoot. The
         -- first ring's inner edge is c.band, the parent/child hand-off
         -- already computed above; the last ring has no outer edge at all.
-        rowList[1].lo = c.band
+        rowList[1].lo = claim.band
         for region = 2, #rowList do
             local mid = (rowList[region - 1].radius + rowList[region].radius) * 0.5
             rowList[region - 1].hi, rowList[region].lo = mid, mid
         end
-        c.rows = rowList
+        claim.rows = rowList
         -- The outermost ring's radius, so Layout can size the frame to hold
         -- every ring rather than just the first.
-        c.radius = rowList[#rowList].radius
+        claim.radius = rowList[#rowList].radius
 
         -- The ground the DISARM test keeps this claim armed on, in two pieces
         -- (LeaveSnippet, ANGULAR branch). Neither is the release's own per-ring
@@ -688,11 +688,11 @@ function PaletteView:ChildGeom(isShown, slots)
             wide = max(wide, rowList[region].n * rowList[region].step * 0.5)
             coarsest = max(coarsest, rowList[region].step)
         end
-        c.ground = {
+        claim.ground = {
             -- Radial projection onto the parent's own axis, not plain
             -- distance: the beam is measured along and across that axis.
-            ax = sin(c.angle),
-            ay = cos(c.angle),
+            ax = sin(claim.angle),
+            ay = cos(claim.angle),
             -- Inward of the icon's inner face is a retreat toward the centre,
             -- and disarming there is what hands the other claims their gates
             -- back.
@@ -721,8 +721,8 @@ function PaletteView:ChildGeom(isShown, slots)
         -- and the disarm test alike -- standing on it always counts as this
         -- claim's ground. ChildRingPos wants c.rows, which is why this waits
         -- until here rather than running alongside the loop above.
-        local px, py = radius * sin(c.angle), radius * cos(c.angle)
-        c.parentBox = { x = px, y = py, hw = iconSize * 0.5, hh = iconSize * 0.5 }
+        local px, py = radius * sin(claim.angle), radius * cos(claim.angle)
+        claim.parentBox = { x = px, y = py, hw = iconSize * 0.5, hh = iconSize * 0.5 }
 
         -- What the disarm test actually decides an arc claim's ground by is
         -- polar -- c.ground above. The rects
@@ -731,10 +731,10 @@ function PaletteView:ChildGeom(isShown, slots)
         -- them, because the geometric test that decides whether leaving one
         -- actually disarms never trusts their bounds, only the wedge.
         local ringBoxes = {}
-        for jdx = 1, c.n do
-            local region, a = self:ChildRingPos(c, jdx)
+        for jdx = 1, claim.n do
+            local region, a = self:ChildRingPos(claim, jdx)
             local cx, cy = region * sin(a), region * cos(a)
-            ringBoxes[jdx] = { x = cx, y = cy, hw = c.icon * 0.5, hh = c.icon * 0.5 }
+            ringBoxes[jdx] = { x = cx, y = cy, hw = claim.icon * 0.5, hh = claim.icon * 0.5 }
         end
         local nest = NestBBox(ringBoxes)
 
@@ -748,9 +748,9 @@ function PaletteView:ChildGeom(isShown, slots)
         else
             axis, sign = "X", (py >= 0) and 1 or -1
         end
-        local corridor = CorridorBox(c.parentBox, nest, axis, sign, childPitch)
+        local corridor = CorridorBox(claim.parentBox, nest, axis, sign, childPitch)
 
-        c.regions = { c.parentBox, nest, corridor }
+        claim.regions = { claim.parentBox, nest, corridor }
     end
 
     return claims

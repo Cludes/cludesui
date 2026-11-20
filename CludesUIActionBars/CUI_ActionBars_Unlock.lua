@@ -224,11 +224,11 @@ local function RegisterWithUnlockMode()
             -- paints with; nil for custom shapes (their ring sits inside the
             -- button), stock looks and non-square icons.
             getMatchPad = function()
-                local p = ABAR.db and ABAR.db.profile
-                if not (p and p.squareIcons) or mod.AB_Style() ~= "cui" then
+                local profile = ABAR.db and ABAR.db.profile
+                if not (profile and profile.squareIcons) or mod.AB_Style() ~= "cui" then
                     return nil
                 end
-                local cfg = p.bars[details.key]
+                local cfg = profile.bars[details.key]
                 if not cfg then
                     return nil
                 end

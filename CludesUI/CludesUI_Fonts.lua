@@ -710,16 +710,16 @@ function CludesUI._FontFamiliesTakePath(filePath)
     local entries = CludesUI._fontFamPending
     local alphabetList = CludesUI._FONT_ALPHABETS
     for idx = #entries, 1, -1 do
-        local e = entries[idx]
-        if e.path == filePath then
+        local entry = entries[idx]
+        if entry.path == filePath then
             for a = 1, #alphabetList do
                 local memberKey = CludesUI._FontMemberTakesPath(alphabetList[a], filePath)
-                    and e.fam:GetFontObjectForAlphabet(alphabetList[a])
+                    and entry.fam:GetFontObjectForAlphabet(alphabetList[a])
                 if memberKey then
-                    pcall(memberKey.SetFont, memberKey, filePath, e.size, e.flags)
+                    pcall(memberKey.SetFont, memberKey, filePath, entry.size, entry.flags)
                 end
             end
-            pcall(e.fam.SetFont, e.fam, filePath, e.size, e.flags)
+            pcall(entry.fam.SetFont, entry.fam, filePath, entry.size, entry.flags)
             table.remove(entries, idx)
         end
     end

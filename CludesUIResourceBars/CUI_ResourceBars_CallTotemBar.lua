@@ -94,8 +94,8 @@ cdFont:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
 local function P()
     local ERB = mod.ERB
     local saved = ERB and ERB.db
-    local p = saved and saved.profile
-    return p and p.callTotemBar or nil
+    local profile = saved and saved.profile
+    return profile and profile.callTotemBar or nil
 end
 
 local function Blocked()

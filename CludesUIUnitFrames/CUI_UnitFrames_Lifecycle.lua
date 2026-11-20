@@ -62,29 +62,29 @@ local function EnableBody()
     -- reached yet keeps its own values in the CludesUI slot first, so a
     -- switch back restores them.
     if mod.UF_Blizz() then
-        local p = saved.profile
+        local profile = saved.profile
         if
-            p.stockCastTextureSeeded == nil
-            and p.classicTextureSeeded == nil
-            and p.stockCombatSeededStyle == nil
+            profile.stockCastTextureSeeded == nil
+            and profile.classicTextureSeeded == nil
+            and profile.stockCombatSeededStyle == nil
             and CludesUI.BankEuiStyleSlot
         then
-            CludesUI.BankEuiStyleSlot(p, mod.UF_StyleSlotKeys())
+            CludesUI.BankEuiStyleSlot(profile, mod.UF_StyleSlotKeys())
         end
         -- WoW Forever's own seed the same way: the other looks' class
         -- resource goes to its Forever-only slot first.
-        if mod.UF_Forever() and not p.foreverClassPowerSeeded and p.player then
-            local cfg = p._foreverStyleSlots
+        if mod.UF_Forever() and not profile.foreverClassPowerSeeded and profile.player then
+            local cfg = profile._foreverStyleSlots
             if type(cfg) ~= "table" then
                 cfg = {}
-                p._foreverStyleSlots = cfg
+                profile._foreverStyleSlots = cfg
             end
             cfg.cui = {
-                ["player.classPowerStyle"] = p.player.classPowerStyle,
-                ["player.showClassPowerBar"] = p.player.showClassPowerBar,
+                ["player.classPowerStyle"] = profile.player.classPowerStyle,
+                ["player.showClassPowerBar"] = profile.player.showClassPowerBar,
             }
         end
-        mod.UF_SeedStock(p, mod.UF_Style(), mod.UF_Forever())
+        mod.UF_SeedStock(profile, mod.UF_Style(), mod.UF_Forever())
     end
     InitializeFrames()
     -- Register with unlock mode synchronously: on a combat reload this runs

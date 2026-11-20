@@ -42,9 +42,9 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function DB()
-        local d = _G._CUDM_DB
-        if d and d.profile and d.profile.dm then
-            return d.profile.dm
+        local db = _G._CUDM_DB
+        if db and db.profile and db.profile.dm then
+            return db.profile.dm
         end
         return {}
     end
@@ -3351,9 +3351,9 @@ CludesUI.AtOptionsLogin(function()
             end
         end,
         onReset = function()
-            local d = _G._CUDM_DB
-            if d and d.ResetProfile then
-                d:ResetProfile()
+            local db = _G._CUDM_DB
+            if db and db.ResetProfile then
+                db:ResetProfile()
             end
         end,
         -- Mirrors RegisterOnHide below: SA Timer Preview + forced-visible

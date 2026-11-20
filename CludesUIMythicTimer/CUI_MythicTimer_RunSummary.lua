@@ -46,8 +46,8 @@ local ApplyPosition -- same
 --  Small helpers
 --------------------------------------------------------------------------------
 local function Cfg()
-    local p = saved and saved.profile
-    return p and p.runSummary
+    local profile = saved and saved.profile
+    return profile and profile.runSummary
 end
 
 local function Enabled()

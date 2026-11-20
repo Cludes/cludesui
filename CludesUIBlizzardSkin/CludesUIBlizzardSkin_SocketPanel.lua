@@ -438,13 +438,13 @@ local function PaintFilledIcon(button, gemLinkText)
         -- quality the color manager has no color for, and none until the
         -- gem's data has loaded (the load result repaints it).
         local qb = button.qualityBorder
-        local c = known
+        local color = known
             and ColorManager
             and ColorManager.GetColorDataForBagItemQuality
             and ColorManager.GetColorDataForBagItemQuality(rarity)
         if qb then
-            if c then
-                qb:SetVertexColor(c.r, c.g, c.b, 1)
+            if color then
+                qb:SetVertexColor(color.r, color.g, color.b, 1)
                 qb:Show()
             else
                 qb:Hide()

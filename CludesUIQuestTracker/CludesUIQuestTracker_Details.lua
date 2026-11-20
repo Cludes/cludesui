@@ -103,8 +103,8 @@ local function Accent()
 end
 
 local function Dim()
-    local c = CludesUI.TEXT_DIM
-    return c.r, c.g, c.b, c.a
+    local color = CludesUI.TEXT_DIM
+    return color.r, color.g, color.b, color.a
 end
 
 local function Style(text, size)
@@ -167,8 +167,8 @@ local function AddMark(done, y)
 end
 
 local function TileAtRest(tile)
-    local c = CludesUI.BORDER_COLOR
-    tile.frame:SetColor(c.r, c.g, c.b, 0.15)
+    local color = CludesUI.BORDER_COLOR
+    tile.frame:SetColor(color.r, color.g, color.b, 0.15)
 end
 
 local function TileEnter(self)
@@ -436,9 +436,9 @@ local function Button(label, onClick)
 end
 
 local function Divider(y, fromBottom)
-    local c = CludesUI.BORDER_COLOR
+    local color = CludesUI.BORDER_COLOR
     local line = window:CreateTexture(nil, "BORDER")
-    line:SetColorTexture(c.r, c.g, c.b, 0.15)
+    line:SetColorTexture(color.r, color.g, color.b, 0.15)
     line:SetHeight(1)
     local side = fromBottom and "BOTTOM" or "TOP"
     line:SetPoint(side .. "LEFT", PAD, y)
@@ -466,8 +466,8 @@ local function Build()
     local bgTex = window:CreateTexture(nil, "BACKGROUND")
     bgTex:SetAllPoints()
     bgTex:SetColorTexture(PANEL_BG[1], PANEL_BG[2], PANEL_BG[3], PANEL_BG[4])
-    local c = CludesUI.BORDER_COLOR
-    CludesUI.MakeBorder(window, c.r, c.g, c.b, 0.15)
+    local color = CludesUI.BORDER_COLOR
+    CludesUI.MakeBorder(window, color.r, color.g, color.b, 0.15)
 
     -- The header: an accent bar, the title, the level line.
     window.bar = window:CreateTexture(nil, "ARTWORK")

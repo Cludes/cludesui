@@ -19,8 +19,8 @@ local REQ = "Kick Tracker"
 -- Settings: db.profile.kickTracker of the Mythic+ Tools Lite DB.
 local function KT()
     local saved = _G._CUMT_AceDB
-    local p = saved and saved.profile
-    return p and p.kickTracker
+    local profile = saved and saved.profile
+    return profile and profile.kickTracker
 end
 
 local function Get(key, fallback)

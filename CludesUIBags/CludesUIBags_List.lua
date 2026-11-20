@@ -1002,9 +1002,9 @@ local function RenderRow(button, payload, cols, rowW, posX, posY, stripe, dim)
             local textValue
             if ident == "name" then
                 textValue = payload._lvName
-                local c = ITEM_QUALITY_COLORS[q]
-                if c then
-                    fontStr:SetTextColor(c.r, c.g, c.b)
+                local color = ITEM_QUALITY_COLORS[q]
+                if color then
+                    fontStr:SetTextColor(color.r, color.g, color.b)
                 else
                     fontStr:SetTextColor(1, 1, 1)
                 end

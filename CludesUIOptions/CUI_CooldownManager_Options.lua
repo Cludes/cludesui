@@ -298,9 +298,9 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         local function ColorKeys(tbl, key)
-            local c = tbl[key]
-            if c then
-                return c.r, c.g, c.b
+            local color = tbl[key]
+            if color then
+                return color.r, color.g, color.b
             end
         end
         -- pandemicGlow* keys, shared by a bar's Pandemic Glow and the Tracked Buff

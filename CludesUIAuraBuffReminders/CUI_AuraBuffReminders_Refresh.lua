@@ -803,8 +803,8 @@ local function FvWeaponEnchants(ws)
     if type(entries) == "table" then
         local IMBUE, TEMPORARY = Enum.ItemEnchantType.Imbue, Enum.ItemEnchantType.Temporary
         for index = 1, #entries do
-            local e = entries[index]
-            local has, kind, leftX = e.hasEnchant, e.enchantType, e.timeLeft
+            local entry = entries[index]
+            local has, kind, leftX = entry.hasEnchant, entry.enchantType, entry.timeLeft
             if isSecret(has) or isSecret(kind) or isSecret(leftX) then
                 return false
             end
@@ -1835,10 +1835,10 @@ local function Refresh()
                             frame = combatActiveIcons[#combatActiveIcons]
                         end
                         if frame and not m.isEating then
-                            local p = saved.profile.display
-                            local baseScale = p.scale or 1.0
+                            local display = saved.profile.display
+                            local baseScale = display.scale or 1.0
                             local iconSz = floor(ICON_SIZE * baseScale + 0.5)
-                            ApplyGlow(frame, p, iconSz)
+                            ApplyGlow(frame, display, iconSz)
                         end
                     end
                 end
@@ -1847,12 +1847,12 @@ local function Refresh()
                 REMIND.SetProviderCastCombatVisible(true, provider)
                 local pBtn = REMIND._providerCastBtn
                 if pBtn then
-                    local p = saved.profile.display
+                    local display = saved.profile.display
                     local sz = pBtn:GetWidth() or ICON_SIZE
                     if pBtn._eabrGlowWrapper then
                         pBtn._eabrGlowWrapper:Hide()
                     end
-                    ApplyGlow(pBtn, p, sz)
+                    ApplyGlow(pBtn, display, sz)
                 end
             end
             if (combatIdx > 0 or provider) and combatAnchor then
@@ -1897,10 +1897,10 @@ local function Refresh()
                     ShowCursorIcon(cursorIndex, m)
                     local frame = cursorActiveIcons[#cursorActiveIcons]
                     if frame and not m.isEating then
-                        local p = saved.profile.display
-                        local baseScale = p.scale or 1.0
+                        local display = saved.profile.display
+                        local baseScale = display.scale or 1.0
                         local iconSz = floor(ICON_SIZE * baseScale + 0.5)
-                        ApplyGlow(frame, p, iconSz)
+                        ApplyGlow(frame, display, iconSz)
                     end
                 else
                     iconIdx = iconIdx + 1
@@ -1912,12 +1912,12 @@ local function Refresh()
             REMIND.SetProviderCastCombatVisible(true, provider)
             local pBtn = REMIND._providerCastBtn
             if pBtn then
-                local p = saved.profile.display
+                local display = saved.profile.display
                 local sz = pBtn:GetWidth() or ICON_SIZE
                 if pBtn._eabrGlowWrapper then
                     pBtn._eabrGlowWrapper:Hide()
                 end
-                ApplyGlow(pBtn, p, sz)
+                ApplyGlow(pBtn, display, sz)
             end
         else
             REMIND.ParkProviderCastButton()

@@ -937,14 +937,14 @@ CludesUI.AtOptionsLogin(function()
                         order = { "never", "default", "custom" },
                         getValue = IlvlMode,
                         setValue = function(val)
-                            local p = saved.profile
-                            p.showItemlevelInBags = val ~= "never"
+                            local profile = saved.profile
+                            profile.showItemlevelInBags = val ~= "never"
                             if val ~= "never" then
-                                p.itemlevelUseCustomColor = val == "custom"
+                                profile.itemlevelUseCustomColor = val == "custom"
                             end
                             -- The first Custom Colored pick starts from white.
-                            if val == "custom" and not p.itemlevelCustomColor then
-                                p.itemlevelCustomColor = { r = 1, g = 1, b = 1 }
+                            if val == "custom" and not profile.itemlevelCustomColor then
+                                profile.itemlevelCustomColor = { r = 1, g = 1, b = 1 }
                             end
                             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                 _G.CUI_Bags:RefreshInventory()
@@ -1645,8 +1645,8 @@ CludesUI.AtOptionsLogin(function()
                                 end,
                                 set = function(val)
                                     val = val and true or false
-                                    local p = saved.profile
-                                    if val == (p.bagSortToBottom == true) then
+                                    local profile = saved.profile
+                                    if val == (profile.bagSortToBottom == true) then
                                         return
                                     end
                                     -- MultiBag and the bank sort through Blizzard, whose
@@ -1659,16 +1659,16 @@ CludesUI.AtOptionsLogin(function()
                                         and C_Container.GetSortBagsRightToLeft
                                     then
                                         if val then
-                                            p.bagSortBlizzRTLWas = C_Container.GetSortBagsRightToLeft()
+                                            profile.bagSortBlizzRTLWas = C_Container.GetSortBagsRightToLeft()
                                                     and true
                                                 or false
                                             C_Container.SetSortBagsRightToLeft(false)
-                                        elseif p.bagSortBlizzRTLWas ~= nil then
-                                            C_Container.SetSortBagsRightToLeft(p.bagSortBlizzRTLWas)
-                                            p.bagSortBlizzRTLWas = nil
+                                        elseif profile.bagSortBlizzRTLWas ~= nil then
+                                            C_Container.SetSortBagsRightToLeft(profile.bagSortBlizzRTLWas)
+                                            profile.bagSortBlizzRTLWas = nil
                                         end
                                     end
-                                    p.bagSortToBottom = val
+                                    profile.bagSortToBottom = val
                                 end,
                             },
                         },

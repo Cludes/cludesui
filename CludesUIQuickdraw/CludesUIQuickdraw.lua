@@ -466,12 +466,12 @@ local saved
 -- itself is deleted.
 local migrated = setmetatable({}, { __mode = "k" })
 local function P()
-    local p = saved and saved.profile
-    if p and not migrated[p] then
-        migrated[p] = true
-        MigrateNames(p)
+    local profile = saved and saved.profile
+    if profile and not migrated[profile] then
+        migrated[profile] = true
+        MigrateNames(profile)
     end
-    return p
+    return profile
 end
 -- Exported so the options page reads the profile through the same accessor
 -- rather than reaching into db.profile itself, which would skip the migration
@@ -982,9 +982,9 @@ end
 local function SelectColor(profile)
     profile = profile or P()
     if profile and profile.useClassColor then
-        local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
-        if c then
-            return c.r, c.g, c.b
+        local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
+        if color then
+            return color.r, color.g, color.b
         end
     end
     -- Accent unless a custom color has been chosen: the suite accent is the

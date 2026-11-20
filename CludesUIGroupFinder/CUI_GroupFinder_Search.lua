@@ -276,13 +276,13 @@ local function DungeonsDefault(frame)
 end
 
 local function DiffAllOrNone(frame)
-    local n = 0
+    local count = 0
     for _, skinData in ipairs(DIFFS) do
         if frame[skinData.key] then
-            n = n + 1
+            count = count + 1
         end
     end
-    return n == 0 or n == #DIFFS, n
+    return count == 0 or count == #DIFFS, count
 end
 
 local Paint, PaintRefresh
@@ -466,13 +466,13 @@ local function RegionFilterActive()
     if not region then
         return false
     end
-    local n = 0
+    local count = 0
     for _, skinData in ipairs(Regions()) do
         if region[skinData.key] then
-            n = n + 1
+            count = count + 1
         end
     end
-    return n > 0 and n < #Regions()
+    return count > 0 and count < #Regions()
 end
 
 local function ResultInfo(resultID)
@@ -678,13 +678,13 @@ local function ChosenTiers()
     if type(tbl) ~= "table" then
         return nil
     end
-    local n = 0
+    local count = 0
     for index = 1, MAX_TIER do
         if tbl[index] then
-            n = n + 1
+            count = count + 1
         end
     end
-    return (n > 0 and n < MAX_TIER) and tbl or nil, n
+    return (count > 0 and count < MAX_TIER) and tbl or nil, count
 end
 
 local function DelveFilterActive()
@@ -978,13 +978,13 @@ local function ChosenRaidDiffs()
     if type(tbl) ~= "table" then
         return nil, 0
     end
-    local n = 0
+    local count = 0
     for _, skinData in ipairs(RAID_DIFFS_MENU) do
         if tbl[skinData.key] then
-            n = n + 1
+            count = count + 1
         end
     end
-    return (n > 0 and n < #RAID_DIFFS_MENU) and tbl or nil, n
+    return (count > 0 and count < #RAID_DIFFS_MENU) and tbl or nil, count
 end
 
 local function HideWorldBosses()
@@ -1004,24 +1004,24 @@ local function ChosenRaidPlaystyles()
     if type(tbl) ~= "table" then
         return nil, 0
     end
-    local n = 0
+    local count = 0
     for index = 1, #PLAYSTYLES do
         if tbl[index] then
-            n = n + 1
+            count = count + 1
         end
     end
-    return (n > 0 and n < #PLAYSTYLES) and tbl or nil, n
+    return (count > 0 and count < #PLAYSTYLES) and tbl or nil, count
 end
 
 -- dungeon playstyles from the advanced filter; nil when all or none.
 local function DungeonPlaystyles(frame)
-    local n = 0
+    local count = 0
     for index = 1, #PLAYSTYLES do
         if frame["generalPlaystyle" .. index] then
-            n = n + 1
+            count = count + 1
         end
     end
-    return (n > 0 and n < #PLAYSTYLES) and frame or nil, n
+    return (count > 0 and count < #PLAYSTYLES) and frame or nil, count
 end
 
 -- roles (the advanced filter's needs* keys).
@@ -1645,11 +1645,11 @@ local function RatingColor(score)
             return red, green, blue
         end
     end
-    local c = C_ChallengeMode
+    local color = C_ChallengeMode
         and C_ChallengeMode.GetDungeonScoreRarityColor
         and C_ChallengeMode.GetDungeonScoreRarityColor(score)
-    if c then
-        return c.r, c.g, c.b
+    if color then
+        return color.r, color.g, color.b
     end
     return 1, 1, 1
 end
@@ -2911,13 +2911,13 @@ local function AddRegionItems(m, posY)
                 cfg.regions = {}
             end
             cfg.regions[filterKey] = (not cfg.regions[filterKey]) or nil
-            local n = 0
+            local count = 0
             for _, o in ipairs(Regions()) do
                 if cfg.regions[o.key] then
-                    n = n + 1
+                    count = count + 1
                 end
             end
-            if n == #Regions() then
+            if count == #Regions() then
                 wipe(cfg.regions)
             end
             Refilter()
@@ -3412,13 +3412,13 @@ local function MakeDelveSquare(hostFrame)
             cfg.delves = {}
         end
         cfg.delves[skinData.groupID] = (not cfg.delves[skinData.groupID]) or nil
-        local n = 0
+        local count = 0
         for _, o in ipairs(delves or {}) do
             if cfg.delves[o.groupID] then
-                n = n + 1
+                count = count + 1
             end
         end
-        if n == #(delves or {}) then
+        if count == #(delves or {}) then
             wipe(cfg.delves)
         end
         Refilter()

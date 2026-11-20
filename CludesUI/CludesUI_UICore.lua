@@ -1846,8 +1846,8 @@ if CludesUI.IS_FOREVER then
         if not colorOn then
             return PaintWhite(fontStr)
         end
-        local c = ahead and aheadC or behindC
-        fontStr:SetTextColor(c.r, c.g, c.b)
+        local color = ahead and aheadC or behindC
+        fontStr:SetTextColor(color.r, color.g, color.b)
         if white and white[fontStr] then
             white[fontStr] = nil
         end

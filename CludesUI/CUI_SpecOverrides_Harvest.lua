@@ -188,12 +188,12 @@ local function PruneRedundantValues()
     end
     local didChange = false
     for idx = #storage, 1, -1 do
-        local e = storage[idx]
-        local groupDef = e.values and e.values.default
+        local entry = storage[idx]
+        local groupDef = entry.values and entry.values.default
         if groupDef then
             for fieldKey in pairs(groupDef) do
                 local heldSet = false
-                for key, m in pairs(e.values) do
+                for key, m in pairs(entry.values) do
                     if key ~= "default" and type(m) == "table" and m[fieldKey] ~= nil then
                         heldSet = true
                         break

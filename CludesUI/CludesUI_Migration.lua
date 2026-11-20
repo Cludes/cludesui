@@ -524,8 +524,8 @@ CludesUI.RegisterMigration({
                 return
             end
             for index = #storage, 1, -1 do
-                local e = storage[index]
-                local default = type(e) == "table" and e.values and e.values.default
+                local entry = storage[index]
+                local default = type(entry) == "table" and entry.values and entry.values.default
                 if type(default) == "table" then
                     for fieldKey in pairs(default) do
                         if type(fieldKey) == "string" and fieldKey:sub(1, #PREFIX) == PREFIX then
@@ -562,8 +562,8 @@ CludesUI.RegisterMigration({
                 return
             end
             for index = #storage, 1, -1 do
-                local e = storage[index]
-                local valueList = type(e) == "table" and e.values
+                local entry = storage[index]
+                local valueList = type(entry) == "table" and entry.values
                 if type(valueList) == "table" then
                     for _, m in pairs(valueList) do
                         if type(m) == "table" then
@@ -3708,9 +3708,9 @@ function CludesUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
                 local seedValue
                 if storage then
                     for _, spellRef in ipairs(barConf.assignedSpells) do
-                        local e = storage[spellRef]
-                        if type(e) == "table" and next(e) ~= nil then
-                            seedValue = e
+                        local entry = storage[spellRef]
+                        if type(entry) == "table" and next(entry) ~= nil then
+                            seedValue = entry
                             break
                         end
                     end
@@ -3722,16 +3722,16 @@ function CludesUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
                     end
                     barConf.barSettings = duplicate
                     for _, spellRef in ipairs(barConf.assignedSpells) do
-                        local e = storage[spellRef]
-                        if type(e) == "table" then
-                            if CdmFlatSettingsEqual(e, duplicate) then
+                        local entry = storage[spellRef]
+                        if type(entry) == "table" then
+                            if CdmFlatSettingsEqual(entry, duplicate) then
                                 storage[spellRef] = nil
                             else
                                 -- Divergent override: block seed keys it lacks
                                 -- so the new bar tier can't bleed through.
                                 for k in pairs(duplicate) do
-                                    if e[k] == nil then
-                                        e[k] = false
+                                    if entry[k] == nil then
+                                        entry[k] = false
                                     end
                                 end
                             end
@@ -5180,8 +5180,8 @@ CludesUI.RegisterMigration({
                 return
             end
             for index = #storage, 1, -1 do
-                local e = storage[index]
-                local valueList = type(e) == "table" and e.values
+                local entry = storage[index]
+                local valueList = type(entry) == "table" and entry.values
                 if type(valueList) == "table" then
                     for _, m in pairs(valueList) do
                         if type(m) == "table" then
@@ -5950,8 +5950,8 @@ do
                 local storage = profileTbl[OV_STORES[si]]
                 if type(storage) == "table" then
                     for index = #storage, 1, -1 do
-                        local e = storage[index]
-                        local valueList = type(e) == "table" and e.values
+                        local entry = storage[index]
+                        local valueList = type(entry) == "table" and entry.values
                         if type(valueList) == "table" then
                             for _, m in pairs(valueList) do
                                 if type(m) == "table" then
@@ -6711,9 +6711,9 @@ do
                 frame:RegisterEvent("PLAYER_LOGIN")
                 frame:SetScript("OnEvent", function(self)
                     self:UnregisterAllEvents()
-                    local d = CludesUIDB
-                    if type(d) == "table" then
-                        Sub(d, "_migrations")[FLAG] = true
+                    local db = CludesUIDB
+                    if type(db) == "table" then
+                        Sub(db, "_migrations")[FLAG] = true
                     end
                 end)
                 return
@@ -6803,12 +6803,12 @@ do
                 frame:RegisterEvent("PLAYER_LOGIN")
                 frame:SetScript("OnEvent", function(self)
                     self:UnregisterAllEvents()
-                    local d = CludesUIDB
-                    if type(d) == "table" then
-                        if type(d._migrations) ~= "table" then
-                            d._migrations = {}
+                    local db = CludesUIDB
+                    if type(db) == "table" then
+                        if type(db._migrations) ~= "table" then
+                            db._migrations = {}
                         end
-                        d._migrations[FLAG] = true
+                        db._migrations[FLAG] = true
                     end
                 end)
                 return
@@ -6895,12 +6895,12 @@ do
                 frame:RegisterEvent("PLAYER_LOGIN")
                 frame:SetScript("OnEvent", function(self)
                     self:UnregisterAllEvents()
-                    local d = CludesUIDB
-                    if type(d) == "table" then
-                        if type(d._migrations) ~= "table" then
-                            d._migrations = {}
+                    local db = CludesUIDB
+                    if type(db) == "table" then
+                        if type(db._migrations) ~= "table" then
+                            db._migrations = {}
                         end
-                        d._migrations[FLAG] = true
+                        db._migrations[FLAG] = true
                     end
                 end)
                 return
@@ -7017,12 +7017,12 @@ do
                 frame:RegisterEvent("PLAYER_LOGIN")
                 frame:SetScript("OnEvent", function(self)
                     self:UnregisterAllEvents()
-                    local d = CludesUIDB
-                    if type(d) == "table" then
-                        if type(d._migrations) ~= "table" then
-                            d._migrations = {}
+                    local db = CludesUIDB
+                    if type(db) == "table" then
+                        if type(db._migrations) ~= "table" then
+                            db._migrations = {}
                         end
-                        d._migrations[FLAG] = true
+                        db._migrations[FLAG] = true
                     end
                 end)
                 return

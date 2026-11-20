@@ -133,8 +133,8 @@ CludesUI.AtOptionsLogin(function()
             local entries = type(stored[i]) == "table" and stored[i].slots
             if type(entries) == "table" then
                 for n = 1, #entries do
-                    local e = entries[n]
-                    if type(e) == "table" and e.kind == "palette" then
+                    local entry = entries[n]
+                    if type(entry) == "table" and entry.kind == "palette" then
                         return true
                     end
                 end
@@ -4435,9 +4435,9 @@ CludesUI.AtOptionsLogin(function()
             -- only picks the mode: the class decides the colour, so there
             -- is no picker behind it.
             local classSwatch, updateClass = Swatch(function()
-                local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
-                if c then
-                    return c.r, c.g, c.b
+                local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
+                if color then
+                    return color.r, color.g, color.b
                 end
                 return 1, 1, 1
             end, pickClass, "Class Color")

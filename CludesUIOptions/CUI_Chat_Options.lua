@@ -25,9 +25,9 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function DB()
-        local d = _G._CUCHAT_DB
-        if d and d.profile and d.profile.chat then
-            return d.profile.chat
+        local db = _G._CUCHAT_DB
+        if db and db.profile and db.profile.chat then
+            return db.profile.chat
         end
         return {}
     end
@@ -505,8 +505,8 @@ CludesUI.AtOptionsLogin(function()
                         borderRow:GetFrameLevel() + 3,
                         function()
                             local _, class = UnitClass("player")
-                            local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                            return c and c.r or 1, c and c.g or 1, c and c.b or 1
+                            local color = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                            return color and color.r or 1, color and color.g or 1, color and color.b or 1
                         end,
                         function() end,
                         false,
@@ -1234,8 +1234,8 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Custom Color",
                         hasAlpha = withAlpha,
                         getValue = function()
-                            local c = Cfg(key) or fallback
-                            return c.r, c.g, c.b, c.a == nil and fallback.a or c.a
+                            local color = Cfg(key) or fallback
+                            return color.r, color.g, color.b, color.a == nil and fallback.a or color.a
                         end,
                         setValue = function(red, green, blue, a)
                             if not withAlpha then
@@ -1274,8 +1274,8 @@ CludesUI.AtOptionsLogin(function()
                         hasAlpha = false,
                         getValue = function()
                             local _, class = UnitClass("player")
-                            local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                            return c and c.r or 1, c and c.g or 1, c and c.b or 1
+                            local color = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                            return color and color.r or 1, color and color.g or 1, color and color.b or 1
                         end,
                         setValue = function() end,
                         onClick = function()
@@ -1377,8 +1377,8 @@ CludesUI.AtOptionsLogin(function()
                                     return math.floor(a * 100 + 0.5)
                                 end,
                                 set = function(val)
-                                    local c = Cfg(key) or fallback
-                                    Set(key, { r = c.r, g = c.g, b = c.b, a = val / 100 })
+                                    local color = Cfg(key) or fallback
+                                    Set(key, { r = color.r, g = color.g, b = color.b, a = val / 100 })
                                     if CHAT.ApplyTabAppearance then
                                         CHAT.ApplyTabAppearance()
                                     end
@@ -1456,8 +1456,8 @@ CludesUI.AtOptionsLogin(function()
                             hasAlpha = false,
                             getValue = function()
                                 local _, cl = UnitClass("player")
-                                local c = cl and RAID_CLASS_COLORS and RAID_CLASS_COLORS[cl]
-                                return c and c.r or 1, c and c.g or 1, c and c.b or 1
+                                local color = cl and RAID_CLASS_COLORS and RAID_CLASS_COLORS[cl]
+                                return color and color.r or 1, color and color.g or 1, color and color.b or 1
                             end,
                             setValue = function() end,
                             onClick = function()
@@ -1767,8 +1767,8 @@ CludesUI.AtOptionsLogin(function()
                         borderRow:GetFrameLevel() + 3,
                         function()
                             local _, cl = UnitClass("player")
-                            local c = cl and RAID_CLASS_COLORS and RAID_CLASS_COLORS[cl]
-                            return c and c.r or 1, c and c.g or 1, c and c.b or 1
+                            local color = cl and RAID_CLASS_COLORS and RAID_CLASS_COLORS[cl]
+                            return color and color.r or 1, color and color.g or 1, color and color.b or 1
                         end,
                         function() end,
                         false,
@@ -2334,9 +2334,9 @@ CludesUI.AtOptionsLogin(function()
         end,
         searchTerms = "chat tabs border spacing background sidebar friends voice url copy whisper channel abbreviate shortened class color names timestamps timestamp all messages font size",
         onReset = function()
-            local d = _G._CUCHAT_DB
-            if d and d.ResetProfile then
-                d:ResetProfile()
+            local db = _G._CUCHAT_DB
+            if db and db.ResetProfile then
+                db:ResetProfile()
             end
             RefreshAll()
             CludesUI:InvalidatePageCache()

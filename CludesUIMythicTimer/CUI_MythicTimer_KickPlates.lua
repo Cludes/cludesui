@@ -98,8 +98,8 @@ end
 local saved -- Lite DB handle, handed over by ns.KT_OnEnable
 
 local function Cfg()
-    local p = saved and saved.profile
-    return p and p.kickTracker
+    local profile = saved and saved.profile
+    return profile and profile.kickTracker
 end
 
 local pairs, next, type, pcall, tonumber = pairs, next, type, pcall, tonumber

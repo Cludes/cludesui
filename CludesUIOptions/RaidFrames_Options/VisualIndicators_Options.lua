@@ -2095,11 +2095,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         cursorY = cursorY - height
 
         local function FBSet()
-            local p = saved.profile
-            if not p.friendlyBoss then
-                p.friendlyBoss = { display = "never", position = "right" }
+            local profile = saved.profile
+            if not profile.friendlyBoss then
+                profile.friendlyBoss = { display = "never", position = "right" }
             end
-            return p.friendlyBoss
+            return profile.friendlyBoss
         end
         -- Everything below the display dropdown is inert while "Never".
         local function FBEnabled()
@@ -2298,11 +2298,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         cursorY = cursorY - height
 
         local function XFSet()
-            local p = saved.profile
-            if not p.extraFrames then
-                p.extraFrames = { showTanks = false, position = "right", players = {} }
+            local profile = saved.profile
+            if not profile.extraFrames then
+                profile.extraFrames = { showTanks = false, position = "right", players = {} }
             end
-            return p.extraFrames
+            return profile.extraFrames
         end
         -- Position settings only matter once something can feed the group: the tanks toggle or a bound hotkey.
         local function XFConfigured()
@@ -2581,11 +2581,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         cursorY = cursorY - height
 
         local function PFSet()
-            local p = saved.profile
-            if not p.petFrames then
-                p.petFrames = { position = "right" }
+            local profile = saved.profile
+            if not profile.petFrames then
+                profile.petFrames = { position = "right" }
             end
-            return p.petFrames
+            return profile.petFrames
         end
         local tabKey = optionState._partyCtx and "party" or "raid"
         local onParty = tabKey == "party"
@@ -2886,11 +2886,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
     -- Healer Mana Display: one mana-percent text row per group healer,
     -- riding the existing power-event plumbing (see ns.HM_Rebuild).
     local function HMS()
-        local p = saved.profile
-        if not p.healerMana then
-            p.healerMana = { mode = "none" }
+        local profile = saved.profile
+        if not profile.healerMana then
+            profile.healerMana = { mode = "none" }
         end
-        return p.healerMana
+        return profile.healerMana
     end
     local function HMRefresh()
         if mod.HM_Rebuild then
@@ -3122,11 +3122,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
     -- Player Group Label: raid tab only, party has no groups.
     if not optionState._partyCtx then
         local function PGS()
-            local p = saved.profile
-            if not p.playerGroup then
-                p.playerGroup = {}
+            local profile = saved.profile
+            if not profile.playerGroup then
+                profile.playerGroup = {}
             end
-            return p.playerGroup
+            return profile.playerGroup
         end
         local function PGRefresh()
             if mod.PG_Apply then
@@ -3238,8 +3238,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     tooltip = "Background",
                     hasAlpha = true,
                     getValue = function()
-                        local c = select(3, mod._PGStyle())
-                        return c.r, c.g, c.b, c.a or 1
+                        local color = select(3, mod._PGStyle())
+                        return color.r, color.g, color.b, color.a or 1
                     end,
                     setValue = function(red, green, blue, a)
                         PGS().bgColor = { r = red, g = green, b = blue, a = a }

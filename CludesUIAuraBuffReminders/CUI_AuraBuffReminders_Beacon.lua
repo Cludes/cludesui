@@ -174,19 +174,19 @@ local function BeaconLayoutIcons()
         end
         _B.onCursor = #visIcons > 0
         if _B.onCursor then
-            local p = saved.profile.display
-            local spacing = p.iconSpacing or 8
-            local baseScale = p.scale or 1.0
+            local display = saved.profile.display
+            local spacing = display.iconSpacing or 8
+            local baseScale = display.scale or 1.0
             local iconSz = floor(ICON_SIZE * baseScale + 0.5)
             local iconH = iconSz
-            if p.iconShape and p.iconShape ~= "none" then
-                iconSz, iconH = mod.IconDimensions(iconSz, p)
+            if display.iconShape and display.iconShape ~= "none" then
+                iconSz, iconH = mod.IconDimensions(iconSz, display)
             end
             local totalW = (#visIcons * iconSz) + ((#visIcons - 1) * spacing)
             local startX = -(totalW / 2) + (iconSz / 2)
             for index, frame in ipairs(visIcons) do
                 frame:SetSize(iconSz, iconH)
-                frame:SetAlpha(p.opacity or 1.0)
+                frame:SetAlpha(display.opacity or 1.0)
                 frame:SetFrameStrata("TOOLTIP")
                 frame:SetFrameLevel(9980)
                 REMIND.ApplyIconBorder(frame, false)

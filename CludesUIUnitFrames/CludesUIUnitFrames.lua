@@ -1760,11 +1760,11 @@ do
 
     -- The cast bar background's path (nil = flat): never over Blizzard's cast art.
     function mod.UF_TexBgCastPath(cfg, texKey, blizz)
-        local p = saved.profile
-        if blizz or not (cfg and p.castTextureBg) then
+        local profile = saved.profile
+        if blizz or not (cfg and profile.castTextureBg) then
             return nil
         end
-        local own = p.castBarTexture
+        local own = profile.castBarTexture
         if own and own ~= "inherit" then
             texKey = own
         end
@@ -2730,9 +2730,9 @@ local unitSettingsKey = {
     boss5 = "boss",
 }
 local function GetSettingsForUnit(unitToken)
-    local p = saved.profile
+    local profile = saved.profile
     local k = unitSettingsKey[unitToken]
-    return (k and p[k]) or p.player
+    return (k and profile[k]) or profile.player
 end
 
 -- Per-unit frame source resolver. Returns "cui" (spawn skinned frame, default),
@@ -2806,8 +2806,8 @@ function mod.UF_OwnsBlizzClassPower()
     if mod._ufBlizzCPHeld then
         return true
     end
-    local p = saved and saved.profile
-    if not (p and p.player and p.player.classPowerStyle == "blizzard") then
+    local profile = saved and saved.profile
+    if not (profile and profile.player and profile.player.classPowerStyle == "blizzard") then
         return false
     end
     return mod.GetUnitFrameSource("player") == "cui"

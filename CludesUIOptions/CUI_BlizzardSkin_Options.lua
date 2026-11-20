@@ -228,8 +228,8 @@ CludesUI.AtOptionsLogin(function()
         end, false)
         local class = AddModeSwatch(accent, "class", "Class Color", function()
             local _, k = UnitClass("player")
-            local c = RAID_CLASS_COLORS[k]
-            return c.r, c.g, c.b, 1
+            local color = RAID_CLASS_COLORS[k]
+            return color.r, color.g, color.b, 1
         end, false)
         local last = AddModeSwatch(class, "custom", "Custom Color", function()
             local color = CludesUIDB[prefixText .. "BorderColor"] or { r = 1, g = 1, b = 1 }
@@ -238,8 +238,8 @@ CludesUI.AtOptionsLogin(function()
         local q = options and options.quality
         if q then
             last = AddModeSwatch(last, "quality", q.tip, function()
-                local c = CludesUIDB[q.key] or { r = 1, g = 1, b = 1 }
-                return c.r, c.g, c.b, CludesUIDB[prefixText .. "BorderOpacity"] or CludesUI.RESKIN.BRD_ALPHA
+                local color = CludesUIDB[q.key] or { r = 1, g = 1, b = 1 }
+                return color.r, color.g, color.b, CludesUIDB[prefixText .. "BorderOpacity"] or CludesUI.RESKIN.BRD_ALPHA
             end, true, q.key)
         end
         right._lastInline = last
@@ -594,8 +594,8 @@ CludesUI.AtOptionsLogin(function()
                     hasAlpha = false,
                     getValue = function()
                         local _, k = UnitClass("player")
-                        local c = RAID_CLASS_COLORS[k]
-                        return c.r, c.g, c.b
+                        local color = RAID_CLASS_COLORS[k]
+                        return color.r, color.g, color.b
                     end,
                     setValue = function() end,
                     onClick = function()
@@ -2397,11 +2397,11 @@ CludesUI.AtOptionsLogin(function()
                     label = labelText,
                     swatch = {
                         get = function()
-                            local c = CludesUIDB
+                            local color = CludesUIDB
                                 and CludesUIDB.statCategoryColors
                                 and CludesUIDB.statCategoryColors[colorKey]
-                            if c then
-                                return c.r, c.g, c.b, 1
+                            if color then
+                                return color.r, color.g, color.b, 1
                             end
                             return def.r, def.g, def.b, 1
                         end,
@@ -5117,11 +5117,11 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         local function CBColor(settingKey)
-            local c = CBVal(settingKey)
-            if not c then
+            local color = CBVal(settingKey)
+            if not color then
                 return 1, 1, 1, 1
             end
-            return c.r, c.g, c.b, c.a or 1
+            return color.r, color.g, color.b, color.a or 1
         end
         local function Off()
             return CBVal("enabled") ~= true

@@ -2769,18 +2769,18 @@ local function RenderStandalone()
                 -- so tick-aligned texts stay put when there is room.
                 local limit -- max allowed right edge for the current text
                 for i = #entries, 1, -1 do
-                    local e = entries[i]
-                    local half = e.w / 2
-                    if (not e.pinRight) and limit then
-                        local right = e.center + half
+                    local entry = entries[i]
+                    local half = entry.w / 2
+                    if (not entry.pinRight) and limit then
+                        local right = entry.center + half
                         if right > limit then
-                            e.center = limit - half
+                            entry.center = limit - half
                         end
                     end
-                    if e.center - half < 0 then
-                        e.center = half
+                    if entry.center - half < 0 then
+                        entry.center = half
                     end -- clamp to left edge
-                    limit = (e.center - half) - GAP
+                    limit = (entry.center - half) - GAP
                 end
 
                 for _, entry in ipairs(entries) do

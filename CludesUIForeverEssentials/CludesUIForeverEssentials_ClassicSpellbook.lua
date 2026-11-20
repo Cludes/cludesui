@@ -197,8 +197,8 @@ local function FillSpellButton(b, slotBtn)
     end
     b.sub:SetText(sub or "")
     b.sub:Show()
-    local c = spellInfo.isPassive and PASSIVE_SPELL_FONT_COLOR or NORMAL_FONT_COLOR
-    b.name:SetTextColor(c.r, c.g, c.b)
+    local color = spellInfo.isPassive and PASSIVE_SPELL_FONT_COLOR or NORMAL_FONT_COLOR
+    b.name:SetTextColor(color.r, color.g, color.b)
     -- A passive has no button frame, as in the vanilla book.
     local v = spellInfo.isPassive and 0 or 1
     b.border:SetVertexColor(v, v, v)

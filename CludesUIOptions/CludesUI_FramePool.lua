@@ -386,10 +386,10 @@ end
 -- pairs: { { getter name, setter name }, ... }; probe: a new object of the kind.
 -- Returns the pairs the probe has, each with the probe's values.
 local function CaptureKept(probe, pairsList)
-    local m = getmetatable(probe).__index
+    local meta = getmetatable(probe).__index
     local entries
     for i = 1, #pairsList do
-        local get, set = m[pairsList[i][1]], m[pairsList[i][2]]
+        local get, set = meta[pairsList[i][1]], meta[pairsList[i][2]]
         local vals = get and set and PackOK(pcall(get, probe))
         if vals then
             entries = entries or {}
@@ -498,7 +498,7 @@ local function KindInfo(record)
         return details
     end
     local p = _G.CreateFrame(record.ftype, nil, ProbeHolder(), record.tmpl)
-    local m = getmetatable(p).__index
+    local meta = getmetatable(p).__index
     details = { scripts = record.tmpl and TEMPLATE_SCRIPTS[record.tmpl] or nil }
     local keyList
     for keyName, val in pairs(p) do
@@ -509,9 +509,9 @@ local function KindInfo(record)
     end
     details.keys = keyList
     details.mouse = p:IsMouseEnabled() and true or false
-    details.wheel = (m.IsMouseWheelEnabled and p:IsMouseWheelEnabled()) and true or false
-    details.clips = (m.DoesClipChildren and p:DoesClipChildren()) and true or false
-    details.keyboard = (m.IsKeyboardEnabled and p:IsKeyboardEnabled()) and true or false
+    details.wheel = (meta.IsMouseWheelEnabled and p:IsMouseWheelEnabled()) and true or false
+    details.clips = (meta.DoesClipChildren and p:DoesClipChildren()) and true or false
+    details.keyboard = (meta.IsKeyboardEnabled and p:IsKeyboardEnabled()) and true or false
     if record.ftype == "EditBox" then
         details.autoFocus = p:IsAutoFocus() and true or false
     end
@@ -525,7 +525,7 @@ local function KindInfo(record)
     local named = 0
     if roleMap then
         for i = 1, #roleMap do
-            local get = m[roleMap[i].get]
+            local get = meta[roleMap[i].get]
             if get and SafeCall(get, p) then
                 named = named + 1
             end
@@ -537,10 +537,10 @@ local function KindInfo(record)
         local eng = {}
         for i = 1, #roleMap do
             local roleName = roleMap[i]
-            local get, make = m[roleName.get], roleName.make and m[roleName.make]
+            local get, make = meta[roleName.get], roleName.make and meta[roleName.make]
             -- the text region is measured as a dress that shows text makes it: with a font object
-            if make and roleName.text and m.SetNormalFontObject then
-                pcall(m.SetNormalFontObject, p, _G.GameFontNormal)
+            if make and roleName.text and meta.SetNormalFontObject then
+                pcall(meta.SetNormalFontObject, p, _G.GameFontNormal)
             end
             if make then
                 pcall(make, p, roleName.text and " " or PROBE_ART)
@@ -830,9 +830,9 @@ local ANIM_OVERRIDES = { SetScript = O_SetScript, HookScript = O_HookScript }
 local engHidden = setmetatable({}, { __mode = "k" })
 local function EngineSetter(setName, getName)
     return function(self, ...)
-        local m = getmetatable(self).__index
-        local r1, r2 = m[setName](self, ...)
-        local get = m[getName]
+        local meta = getmetatable(self).__index
+        local r1, r2 = meta[setName](self, ...)
+        local get = meta[getName]
         local registry = get and get(self)
         local back = registry and engHidden[registry]
         if back ~= nil then
@@ -874,9 +874,9 @@ local function O_DevSetParent(self, hostFrame, ...)
 end
 
 local function Install(object, set)
-    local m = getmetatable(object).__index
+    local meta = getmetatable(object).__index
     for label, func in pairs(set) do
-        if rawget(m, label) ~= nil then
+        if rawget(meta, label) ~= nil then
             rawset(object, label, func)
         end
     end
@@ -919,8 +919,8 @@ local function RegisterFrame(object, record)
     REC[object] = record
     -- a button's pushed text offset as new, read from the button itself as it is
     -- made (a new button's offset is not one fixed value): its resets put it back
-    local m = getmetatable(object).__index
-    if m.GetPushedTextOffset then
+    local meta = getmetatable(object).__index
+    if meta.GetPushedTextOffset then
         record.pushX, record.pushY = object:GetPushedTextOffset()
     end
     Install(object, FRAME_OVERRIDES)
@@ -1367,9 +1367,9 @@ local function ResetContents(object, record, details, pass)
     local named
     local roleMap = ENGINE_ROLES[record.ftype]
     if roleMap then
-        local m = getmetatable(object).__index
+        local meta = getmetatable(object).__index
         for i = 1, #roleMap do
-            local get = m[roleMap[i].get]
+            local get = meta[roleMap[i].get]
             local registry = get and get(object)
             if registry and REC[registry] == nil then
                 if not named then
@@ -1586,9 +1586,9 @@ end
 -- clear it). pass: see ResetContents. hidden: left hidden at the end (shown
 -- by the code that dresses it), so no OnShow runs at the reset.
 local function ResetFrame(object, record, hostFrame, pass, hidden)
-    local m = getmetatable(object).__index
+    local meta = getmetatable(object).__index
     local details = KindInfo(record)
-    if _G.InCombatLockdown() and (HasPropagate(object, m) or KeyboardChanged(object, m, details)) then
+    if _G.InCombatLockdown() and (HasPropagate(object, meta) or KeyboardChanged(object, meta, details)) then
         record.dirty = true
         return false
     end
@@ -1618,11 +1618,11 @@ local function ResetFrame(object, record, hostFrame, pass, hidden)
         ReleaseScrollChild(object, record)
     end
     ResetContents(object, record, details, pass)
-    ResetScripts(object, record, m, details.scripts)
+    ResetScripts(object, record, meta, details.scripts)
     object:UnregisterAllEvents()
-    ResetAttrs(object, record, m)
+    ResetAttrs(object, record, meta)
     ForgetRegistries(object, true)
-    WipeKeys(object, record, m, details.keys)
+    WipeKeys(object, record, meta, details.keys)
     if record.ftype == "Cooldown" then
         object:Clear()
     end
@@ -1631,10 +1631,10 @@ local function ResetFrame(object, record, hostFrame, pass, hidden)
     -- A new object's are put back first (a button answers the left
     -- button's release, nothing is registered for drag), so a reused
     -- button never answers the clicks, or starts the drags, of an earlier dress.
-    if m.RegisterForClicks then
+    if meta.RegisterForClicks then
         object:RegisterForClicks("LeftButtonUp")
     end
-    if m.RegisterForDrag then
+    if meta.RegisterForDrag then
         object:RegisterForDrag()
     end
     if object.SetToDefaults then
@@ -1644,7 +1644,7 @@ local function ResetFrame(object, record, hostFrame, pass, hidden)
         object:SetAlpha(1)
         object:SetScale(1)
     end
-    if record.ftype == "PlayerModel" and m.ClearModel then
+    if record.ftype == "PlayerModel" and meta.ClearModel then
         object:ClearModel()
     end
     ForgetPixelSnap(object)
@@ -1657,18 +1657,18 @@ local function ResetFrame(object, record, hostFrame, pass, hidden)
         object:EnableMouse(details.mouse)
         Fixed(record, "mouse")
     end
-    if m.IsMouseWheelEnabled and (object:IsMouseWheelEnabled() and true or false) ~= details.wheel then
+    if meta.IsMouseWheelEnabled and (object:IsMouseWheelEnabled() and true or false) ~= details.wheel then
         object:EnableMouseWheel(details.wheel)
         Fixed(record, "wheel")
     end
-    if m.DoesClipChildren and (object:DoesClipChildren() and true or false) ~= details.clips then
+    if meta.DoesClipChildren and (object:DoesClipChildren() and true or false) ~= details.clips then
         object:SetClipsChildren(details.clips)
         Fixed(record, "clips")
     end
     -- what SetToDefaults keeps: the keyboard flag (left as it is only in combat,
     -- where it already matches), the pushed text offset, the kind's own settings
     -- and an edit box's history
-    if KeyboardChanged(object, m, details) and not _G.InCombatLockdown() then
+    if KeyboardChanged(object, meta, details) and not _G.InCombatLockdown() then
         object:EnableKeyboard(details.keyboard)
     end
     if record.pushX then
@@ -1682,7 +1682,7 @@ local function ResetFrame(object, record, hostFrame, pass, hidden)
     if details.kept and not RestoreKept(object, details.kept) then
         record.engine = true
     end
-    if m.ClearHistory then
+    if meta.ClearHistory then
         object:ClearHistory()
     end
     -- No API clears a scroll frame's scroll child (SetScrollChild takes no nil):
@@ -1691,12 +1691,12 @@ local function ResetFrame(object, record, hostFrame, pass, hidden)
     if record.ftype == "ScrollFrame" then
         local childFrame = object:GetScrollChild()
         if childFrame and childFrame ~= record.placeholder then
-            m.SetScrollChild(object, PlaceholderFor(object, record))
+            meta.SetScrollChild(object, PlaceholderFor(object, record))
         end
     end
     -- placement: the parent, its strata and the level a new child gets
     if object:GetParent() ~= hostFrame then
-        m.SetParent(object, hostFrame)
+        meta.SetParent(object, hostFrame)
     end
     local strata = hostFrame and hostFrame:GetFrameStrata() or "MEDIUM"
     if object:GetFrameStrata() ~= strata then
@@ -1719,13 +1719,13 @@ local function ResetFrame(object, record, hostFrame, pass, hidden)
         -- dress, which turns auto-focus off first: see Pool.Kept)
         object:SetAutoFocus(false)
         if not hidden then
-            m.Show(object)
+            meta.Show(object)
         end
         object:SetAutoFocus(details.autoFocus)
     elseif not hidden then
         -- shown as a new frame is: through the type's method, so an instance Show
         -- hook (CludesUI.TrackOverlay) never sees the reset (the Hide above it does)
-        m.Show(object)
+        meta.Show(object)
     end
     record.gen = record.gen + 1
     record.idle = false
@@ -1734,12 +1734,12 @@ end
 
 -- Returns false when a value of its own stays different (its group is retired).
 local function ResetAnim(a, r)
-    local m = getmetatable(a).__index
+    local meta = getmetatable(a).__index
     if a.IsPlaying and a:IsPlaying() and a.Stop then
         a:Stop()
     end
-    ResetScripts(a, r, m, nil)
-    WipeKeys(a, r, m, nil)
+    ResetScripts(a, r, meta, nil)
+    WipeKeys(a, r, meta, nil)
     if a.SetToDefaults then
         a:SetToDefaults()
     end
@@ -1756,10 +1756,10 @@ local function ResetAnim(a, r)
 end
 
 local function ResetAG(animGroup, record)
-    local m = getmetatable(animGroup).__index
+    local meta = getmetatable(animGroup).__index
     animGroup:Stop()
-    ResetScripts(animGroup, record, m, nil)
-    WipeKeys(animGroup, record, m, nil)
+    ResetScripts(animGroup, record, meta, nil)
+    WipeKeys(animGroup, record, meta, nil)
     if animGroup.SetToDefaults then
         animGroup:SetToDefaults()
     end
@@ -1822,13 +1822,13 @@ local function RetireAG(animGroup)
 end
 
 local function ResetRegion(object, record, hostFrame, layer, subMenu)
-    local m = getmetatable(object).__index
+    local meta = getmetatable(object).__index
     if object:IsShown() then
         object:Hide()
     end
-    ResetScripts(object, record, m, nil)
+    ResetScripts(object, record, meta, nil)
     ForgetRegistries(object, false)
-    WipeKeys(object, record, m, nil)
+    WipeKeys(object, record, meta, nil)
     -- its own animation groups: stopped, handed back in order
     local poolMap = record.pools
     if poolMap then
@@ -1854,10 +1854,10 @@ local function ResetRegion(object, record, hostFrame, layer, subMenu)
         record.rotated = nil
         local r0, p0 = TexRotation()
         if p0 then
-            m.SetRotation(object, r0, p0)
+            meta.SetRotation(object, r0, p0)
         end
     end
-    if m.GetNumMaskTextures then
+    if meta.GetNumMaskTextures then
         for i = object:GetNumMaskTextures(), 1, -1 do
             local mask = object:GetMaskTexture(i)
             if mask then
@@ -1868,7 +1868,7 @@ local function ResetRegion(object, record, hostFrame, layer, subMenu)
     ForgetPixelSnap(object)
     object:SetDrawLayer(layer, subMenu)
     if object:GetParent() ~= hostFrame then
-        m.SetParent(object, hostFrame)
+        meta.SetParent(object, hostFrame)
     end
     object:Show()
     record.layer, record.sub = layer, subMenu

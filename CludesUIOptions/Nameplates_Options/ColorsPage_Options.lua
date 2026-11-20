@@ -320,11 +320,11 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
     -- the edited or new row reports the write to Spec Overrides.
     local function SetSpell(swatchCell, ident, region)
         local singles, combos = Read(swatchCell.class)
-        local e = singles[swatchCell.n]
-        if not e or e.spell == ident then
+        local entry = singles[swatchCell.n]
+        if not entry or entry.spell == ident then
             return
         end
-        e.spell = ident
+        entry.spell = ident
         Write(swatchCell.class, singles, combos, region)
         CludesUI:RefreshPage()
     end
@@ -725,15 +725,15 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
             -- nothing; an unchosen one may not take a spell once the rest are full.
             disabledValues = function(colorKey)
                 local ident, singles = tonumber(colorKey), Read(swatchCell.class)
-                local e = singles[swatchCell.n]
-                if not ident or (e and e.spell == ident) then
+                local entry = singles[swatchCell.n]
+                if not ident or (entry and entry.spell == ident) then
                     return false
                 end
-                local missing = e ~= nil and e.missing == true
+                local missing = entry ~= nil and entry.missing == true
                 if HeldElsewhere(swatchCell, ident, missing, singles) then
                     return IN_USE
                 end
-                return missing and MissingFull(swatchCell, singles, e.spell > 0) and MISSING_FULL or false
+                return missing and MissingFull(swatchCell, singles, entry.spell > 0) and MISSING_FULL or false
             end,
             tooltip = SINGLE_TIP,
         }
@@ -755,15 +755,15 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
             end,
             function(colorKey)
                 local singles, missing = Read(swatchCell.class), colorKey == "missing"
-                local e = singles[swatchCell.n]
-                if not e or missing == (e.missing == true) then
+                local entry = singles[swatchCell.n]
+                if not entry or missing == (entry.missing == true) then
                     return false
                 end
                 if missing and MissingFull(swatchCell, singles) then
                     return MISSING_FULL
                 end
-                return e.spell > 0
-                        and HeldElsewhere(swatchCell, e.spell, missing, singles)
+                return entry.spell > 0
+                        and HeldElsewhere(swatchCell, entry.spell, missing, singles)
                         and "Another row already uses this debuff this way."
                     or false
             end
@@ -797,11 +797,11 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
                 end,
                 setValue = function(red, green, blue)
                     local singles, combos = Read(swatchCell.class)
-                    local e = singles[swatchCell.n]
-                    if not e then
+                    local entry = singles[swatchCell.n]
+                    if not entry then
                         return
                     end
-                    e.color = { r = red, g = green, b = blue }
+                    entry.color = { r = red, g = green, b = blue }
                     Write(swatchCell.class, singles, combos)
                 end,
                 disabled = function()
@@ -1687,10 +1687,10 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         local colTargetHex
         if useClassColor then
             local _, pClass = UnitClass("player")
-            local c = pClass and RAID_CLASS_COLORS and RAID_CLASS_COLORS[pClass]
-            if c then
-                targetText:SetTextColor(c.r, c.g, c.b, 1)
-                colTargetHex = (c.GenerateHexColor and c:GenerateHexColor()) or c.colorStr or "ffffffff"
+            local color = pClass and RAID_CLASS_COLORS and RAID_CLASS_COLORS[pClass]
+            if color then
+                targetText:SetTextColor(color.r, color.g, color.b, 1)
+                colTargetHex = (color.GenerateHexColor and color:GenerateHexColor()) or color.colorStr or "ffffffff"
             else
                 targetText:SetTextColor(1, 1, 1, 1)
                 colTargetHex = "ffffffff"
@@ -1987,10 +1987,10 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 -- Until explicitly set, views the user's "Enemies" color so the swatch starts matching enemyInCombat (see GetReactionColor).
                 getValue = function()
                     local saved = DB()
-                    local c = (saved and saved.miniEnemy)
+                    local color = (saved and saved.miniEnemy)
                         or (saved and saved.enemyInCombat)
                         or defaultSet.enemyInCombat
-                    return c.r, c.g, c.b
+                    return color.r, color.g, color.b
                 end,
                 setValue = function(red, green, blue)
                     DB().miniEnemy = { r = red, g = green, b = blue }

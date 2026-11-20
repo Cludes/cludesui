@@ -99,14 +99,14 @@ function mod.UF_ClassFallback(cfg)
     local val = cfg.portraitNonPlayer or "2d"
     if val == "3d" then
         local style = cfg.portraitStyle
-        local p = saved.profile
+        local profile = saved.profile
         if
             cfg.showPortrait == false
             or style == "none"
             or (style == "detached" and (cfg.detachedPortraitShape or "portrait") ~= "none")
-            or cfg == p.targettarget
-            or cfg == p.focustarget
-            or cfg == p.pet
+            or cfg == profile.targettarget
+            or cfg == profile.focustarget
+            or cfg == profile.pet
         then
             return "2d"
         end

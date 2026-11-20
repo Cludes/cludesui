@@ -561,20 +561,20 @@ local function PushPalette(index)
 
     local sum = num
     for k = 1, (claims and #claims or 0) do
-        local c = claims[k]
-        c.base = sum
-        for jdx = 1, c.n do
+        local claim = claims[k]
+        claim.base = sum
+        for jdx = 1, claim.n do
             sum = sum + 1
-            PushCell(button, sum, c.slots[jdx], p)
+            PushCell(button, sum, claim.slots[jdx], p)
             -- A palette reached only by being nested carries no keybind, so it
             -- gets no push of its own and this is the only warm its entries see.
-            mod.WarmSlot(c.slots[jdx])
+            mod.WarmSlot(claim.slots[jdx])
             -- A block layout's nests carry a BOX. Half-extents are what tells
             -- the snippet these cells are tested by containment rather than by
             -- nearness -- the palette's own entries have no half-extents, and
             -- fall to the nearest-cell search below.
-            if c.cells then
-                local b = c.cells[jdx]
+            if claim.cells then
+                local b = claim.cells[jdx]
                 button:SetAttribute("eqdBX" .. sum, b.x)
                 button:SetAttribute("eqdBY" .. sum, b.y)
                 button:SetAttribute("eqdHW" .. sum, b.hw)
@@ -640,13 +640,13 @@ local function PushPalette(index)
             button:SetAttribute("eqdCSlot" .. k, nil)
         end
         for k = 1, (claims and #claims or 0) do
-            local c = claims[k]
-            button:SetAttribute("eqdNBase" .. c.parent, c.base)
-            button:SetAttribute("eqdNNum" .. c.parent, c.n)
-            button:SetAttribute("eqdNAcross" .. c.parent, c.across)
-            button:SetAttribute("eqdNSide" .. c.parent, c.sign)
-            button:SetAttribute("eqdClaimAt" .. c.parent, k)
-            button:SetAttribute("eqdCSlot" .. k, c.parent)
+            local claim = claims[k]
+            button:SetAttribute("eqdNBase" .. claim.parent, claim.base)
+            button:SetAttribute("eqdNNum" .. claim.parent, claim.n)
+            button:SetAttribute("eqdNAcross" .. claim.parent, claim.across)
+            button:SetAttribute("eqdNSide" .. claim.parent, claim.sign)
+            button:SetAttribute("eqdClaimAt" .. claim.parent, k)
+            button:SetAttribute("eqdCSlot" .. k, claim.parent)
         end
         if claims then
             EnsureLatticeGates(index, button)

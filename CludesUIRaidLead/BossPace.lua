@@ -25,9 +25,9 @@ local RED = CreateColor(0.93, 0.33, 0.25, 1)
 local TICK = 0.25
 
 function mod.PaceSettings()
-    local p = mod.RaidLeadDB()
-    p.pace = p.pace or {}
-    local cfg = p.pace
+    local profile = mod.RaidLeadDB()
+    profile.pace = profile.pace or {}
+    local cfg = profile.pace
     if cfg.enabled == nil then
         cfg.enabled = true
     end

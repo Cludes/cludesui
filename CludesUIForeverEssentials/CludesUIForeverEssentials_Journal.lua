@@ -714,7 +714,7 @@ Show = function(skinData)
     y = y + 6
     y = MapShow(dd, y)
 
-    local n = 0
+    local count = 0
     for _, wing in ipairs(dd.wings or {}) do
         if wing.name then
             Line(wing.name, 14, 0, { 1, 0.82, 0 })
@@ -727,9 +727,9 @@ Show = function(skinData)
                 or ""
             local numbered = not (boss.rare or boss.optional or boss.quest or boss.chest or boss.trash)
             if numbered then
-                n = n + 1
+                count = count + 1
             end
-            Line((numbered and (n .. ". ") or "") .. boss.name .. tag, 14, 0, { 1, 1, 1 })
+            Line((numbered and (count .. ". ") or "") .. boss.name .. tag, 14, 0, { 1, 1, 1 })
             local tip = boss.npc and J.Tips and J.Tips[boss.npc]
             if tip then
                 Line(tip, 12, 14, { 0.6, 0.65, 0.7 })

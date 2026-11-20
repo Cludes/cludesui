@@ -33,15 +33,15 @@ local SetupReadyCheckManaWarning = function()
 
     -- Default ON: the warning predates its toggle, so a missing key = enabled.
     function REMIND.RCWEnabled()
-        local p = saved and saved.profile
-        local c = p and p.consumables
+        local profile = saved and saved.profile
+        local c = profile and profile.consumables
         return not c or c.rcManaWarn ~= false
     end
 
     -- Custom swatch color, or the brightened mana color (the original look).
     function REMIND.RCWColor()
-        local p = saved and saved.profile
-        local c = p and p.consumables
+        local profile = saved and saved.profile
+        local c = profile and profile.consumables
         local colour = c and c.rcManaWarnColor
         if colour and colour.r then
             return colour.r, colour.g, colour.b
@@ -71,8 +71,8 @@ local SetupReadyCheckManaWarning = function()
         if not warnFrame then
             return
         end
-        local p = saved and saved.profile
-        local c = p and p.consumables
+        local profile = saved and saved.profile
+        local c = profile and profile.consumables
         warnFrame:ClearAllPoints()
         warnFrame:SetPoint(
             "CENTER",

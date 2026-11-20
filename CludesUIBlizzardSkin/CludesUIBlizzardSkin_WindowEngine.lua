@@ -129,14 +129,14 @@ Skin.AddBorder = AddBorder
 local MODERN_FALLBACK = { r = 0.067, g = 0.067, b = 0.067, a = 0.97 }
 function Skin.GetModernBG()
     local saved = CludesUIDB
-    local c = saved and saved.blizzWindowModernDefault
-    if not (c and c.r) then
-        c = MODERN_FALLBACK
+    local color = saved and saved.blizzWindowModernDefault
+    if not (color and color.r) then
+        color = MODERN_FALLBACK
     end
-    return c.r or MODERN_FALLBACK.r,
-        c.g or MODERN_FALLBACK.g,
-        c.b or MODERN_FALLBACK.b,
-        c.a or MODERN_FALLBACK.a
+    return color.r or MODERN_FALLBACK.r,
+        color.g or MODERN_FALLBACK.g,
+        color.b or MODERN_FALLBACK.b,
+        color.a or MODERN_FALLBACK.a
 end
 
 function Skin.GetStyle(winKey)

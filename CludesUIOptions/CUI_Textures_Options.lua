@@ -256,15 +256,15 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
             values = hbtValues,
             order = hbtOrder,
             getValue = function()
-                local p = saved()
-                return (p and p[key]) or DEF[key] or "none"
+                local profile = saved()
+                return (profile and profile[key]) or DEF[key] or "none"
             end,
             setValue = function(value)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p[key] = value
+                profile[key] = value
                 NPTexApply()
             end,
         }
@@ -384,15 +384,15 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
             values = (key == "hoverOverlayTexture") and hovValues or ovtValues,
             order = (key == "hoverOverlayTexture") and hovOrder or ovtOrder,
             getValue = function()
-                local p = saved()
-                return (p and p[key]) or DEF[key]
+                local profile = saved()
+                return (profile and profile[key]) or DEF[key]
             end,
             setValue = function(value)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p[key] = value
+                profile[key] = value
                 local func = mod[applyName]
                 if func then
                     func()
@@ -426,16 +426,16 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
         values = absorbStyleValues,
         order = absorbStyleOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.absorbStyle) or "blizzard"
+            local profile = saved()
+            return (profile and profile.absorbStyle) or "blizzard"
         end,
         setValue = function(value)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.absorbStyle = value
-            p.absorbAlpha = math.floor(
+            profile.absorbStyle = value
+            profile.absorbAlpha = math.floor(
                 (((mod.NP_ABSORB_STYLE_ALPHA and mod.NP_ABSORB_STYLE_ALPHA[value]) or 0.8) * 100) + 0.5
             )
             if mod.ApplyAbsorbStyleAll then
@@ -505,8 +505,8 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
     local UNITS = { "player", "target", "focus" }
     local UNIT_LABEL = { player = "Player", target = "Target", focus = "Focus" }
     local function unitTable(unit)
-        local p = saved()
-        return p and p[unit]
+        local profile = saved()
+        return profile and profile[unit]
     end
     local function UFReload()
         if mod.ReloadFrames then
@@ -592,15 +592,15 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
         order = cbtOrder,
         tooltip = "Texture for every unit frame cast bar. Inherit follows each unit's bar texture.",
         getValue = function()
-            local p = saved()
-            return (p and p.castBarTexture) or "inherit"
+            local profile = saved()
+            return (profile and profile.castBarTexture) or "inherit"
         end,
         setValue = function(value)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.castBarTexture = value
+            profile.castBarTexture = value
             UFReload()
         end,
     }
@@ -781,15 +781,15 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         values = hbtValues,
         order = hbtOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.healthBarTexture) or "atrocity"
+            local profile = saved()
+            return (profile and profile.healthBarTexture) or "atrocity"
         end,
         setValue = function(value)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.healthBarTexture = value
+            profile.healthBarTexture = value
             if mod._BumpAbsorbGen then
                 mod._BumpAbsorbGen()
             end
@@ -801,25 +801,25 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         values = absorbStyleValues,
         order = absorbStyleOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.absorbStyle) or "none"
+            local profile = saved()
+            return (profile and profile.absorbStyle) or "none"
         end,
         setValue = function(value)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
             -- Blizzard Glow Line follows the pick (see the Raid & Party Frames page).
             if value == "blizzardModern" then
-                p.absorbGlowLine = true
-            elseif p.absorbStyle == "blizzardModern" then
-                p.absorbGlowLine = false
+                profile.absorbGlowLine = true
+            elseif profile.absorbStyle == "blizzardModern" then
+                profile.absorbGlowLine = false
             end
-            p.absorbStyle = value
+            profile.absorbStyle = value
             if value == "clean" then
-                p.absorbOpacity = 30
+                profile.absorbOpacity = 30
             elseif value ~= "blizzardModern" then
-                p.absorbOpacity = 90
+                profile.absorbOpacity = 90
             end
             RFReload()
         end,
@@ -827,19 +827,19 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
     cursorY = cursorY - height
     -- Textured Background cog: the Raid tab's row on the raid keys, as this card writes.
     local function RaidRead(key, default)
-        local p = saved()
-        local value = p and p[key]
+        local profile = saved()
+        local value = profile and profile[key]
         if value == nil then
             return default
         end
         return value
     end
     local function RaidWrite(key, value)
-        local p = saved()
-        if not p then
+        local profile = saved()
+        if not profile then
             return
         end
-        p[key] = value
+        profile[key] = value
         if mod._BumpAbsorbGen then
             mod._BumpAbsorbGen()
         end
@@ -855,16 +855,16 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         values = absorbStyleValues,
         order = healAbsorbStyleOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.healAbsorbStyle) or "clean"
+            local profile = saved()
+            return (profile and profile.healAbsorbStyle) or "clean"
         end,
         setValue = function(value)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.healAbsorbStyle = value
-            p.healAbsorbOpacity = (value == "clean") and 50 or 75
+            profile.healAbsorbStyle = value
+            profile.healAbsorbOpacity = (value == "clean") and 50 or 75
             RFReload()
         end,
     }, {
@@ -873,15 +873,15 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         values = absorbStyleValues,
         order = maxHealthStyleOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.maxHealthStyle) or "maxHealthStripes"
+            local profile = saved()
+            return (profile and profile.maxHealthStyle) or "maxHealthStripes"
         end,
         setValue = function(value)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.maxHealthStyle = value
+            profile.maxHealthStyle = value
             RFReload()
         end,
     })
@@ -973,15 +973,15 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
         tooltip = split and "Texture for the class resource bar and any bar set to Match Main Texture."
             or "Texture for the health, power and class resource bars.",
         getValue = function()
-            local p = saved()
-            return (p and p.general and p.general.barTexture) or "none"
+            local profile = saved()
+            return (profile and profile.general and profile.general.barTexture) or "none"
         end,
         setValue = function(value)
-            local p = saved()
-            if not (p and p.general) then
+            local profile = saved()
+            if not (profile and profile.general) then
                 return
             end
-            p.general.barTexture = value
+            profile.general.barTexture = value
             RBApply()
         end,
     }, {
@@ -990,15 +990,15 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
         values = castValues,
         order = castOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.castBar and p.castBar.texture) or "none"
+            local profile = saved()
+            return (profile and profile.castBar and profile.castBar.texture) or "none"
         end,
         setValue = function(value)
-            local p = saved()
-            if not (p and p.castBar) then
+            local profile = saved()
+            if not (profile and profile.castBar) then
                 return
             end
-            p.castBar.texture = value
+            profile.castBar.texture = value
             RBApply()
             if CludesUI.NotifyElementResized then
                 CludesUI.NotifyElementResized("ERB_CastBar")
@@ -1028,18 +1028,18 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
                 values = value,
                 order = o,
                 getValue = function()
-                    local p = saved()
-                    return p and mod.ERB_BarTexture(p, barId) or "__match"
+                    local profile = saved()
+                    return profile and mod.ERB_BarTexture(profile, barId) or "__match"
                 end,
                 setValue = function(val)
-                    local p = saved()
-                    if not p then
+                    local profile = saved()
+                    if not profile then
                         return
                     end
-                    mod.ERB_SetBarTexture(p, barId, val ~= "__match" and val)
+                    mod.ERB_SetBarTexture(profile, barId, val ~= "__match" and val)
                     RBApply()
                     -- Neither bar has its own texture any more: the row goes.
-                    if p.splitTex ~= true then
+                    if profile.splitTex ~= true then
                         CludesUI:RefreshPage(true)
                     end
                 end,
@@ -1061,15 +1061,15 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
         values = gcdValues,
         order = gcdOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.gcdBar and p.gcdBar.texture) or "none"
+            local profile = saved()
+            return (profile and profile.gcdBar and profile.gcdBar.texture) or "none"
         end,
         setValue = function(value)
-            local p = saved()
-            if not (p and p.gcdBar) then
+            local profile = saved()
+            if not (profile and profile.gcdBar) then
                 return
             end
-            p.gcdBar.texture = value
+            profile.gcdBar.texture = value
             RBApply()
             if CludesUI.NotifyElementResized then
                 CludesUI.NotifyElementResized("ERB_GCDBar")
@@ -1128,15 +1128,15 @@ local function TileChat(hostFrame, cursorY, W, tile)
         order = btOrder,
         tooltip = "Texture drawn over the chat background color.",
         getValue = function()
-            local p = saved()
-            return (p and p.bgTexture) or "none"
+            local profile = saved()
+            return (profile and profile.bgTexture) or "none"
         end,
         setValue = function(value)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.bgTexture = value
+            profile.bgTexture = value
             if CHAT and CHAT.ApplyBackground then
                 CHAT.ApplyBackground()
             end
@@ -1148,15 +1148,15 @@ local function TileChat(hostFrame, cursorY, W, tile)
         order = tabOrder,
         tooltip = "Texture drawn over the tab background colors.",
         getValue = function()
-            local p = saved()
-            return (p and p.tabBackgroundTexture) or "none"
+            local profile = saved()
+            return (profile and profile.tabBackgroundTexture) or "none"
         end,
         setValue = function(value)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.tabBackgroundTexture = value
+            profile.tabBackgroundTexture = value
             if CHAT and CHAT.ApplyTabAppearance then
                 CHAT.ApplyTabAppearance()
             end
@@ -1186,13 +1186,13 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             order = sequence,
             tooltip = "Used by the movement alert's Bar display mode.",
             getValue = function()
-                local d = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
-                local ma = d and d.profile and d.profile.movementAlert
+                local db = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
+                local ma = db and db.profile and db.profile.movementAlert
                 return (ma and ma.barTexture) or "none"
             end,
             setValue = function(value)
-                local d = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
-                local ma = d and d.profile and d.profile.movementAlert
+                local db = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
+                local ma = db and db.profile and db.profile.movementAlert
                 if not ma then
                     return
                 end
@@ -1333,15 +1333,15 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
             values = values,
             order = sequence,
             getValue = function()
-                local p = saved()
-                return (p and p[key]) or "none"
+                local profile = saved()
+                return (profile and profile[key]) or "none"
             end,
             setValue = function(value)
-                local p = saved()
-                if not p then
+                local profile = saved()
+                if not profile then
                     return
                 end
-                p[key] = value
+                profile[key] = value
                 MTApply()
             end,
         }
@@ -1372,20 +1372,20 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
         }
     end
     local function tsb()
-        local p = saved()
-        return p and p.tsb
+        local profile = saved()
+        return profile and profile.tsb
     end
     local function tfbT()
-        local p = saved()
-        return p and p.tfb and p.tfb.target
+        local profile = saved()
+        return profile and profile.tfb and profile.tfb.target
     end
     local function tfbF()
-        local p = saved()
-        return p and p.tfb and p.tfb.focus
+        local profile = saved()
+        return profile and profile.tfb and profile.tfb.focus
     end
     local function kt()
-        local p = saved()
-        return p and p.kickTracker
+        local profile = saved()
+        return profile and profile.kickTracker
     end
     local _, height = W:DualRow(
         hostFrame,
@@ -1447,15 +1447,15 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         values = dmValues,
         order = dmOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.barTexture) or "none"
+            local profile = saved()
+            return (profile and profile.barTexture) or "none"
         end,
         setValue = function(value)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.barTexture = value
+            profile.barTexture = value
             if mod.RefreshMeter then
                 mod.RefreshMeter()
             end
@@ -1469,15 +1469,15 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         values = matchValues,
         order = matchOrder,
         getValue = function()
-            local p = saved()
-            return (p and p.breakdownBarTexture) or "match"
+            local profile = saved()
+            return (profile and profile.breakdownBarTexture) or "match"
         end,
         setValue = function(value)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            p.breakdownBarTexture = value
+            profile.breakdownBarTexture = value
             if mod.RefreshMeter then
                 mod.RefreshMeter()
             end
@@ -1490,19 +1490,19 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         values = matchValues,
         order = matchOrder,
         getValue = function()
-            local p = saved()
-            local sh = p and p.spellHistory
+            local profile = saved()
+            local sh = profile and profile.spellHistory
             return (sh and sh.spellHistoryBarTexture) or "match"
         end,
         setValue = function(value)
-            local p = saved()
-            if not p then
+            local profile = saved()
+            if not profile then
                 return
             end
-            if not p.spellHistory then
-                p.spellHistory = {}
+            if not profile.spellHistory then
+                profile.spellHistory = {}
             end
-            p.spellHistory.spellHistoryBarTexture = value
+            profile.spellHistory.spellHistoryBarTexture = value
             if mod.ApplySpellHistory then
                 mod.ApplySpellHistory()
             end

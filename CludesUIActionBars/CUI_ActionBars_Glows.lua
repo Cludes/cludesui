@@ -71,8 +71,8 @@ local function UpdateFlipbook(button)
         EFD(regionFrame).shapeMasked = true
     end
 
-    local p = ABAR.db and ABAR.db.profile
-    if not p then
+    local profile = ABAR.db and ABAR.db.profile
+    if not profile then
         return
     end
 
@@ -90,8 +90,8 @@ local function UpdateFlipbook(button)
             end
         end
         local resolved
-        if barKey and p.bars and p.bars[barKey] then
-            local cfg = p.bars[barKey]
+        if barKey and profile.bars and profile.bars[barKey] then
+            local cfg = profile.bars[barKey]
             local baseLevel = barBaseSize[barKey]
             local buttonW = baseLevel and baseLevel.w or 45
             local buttonH = baseLevel and baseLevel.h or 45
@@ -114,7 +114,7 @@ local function UpdateFlipbook(button)
         end
     end
 
-    if not p.procGlowEnabled then
+    if not profile.procGlowEnabled then
         -- "Default" glow: use our glow library with Modern WoW Glow (#6)
         if not (frameData.shapeMask and frameData.shapeApplied) then
             if not frameData.glowWrapper then
@@ -140,15 +140,15 @@ local function UpdateFlipbook(button)
     -- Color mode: the class flag alone decides Class (legacy profiles and older
     -- spec overrides carry only the flag); the mode key tells Default from
     -- Custom. The options getter reads the same rule.
-    local color = p.procGlowColor or { r = 1, g = 0.776, b = 0.376 }
+    local color = profile.procGlowColor or { r = 1, g = 0.776, b = 0.376 }
     local cr, cg, callback = _G_Glows.ResolveColor(
-        p.procGlowUseClassColor and "class" or (p.procGlowColorMode == "default" and "default" or "custom"),
+        profile.procGlowUseClassColor and "class" or (profile.procGlowColorMode == "default" and "default" or "custom"),
         color.r,
         color.g,
         color.b
     )
 
-    local loopIdx = p.procGlowType or 1
+    local loopIdx = profile.procGlowType or 1
     if loopIdx < 1 or loopIdx > #LOOP_GLOW_TYPES then
         loopIdx = 1
     end
@@ -207,16 +207,16 @@ local function UpdateFlipbook(button)
         local buttonW, buttonH = _ufBtnW, _ufBtnH
 
         if loopRec.procedural then
-            local N = p.procGlowLines or 8
-            local th = p.procGlowThickness or 2
-            local period = p.procGlowSpeed or 4
+            local N = profile.procGlowLines or 8
+            local th = profile.procGlowThickness or 2
+            local period = profile.procGlowSpeed or 4
             local lineLen = floor((buttonW + buttonH) * (2 / N - 0.1))
             lineLen = min(lineLen, min(buttonW, buttonH))
             if lineLen < 1 then
                 lineLen = 1
             end
             -- No fallback table per proc: an unset background color reads as black.
-            local bgOn, bgc = p.procGlowBackground, p.procGlowBackgroundColor
+            local bgOn, bgc = profile.procGlowBackground, profile.procGlowBackgroundColor
             _G_Glows.StartProceduralAnts(
                 glowHolder,
                 N,
@@ -542,10 +542,10 @@ do
     -- Their colour: the palette's class colour or the picked one; the one
     -- reader for the live buttons and the Animations page preview.
     mod._AssistCustomGlowColor = function()
-        local p = ABAR.db and ABAR.db.profile
-        local color = p and p.assistGlowColor
+        local profile = ABAR.db and ABAR.db.profile
+        local color = profile and profile.assistGlowColor
         return _G_Glows.ResolveColor(
-            _G_Glows.DeriveColorMode(nil, p and p.assistGlowUseClassColor),
+            _G_Glows.DeriveColorMode(nil, profile and profile.assistGlowUseClassColor),
             color and color.r,
             color and color.g,
             color and color.b,
@@ -642,7 +642,7 @@ do
             end
             return
         end
-        local p = ABAR.db and ABAR.db.profile
+        local profile = ABAR.db and ABAR.db.profile
         if not shade then
             shade = CreateFrame("Frame", nil, button)
             shade.tex = shade:CreateTexture(nil, "OVERLAY")
@@ -663,9 +663,9 @@ do
         -- Cropped Buttons fitting the ring (ns._AssistFit), the tint takes the
         -- same top and bottom pull-in so the two stay flush. Change-guarded: the
         -- rescan runs several times a second while a suggestion is up.
-        local pad = (look == 3) and ((p and p.assistGlowOutset) or 0) or 0
+        local pad = (look == 3) and ((profile and profile.assistGlowOutset) or 0) or 0
         local padY = pad
-        if look == 3 and frameData.cropped and p and p.assistGlowFitCropped then
+        if look == 3 and frameData.cropped and profile and profile.assistGlowFitCropped then
             padY = pad - mod._ASSIST_CROP_TRIM / 2
         end
         local overlayData = EFD(shade)
@@ -677,8 +677,8 @@ do
         end
         -- Re-assert: bar layout can change the button's frame level after create.
         shade:SetFrameLevel(button:GetFrameLevel() + 14)
-        local color = (p and p.assistGlowOverlayColor) or { r = 0.15, g = 0.5, b = 1 }
-        local a = (p and p.assistGlowOverlayAlpha) or 30
+        local color = (profile and profile.assistGlowOverlayColor) or { r = 0.15, g = 0.5, b = 1 }
+        local a = (profile and profile.assistGlowOverlayAlpha) or 30
         shade.tex:SetColorTexture(color.r or 0.15, color.g or 0.5, color.b or 1, a / 100)
         -- Custom button shapes win over the rounded corners: a circle mask must
         -- not end up as a rounded square. Keyed on the mask OBJECT, not a
@@ -729,8 +729,8 @@ do
     -- Stored on ns rather than as a local.
     mod._AssistScale = function(button)
         local wid = button:GetWidth() or 45
-        local p = ABAR.db and ABAR.db.profile
-        local outset = (p and p.assistGlowOutset) or 0
+        local profile = ABAR.db and ABAR.db.profile
+        local outset = (profile and profile.assistGlowOutset) or 0
         local s = (wid + outset * 2) / 45
         if s < 0.05 then
             s = 0.05
@@ -757,9 +757,9 @@ do
     -- bottom. The Ring + Overlay tint reads it too, to stay flush.
     mod._ASSIST_CROP_TRIM = 4
     mod._AssistFit = function(button, ringTex, cropped)
-        local p = ABAR.db and ABAR.db.profile
+        local profile = ABAR.db and ABAR.db.profile
         local ringData = mod._eabFD[ringTex]
-        if not (cropped and p and p.assistGlowFitCropped) then
+        if not (cropped and profile and profile.assistGlowFitCropped) then
             if ringData and ringData.fitW then
                 ringData.fitW, ringData.fitH = nil, nil
                 ringTex:SetSize(ringData.origW, ringData.origH)
@@ -778,7 +778,7 @@ do
                 ringData.fbW, ringData.fbH = fb:GetSize()
             end
         end
-        local outset = p.assistGlowOutset or 0
+        local outset = profile.assistGlowOutset or 0
         local wid = button:GetWidth() + outset * 2
         local hgt = button:GetHeight() + outset * 2 - mod._ASSIST_CROP_TRIM
         if wid < 1 then
@@ -806,8 +806,8 @@ do
     -- decisions have to be made together.
     local function AssistShow(button)
         local frameData = EFD(button)
-        local p = ABAR.db and ABAR.db.profile
-        local customKind = (p and p.assistGlowType) or 0
+        local profile = ABAR.db and ABAR.db.profile
+        local customKind = (profile and profile.assistGlowType) or 0
         if customKind < 1 or customKind > #LOOP_GLOW_TYPES or not LOOP_GLOW_TYPES[customKind] then
             customKind = 0
         end
@@ -878,7 +878,7 @@ do
             end
         end
 
-        local look = (p and p.assistGlowStyle) or 1
+        local look = (profile and profile.assistGlowStyle) or 1
         -- A custom glow runs in combat only: outside it, Blizzard's frozen ring.
         if customKind > 0 or look == 0 then
             look = 1
@@ -1041,8 +1041,8 @@ do
         -- A custom glow runs in combat only (the frozen ring stands in outside
         -- it), so its buttons are painted again on the edge; the stock styles
         -- only start or stop their flipbook below.
-        local p = ABAR.db and ABAR.db.profile
-        local repaint = changed and ((p and p.assistGlowType) or 0) > 0
+        local profile = ABAR.db and ABAR.db.profile
+        local repaint = changed and ((profile and profile.assistGlowType) or 0) > 0
         for button in pairs(_assistGlowed) do
             if repaint then
                 AssistShow(button)
@@ -1163,9 +1163,9 @@ local EDGE_TEXTURE = "Interface\\AddOns\\CludesUIActionBars\\Media\\edge.png"
 
 local function GetClassColor()
     local _, class = UnitClass("player")
-    local c = RAID_CLASS_COLORS[class]
-    if c then
-        return c.r, c.g, c.b
+    local color = RAID_CLASS_COLORS[class]
+    if color then
+        return color.r, color.g, color.b
     end
     return 1, 1, 1
 end
@@ -1256,14 +1256,14 @@ local _cdEdge = {
 
 local function _FlushCDPatch()
     _cdEdge.timerScheduled = false
-    local p = ABAR.db and ABAR.db.profile
-    if not p then
+    local profile = ABAR.db and ABAR.db.profile
+    if not profile then
         wipe(_cdEdge.pending)
         _cdEdge.pendingCount = 0
         return
     end
-    local cr, cg, callback, ca = ResolveCooldownEdgeColor(p)
-    local baseSz = p.cooldownEdgeSize or 2.1
+    local cr, cg, callback, ca = ResolveCooldownEdgeColor(profile)
+    local baseSz = profile.cooldownEdgeSize or 2.1
     for cooldownFrame, button in pairs(_cdEdge.pending) do
         if cooldownFrame and not cooldownFrame:IsForbidden() then
             local sz = baseSz

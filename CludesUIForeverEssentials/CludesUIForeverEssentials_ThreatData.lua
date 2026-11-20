@@ -123,15 +123,15 @@ function ns.NewCollector()
             return
         end
         count = count + 1
-        local e = entries[count]
-        if not e then
-            e = {}
-            entries[count] = e
+        local entry = entries[count]
+        if not entry then
+            entry = {}
+            entries[count] = entry
         end
-        e.key, e.unit, e.raw, e.scaled, e.tanking = unit, unit, raw, scaled, tanking
-        e.rawPct = Readable(rawPct) and rawPct or nil
-        e.isPet, e.pull, e.own, e.order = isPet, false, false, count
-        list[#list + 1] = e
+        entry.key, entry.unit, entry.raw, entry.scaled, entry.tanking = unit, unit, raw, scaled, tanking
+        entry.rawPct = Readable(rawPct) and rawPct or nil
+        entry.isPet, entry.pull, entry.own, entry.order = isPet, false, false, count
+        list[#list + 1] = entry
     end
 
     -- Fills the list for `mob`; returns your own entry and the tank's raw

@@ -82,11 +82,11 @@ function mod.UF_CastIconOnPortrait(unitToken, cfg)
     if cfg[key] ~= true or mod.UF_Blizz() or not CastIconShown(unitToken, cfg) then
         return false
     end
-    local p = saved.profile
-    if (cfg.portraitStyle or p.portraitStyle or "attached") == "none" or cfg.showPortrait == false then
+    local profile = saved.profile
+    if (cfg.portraitStyle or profile.portraitStyle or "attached") == "none" or cfg.showPortrait == false then
         return false
     end
-    return (cfg.portraitMode or p.portraitMode or "2d") ~= "none"
+    return (cfg.portraitMode or profile.portraitMode or "2d") ~= "none"
 end
 
 -- Whether the cast spell icon sits on the RIGHT of the bar instead of the
@@ -691,15 +691,15 @@ end
 -- player cast bar already shows its icon there (two icons would stack); else there is no
 -- CludesUI player portrait to embed in (the stock styles own the icon, as for ours).
 function mod.UF_GetPlayerCastPortrait()
-    local p = saved and saved.profile
-    if not p or mod.GetUnitFrameSource("player") ~= "cui" or mod.UF_Blizz() then
+    local profile = saved and saved.profile
+    if not profile or mod.GetUnitFrameSource("player") ~= "cui" or mod.UF_Blizz() then
         return nil
     end
     local cfg = GetSettingsForUnit("player")
     if
         cfg.showPortrait == false
-        or (cfg.portraitStyle or p.portraitStyle or "attached") == "none"
-        or (cfg.portraitMode or p.portraitMode or "2d") == "none"
+        or (cfg.portraitStyle or profile.portraitStyle or "attached") == "none"
+        or (cfg.portraitMode or profile.portraitMode or "2d") == "none"
     then
         return nil
     end
