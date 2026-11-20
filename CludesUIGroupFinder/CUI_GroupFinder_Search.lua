@@ -77,16 +77,16 @@ function XF.Defer(filterKey, func)
 end
 
 -- click-outside close for our menus
-function XF.ClickOff(m, inside)
-    m:SetScript("OnEvent", function(self, _, btnFrame)
+function XF.ClickOff(menu, inside)
+    menu:SetScript("OnEvent", function(self, _, btnFrame)
         if btnFrame == "LeftButton" and not inside(self) then
             self:Hide()
         end
     end)
-    m:HookScript("OnShow", function(self)
+    menu:HookScript("OnShow", function(self)
         self:RegisterEvent("GLOBAL_MOUSE_DOWN")
     end)
-    m:HookScript("OnHide", function(self)
+    menu:HookScript("OnHide", function(self)
         self:UnregisterEvent("GLOBAL_MOUSE_DOWN")
     end)
 end
@@ -125,8 +125,8 @@ local function Accent()
 end
 -- the skin's window engine, so our buttons follow its theme
 local function Skin()
-    local m = CM._ModuleNS.CludesUIBlizzardSkin
-    return m and m.WSkin
+    local skinNS = CM._ModuleNS.CludesUIBlizzardSkin
+    return skinNS and skinNS.WSkin
 end
 -- cui's group finder skin is on; off, our parts take blizzard's look. read once per session, at login,
 -- when the window skin itself installs: a card toggle swaps both with the reload it asks for
@@ -1433,8 +1433,8 @@ function XF.DimKeep(ident, details)
             local _, mine = UnitClass("player")
             local n = details.numMembers
             for index = 1, (type(n) == "number" and not IsSecret(n)) and n or 0 do
-                local m = C_LFGList.GetSearchResultPlayerInfo(ident, index)
-                local cls = m and m.classFilename
+                local member = C_LFGList.GetSearchResultPlayerInfo(ident, index)
+                local cls = member and member.classFilename
                 if cls and not IsSecret(cls) and cls == mine then
                     return false
                 end
@@ -2388,31 +2388,31 @@ function XF.Hairline(texture)
 end
 mod.GFHairline = XF.Hairline
 
-local function AddSection(m, posY, title)
+local function AddSection(menu, posY, title)
     if posY > 4 then
-        local div = m:CreateTexture(nil, "ARTWORK")
+        local div = menu:CreateTexture(nil, "ARTWORK")
         XF.Hairline(div)
         div:SetColorTexture(1, 1, 1, 0.10)
-        div:SetPoint("TOPLEFT", m, "TOPLEFT", 10, -posY - 3)
-        div:SetPoint("TOPRIGHT", m, "TOPRIGHT", -10, -posY - 3)
+        div:SetPoint("TOPLEFT", menu, "TOPLEFT", 10, -posY - 3)
+        div:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -10, -posY - 3)
         posY = posY + 7
     else
         posY = posY + 2
     end
-    local fontStr = m:CreateFontString(nil, "OVERLAY")
+    local fontStr = menu:CreateFontString(nil, "OVERLAY")
     XF.Font(fontStr, ITEM_FONT)
     fontStr:SetTextColor(0.55, 0.55, 0.55, 1)
     fontStr:SetJustifyH("LEFT")
-    fontStr:SetPoint("TOPLEFT", m, "TOPLEFT", 9, -posY - 2)
+    fontStr:SetPoint("TOPLEFT", menu, "TOPLEFT", 9, -posY - 2)
     fontStr:SetText(title)
     return posY + 14
 end
 
 -- playstyles: dungeons apply on search again, raids right away
-local function AddPlaystyleItems(m, posY, raids)
-    posY = AddSection(m, posY, CludesUI.L("Playstyle"))
+local function AddPlaystyleItems(menu, posY, raids)
+    posY = AddSection(menu, posY, CludesUI.L("Playstyle"))
     for index, labelText in ipairs(PLAYSTYLES) do
-        m.items["style_" .. index] = MenuItem(m, posY, labelText, function()
+        menu.items["style_" .. index] = MenuItem(menu, posY, labelText, function()
             if raids then
                 local cfg = Cfg()
                 if type(cfg.raidPlaystyles) ~= "table" then
@@ -2449,7 +2449,7 @@ local function AddPlaystyleItems(m, posY, raids)
     return posY
 end
 
-local function PaintPlaystyleItems(m, raids)
+local function PaintPlaystyleItems(menu, raids)
     local chosen
     if raids then
         chosen = ChosenRaidPlaystyles()
@@ -2457,7 +2457,7 @@ local function PaintPlaystyleItems(m, raids)
         chosen = DungeonPlaystyles(XF.GetFilter())
     end
     for index = 1, #PLAYSTYLES do
-        local entry = m.items["style_" .. index]
+        local entry = menu.items["style_" .. index]
         if entry then
             local isOn
             if raids then
@@ -2470,8 +2470,8 @@ local function PaintPlaystyleItems(m, raids)
     end
 end
 
-local function AddRoleItems(m, posY, raids)
-    posY = AddSection(m, posY, CludesUI.L("Roles"))
+local function AddRoleItems(menu, posY, raids)
+    posY = AddSection(menu, posY, CludesUI.L("Roles"))
     -- helpers for our rows
     local K = mod.ExtraClassRows
         and {
@@ -2501,7 +2501,7 @@ local function AddRoleItems(m, posY, raids)
         }
     for _, region in ipairs(ROLES) do
         local filterKey = region.key
-        m.items["role_" .. filterKey] = MenuItem(m, posY, region.label, function()
+        menu.items["role_" .. filterKey] = MenuItem(menu, posY, region.label, function()
             if raids then
                 local cfg = Cfg()
                 if type(cfg.raidRoles) ~= "table" then
@@ -2519,9 +2519,9 @@ local function AddRoleItems(m, posY, raids)
         posY = posY + ITEM_H
     end
     if K and mod.ExtraClassRows then
-        posY = mod.ExtraClassRows(m, posY, K) -- has / missing dropdown rows
+        posY = mod.ExtraClassRows(menu, posY, K) -- has / missing dropdown rows
     else
-        posY = XF.AddFlagItem(m, posY, "hasLust", CludesUI.L("Has Bloodlust"), {
+        posY = XF.AddFlagItem(menu, posY, "hasLust", CludesUI.L("Has Bloodlust"), {
             CludesUI.L("A member whose class has one of these spells:"),
             XF.ClassLine("SHAMAN", CludesUI.L("Bloodlust / Heroism (Shaman)")),
             XF.ClassLine("MAGE", CludesUI.L("Time Warp (Mage)")),
@@ -2529,7 +2529,7 @@ local function AddRoleItems(m, posY, raids)
             XF.ClassLine("EVOKER", CludesUI.L("Fury of the Aspects (Evoker)")),
             CludesUI.L("Drums and other items don't count."),
         })
-        posY = XF.AddFlagItem(m, posY, "hasBrez", CludesUI.L("Has Battle Res"), {
+        posY = XF.AddFlagItem(menu, posY, "hasBrez", CludesUI.L("Has Battle Res"), {
             CludesUI.L("A member whose class has one of these spells:"),
             XF.ClassLine("DRUID", CludesUI.L("Rebirth (Druid)")),
             XF.ClassLine("DEATHKNIGHT", CludesUI.L("Raise Ally (Death Knight)")),
@@ -2540,10 +2540,10 @@ local function AddRoleItems(m, posY, raids)
     end
     -- match any / exactly + count rows under one button
     if K and mod.ExtraRoleCounts then
-        posY = mod.ExtraRoleCounts(m, posY, K)
+        posY = mod.ExtraRoleCounts(menu, posY, K)
     else
         for _, region in ipairs(XF.COUNT_ROLES) do
-            posY = XF.AddCountRow(m, posY, region.key, region.label)
+            posY = XF.AddCountRow(menu, posY, region.key, region.label)
         end
     end
     return posY
@@ -2643,7 +2643,7 @@ function XF.MenuBox(hostFrame, wid, letters)
 end
 
 -- 'Tanks [Less Than] [n]' row; empty box means no check.
-function XF.AddCountRow(m, posY, roleName, textValue)
+function XF.AddCountRow(menu, posY, roleName, textValue)
     local function Rule()
         local cfg = Cfg()
         if type(cfg.roleCounts) ~= "table" then
@@ -2653,10 +2653,10 @@ function XF.AddCountRow(m, posY, roleName, textValue)
         cfg.roleCounts[roleName] = region
         return region
     end
-    local rowF = CreateFrame("Frame", nil, m)
+    local rowF = CreateFrame("Frame", nil, menu)
     rowF:SetHeight(ITEM_H + 2)
-    rowF:SetPoint("TOPLEFT", m, "TOPLEFT", 1, -posY)
-    rowF:SetPoint("TOPRIGHT", m, "TOPRIGHT", -1, -posY)
+    rowF:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -posY)
+    rowF:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -posY)
     local swatchBtn = CreateFrame("Button", nil, rowF)
     swatchBtn:SetSize(CHECK_SZ, CHECK_SZ)
     swatchBtn:SetPoint("LEFT", rowF, "LEFT", 8, 0)
@@ -2673,8 +2673,8 @@ function XF.AddCountRow(m, posY, roleName, textValue)
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         Refilter()
         Paint()
-        if region.on and m.counts and m.counts[roleName] then
-            m.counts[roleName].box:SetFocus()
+        if region.on and menu.counts and menu.counts[roleName] then
+            menu.counts[roleName].box:SetFocus()
         end
     end)
     local op = CreateFrame("Button", nil, rowF)
@@ -2709,14 +2709,14 @@ function XF.AddCountRow(m, posY, roleName, textValue)
     labelText:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
     labelText:SetPoint("LEFT", checkBox, "RIGHT", 6, 0)
     labelText:SetText(textValue)
-    m.counts = m.counts or {}
-    m.counts[roleName] = { box = checkBox, op = op, sw = swatchBtn, label = labelText }
+    menu.counts = menu.counts or {}
+    menu.counts[roleName] = { box = checkBox, op = op, sw = swatchBtn, label = labelText }
     return posY + ITEM_H + 2
 end
 
-function XF.PaintCountRows(m)
+function XF.PaintCountRows(menu)
     for _, region in ipairs(XF.COUNT_ROLES) do
-        local line = m.counts and m.counts[region.key]
+        local line = menu.counts and menu.counts[region.key]
         if line then
             local rule = (Cfg().roleCounts or XF.EMPTY)[region.key]
             local isOn = type(rule) == "table" and rule.on == true
@@ -2747,14 +2747,14 @@ function XF.PaintCountRows(m)
 end
 
 -- toggles both menus share
-function XF.AddFlagItem(m, posY, filterKey, textValue, tipText)
-    local entry = MenuItem(m, posY, textValue, function()
+function XF.AddFlagItem(menu, posY, filterKey, textValue, tipText)
+    local entry = MenuItem(menu, posY, textValue, function()
         local cfg = Cfg()
         cfg[filterKey] = (not cfg[filterKey]) or nil
         Refilter()
         Paint()
     end)
-    m.items["flag_" .. filterKey] = entry
+    menu.items["flag_" .. filterKey] = entry
     if tipText then
         entry:HookScript("OnEnter", function(self)
             if type(tipText) == "table" then
@@ -2769,30 +2769,30 @@ function XF.AddFlagItem(m, posY, filterKey, textValue, tipText)
 end
 
 XF.FLAG_KEYS = { "partyFit", "notDeclined", "hasLust", "hasBrez" }
-function XF.PaintFlagItems(m)
+function XF.PaintFlagItems(menu)
     local cfg = Cfg()
     for _, filterKey in ipairs(XF.FLAG_KEYS) do
-        local entry = m.items["flag_" .. filterKey]
+        local entry = menu.items["flag_" .. filterKey]
         if entry then
             entry:SetChecked(cfg[filterKey] == true)
         end
     end
 end
 
-local function PaintRoleItems(m, raids)
+local function PaintRoleItems(menu, raids)
     local source = raids and (ChosenRaidRoles() or XF.EMPTY) or XF.GetFilter()
     for _, region in ipairs(ROLES) do
-        local entry = m.items["role_" .. region.key]
+        local entry = menu.items["role_" .. region.key]
         if entry then
             entry:SetChecked(source[region.key] == true)
         end
     end
-    XF.PaintFlagItems(m)
-    XF.PaintCountRows(m)
+    XF.PaintFlagItems(menu)
+    XF.PaintCountRows(menu)
 end
 
 -- min. rating: the leader's m+ rating, applied on search again
-local function AddRatingRow(m, posY)
+local function AddRatingRow(menu, posY)
     local function Send()
         local cfg = Cfg()
         local val = cfg.ratingOn and (tonumber(cfg.ratingValue) or 0) or 0
@@ -2802,11 +2802,11 @@ local function AddRatingRow(m, posY)
             Apply(frame)
         end
     end
-    local rowF = CreateFrame("Frame", nil, m)
+    local rowF = CreateFrame("Frame", nil, menu)
     -- a row like the others, so it lines up with the other column's rows
     rowF:SetHeight(ITEM_H)
-    rowF:SetPoint("TOPLEFT", m, "TOPLEFT", 1, -posY)
-    rowF:SetPoint("TOPRIGHT", m, "TOPRIGHT", -1, -posY)
+    rowF:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -posY)
+    rowF:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -posY)
     local RATING = CludesUI.L("Min. Rating")
     local RATING_TIP =
         CludesUI.L("Only groups whose leader has at least this Mythic+ rating. Applied on Search Again.")
@@ -2835,8 +2835,8 @@ local function AddRatingRow(m, posY)
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         Send()
         Paint()
-        if cfg.ratingOn and m.rating then
-            m.rating.box:SetFocus()
+        if cfg.ratingOn and menu.rating then
+            menu.rating.box:SetFocus()
         end
     end)
     local labelText = rowF:CreateFontString(nil, "OVERLAY")
@@ -2851,7 +2851,7 @@ local function AddRatingRow(m, posY)
         Send()
         Paint()
     end)
-    m.rating = { box = checkBox, cb = callback, label = labelText }
+    menu.rating = { box = checkBox, cb = callback, label = labelText }
     return posY + ITEM_H
 end
 
@@ -2868,8 +2868,8 @@ function XF.AdoptRating()
     end
 end
 
-function XF.PaintRating(m)
-    local region = m and m.rating
+function XF.PaintRating(menu)
+    local region = menu and menu.rating
     if not region then
         return
     end
@@ -2896,16 +2896,16 @@ function XF.PaintRating(m)
     region.box:SetEnabled(isOn)
 end
 
-local function AddRegionItems(m, posY)
+local function AddRegionItems(menu, posY)
     if not RegionsAvailable() then
         return posY
     end
     -- eu lists languages, short names in two columns
     local lang = mod.RegionIsLanguage()
-    posY = AddSection(m, posY, lang and CludesUI.L("Language") or CludesUI.L("Region"))
+    posY = AddSection(menu, posY, lang and CludesUI.L("Language") or CludesUI.L("Region"))
     for index, region in ipairs(Regions()) do
         local filterKey = region.key
-        local entry = MenuItem(m, posY, lang and region.tag or region.label, function()
+        local entry = MenuItem(menu, posY, lang and region.tag or region.label, function()
             local cfg = Cfg()
             if type(cfg.regions) ~= "table" then
                 cfg.regions = {}
@@ -2923,15 +2923,15 @@ local function AddRegionItems(m, posY)
             Refilter()
             Paint()
         end)
-        m.items["region_" .. filterKey] = entry
+        menu.items["region_" .. filterKey] = entry
         if lang then
             entry:ClearAllPoints()
             if index % 2 == 1 then
-                entry:SetPoint("TOPLEFT", m, "TOPLEFT", 1, -posY)
-                entry:SetPoint("TOPRIGHT", m, "TOP", 0, -posY)
+                entry:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -posY)
+                entry:SetPoint("TOPRIGHT", menu, "TOP", 0, -posY)
             else
-                entry:SetPoint("TOPLEFT", m, "TOP", 0, -posY)
-                entry:SetPoint("TOPRIGHT", m, "TOPRIGHT", -1, -posY)
+                entry:SetPoint("TOPLEFT", menu, "TOP", 0, -posY)
+                entry:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -posY)
             end
             if index % 2 == 0 or index == #Regions() then
                 posY = posY + ITEM_H
@@ -2943,10 +2943,10 @@ local function AddRegionItems(m, posY)
     return posY
 end
 
-local function PaintRegionItems(m)
+local function PaintRegionItems(menu)
     local chosen = RegionFilterActive() and ChosenRegions()
     for _, region in ipairs(Regions()) do
-        local entry = m.items["region_" .. region.key]
+        local entry = menu.items["region_" .. region.key]
         if entry then
             entry:SetChecked(chosen and chosen[region.key] == true or false)
         end
@@ -3001,51 +3001,51 @@ local function DimForMenu(isOn)
     end -- row 1 blocked too
 end
 
-local function BuildSidePanel(m, raids)
-    local side = CreateFrame("Frame", nil, SP)
-    side:SetFrameStrata("FULLSCREEN_DIALOG")
-    side:EnableMouse(true)
-    side:SetFrameLevel(300)
-    side:SetClampedToScreen(true)
-    side:SetWidth(140)
-    side:SetPoint("TOPRIGHT", m, "TOPLEFT", 0, 0)
-    local backdrop = side:CreateTexture(nil, "BACKGROUND")
+local function BuildSidePanel(menu, raids)
+    local sidePane = CreateFrame("Frame", nil, SP)
+    sidePane:SetFrameStrata("FULLSCREEN_DIALOG")
+    sidePane:EnableMouse(true)
+    sidePane:SetFrameLevel(300)
+    sidePane:SetClampedToScreen(true)
+    sidePane:SetWidth(140)
+    sidePane:SetPoint("TOPRIGHT", menu, "TOPLEFT", 0, 0)
+    local backdrop = sidePane:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     local red, green, blue = ThemeFill()
     backdrop:SetColorTexture(red, green, blue, 0.98)
-    side.items = {}
+    sidePane.items = {}
     local posY = 3
-    posY = AddRegionItems(side, posY)
-    posY = AddPlaystyleItems(side, posY, raids)
-    side.extraMiscY = posY -- where misc starts
-    posY = AddSection(side, posY, CludesUI.L("Misc"))
-    side.extraMiscRowsY = posY
+    posY = AddRegionItems(sidePane, posY)
+    posY = AddPlaystyleItems(sidePane, posY, raids)
+    sidePane.extraMiscY = posY -- where misc starts
+    posY = AddSection(sidePane, posY, CludesUI.L("Misc"))
+    sidePane.extraMiscRowsY = posY
     posY = XF.AddFlagItem(
-        side,
+        sidePane,
         posY,
         "partyFit",
         CludesUI.L("Party Fit"),
         CludesUI.L("Only groups with open slots for your role, or for your whole party's roles.")
     )
     posY = XF.AddFlagItem(
-        side,
+        sidePane,
         posY,
         "notDeclined",
         CludesUI.L("Not Declined"),
         CludesUI.L("Hides groups that have declined you this session.")
     )
     if not raids then
-        posY = AddRatingRow(side, posY)
+        posY = AddRatingRow(sidePane, posY)
     end
-    side.extraEndY = posY
+    sidePane.extraEndY = posY
     -- both columns the same height, one border around them
-    local hgt = math.max(posY + 3, m:GetHeight() or 0)
-    side:SetHeight(hgt)
-    m:SetHeight(hgt)
-    local edge = CreateFrame("Frame", nil, side)
-    edge:SetPoint("TOPLEFT", side, "TOPLEFT", 0, 0)
-    edge:SetPoint("BOTTOMRIGHT", m, "BOTTOMRIGHT", 0, 0)
-    edge:SetFrameLevel(m:GetFrameLevel() + 10)
+    local hgt = math.max(posY + 3, menu:GetHeight() or 0)
+    sidePane:SetHeight(hgt)
+    menu:SetHeight(hgt)
+    local edge = CreateFrame("Frame", nil, sidePane)
+    edge:SetPoint("TOPLEFT", sidePane, "TOPLEFT", 0, 0)
+    edge:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", 0, 0)
+    edge:SetFrameLevel(menu:GetFrameLevel() + 10)
     edge:EnableMouse(false)
     local S = Skin()
     if S and S.AddBorder then
@@ -3053,28 +3053,28 @@ local function BuildSidePanel(m, raids)
     else
         CM.MakeBorder(edge, ThemeBorder())
     end
-    side:Hide()
-    m.side = side
-    m:SetScript("OnShow", function()
-        side:Show()
+    sidePane:Hide()
+    menu.side = sidePane
+    menu:SetScript("OnShow", function()
+        sidePane:Show()
         DimForMenu(true)
     end)
-    m:SetScript("OnHide", function()
-        side:Hide()
+    menu:SetScript("OnHide", function()
+        sidePane:Hide()
         DimForMenu(false)
         if XF.opList then
             XF.opList:Hide()
         end
     end)
-    XF.ClickOff(m, XF.FiltersInside)
-    return side
+    XF.ClickOff(menu, XF.FiltersInside)
+    return sidePane
 end
 
 -- clicks on the menu, side panel, button or operator list keep it open
-function XF.FiltersInside(m)
-    return m:IsMouseOver()
+function XF.FiltersInside(menu)
+    return menu:IsMouseOver()
         or (difficultyBtn and difficultyBtn:IsMouseOver())
-        or m.side:IsMouseOver()
+        or menu.side:IsMouseOver()
         or (XF.opList and XF.opList:IsShown() and XF.opList:IsMouseOver())
         or (mod.ExtraInside and mod.ExtraInside()) -- our dropdowns
         or false
@@ -3121,13 +3121,13 @@ end
 
 -- raids version of the filters menu (no mythic+), applies right away.
 local function BuildRaidDiffMenu()
-    local m = CreateFrame("Frame", nil, SP)
-    raidDiffMenu = m
-    m:SetFrameStrata("FULLSCREEN_DIALOG")
-    m:EnableMouse(true)
-    m:SetFrameLevel(300)
-    m:SetClampedToScreen(true)
-    local backdrop = m:CreateTexture(nil, "BACKGROUND")
+    local menu = CreateFrame("Frame", nil, SP)
+    raidDiffMenu = menu
+    menu:SetFrameStrata("FULLSCREEN_DIALOG")
+    menu:EnableMouse(true)
+    menu:SetFrameLevel(300)
+    menu:SetClampedToScreen(true)
+    local backdrop = menu:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     local red, green, blue = ThemeFill()
     backdrop:SetColorTexture(red, green, blue, 0.98)
@@ -3138,12 +3138,12 @@ local function BuildRaidDiffMenu()
         end
         return cfg.raidDiffs
     end
-    m.items = {}
+    menu.items = {}
     local posY = 3
-    posY = AddSection(m, posY, CludesUI.L("Difficulty"))
+    posY = AddSection(menu, posY, CludesUI.L("Difficulty"))
     for _, skinData in ipairs(RAID_DIFFS_MENU) do
         local filterKey = skinData.key
-        m.items[filterKey] = MenuItem(m, posY, skinData.label, function()
+        menu.items[filterKey] = MenuItem(menu, posY, skinData.label, function()
             local tbl = Diffs()
             tbl[filterKey] = (not tbl[filterKey]) or nil
             local _, n = ChosenRaidDiffs()
@@ -3159,13 +3159,13 @@ local function BuildRaidDiffMenu()
     if mod.ExtraClassRows then
         posY = posY + math.max(0, #DIFFS - #RAID_DIFFS_MENU) * ITEM_H
     end
-    posY = AddRoleItems(m, posY, true)
-    m:SetHeight(posY + 3)
-    BuildSidePanel(m, true)
+    posY = AddRoleItems(menu, posY, true)
+    menu:SetHeight(posY + 3)
+    BuildSidePanel(menu, true)
     if mod.ExtraDecorateMenu then
-        mod.ExtraDecorateMenu(m, m.side)
+        mod.ExtraDecorateMenu(menu, menu.side)
     end
-    m:Hide()
+    menu:Hide()
 end
 
 local function ToggleMenu()
@@ -3774,8 +3774,8 @@ local function BuildRaidMenu()
     end)
     posY = posY + ITEM_H
     raidMenu:SetHeight(posY + 3)
-    XF.ClickOff(raidMenu, function(m)
-        return m:IsMouseOver() or (raidBtn and raidBtn:IsMouseOver())
+    XF.ClickOff(raidMenu, function(menu)
+        return menu:IsMouseOver() or (raidBtn and raidBtn:IsMouseOver())
     end)
     raidMenu:Hide()
 end
@@ -3871,8 +3871,8 @@ local function BuildTierMenu()
     tierMenu:SetScript("OnHide", function()
         DimForMenu(false)
     end)
-    XF.ClickOff(tierMenu, function(m)
-        return m:IsMouseOver() or (tierBtn and tierBtn:IsMouseOver())
+    XF.ClickOff(tierMenu, function(menu)
+        return menu:IsMouseOver() or (tierBtn and tierBtn:IsMouseOver())
     end)
     tierMenu:Hide()
 end
@@ -4531,7 +4531,7 @@ local function Layout()
         title:SetAlpha(0)
     end
     if not refreshButton then
-        local blz = SP.RefreshButton
+        local refreshBtn = SP.RefreshButton
         refreshButton = GlyphButton(SP, ROW1_H, "UI-RefreshButton", true)
         refreshButton:SetFrameLevel(SP:GetFrameLevel() + 5)
         refreshButton:EnableMouse(false) -- blizzard's button underneath takes the click
@@ -4567,10 +4567,10 @@ local function Layout()
             PaintRefresh()
             XF.Untip()
         end
-        if blz then
-            blz:SetAlpha(0)
-            blz:HookScript("OnEnter", Tip)
-            blz:HookScript("OnLeave", Untip)
+        if refreshBtn then
+            refreshBtn:SetAlpha(0)
+            refreshBtn:HookScript("OnEnter", Tip)
+            refreshBtn:HookScript("OnLeave", Untip)
         end
         local cover = CreateFrame("Button", nil, SP)
         cover:SetAllPoints(refreshButton)
@@ -5233,7 +5233,7 @@ end
 
 -- same look as search again, blizzard's button underneath takes the click
 local function LayoutViewerRefresh(AV)
-    local blz = AV.RefreshButton
+    local refreshBtn = AV.RefreshButton
     if not XF.viewerRefresh then
         local lookName = GlyphButton(AV, ROW1_H, "UI-RefreshButton", true)
         lookName:SetFrameLevel(AV:GetFrameLevel() + 5)
@@ -5252,15 +5252,15 @@ local function LayoutViewerRefresh(AV)
         if cd.SetSwipeColor then
             cd:SetSwipeColor(0, 0, 0, 0.65)
         end
-        blz:HookScript("OnClick", function()
+        refreshBtn:HookScript("OnClick", function()
             cd:SetCooldown(GetTime(), 1)
         end)
-        blz:SetAlpha(0)
-        blz:HookScript("OnEnter", function()
+        refreshBtn:SetAlpha(0)
+        refreshBtn:HookScript("OnEnter", function()
             lookName:LockHighlight()
             lookName.Glyph:SetAlpha(1)
         end)
-        blz:HookScript("OnLeave", function()
+        refreshBtn:HookScript("OnLeave", function()
             lookName:UnlockHighlight()
             lookName.Glyph:SetAlpha(0.8)
         end)
@@ -5268,15 +5268,15 @@ local function LayoutViewerRefresh(AV)
     end
     local lookName = XF.viewerRefresh
     lookName:Show()
-    blz:SetAlpha(0)
+    refreshBtn:SetAlpha(0)
     local padding = tonumber(Cfg().padding) or 12
     local ar, ir = AV:GetRight(), AV.Inset:GetRight()
     lookName:ClearAllPoints()
     -- 3 in from the rows' edge, over the decline buttons
     lookName:SetPoint("BOTTOMRIGHT", AV.Inset, "TOPRIGHT", (ar and ir) and (ar - ir - padding - 3) or 0, 0)
-    blz:ClearAllPoints()
-    blz:SetAllPoints(lookName)
-    blz:SetFrameLevel(lookName:GetFrameLevel() + 4)
+    refreshBtn:ClearAllPoints()
+    refreshBtn:SetAllPoints(lookName)
+    refreshBtn:SetFrameLevel(lookName:GetFrameLevel() + 4)
 end
 
 -- own list off: back to blizzard's layout
@@ -5299,11 +5299,11 @@ local function RestoreViewer(AV)
     AV.EditButton:SetPoint("BOTTOMRIGHT", AV, "BOTTOMRIGHT", -3, 4)
     AV.EditButton:SetWidth(90)
     XF.viewerRefresh:Hide()
-    local blz = AV.RefreshButton
-    blz:SetAlpha(1)
-    blz:ClearAllPoints()
-    blz:SetPoint("BOTTOMRIGHT", AV.Inset, "TOPRIGHT", 21, 0)
-    blz:SetFrameLevel(AV:GetFrameLevel() + 1)
+    local refreshBtn = AV.RefreshButton
+    refreshBtn:SetAlpha(1)
+    refreshBtn:ClearAllPoints()
+    refreshBtn:SetPoint("BOTTOMRIGHT", AV.Inset, "TOPRIGHT", 21, 0)
+    refreshBtn:SetFrameLevel(AV:GetFrameLevel() + 1)
 end
 
 local function LayoutViewer()
