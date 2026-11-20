@@ -1696,8 +1696,8 @@ LayoutCDMBar = function(barId)
         if CludesUIDB and CludesUIDB.unlockAnchors and CludesUIDB.unlockAnchors[unlockKey] then
             local success, c1, c2 = pcall(widget.GetCenter, widget)
             if success and c1 and c2 then
-                local region = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
-                oldCX, oldCY = c1 * region, c2 * region
+                local ratio = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
+                oldCX, oldCY = c1 * ratio, c2 * ratio
             end
         end
         CludesUI._layoutBarResizing = unlockKey

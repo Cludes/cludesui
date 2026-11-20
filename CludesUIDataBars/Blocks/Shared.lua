@@ -189,9 +189,9 @@ local function BlockColorOf(b)
         return mod.BlockTextDynamic(b.type)
     end
     if b.useClassColor then
-        local region, g, bl = ClassColour()
-        if region then
-            return region, g, bl
+        local red, green, blue = ClassColour()
+        if red then
+            return red, green, blue
         end
     elseif b.useAccentColor then
         return mod.GetAccent()
@@ -417,9 +417,9 @@ local function IconColorOf(b)
         return mod.BlockIconDefault(b.type, b.settings)
     end
     if b.useIconClassColor then
-        local region, g, bl = ClassColour()
-        if region then
-            return region, g, bl
+        local red, green, blue = ClassColour()
+        if red then
+            return red, green, blue
         end
     elseif b.useIconAccentColor then
         return mod.GetAccent()

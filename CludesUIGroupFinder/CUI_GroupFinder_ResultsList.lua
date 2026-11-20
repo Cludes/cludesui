@@ -2067,8 +2067,8 @@ local function SyncTicker()
     local any = false
     if isActive then
         for i = 1, #rowList do
-            local region = rowList[i]
-            if region.signedAt and region:IsShown() then
+            local row = rowList[i]
+            if row.signedAt and row:IsShown() then
                 any = true
                 break
             end
@@ -2104,15 +2104,15 @@ function Paint() -- forward-declared up top
             break
         end
         used = used + 1
-        local region = rowList[used] or MakeRow(used)
+        local row = rowList[used] or MakeRow(used)
         local ident = isShown[position]
-        region.noteRoom = noteOf[ident]
-        region:ClearAllPoints()
-        region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, -posY)
-        region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, -posY)
-        region:SetHeight(hgt + (region.noteRoom and nH or 0))
-        Layout(region, hgt)
-        Fill(region, ident)
+        row.noteRoom = noteOf[ident]
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", body, "TOPLEFT", 0, -posY)
+        row:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, -posY)
+        row:SetHeight(hgt + (row.noteRoom and nH or 0))
+        Layout(row, hgt)
+        Fill(row, ident)
     end
     for i = used + 1, #rowList do
         rowList[i].resultID = nil
@@ -2172,9 +2172,9 @@ end
 
 local function RowFor(ident)
     for i = 1, #rowList do
-        local region = rowList[i]
-        if region.resultID == ident and region:IsShown() then
-            return region
+        local row = rowList[i]
+        if row.resultID == ident and row:IsShown() then
+            return row
         end
     end
 end
@@ -2341,9 +2341,9 @@ local function Build()
         end
         tick = 0
         for i = 1, #rowList do
-            local region = rowList[i]
-            if region.signedAt and region:IsShown() then
-                region.timer:SetText(TimeLeft(region.signedAt))
+            local row = rowList[i]
+            if row.signedAt and row:IsShown() then
+                row.timer:SetText(TimeLeft(row.signedAt))
             end
         end
     end)

@@ -175,8 +175,8 @@ function mod.AB_CapsSides(key)
     if not cfg then
         return false, false
     end
-    local l, region = cfg.endCapLeft, cfg.endCapRight
-    if l == nil or region == nil then
+    local left, right = cfg.endCapLeft, cfg.endCapRight
+    if left == nil or right == nil then
         local sl, sr = profile.endCapSpanLeft, profile.endCapSpanRight
         local dl, dr = false, false
         if key == "MainBar" then
@@ -186,14 +186,14 @@ function mod.AB_CapsSides(key)
             local skinData = mod.AB_CapsMainDefault(profile)
             dl, dr = skinData and sl == key, skinData and sr == key
         end
-        if l == nil then
-            l = dl
+        if left == nil then
+            left = dl
         end
-        if region == nil then
-            region = dr
+        if right == nil then
+            right = dr
         end
     end
-    return l and true or false, region and true or false
+    return left and true or false, right and true or false
 end
 
 -- The art the CludesUI style draws on a bar's caps: its End Caps cog
@@ -211,8 +211,8 @@ end
 -- Blizzard Style's and Classic WoW UI's own, and under the CludesUI style
 -- the art the player picks.
 function mod.AB_CapsLook(key)
-    local l, region = mod.AB_CapsSides(key)
-    if not (l or region) then
+    local left, right = mod.AB_CapsSides(key)
+    if not (left or right) then
         return nil
     end
     local style
@@ -224,7 +224,7 @@ function mod.AB_CapsLook(key)
             style = mod.AB_CapsArt(key)
         end
     end
-    return style, l, region
+    return style, left, right
 end
 
 -- A bar's end cap tweaks (the End Caps cog): the size as a fraction of the
@@ -239,15 +239,15 @@ end
 -- Every chrome input of a bar in one string, for LayoutBar's stamp (the
 -- tweaks only while a cap shows; "-" for a bar with no chrome).
 function mod.AB_ChromeStamp(key)
-    local style, l, region = mod.AB_CapsLook(key)
+    local style, left, right = mod.AB_CapsLook(key)
     local fv = mod.AB_ForeverBg(key)
     if not style then
         return fv and "fv" or "-"
     end
     local _, dx, dy, sc = mod.AB_CapsTweak(key)
     return style
-        .. (l and "L" or "")
-        .. (region and "R" or "")
+        .. (left and "L" or "")
+        .. (right and "R" or "")
         .. (fv and ",fv," or ",")
         .. sc
         .. ","
@@ -761,15 +761,15 @@ end
 -- Forever hides that arrow, so its bar never collapses.
 function mod.AB_BagEdge(widget, hs, highlight, minL, maxR)
     if widget and widget:IsShown() then
-        local l, region = widget:GetLeft(), widget:GetRight()
-        if l and region then
+        local left, right = widget:GetLeft(), widget:GetRight()
+        if left and right then
             local k = widget:GetEffectiveScale() / hs
-            l, region = l * k - highlight, region * k - highlight
-            if not minL or l < minL then
-                minL = l
+            left, right = left * k - highlight, right * k - highlight
+            if not minL or left < minL then
+                minL = left
             end
-            if not maxR or region > maxR then
-                maxR = region
+            if not maxR or right > maxR then
+                maxR = right
             end
         end
     end
@@ -947,10 +947,10 @@ function mod.AB_CapsSpanApply()
     if not profile then
         return
     end
-    local l, region = profile.endCapSpanLeft, profile.endCapSpanRight
+    local left, right = profile.endCapSpanLeft, profile.endCapSpanRight
     for index = 1, 2 do
-        local k = (index == 1) and l or region
-        if k and not (index == 2 and k == l) then
+        local k = (index == 1) and left or right
+        if k and not (index == 2 and k == left) then
             if mod.AB_CAP_EXTRAS[k] then
                 mod.AB_ExtraCaps(k)
             else

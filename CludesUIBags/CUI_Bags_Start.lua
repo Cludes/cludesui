@@ -345,8 +345,8 @@ local function StartAddon()
             return
         end
         if enabled then
-            local region, g, bl = GetAccentRGB()
-            SetInsetBorderColor(dropEdge, region, g, bl, 1)
+            local red, green, blue = GetAccentRGB()
+            SetInsetBorderColor(dropEdge, red, green, blue, 1)
         end
         dropEdge:SetShown(enabled and true or false)
     end

@@ -663,27 +663,27 @@ ShowKeystonePopup = function()
 
     if #partyEntries == 0 then
         rowIdx = rowIdx + 1
-        local region = AcquireRow(rowIdx)
-        region._nameFS:SetText("No keystones found")
-        region._nameFS:SetWidth(contentW)
-        region._nameFS:SetTextColor(0.5, 0.5, 0.5, 0.7)
-        region._ratingFS:SetText("")
-        region._dungeonFS:SetText("")
-        region._levelFS:SetText("")
-        region:ClearAllPoints()
-        region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
-        region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
-        region:Show()
+        local row = AcquireRow(rowIdx)
+        row._nameFS:SetText("No keystones found")
+        row._nameFS:SetWidth(contentW)
+        row._nameFS:SetTextColor(0.5, 0.5, 0.5, 0.7)
+        row._ratingFS:SetText("")
+        row._dungeonFS:SetText("")
+        row._levelFS:SetText("")
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
+        row:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
+        row:Show()
         curY = curY - ROW_H
     else
         for _, entry in ipairs(partyEntries) do
             rowIdx = rowIdx + 1
-            local region = AcquireRow(rowIdx)
-            PopulateRow(region, entry, ccMap)
-            region:ClearAllPoints()
-            region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
-            region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
-            region:Show()
+            local row = AcquireRow(rowIdx)
+            PopulateRow(row, entry, ccMap)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
+            row:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
+            row:Show()
             curY = curY - (ROW_H + ROW_GAP)
         end
         curY = curY + ROW_GAP -- remove trailing gap
@@ -702,27 +702,27 @@ ShowKeystonePopup = function()
 
     if #guildEntries == 0 then
         rowIdx = rowIdx + 1
-        local region = AcquireRow(rowIdx)
-        region._nameFS:SetText("Waiting for data...")
-        region._nameFS:SetWidth(contentW)
-        region._nameFS:SetTextColor(0.5, 0.5, 0.5, 0.5)
-        region._ratingFS:SetText("")
-        region._dungeonFS:SetText("")
-        region._levelFS:SetText("")
-        region:ClearAllPoints()
-        region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
-        region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
-        region:Show()
+        local row = AcquireRow(rowIdx)
+        row._nameFS:SetText("Waiting for data...")
+        row._nameFS:SetWidth(contentW)
+        row._nameFS:SetTextColor(0.5, 0.5, 0.5, 0.5)
+        row._ratingFS:SetText("")
+        row._dungeonFS:SetText("")
+        row._levelFS:SetText("")
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
+        row:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
+        row:Show()
         curY = curY - ROW_H
     else
         for _, entry in ipairs(guildEntries) do
             rowIdx = rowIdx + 1
-            local region = AcquireRow(rowIdx)
-            PopulateRow(region, entry, ccMap)
-            region:ClearAllPoints()
-            region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
-            region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
-            region:Show()
+            local row = AcquireRow(rowIdx)
+            PopulateRow(row, entry, ccMap)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
+            row:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
+            row:Show()
             curY = curY - (ROW_H + ROW_GAP)
         end
         curY = curY + ROW_GAP

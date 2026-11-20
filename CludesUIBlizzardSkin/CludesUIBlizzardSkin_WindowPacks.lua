@@ -3322,8 +3322,8 @@ do
             editField:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
         end
         if editField.GetTextInsets and editField.SetTextInsets then
-            local l, region, t2, button = editField:GetTextInsets()
-            editField:SetTextInsets((l or 0) + 6, region or 0, t2 or 0, button or 0)
+            local left, right, t2, button = editField:GetTextInsets()
+            editField:SetTextInsets((left or 0) + 6, right or 0, t2 or 0, button or 0)
         end
     end
     CludesUI._WSkinPadInput = PadPopupInput
@@ -12247,15 +12247,15 @@ do
             end
             GetFFD(cats).spacingSet = true
             pcall(function()
-                local t, button, l, region = 0, 0, 0, 0
+                local top, bottom, left, right = 0, 0, 0, 0
                 local pad = view.GetPadding and view:GetPadding()
                 if pad then
-                    t = (pad.GetTop and pad:GetTop()) or 0
-                    button = (pad.GetBottom and pad:GetBottom()) or 0
-                    l = (pad.GetLeft and pad:GetLeft()) or 0
-                    region = (pad.GetRight and pad:GetRight()) or 0
+                    top = (pad.GetTop and pad:GetTop()) or 0
+                    bottom = (pad.GetBottom and pad:GetBottom()) or 0
+                    left = (pad.GetLeft and pad:GetLeft()) or 0
+                    right = (pad.GetRight and pad:GetRight()) or 0
                 end
-                view:SetPadding(t, button, l, region, -1)
+                view:SetPadding(top, bottom, left, right, -1)
                 if tabBox.FullUpdate then
                     tabBox:FullUpdate(true)
                 end
@@ -14093,15 +14093,15 @@ do
                     if view0 and view0.SetPadding then
                         GetFFD(categoryList).spacingSet = true
                         pcall(function()
-                            local t, button, l, region = 0, 0, 0, 0
+                            local top, bottom, left, right = 0, 0, 0, 0
                             local pad = view0.GetPadding and view0:GetPadding()
                             if pad then
-                                t = (pad.GetTop and pad:GetTop()) or 0
-                                button = (pad.GetBottom and pad:GetBottom()) or 0
-                                l = (pad.GetLeft and pad:GetLeft()) or 0
-                                region = (pad.GetRight and pad:GetRight()) or 0
+                                top = (pad.GetTop and pad:GetTop()) or 0
+                                bottom = (pad.GetBottom and pad:GetBottom()) or 0
+                                left = (pad.GetLeft and pad:GetLeft()) or 0
+                                right = (pad.GetRight and pad:GetRight()) or 0
                             end
-                            view0:SetPadding(t, button, l, region, -1)
+                            view0:SetPadding(top, bottom, left, right, -1)
                             if box0.FullUpdate then
                                 box0:FullUpdate(true)
                             end

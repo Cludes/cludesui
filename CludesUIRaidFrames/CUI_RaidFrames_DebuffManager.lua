@@ -1802,13 +1802,13 @@ local function BuildRecords(s, dmCfg)
         local hasPri, hasBoss, hasRole, hasCan, hasNp = false, false, false, false, false
         local byCat = {}
         for i = 1, #records do
-            local region = records[i]
-            local k = region.key
-            if k == "priority" then hasPri = true; byCat.priority = region
-            elseif k == "boss" then hasBoss = true; byCat.boss = region
-            elseif k == "role" then hasRole = true; byCat.role = region
-            elseif k == "bossrole" then hasBoss = true; hasRole = true; byCat.boss = region; byCat.role = region
-            elseif k == "canapply" then hasCan = true; byCat.canapply = region
+            local record = records[i]
+            local k = record.key
+            if k == "priority" then hasPri = true; byCat.priority = record
+            elseif k == "boss" then hasBoss = true; byCat.boss = record
+            elseif k == "role" then hasRole = true; byCat.role = record
+            elseif k == "bossrole" then hasBoss = true; hasRole = true; byCat.boss = record; byCat.role = record
+            elseif k == "canapply" then hasCan = true; byCat.canapply = record
             elseif k == "nonplayer" then hasNp = true end
         end
         -- True when record h already keeps category c out: the base add-mode
@@ -1831,10 +1831,10 @@ local function BuildRecords(s, dmCfg)
         end
         if hasPri or hasBoss or hasRole or hasCan or hasNp then
             for i = 1, #records do
-                local region = records[i]
-                local own = BOOL_OWN[region.key]
+                local record = records[i]
+                local own = BOOL_OWN[record.key]
                 if own then
-                    local castFrame, rank, k = region.cand, own.rank, region.key
+                    local castFrame, rank, k = record.cand, own.rank, record.key
                     if rank > 1 and castFrame.isPriorityAura == nil and Owns(byCat.priority, k) then castFrame.isPriorityAura = false end
                     if rank > 2 and castFrame.isBossAura == nil and Owns(byCat.boss, k) then castFrame.isBossAura = false end
                     if rank > 3 and castFrame.isRoleAura == nil and Owns(byCat.role, k) then castFrame.isRoleAura = false end
@@ -1858,14 +1858,14 @@ local function BuildRecords(s, dmCfg)
         local merged = byCat.boss ~= nil and byCat.boss == byCat.role
         local n0 = #records
         for i = 1, n0 do
-            local region = records[i]
-            local own = BOOL_OWN[region.key]
+            local record = records[i]
+            local own = BOOL_OWN[record.key]
             local fl
             if own and own.cats then
-                if region.tile then fl = region.tile.fxList else fl = baseView.fxList end
+                if record.tile then fl = record.tile.fxList else fl = baseView.fxList end
             end
             if fl then
-                local castFrame, tn, done = region.cand, region.tile and region.tile.neg, {}
+                local castFrame, tn, done = record.cand, record.tile and record.tile.neg, {}
                 for jdx = 1, #fl do
                     local entry = fl[jdx]
                     if FxEntryActive(entry) then
@@ -1891,13 +1891,13 @@ local function BuildRecords(s, dmCfg)
                                 done[X] = true
                                 local castCopy, tokenCopy = {}, {}
                                 for kk, val in pairs(castFrame) do castCopy[kk] = val end
-                                for kk = 1, #region.tokens do tokenCopy[kk] = region.tokens[kk] end
+                                for kk = 1, #record.tokens do tokenCopy[kk] = record.tokens[kk] end
                                 local key, pcats = own.npKey, own.npCats
                                 if X == "nonplayer" then
                                     castCopy[xo.field], castFrame[xo.field] = npAny, npHideVal
                                 else
                                     castCopy[xo.field], castFrame[xo.field] = true, false
-                                    key = region.key .. "+" .. X
+                                    key = record.key .. "+" .. X
                                     pcats = { X }
                                     if merged and (X == "boss" or X == "role") then
                                         pcats[2] = (X == "boss") and "role" or "boss"
@@ -1905,7 +1905,7 @@ local function BuildRecords(s, dmCfg)
                                     for c = 1, #own.cats do pcats[#pcats + 1] = own.cats[c] end
                                 end
                                 records[#records + 1] = { key = key, tokens = tokenCopy, cand = castCopy,
-                                    tile = region.tile, cats = pcats }
+                                    tile = record.tile, cats = pcats }
                             end
                         end
                     end
@@ -1928,12 +1928,12 @@ local function BuildRecords(s, dmCfg)
         return false
     end
     for i = 1, #records do
-        local region = records[i]
-        local tn = region.tile and region.tile.neg
+        local record = records[i]
+        local tn = record.tile and record.tile.neg
         -- npdead ignores ALL filters by definition: no hide-lane folds, no duration cap.
         -- Match All records already carry their indicator's hide lane (MatchSpec).
-        if tn and region.key ~= "cc" and region.key ~= "npdead" and not region.match then
-            local tokenList, castFrame, key = region.tokens, region.cand, region.key
+        if tn and record.key ~= "cc" and record.key ~= "npdead" and not record.match then
+            local tokenList, castFrame, key = record.tokens, record.cand, record.key
             if tn.cc == true and not HasTok(tokenList, "!CROWD_CONTROL") then
                 tokenList[#tokenList + 1] = "!CROWD_CONTROL"
             end
@@ -1978,16 +1978,16 @@ local function BuildRecords(s, dmCfg)
     -- Also stamp each record with its owner list's resolved Size (base reads
     -- base blocks, tile-hosted reads its tile's).
     for i = 1, #records do
-        local region = records[i]
-        local ownerFrame = region.tile or baseView
+        local record = records[i]
+        local ownerFrame = record.tile or baseView
         -- Max Duration (seconds) is the same native gate with a real cap; it
         -- implies Has Duration (a capped aura is a timed aura). nil = Unlimited
         -- = no field on the candidate table at all.
         local cap = ownerFrame.maxDurSec or (ownerFrame.hasDuration == true and math.huge) or nil
-        if cap and region.key ~= "cc" and region.key ~= "npdead" then
-            region.cand.maxDuration = cap
+        if cap and record.key ~= "cc" and record.key ~= "npdead" then
+            record.cand.maxDuration = cap
         end
-        region.fxSize = FxSizeFor(region.tile and region.tile.fxList or baseView.fxList, region.cats or region.key)
+        record.fxSize = FxSizeFor(record.tile and record.tile.fxList or baseView.fxList, record.cats or record.key)
     end
 
     -- HAND-OFF: each Match All set (matchSets, in precedence order) is taken out
@@ -2005,21 +2005,21 @@ local function BuildRecords(s, dmCfg)
             settled[set.tile] = true
             local result = {}
             for i = 1, #records do
-                local region = records[i]
+                local record = records[i]
                 local parts
-                if not region.deadOnly and not (region.tile and settled[region.tile]) then
-                    parts = Carve(region, set.atoms, dmCfg)
+                if not record.deadOnly and not (record.tile and settled[record.tile]) then
+                    parts = Carve(record, set.atoms, dmCfg)
                 end
                 if parts then
                     for profile = 1, #parts do
                         local tokenList, castFrame = MatchFinish(parts[profile])
                         if tokenList then
-                            result[#result + 1] = { key = region.key, tokens = tokenList, cand = castFrame, tile = region.tile,
-                                cats = region.cats, fxSize = region.fxSize, match = region.match, ccLead = region.ccLead }
+                            result[#result + 1] = { key = record.key, tokens = tokenList, cand = castFrame, tile = record.tile,
+                                cats = record.cats, fxSize = record.fxSize, match = record.match, ccLead = record.ccLead }
                         end
                     end
                 else
-                    result[#result + 1] = region
+                    result[#result + 1] = record
                 end
             end
             records = result
@@ -2910,18 +2910,18 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
     local baseSizedCC = false -- sized cc record replaces the legacy cc group
     local tileRecs = {} -- [tileId] = array of records
     for i = 1, #records do
-        local region = records[i]
-        region.gkey = GroupKey(AK, region)
-        if region.deadOnly then deadRec = region end
-        if region.tile then
-            local ident = region.tile.id
+        local record = records[i]
+        record.gkey = GroupKey(AK, record)
+        if record.deadOnly then deadRec = record end
+        if record.tile then
+            local ident = record.tile.id
             local entries = tileRecs[ident]
             if not entries then entries = {}; tileRecs[ident] = entries end
-            entries[#entries + 1] = region
+            entries[#entries + 1] = record
         else
-            if region.key == "cc" then baseSizedCC = true end
-            wantedBase[region.gkey] = region
-            if not declared[region.gkey] then missingBase = true end
+            if record.key == "cc" then baseSizedCC = true end
+            wantedBase[record.gkey] = record
+            if not declared[record.gkey] then missingBase = true end
         end
     end
 

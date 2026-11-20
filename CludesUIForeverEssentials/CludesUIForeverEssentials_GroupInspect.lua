@@ -194,30 +194,30 @@ local function Build()
 end
 
 local function Row(index)
-    local region = rowList[index]
-    if not region then
-        region = CreateFrame("Button", nil, window)
-        region:SetSize(440, ROW_H)
-        region.text = region:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(region.text, 12, "essentials")
-        region.text:SetPoint("LEFT")
-        region.text:SetJustifyH("LEFT")
-        region.text:SetWidth(440)
-        region.text:SetWordWrap(false)
-        local highlight = region:CreateTexture(nil, "HIGHLIGHT")
+    local row = rowList[index]
+    if not row then
+        row = CreateFrame("Button", nil, window)
+        row:SetSize(440, ROW_H)
+        row.text = row:CreateFontString(nil, "OVERLAY")
+        CludesUI.Kit.Font(row.text, 12, "essentials")
+        row.text:SetPoint("LEFT")
+        row.text:SetJustifyH("LEFT")
+        row.text:SetWidth(440)
+        row.text:SetWordWrap(false)
+        local highlight = row:CreateTexture(nil, "HIGHLIGHT")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0.06)
-        region:SetScript("OnClick", function(self)
+        row:SetScript("OnClick", function(self)
             if self.unit and UnitExists(self.unit) and CanInspect(self.unit, true) then
                 InspectUnit(self.unit)
             end
         end)
-        rowList[index] = region
+        rowList[index] = row
     end
-    region:ClearAllPoints()
-    region:SetPoint("TOPLEFT", window, "TOPLEFT", 10, -30 - (index - 1) * ROW_H)
-    region:Show()
-    return region
+    row:ClearAllPoints()
+    row:SetPoint("TOPLEFT", window, "TOPLEFT", 10, -30 - (index - 1) * ROW_H)
+    row:Show()
+    return row
 end
 
 Refresh = function()

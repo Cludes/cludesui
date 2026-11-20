@@ -3396,8 +3396,8 @@ local function MakeDelveSquare(hostFrame)
     line:SetPoint("TOPRIGHT", fontStr, "BOTTOMRIGHT", 0, -1)
     line:SetHeight(2)
     if XF.SkinOn() then
-        local region, g, bl, a = ThemeBorder()
-        CM.PanelPP.CreateBorder(widget.edge, region, g, bl, a, 1, "OVERLAY", 7)
+        local red, green, blue, a = ThemeBorder()
+        CM.PanelPP.CreateBorder(widget.edge, red, green, blue, a, 1, "OVERLAY", 7)
     end
     widget.gold:Hide()
     widget:SetScript("OnEnter", DelveEnter)

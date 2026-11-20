@@ -503,8 +503,8 @@ local function ApplyLook(pp, g, profile, ori)
             ft._lfOn, ft._lgOn = nil, nil
         end
     end
-    local region, gr, b = ManaColor()
-    mod.ApplyBarFlat(scrollBar:GetStatusBarTexture(), region, gr, b, 1)
+    local red, green, blue = ManaColor()
+    mod.ApplyBarFlat(scrollBar:GetStatusBarTexture(), red, green, blue, 1)
     S.bg:SetColorTexture(pp.bgR or 0, pp.bgG or 0, pp.bgB or 0, pp.bgA or 0.75)
     -- Textured Background, as the Power Bar's: flat while Fill Color is below 100.
     if g.barTextureBg or S.bg._erbBgTex then
@@ -518,7 +518,7 @@ local function ApplyLook(pp, g, profile, ori)
         )
     end
     mod.ApplyFillOpacity(S.host, ori, pp.fillOpacity)
-    return region, gr, b
+    return red, green, blue
 end
 
 -- Text style, same keys and colour rule as the Power Bar's text (custom, or
@@ -584,8 +584,8 @@ function mod.FDM_Apply(pb, pp, g)
     g = g or profile.general or EMPTY
     local ori, inside = Layout(pb, pp, g, c)
     ApplyBorder(pp, inside)
-    local region, gr, b = ApplyLook(pp, g, profile, ori)
-    ApplyText(c, region, gr, b)
+    local red, green, blue = ApplyLook(pp, g, profile, ori)
+    ApplyText(c, red, green, blue)
     local wasLive = S.live
     Refresh()
     -- Already live: the new look and text settings paint now (an edge into

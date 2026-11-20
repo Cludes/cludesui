@@ -481,25 +481,25 @@ local function SenderIs(sender, unitGuid)
 end
 
 local function Row(index)
-    local region = rowList[index]
-    if region then
-        return region
+    local row = rowList[index]
+    if row then
+        return row
     end
-    region = CreateFrame("Frame", nil, gFrame)
-    region.name = region:CreateFontString(nil, "OVERLAY")
-    region.name:SetPoint("LEFT")
-    region.name:SetJustifyH("LEFT")
-    region.name:SetWordWrap(false)
-    region.bar = CreateFrame("StatusBar", nil, region)
-    region.bar:SetPoint("BOTTOMRIGHT")
-    region.bar:SetMinMaxValues(0, 1)
-    region.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    region.bar:SetStatusBarColor(CludesUI.Kit.Accent())
-    CludesUI.Kit.Panel(region.bar, 0.85)
-    region.text = region.bar:CreateFontString(nil, "OVERLAY")
-    region.text:SetPoint("CENTER")
-    rowList[index] = region
-    return region
+    row = CreateFrame("Frame", nil, gFrame)
+    row.name = row:CreateFontString(nil, "OVERLAY")
+    row.name:SetPoint("LEFT")
+    row.name:SetJustifyH("LEFT")
+    row.name:SetWordWrap(false)
+    row.bar = CreateFrame("StatusBar", nil, row)
+    row.bar:SetPoint("BOTTOMRIGHT")
+    row.bar:SetMinMaxValues(0, 1)
+    row.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    row.bar:SetStatusBarColor(CludesUI.Kit.Accent())
+    CludesUI.Kit.Panel(row.bar, 0.85)
+    row.text = row.bar:CreateFontString(nil, "OVERLAY")
+    row.text:SetPoint("CENTER")
+    rowList[index] = row
+    return row
 end
 
 local SAMPLE = {

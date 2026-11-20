@@ -148,16 +148,16 @@ do
 
         local function addRow(unitToken, fakeName, fakeClass, fakeVal)
             total = total + 1
-            local region = rowList[total]
-            if not region then
-                region = {
+            local row = rowList[total]
+            if not row then
+                row = {
                     nameFS = boxHolder:CreateFontString(nil, "OVERLAY"),
                     valFS = boxHolder:CreateFontString(nil, "OVERLAY"),
                 }
-                rowList[total] = region
+                rowList[total] = row
             end
-            region.unit = unitToken
-            local nameFS, valFS = region.nameFS, region.valFS
+            row.unit = unitToken
+            local nameFS, valFS = row.nameFS, row.valFS
             -- The name a font family (other players' names), with no shadow as
             -- the value's plain font.
             CludesUI.SetFontFamily(nameFS, fontFile, size, outline, false)
@@ -263,7 +263,7 @@ do
             end
             valFS:Show()
             if unitToken then
-                map[unitToken] = region
+                map[unitToken] = row
             end
         end
 

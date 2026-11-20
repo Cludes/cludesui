@@ -2525,12 +2525,12 @@ local function ResourceStackBelowFrame(unitToken, widget)
     end
     local barList = getBars and getBars()
     if formBar then
-        local l, region = secretNum(formBar:GetLeft()), secretNum(formBar:GetRight())
+        local left, right = secretNum(formBar:GetLeft()), secretNum(formBar:GetRight())
         local t, b = secretNum(formBar:GetTop()), secretNum(formBar:GetBottom())
-        if l and region and t and b then
+        if left and right and t and b then
             local cfg = formBar:GetEffectiveScale() or 1
             barList = barList or {}
-            barList[#barList + 1] = { l = l * cfg, r = region * cfg, t = t * cfg, b = b * cfg }
+            barList[#barList + 1] = { l = left * cfg, r = right * cfg, t = t * cfg, b = b * cfg }
         end
     end
     if not barList then

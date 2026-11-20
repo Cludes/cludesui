@@ -603,7 +603,7 @@ function mod.ERB_GroupSeatSeparators(owner, g, num, vertical)
         local m, lo, hi = mod._erbGrpMembers, mod._erbGrpLo, mod._erbGrpHi
         local px = ((Pix and Pix.perfect) or 1) / owner:GetEffectiveScale()
         local t = size * px
-        local region, gr, b = g.classicBorderAllSepR or 0, g.classicBorderAllSepG or 0, g.classicBorderAllSepB or 0
+        local red, green, blue = g.classicBorderAllSepR or 0, g.classicBorderAllSepG or 0, g.classicBorderAllSepB or 0
         for index = 1, num - 1 do
             used = index
             local s = seps[index]
@@ -611,7 +611,7 @@ function mod.ERB_GroupSeatSeparators(owner, g, num, vertical)
                 s = af:CreateTexture(nil, "OVERLAY", nil, 3)
                 seps[index] = s
             end
-            s:SetColorTexture(region, gr, b, 1)
+            s:SetColorTexture(red, green, blue, 1)
             -- Members are sorted top to bottom (horizontal bars) or left to
             -- right (vertical bars); the line hangs off the earlier one.
             local a = m[index]

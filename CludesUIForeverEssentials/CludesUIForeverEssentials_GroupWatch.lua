@@ -246,23 +246,23 @@ local SAMPLE = {
 }
 
 local function Row(index)
-    local region = rowList[index]
-    if region then
-        return region
+    local row = rowList[index]
+    if row then
+        return row
     end
-    region = CreateFrame("Frame", nil, hmFrame)
-    region.icon = region:CreateTexture(nil, "ARTWORK")
-    region.icon:SetTexture(DRINK_ICON)
-    region.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    region.icon:SetPoint("LEFT", 0, -1)
-    region.pct = region:CreateFontString(nil, "OVERLAY")
-    region.pct:SetPoint("RIGHT")
-    region.pct:SetJustifyH("RIGHT")
-    region.name = region:CreateFontString(nil, "OVERLAY")
-    region.name:SetJustifyH("LEFT")
-    region.name:SetWordWrap(false)
-    rowList[index] = region
-    return region
+    row = CreateFrame("Frame", nil, hmFrame)
+    row.icon = row:CreateTexture(nil, "ARTWORK")
+    row.icon:SetTexture(DRINK_ICON)
+    row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    row.icon:SetPoint("LEFT", 0, -1)
+    row.pct = row:CreateFontString(nil, "OVERLAY")
+    row.pct:SetPoint("RIGHT")
+    row.pct:SetJustifyH("RIGHT")
+    row.name = row:CreateFontString(nil, "OVERLAY")
+    row.name:SetJustifyH("LEFT")
+    row.name:SetWordWrap(false)
+    rowList[index] = row
+    return row
 end
 
 local function PaintRows(entries)

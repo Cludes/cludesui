@@ -471,30 +471,30 @@ Paint = function()
     for idx = 1, num do
         local unitGuid = isShown[idx]
         local e = roster[unitGuid]
-        local region = rowList[idx] or NewRow(idx)
+        local row = rowList[idx] or NewRow(idx)
         local foreign = e.realmKey ~= own
         -- Any mail reaches this realm or a connected one, either faction;
         -- another realm takes Warbound items only and shows dimmed.
         local limited = not realms[e.realmKey]
-        region._guid, region._foreign, region._limited = unitGuid, foreign, limited
+        row._guid, row._foreign, row._limited = unitGuid, foreign, limited
         -- Mail addresses another realm's character as "Name-Realm".
-        region._target = foreign and (e.name .. "-" .. e.realmKey) or e.name
-        DressIcon(region._icon, e.class)
+        row._target = foreign and (e.name .. "-" .. e.realmKey) or e.name
+        DressIcon(row._icon, e.class)
         local color = CUI.GetClassColor(e.class)
-        region._name:SetText(foreign and (e.name .. FOREIGN_SERVER_LABEL) or e.name)
-        region._name:SetTextColor(color.r, color.g, color.b)
-        region._lvl:SetText(e.level or "")
-        region:SetAlpha(limited and LIMITED_ALPHA or 1)
-        region:Show()
+        row._name:SetText(foreign and (e.name .. FOREIGN_SERVER_LABEL) or e.name)
+        row._name:SetTextColor(color.r, color.g, color.b)
+        row._lvl:SetText(e.level or "")
+        row:SetAlpha(limited and LIMITED_ALPHA or 1)
+        row:Show()
     end
     local ownerFrame = CUI._WidgetTooltipOwner()
     for idx = num + 1, #rowList do
-        local region = rowList[idx]
-        if ownerFrame == region then
+        local row = rowList[idx]
+        if ownerFrame == row then
             CUI.HideWidgetTooltip(true)
         end
-        region:Hide()
-        region._guid, region._target, region._limited = nil, nil, nil
+        row:Hide()
+        row._guid, row._target, row._limited = nil, nil, nil
     end
     local hgt
     if num > 0 then

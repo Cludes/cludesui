@@ -115,19 +115,19 @@ end
 function mod.RF_DockPreviewWindow(oc)
     oc:ClearAllPoints()
     local scrollFrame = CludesUI._scrollFrame
-    local l, region, t =
+    local left, right, t =
         scrollFrame and scrollFrame:GetLeft(),
         scrollFrame and scrollFrame:GetRight(),
         scrollFrame and scrollFrame:GetTop()
-    if not (l and region and t) then
+    if not (left and right and t) then
         oc:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
         return
     end
     -- The panel has its own scale (Window Scale): its edges in UIParent units.
     local key = scrollFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
     local wid = oc:GetWidth() or 0
-    local rightX = (region + 34) * key -- clear of the panel's right border
-    local leftX = (l - 310) * key -- clear of the sidebar's left border
+    local rightX = (right + 34) * key -- clear of the panel's right border
+    local leftX = (left - 310) * key -- clear of the sidebar's left border
     if rightX + wid <= UIParent:GetWidth() then
         oc:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", rightX, t * key)
     elseif leftX - wid >= 0 then

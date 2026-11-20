@@ -79,18 +79,18 @@ local function ColorSides(widget, cols)
     -- frames, each loading screen and UI-scale change) repaints all four
     -- strips from it, which would flatten these per-side colours to black.
     c._bdColor = nil
-    local t, b, l, region = cols.top, cols.bottom, cols.left, cols.right
+    local top, bottom, left, right = cols.top, cols.bottom, cols.left, cols.right
     if c._top then
-        c._top:SetVertexColor(t[1], t[2], t[3], 1)
+        c._top:SetVertexColor(top[1], top[2], top[3], 1)
     end
     if c._bottom then
-        c._bottom:SetVertexColor(b[1], b[2], b[3], 1)
+        c._bottom:SetVertexColor(bottom[1], bottom[2], bottom[3], 1)
     end
     if c._left then
-        c._left:SetVertexColor(l[1], l[2], l[3], 1)
+        c._left:SetVertexColor(left[1], left[2], left[3], 1)
     end
     if c._right then
-        c._right:SetVertexColor(region[1], region[2], region[3], 1)
+        c._right:SetVertexColor(right[1], right[2], right[3], 1)
     end
 end
 

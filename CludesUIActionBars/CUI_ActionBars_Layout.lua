@@ -359,9 +359,9 @@ local function LayoutBar(key)
         do
             local cx, cy = widget:GetCenter()
             if cx and cy then
-                local region = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
+                local ratio = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
                 local uw, uh = UIParent:GetSize()
-                fbS = ((cx * region > uw * 2 / 3) and 2 or 0) + ((cy * region > uh * 2 / 3) and 1 or 0)
+                fbS = ((cx * ratio > uw * 2 / 3) and 2 or 0) + ((cy * ratio > uh * 2 / 3) and 1 or 0)
             end
         end
         local showES = cfg.alwaysShowButtons
@@ -738,8 +738,8 @@ local function LayoutBar(key)
     do
         local c1, c2 = widget:GetCenter()
         if c1 and c2 then
-            local region = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
-            preCX, preCY = c1 * region, c2 * region
+            local ratio = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
+            preCX, preCY = c1 * ratio, c2 * ratio
         end
     end
     CludesUI._layoutBarResizing = key

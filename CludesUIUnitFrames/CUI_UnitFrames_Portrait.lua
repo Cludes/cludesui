@@ -813,11 +813,11 @@ function mod.UF_WinglessArt(texture, atlas, mirrored)
     -- The atlas's file with its coordinates, not SetAtlas: after SetAtlas,
     -- SetTexCoord crops within the atlas region instead of the file.
     texture:SetTexture(details.file or details.filename)
-    local l, region = details.leftTexCoord, details.rightTexCoord
+    local left, right = details.leftTexCoord, details.rightTexCoord
     if mirrored then
-        l, region = region, l
+        left, right = right, left
     end
-    texture:SetTexCoord(l, region, details.topTexCoord, details.bottomTexCoord)
+    texture:SetTexCoord(left, right, details.topTexCoord, details.bottomTexCoord)
     texture._wAtlas, texture._wFlip = atlas, mirrored
     return true
 end

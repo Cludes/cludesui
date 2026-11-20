@@ -208,11 +208,11 @@ end
 -- One side of it ("left" | "right"), for the many places that gap a single
 -- element off one edge of the bar.
 function mod.NP_ClassicSide(side, key)
-    local l, region = mod.NP_ClassicBarReserve(key)
+    local left, right = mod.NP_ClassicBarReserve(key)
     if side == "right" then
-        return region
+        return right
     end
-    return l
+    return left
 end
 -- The cast bar's layout under the health bar: its shift right, its width
 -- over the footprint and its drop, so the two borders line up at their
@@ -250,16 +250,16 @@ function mod.NP_SeatClassicBorder(profile, barFrame, key)
     profile._k, profile._bar = key, barFrame
     local C = mod.NP_CLASSIC
     local sheet = profile.sheet
-    local l, region = sheet.reachL * key, sheet.reachR * key
+    local left, right = sheet.reachL * key, sheet.reachR * key
     local t, b = C.top * key, C.bottom * key
     for index = 1, 3 do
         profile[index]:ClearAllPoints()
     end
-    profile[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", -l, t)
-    profile[1]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", -l, -b)
+    profile[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", -left, t)
+    profile[1]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", -left, -b)
     profile[1]:SetWidth(sheet.capL * key)
-    profile[3]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", region, t)
-    profile[3]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", region, -b)
+    profile[3]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", right, t)
+    profile[3]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", right, -b)
     profile[3]:SetWidth(sheet.capR * key)
     profile[2]:SetPoint("TOPLEFT", profile[1], "TOPRIGHT", 0, 0)
     profile[2]:SetPoint("BOTTOMRIGHT", profile[3], "BOTTOMLEFT", 0, 0)

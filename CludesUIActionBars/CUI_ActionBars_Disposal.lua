@@ -435,14 +435,14 @@ do
                     -- shows itself and its selection overlay whenever Edit Mode opens
                     -- (the overlay ignores the bar's alpha). Silence both overlays like
                     -- the bar's own; Edit Mode's Show never resets alpha or mouse.
-                    local l, region = caps.LeftEndCap, caps.RightEndCap
-                    if l and l.Selection then
-                        l.Selection:SetAlpha(0)
-                        l.Selection:EnableMouse(false)
+                    local left, right = caps.LeftEndCap, caps.RightEndCap
+                    if left and left.Selection then
+                        left.Selection:SetAlpha(0)
+                        left.Selection:EnableMouse(false)
                     end
-                    if region and region.Selection then
-                        region.Selection:SetAlpha(0)
-                        region.Selection:EnableMouse(false)
+                    if right and right.Selection then
+                        right.Selection:SetAlpha(0)
+                        right.Selection:EnableMouse(false)
                     end
                 end
                 if widget.BorderArt then

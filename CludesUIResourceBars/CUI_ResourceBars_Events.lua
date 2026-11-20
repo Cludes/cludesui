@@ -177,12 +177,12 @@ do
                     cx, cy = frame:GetCenter()
                 end
                 if cx and cy then
-                    local region = frame:GetEffectiveScale() / uiS
+                    local ratio = frame:GetEffectiveScale() / uiS
                     s.unlockPos = {
                         point = "CENTER",
                         relPoint = "CENTER",
-                        x = cx * region - uiW * 0.5,
-                        y = cy * region - uiH * 0.5,
+                        x = cx * ratio - uiW * 0.5,
+                        y = cy * ratio - uiH * 0.5,
                     }
                 end
                 -- Clear even without geometry (bar never laid out): defaults

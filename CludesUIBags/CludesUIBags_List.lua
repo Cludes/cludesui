@@ -637,8 +637,8 @@ local function OnHeaderDragUpdate(self)
     for _, cid in ipairs(cols) do
         local widget = btns[cid]
         if cid ~= self._colId and widget then
-            local l, region = widget:GetLeft(), widget:GetRight()
-            if l and curX > (l + region) / 2 then
+            local left, right = widget:GetLeft(), widget:GetRight()
+            if left and curX > (left + right) / 2 then
                 target = target + 1
             end
         end

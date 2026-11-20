@@ -788,13 +788,13 @@ local function Layout(num, nTotals)
         heads[b]:Hide()
     end
     for index = 1, num do
-        local region = rowList[index] or MakeRow(index)
-        PlaceRow(region)
+        local row = rowList[index] or MakeRow(index)
+        PlaceRow(row)
         local b = math.floor((index - 1) / perBlock)
         local slot = (index - 1) % perBlock
-        region:ClearAllPoints()
-        region:SetPoint("TOPLEFT", heads[b + 1], "BOTTOMLEFT", 0, -slot * ROW_H)
-        region:Show()
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", heads[b + 1], "BOTTOMLEFT", 0, -slot * ROW_H)
+        row:Show()
     end
     for index = num + 1, #rowList do
         rowList[index]:Hide()

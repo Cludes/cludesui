@@ -1302,10 +1302,10 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
             local advancedOn = (inRows.dirX ~= 0) and button:GetWidth() or button:GetHeight()
             local ox, oy = 0, 0
             if fvRings then
-                local l, t, region, b = SKIN._RingInsets(button)
-                advancedOn = advancedOn - ((inRows.dirX ~= 0) and (l + region) or (t + b)) + ringGap
-                ox = Pix.SnapForES(ptRight and region or -l, elES)
-                oy = Pix.SnapForES(ptTop and t or -b, elES)
+                local left, top, right, bottom = SKIN._RingInsets(button)
+                advancedOn = advancedOn - ((inRows.dirX ~= 0) and (left + right) or (top + bottom)) + ringGap
+                ox = Pix.SnapForES(ptRight and right or -left, elES)
+                oy = Pix.SnapForES(ptTop and top or -bottom, elES)
             end
             button:ClearAllPoints()
             button:SetPoint(inRows.point, rowAnchor, inRows.rel, elX + ox, elY + oy)
@@ -1397,10 +1397,10 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
             local advancedOn = (inRows.dirX ~= 0) and button:GetWidth() or button:GetHeight()
             local ox, oy = 0, 0
             if fvRings then
-                local l, t, region, b = SKIN._RingInsets(button)
-                advancedOn = advancedOn - ((inRows.dirX ~= 0) and (l + region) or (t + b)) + ringGap
-                ox = Pix.SnapForES(ptRight and region or -l, rowES)
-                oy = Pix.SnapForES(ptTop and t or -b, rowES)
+                local left, top, right, bottom = SKIN._RingInsets(button)
+                advancedOn = advancedOn - ((inRows.dirX ~= 0) and (left + right) or (top + bottom)) + ringGap
+                ox = Pix.SnapForES(ptRight and right or -left, rowES)
+                oy = Pix.SnapForES(ptTop and top or -bottom, rowES)
             end
             advancedOn = math.floor(advancedOn / rowPx + 0.001) * rowPx + rowGap
             if arcRadius then
