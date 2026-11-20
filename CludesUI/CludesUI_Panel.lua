@@ -118,11 +118,11 @@ local HideAllChildren
 do
     local _hideAllScratch = {}
     local function _packIntoScratch(...)
-        local n = select("#", ...)
-        for i = 1, n do
+        local count = select("#", ...)
+        for i = 1, count do
             _hideAllScratch[i] = select(i, ...)
         end
-        return n
+        return count
     end
     -- Hiders of the custom root frames modules parent to the scroll frame itself
     -- (beside the scroll child: manager pages, Profiles): every registered one runs.
@@ -137,15 +137,15 @@ do
     end
     HideAllChildren = function(parent, keepSet)
         -- Pack children into reusable scratch table (one GetChildren call)
-        local n = _packIntoScratch(parent:GetChildren())
-        for i = 1, n do
+        local count = _packIntoScratch(parent:GetChildren())
+        for i = 1, count do
             if not (keepSet and keepSet[_hideAllScratch[i]]) then
                 _hideAllScratch[i]:Hide()
             end
             _hideAllScratch[i] = nil
         end
-        n = _packIntoScratch(parent:GetRegions())
-        for i = 1, n do
+        count = _packIntoScratch(parent:GetRegions())
+        for i = 1, count do
             if not (keepSet and keepSet[_hideAllScratch[i]]) then
                 _hideAllScratch[i]:Hide()
             end
@@ -442,9 +442,9 @@ local function BuildFrame()
         local artSpec = boxState.spec
         local shown = a > 0 and artSpec ~= nil
         for i = 1, 4 do
-            local t = boxState.s[i]
-            t:SetShown(shown)
-            t:SetAlpha(a)
+            local box = boxState.s[i]
+            box:SetShown(shown)
+            box:SetAlpha(a)
         end
         if boxState.base then
             boxState.base:SetShown(shown)
@@ -482,18 +482,18 @@ local function BuildFrame()
                 elseif i == 4 then
                     sx, sy, sw, sh = w - S, S, S, h - 2 * S -- right
                 end
-                local t = boxState.s[i]
-                t:SetTexture(path)
-                t:SetTexCoord(
+                local box = boxState.s[i]
+                box:SetTexture(path)
+                box:SetTexCoord(
                     (x + sx) / BG_WIDTH,
                     (x + sx + sw) / BG_WIDTH,
                     (rowY + sy) / BG_HEIGHT,
                     (rowY + sy + sh) / BG_HEIGHT
                 )
-                t:SetSize(sw, sh)
-                t:ClearAllPoints()
-                t:SetPoint("TOPLEFT", boxState.anchor, "TOPLEFT", px + sx, -(py + sy))
-                ApplyBgTintToLayer(t, skinName, tr, tg, tb)
+                box:SetSize(sw, sh)
+                box:ClearAllPoints()
+                box:SetPoint("TOPLEFT", boxState.anchor, "TOPLEFT", px + sx, -(py + sy))
+                ApplyBgTintToLayer(box, skinName, tr, tg, tb)
             end
             if boxState.base then
                 local tc = titleBoxes.GLYPH[boxState.glyph]
@@ -1801,8 +1801,8 @@ local function BuildSidebar()
         offset = math.max(0, math.min(travel, offset))
         local rawScroll = (offset / travel) * scrollMax
         -- Snap to an effective-pixel boundary so labels land on exact pixels.
-        local s = addonScroller:GetEffectiveScale()
-        local nextScroll = math.floor(rawScroll * s + 0.5) / s
+        local scale = addonScroller:GetEffectiveScale()
+        local nextScroll = math.floor(rawScroll * scale + 0.5) / scale
         nextScroll = math.max(0, math.min(scrollMax, nextScroll))
         addonScrollTarget = nextScroll
         addonScroller:SetVerticalScroll(nextScroll)
@@ -2560,15 +2560,15 @@ local function BuildSidebar()
 
     local function GatherCUICPU()
         local cpuByKey = {}
-        for _, m in ipairs(CPU_METRICS) do
-            cpuByKey[m.key] = 0
+        for _, metric in ipairs(CPU_METRICS) do
+            cpuByKey[metric.key] = 0
         end
         for _, navInfo in ipairs(ADDON_ROSTER) do
             if IsAddonLoaded(navInfo.folder) then
                 if C_AddOnProfiler and C_AddOnProfiler.GetAddOnMetric then
-                    for _, m in ipairs(CPU_METRICS) do
-                        cpuByKey[m.key] = cpuByKey[m.key]
-                            + (C_AddOnProfiler.GetAddOnMetric(navInfo.folder, m.enum) or 0)
+                    for _, metric in ipairs(CPU_METRICS) do
+                        cpuByKey[metric.key] = cpuByKey[metric.key]
+                            + (C_AddOnProfiler.GetAddOnMetric(navInfo.folder, metric.enum) or 0)
                     end
                 end
             end
@@ -3034,10 +3034,10 @@ local function BuildContent()
         local H = CUI_NS.hdr
         local isRoot = H.isRoot
         local ch = { headStrip:GetChildren() }
-        for _, c in ipairs(ch) do
-            c:Hide()
-            if not isRoot[c] then
-                c:SetParent(nil)
+        for _, child in ipairs(ch) do
+            child:Hide()
+            if not isRoot[child] then
+                child:SetParent(nil)
             end
         end
         local rg = { headStrip:GetRegions() }
@@ -3090,9 +3090,9 @@ local function BuildContent()
             return true
         end
         local children = {}
-        for _, c in ipairs({ headStrip:GetChildren() }) do
-            if not H.isRoot[c] then
-                children[#children + 1] = c
+        for _, child in ipairs({ headStrip:GetChildren() }) do
+            if not H.isRoot[child] then
+                children[#children + 1] = child
             end
         end
         local regions = {}
@@ -3135,8 +3135,8 @@ local function BuildContent()
             if H.stale[pageKey] then
                 return false
             end
-            for _, c in ipairs({ headStrip:GetChildren() }) do
-                c:Hide()
+            for _, child in ipairs({ headStrip:GetChildren() }) do
+                child:Hide()
             end
             for _, r in ipairs({ headStrip:GetRegions() }) do
                 if r ~= contentHeaderBg and r ~= contentHeaderDiv then
@@ -3157,8 +3157,8 @@ local function BuildContent()
         end
         -- Hide any current header children first (without orphaning)
         local ch = { headStrip:GetChildren() }
-        for _, c in ipairs(ch) do
-            c:Hide()
+        for _, child in ipairs(ch) do
+            child:Hide()
         end
         local rg = { headStrip:GetRegions() }
         for _, r in ipairs(rg) do
@@ -3325,8 +3325,8 @@ local function BuildContent()
             H.active = nil
         end
         local ch = { headStrip:GetChildren() }
-        for _, c in ipairs(ch) do
-            c:Hide()
+        for _, child in ipairs(ch) do
+            child:Hide()
         end
         local rg = { headStrip:GetRegions() }
         for _, r in ipairs(rg) do
@@ -3559,17 +3559,17 @@ local function BuildFooter(rightW, rightX)
     -- Per-module Reset visibility: suite pages and pages with no onReset hide Reset and
     -- slide Reload UI left into its slot. Called from SelectModule.
     CludesUI._UpdateResetButtonVisible = function(hasReset)
-        local rb, rl = footerBar._resetBtn, footerBar._reloadBtn
-        if not rb or not rl then
+        local resetBtn, reloadBtn = footerBar._resetBtn, footerBar._reloadBtn
+        if not resetBtn or not reloadBtn then
             return
         end
-        rl:ClearAllPoints()
+        reloadBtn:ClearAllPoints()
         if hasReset then
-            rb:Show()
-            rl:SetPoint("BOTTOMLEFT", rb, "BOTTOMRIGHT", FOOTER_BTN_GAP, 0)
+            resetBtn:Show()
+            reloadBtn:SetPoint("BOTTOMLEFT", resetBtn, "BOTTOMRIGHT", FOOTER_BTN_GAP, 0)
         else
-            rb:Hide()
-            rl:SetPoint("BOTTOMLEFT", footerBar, "BOTTOMLEFT", FOOTER_PAD, FOOTER_Y)
+            resetBtn:Hide()
+            reloadBtn:SetPoint("BOTTOMLEFT", footerBar, "BOTTOMLEFT", FOOTER_PAD, FOOTER_Y)
         end
     end
 
@@ -4646,12 +4646,12 @@ function CludesUI:ApplyInlineSearch(searchQuery, skipHighlights)
                 end
             end
         end
-        for _, o in ipairs(orphans) do
-            o:Show()
-            if o._origAnchor then
-                o:ClearAllPoints()
-                local a = o._origAnchor
-                PanelPP.Point(o, a[1], a[2], a[3], a[4], a[5])
+        for _, orphan in ipairs(orphans) do
+            orphan:Show()
+            if orphan._origAnchor then
+                orphan:ClearAllPoints()
+                local a = orphan._origAnchor
+                PanelPP.Point(orphan, a[1], a[2], a[3], a[4], a[5])
             end
         end
         -- Restore original scroll height
@@ -4725,11 +4725,11 @@ function CludesUI:ApplyInlineSearch(searchQuery, skipHighlights)
     -- SectionHeader call, so _currentSection is nil when TagOptionRow tags them. Match them like
     -- section members instead of hiding them unconditionally, or a query matching only an orphan (a lead "Activate X" button) leaves the page empty.
     local visibleOrphans = {}
-    for _, o in ipairs(orphans) do
-        local navLabel = GetSearchLabel(o)
+    for _, orphan in ipairs(orphans) do
+        local navLabel = GetSearchLabel(orphan)
         local matched = navLabel ~= "" and navLabel:lower():find(lowerQuery, 1, true)
         if not matched then
-            for _, rgn in ipairs({ o._leftRegion, o._midRegion, o._rightRegion }) do
+            for _, rgn in ipairs({ orphan._leftRegion, orphan._midRegion, orphan._rightRegion }) do
                 if rgn then
                     local ddText = GetDropdownValueText(rgn)
                     if ddText and ddText:lower():find(lowerQuery, 1, true) then
@@ -4740,9 +4740,9 @@ function CludesUI:ApplyInlineSearch(searchQuery, skipHighlights)
             end
         end
         if matched then
-            visibleOrphans[#visibleOrphans + 1] = o
+            visibleOrphans[#visibleOrphans + 1] = orphan
         else
-            o:Hide()
+            orphan:Hide()
         end
     end
 
@@ -4803,17 +4803,17 @@ function CludesUI:ApplyInlineSearch(searchQuery, skipHighlights)
     end
 
     -- Same slot/highlight accounting for visible orphans: they already passed the match check, so unlike section members there is no "section matched" bypass to OR in.
-    for _, o in ipairs(visibleOrphans) do
-        if not o._isSpacer then
+    for _, orphan in ipairs(visibleOrphans) do
+        if not orphan._isSpacer then
             local slots = {}
-            if o._leftRegion then
-                slots[#slots + 1] = { region = o._leftRegion, label = o._leftRegion._slotLabel or "" }
+            if orphan._leftRegion then
+                slots[#slots + 1] = { region = orphan._leftRegion, label = orphan._leftRegion._slotLabel or "" }
             end
-            if o._midRegion then
-                slots[#slots + 1] = { region = o._midRegion, label = o._midRegion._slotLabel or "" }
+            if orphan._midRegion then
+                slots[#slots + 1] = { region = orphan._midRegion, label = orphan._midRegion._slotLabel or "" }
             end
-            if o._rightRegion then
-                slots[#slots + 1] = { region = o._rightRegion, label = o._rightRegion._slotLabel or "" }
+            if orphan._rightRegion then
+                slots[#slots + 1] = { region = orphan._rightRegion, label = orphan._rightRegion._slotLabel or "" }
             end
 
             if #slots > 0 then
@@ -4836,7 +4836,7 @@ function CludesUI:ApplyInlineSearch(searchQuery, skipHighlights)
             else
                 slotTotal = slotTotal + 1
                 litSlots = litSlots + 1
-                litTargets[#litTargets + 1] = o
+                litTargets[#litTargets + 1] = orphan
             end
         end
     end
@@ -4858,35 +4858,35 @@ function CludesUI:ApplyInlineSearch(searchQuery, skipHighlights)
 
     -- Matching orphans lead the page (always before the first section in the source
     -- layout), so place and highlight them first; the sections loop continues from y.
-    for _, o in ipairs(visibleOrphans) do
-        if o._isSpacer then
-            o:Hide()
+    for _, orphan in ipairs(visibleOrphans) do
+        if orphan._isSpacer then
+            orphan:Hide()
         else
-            local ox = o._origAnchor and o._origAnchor[4] or CONTENT_PAD
-            o:ClearAllPoints()
-            PanelPP.Point(o, "TOPLEFT", cachedPage.wrapper, "TOPLEFT", ox, rowY)
-            o:Show()
+            local ox = orphan._origAnchor and orphan._origAnchor[4] or CONTENT_PAD
+            orphan:ClearAllPoints()
+            PanelPP.Point(orphan, "TOPLEFT", cachedPage.wrapper, "TOPLEFT", ox, rowY)
+            orphan:Show()
 
             if not suppressHighlights and not skipHighlights then
-                if o._leftRegion and litSet[o._leftRegion] then
+                if orphan._leftRegion and litSet[orphan._leftRegion] then
                     local pulse = GetSearchHighlight()
-                    PlaySearchHighlight(pulse, o._leftRegion)
+                    PlaySearchHighlight(pulse, orphan._leftRegion)
                 end
-                if o._midRegion and litSet[o._midRegion] then
+                if orphan._midRegion and litSet[orphan._midRegion] then
                     local pulse = GetSearchHighlight()
-                    PlaySearchHighlight(pulse, o._midRegion)
+                    PlaySearchHighlight(pulse, orphan._midRegion)
                 end
-                if o._rightRegion and litSet[o._rightRegion] then
+                if orphan._rightRegion and litSet[orphan._rightRegion] then
                     local pulse = GetSearchHighlight()
-                    PlaySearchHighlight(pulse, o._rightRegion)
+                    PlaySearchHighlight(pulse, orphan._rightRegion)
                 end
-                if not o._leftRegion and litSet[o] then
+                if not orphan._leftRegion and litSet[orphan] then
                     local pulse = GetSearchHighlight()
-                    PlaySearchHighlight(pulse, o)
+                    PlaySearchHighlight(pulse, orphan)
                 end
             end
 
-            rowY = rowY - o:GetHeight()
+            rowY = rowY - orphan:GetHeight()
         end
     end
 
@@ -6548,11 +6548,11 @@ do
         if not pinX then
             return
         end
-        local s = panelFrame:GetEffectiveScale()
-        local x, rowY = pinX / s - pinOX, pinY / s - pinOY
+        local scale = panelFrame:GetEffectiveScale()
+        local x, rowY = pinX / scale - pinOX, pinY / scale - pinOY
         panelFrame:ClearAllPoints()
         if final then
-            local k = UIParent:GetEffectiveScale() / s
+            local k = UIParent:GetEffectiveScale() / scale
             panelFrame:SetPoint(
                 "CENTER",
                 UIParent,
@@ -6643,18 +6643,18 @@ do
         pinX = nil
         local cx, centerY
         if pin == "cursor" then
-            local s = panelFrame:GetEffectiveScale()
+            local scale = panelFrame:GetEffectiveScale()
             local x, rowY = GetCursorPosition()
-            cx, centerY = x / s, rowY / s
+            cx, centerY = x / scale, rowY / scale
         else
             cx, centerY = (pin or panelFrame):GetCenter()
         end
         local ml, mb = panelFrame:GetLeft(), panelFrame:GetBottom()
         local isv = issecretvalue
         if cx and centerY and ml and mb and not (isv and (isv(cx) or isv(centerY) or isv(ml) or isv(mb))) then
-            local s = panelFrame:GetEffectiveScale()
+            local scale = panelFrame:GetEffectiveScale()
             pinOX, pinOY = cx - ml, centerY - mb
-            pinX, pinY = cx * s, centerY * s
+            pinX, pinY = cx * scale, centerY * scale
         end
         -- Every change glides on from where the panel is now, so a new target
         -- mid-glide (a fast scroll) carries on smoothly instead of jumping.
