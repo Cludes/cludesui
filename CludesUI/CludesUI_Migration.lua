@@ -557,7 +557,7 @@ CludesUI.RegisterMigration({
             return
         end
         local PREFIX = "CludesUIDragonRiding\31"
-        local function strip(storage)
+        local function stripStore(storage)
             if type(storage) ~= "table" then
                 return
             end
@@ -580,8 +580,8 @@ CludesUI.RegisterMigration({
                 end
             end
         end
-        strip(profileTbl.specOverrides)
-        strip(profileTbl.condOverrides)
+        stripStore(profileTbl.specOverrides)
+        stripStore(profileTbl.condOverrides)
     end,
 })
 
@@ -5175,7 +5175,7 @@ CludesUI.RegisterMigration({
         for _, unitName in ipairs(UNITS) do
             stale["CludesUIUnitFrames\31enabledFrames\30" .. unitName] = true
         end
-        local function strip(storage)
+        local function stripStore(storage)
             if type(storage) ~= "table" then
                 return
             end
@@ -5198,8 +5198,8 @@ CludesUI.RegisterMigration({
                 end
             end
         end
-        strip(context.profile.specOverrides)
-        strip(context.profile.condOverrides)
+        stripStore(context.profile.specOverrides)
+        stripStore(context.profile.condOverrides)
     end,
 })
 
@@ -6058,15 +6058,15 @@ do
             end
         end
 
-        local function PlanUF(ufStore, s, profileTbl, strip, plan)
+        local function PlanUF(ufStore, s, profileTbl, stripStore, plan)
             if s then
                 PlanPAB(s, plan)
             end
             if ufStore and ufStore.externalDefensives ~= nil then
                 Put(plan, ufStore, "externalDefensives", nil)
             end
-            if strip then
-                PlanStrip(profileTbl, plan, strip == "mark")
+            if stripStore then
+                PlanStrip(profileTbl, plan, stripStore == "mark")
             end
         end
 
@@ -6524,24 +6524,24 @@ do
             local ufT = type(ufStore) == "table"
             local cfg = ufT and ufStore.playerAuraBars or nil
             local swingCfg = type(cfg) == "table"
-            local strip, clear
+            local stripStore, clear
             if swingCfg and cfg[KEY] ~= nil then
                 if modeName ~= "import" then
                     return
                 end
-                strip = "mark"
+                stripStore = "mark"
             elseif swingCfg then
                 clear = true
                 if modeName ~= "live" then
-                    strip = "full"
+                    stripStore = "full"
                 end
             elseif modeName == "live" then
                 return
             elseif ufT and ufStore.externalDefensives ~= nil then
                 clear = true
-                strip = "full"
+                stripStore = "full"
             elseif modeName == "import" or modeName == "first" then
-                strip = "full"
+                stripStore = "full"
             else
                 return
             end
@@ -6550,7 +6550,7 @@ do
             end
             local plan = { n = 0, rm = {} }
             local success, err =
-                pcall(PlanUF, clear and ufT and ufStore or nil, clear and swingCfg and cfg or nil, profileTbl, strip, plan)
+                pcall(PlanUF, clear and ufT and ufStore or nil, clear and swingCfg and cfg or nil, profileTbl, stripStore, plan)
             if success then
                 Commit(plan)
             else

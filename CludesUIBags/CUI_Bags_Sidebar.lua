@@ -2150,7 +2150,7 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                         fallback:SetPoint("BOTTOMRIGHT", 1, -1)
                         fallback:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
                         local edges = {}
-                        local function MakeEdge(p1, p2, isHoriz)
+                        local function NewEdge(p1, p2, isHoriz)
                             local tex = fallback:CreateTexture(nil, "OVERLAY")
                             tex:SetColorTexture(0.9, 0.15, 0.15, 0)
                             if isHoriz then
@@ -2164,10 +2164,10 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                             end
                             edges[#edges + 1] = tex
                         end
-                        MakeEdge("TOPLEFT", "TOPRIGHT", true)
-                        MakeEdge("BOTTOMLEFT", "BOTTOMRIGHT", true)
-                        MakeEdge("TOPLEFT", "BOTTOMLEFT", false)
-                        MakeEdge("TOPRIGHT", "BOTTOMRIGHT", false)
+                        NewEdge("TOPLEFT", "TOPRIGHT", true)
+                        NewEdge("BOTTOMLEFT", "BOTTOMRIGHT", true)
+                        NewEdge("TOPLEFT", "BOTTOMLEFT", false)
+                        NewEdge("TOPRIGHT", "BOTTOMRIGHT", false)
                         fallback._edges = edges
                         fallback._elapsed = 0
                         fallback._active = false

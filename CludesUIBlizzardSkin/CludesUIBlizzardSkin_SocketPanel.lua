@@ -526,7 +526,7 @@ local function SlotButtonFor(slotID)
     return slotButtons[slotID]
 end
 
-local function StopSlotGlow()
+local function EndSlotGlow()
     if not slotHighlight then
         return
     end
@@ -651,7 +651,7 @@ local function AcquireIcon(i)
         end
     end)
     button:SetScript("OnLeave", function()
-        StopSlotGlow()
+        EndSlotGlow()
         MaybeCloseHoverFlyout()
         GameTooltip:Hide()
         CludesUI.HideWidgetTooltip()
@@ -808,7 +808,7 @@ local function ChangeSocketPage(delta)
         return
     end
     CloseFlyout()
-    StopSlotGlow()
+    EndSlotGlow()
     GameTooltip:Hide()
     CludesUI.HideWidgetTooltip()
     pageIndex = page
@@ -893,7 +893,7 @@ LayoutSockets = function()
         end
         if not keep then
             CloseFlyout()
-            StopSlotGlow()
+            EndSlotGlow()
         end
     end
     if paged and not lastPage then
@@ -1037,7 +1037,7 @@ local function AcquireGemRow(i)
     return line
 end
 
-local function PopulateFlyout()
+local function FillFlyout()
     if gemsStale then
         ScanBagGems()
     end
@@ -1152,7 +1152,7 @@ local function BuildFlyout()
             return
         end
         flyoutScroll = flyoutScroll - delta -- wheel down (-1) advances the window
-        PopulateFlyout()
+        FillFlyout()
     end)
 
     gemMenu:EnableKeyboard(true)
@@ -1183,7 +1183,7 @@ OpenFlyout = function(iconBtn, targetSlot, targetSocketIndex, hoverMode)
     activeIcon = iconBtn
     flyoutScroll = 0
 
-    PopulateFlyout()
+    FillFlyout()
 
     -- Anchor below the icon, flip upward if it would clip the screen bottom.
     -- The stock plate extends below its icons: drop past its bottom edge so
@@ -1335,7 +1335,7 @@ local function OnEvent(self, evt, arg1)
         -- as the guaranteed fallback if ITEM_CHANGED is ever unavailable.
         RebuildSockets()
         if gemMenu and gemMenu:IsShown() then
-            PopulateFlyout()
+            FillFlyout()
         end
     elseif evt == "ITEM_DATA_LOAD_RESULT" then
         -- A bag gem we listed before its data was cached: rescan so its link
@@ -1345,7 +1345,7 @@ local function OnEvent(self, evt, arg1)
             pendingGemLoads[arg1] = nil
             gemsStale = true
             if gemMenu and gemMenu:IsShown() then
-                PopulateFlyout()
+                FillFlyout()
             end
         end
         -- This event is a global broadcast that fires for EVERY item whose data
@@ -1667,7 +1667,7 @@ end
 local function OnHideAll()
     -- OnLeave never fires when the sheet hides under the cursor; stop the
     -- slot glow explicitly so its FlipBook anim is not left running hidden.
-    StopSlotGlow()
+    EndSlotGlow()
     CloseFlyout()
     UnregisterShownEvents()
     if panelFrame then

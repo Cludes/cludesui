@@ -1133,7 +1133,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     LM._pendingAnchorKeys = {}
     local _anchorBatchScheduled = false
 
-    local function ScheduleAnchorBatch()
+    local function QueueAnchorBatch()
         if _anchorBatchScheduled then
             return
         end
@@ -1352,7 +1352,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             end
         end
         pushChildren(barKey)
-        ScheduleAnchorBatch()
+        QueueAnchorBatch()
     end
 
     function CludesUI.PropagateHeightMatch(barKey)
@@ -1372,7 +1372,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             end
         end
         pushChildren(barKey)
-        ScheduleAnchorBatch()
+        QueueAnchorBatch()
     end
 
     -------------------------------------------------------------------------------
@@ -1555,7 +1555,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             else
                 LM._pendingAnchorKeys[barKey] = dim
             end
-            ScheduleAnchorBatch()
+            QueueAnchorBatch()
             -- Arm the settle debounce so a forced full re-apply lands once the chain
             -- stops resizing -- catches late login/spec-swap resizes the one-shot
             -- reanchor misses. See ScheduleSettleReapply.
@@ -2373,7 +2373,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             end)
             -- Children anchored to THIS child must follow it to the fallback spot.
             LM._pendingAnchorKeys[childBarKey] = "all"
-            ScheduleAnchorBatch()
+            QueueAnchorBatch()
             return true
         end
 
@@ -2495,7 +2495,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     LM.SetAnchorInfo, LM.ClearAnchorInfo, LM.IsAnchored, LM.MatchH =
         SetAnchorInfo, ClearAnchorInfo, IsAnchored, MatchH
     LM.ValidateStoredLinks, LM.ScheduleAnchorBatch, LM.ApplyAllWidthHeightMatches, LM.HookFrameSizeChanged =
-        ValidateStoredLinks, ScheduleAnchorBatch, ApplyAllWidthHeightMatches, HookFrameSizeChanged
+        ValidateStoredLinks, QueueAnchorBatch, ApplyAllWidthHeightMatches, HookFrameSizeChanged
     LM.FadeOverlayForSelectElement, LM.CancelPickMode, LM.FlashRedBorder, LM.RejectH =
         FadeOverlayForSelectElement, CancelPickMode, FlashRedBorder, RejectH
 end

@@ -312,7 +312,7 @@ end
 -- UIParent's scale, one physical pixel and the icon size; a change (a UI
 -- scale or resolution change, or new settings) restyles every icon. Returns
 -- whether anything changed.
-local function SyncScale(force)
+local function MatchScale(force)
     local ui, px = UIParent:GetEffectiveScale(), Pix.perfect or 1
     if not force and ui == uiZoom and px == perfect then
         return false
@@ -1371,7 +1371,7 @@ local function Detach(widget)
     end
 end
 
-local function Release(b)
+local function FreePlate(b)
     Detach(b)
     if b.binding then
         b.binding:SetEnabled(false)
@@ -1395,7 +1395,7 @@ end
 local function ReleaseAll()
     Ghosts.ReleaseAll()
     for _, b in pairs(icons) do
-        Release(b)
+        FreePlate(b)
     end
     wipe(isDetached)
     wipe(onPlate)
@@ -1418,7 +1418,7 @@ local function PlateGone(unitToken)
     for i = #entries, 1, -1 do
         local b = entries[i]
         if b.preview then
-            Release(b)
+            FreePlate(b)
         else
             b.waitTarget = b.onTarget == true
             if b.isGhost then
@@ -1431,7 +1431,7 @@ local function PlateGone(unitToken)
                 Detach(b)
                 isDetached[b.key] = b
             else
-                Release(b)
+                FreePlate(b)
             end
         end
     end
@@ -1446,7 +1446,7 @@ local function OnTargetChanged()
         if b.waitTarget then
             b.waitTarget = false
             if not b.guid then
-                Release(b)
+                FreePlate(b)
             end
         end
     end
@@ -1730,7 +1730,7 @@ end
 -- the last icon re-sizes the style and restyles from here on.
 local function Ready()
     EnsurePool()
-    if SyncScale() then
+    if MatchScale() then
         RegisterStyle()
         AK.Restyle(STYLE)
     end
@@ -2769,7 +2769,7 @@ end
 -- nothing is sent): "F" tells it, "R" tells it and asks for theirs; a 0
 -- clears a marker you no longer have. Before a key starts it goes through;
 -- inside one the lockdown drops it, and the result is not read.
-local function SendMarker(kind)
+local function BroadcastMarker(kind)
     local myGuid = PlainString(UnitGUID("player"))
     local channelling = Rails.Channel()
     if not (myGuid and channelling) then
@@ -2796,7 +2796,7 @@ local function Request()
         return
     end
     Rails.askedT = T
-    SendMarker("R")
+    BroadcastMarker("R")
 end
 
 -- Someone asked: your marker goes out REPLY_DELAY later, one answer for every
@@ -2809,7 +2809,7 @@ local function Reply()
     C_Timer.After(REPLY_DELAY, function()
         Rails.replyArmed = false
         if Rails.on and MarkerInstance() then
-            SendMarker("F")
+            BroadcastMarker("F")
         end
     end)
 end
@@ -3855,7 +3855,7 @@ local function Announce(markerTex)
     C_ChatInfo.SendChatMessage(AnnounceLine(markerTex), channelling)
     -- The same marker on the addon channel for the marker defaults (Rails):
     -- before the key starts, as here, it still goes through.
-    SendMarker("F")
+    BroadcastMarker("F")
 end
 
 -- From KT_Refresh: keeps the READY_CHECK registration with the setting, and
@@ -3870,7 +3870,7 @@ local function SyncAnnounce(conf)
     if markerTex ~= Rails.marker then
         Rails.marker = markerTex
         if Rails.on and MarkerInstance() then
-            SendMarker("F")
+            BroadcastMarker("F")
         end
     end
     if markerTex == 0 then
@@ -3915,7 +3915,7 @@ function mod.KT_Refresh()
     end
     RegisterGuest()
     -- New settings: the icon size and every icon's style are rebuilt.
-    SyncScale(true)
+    MatchScale(true)
     MTWhere.Subscribe(WHERE_KEY, OnWhere)
     SyncState()
     RestyleLive()
@@ -4104,7 +4104,7 @@ function mod.KT_PaintSampleIcon(owner)
             return nil
         end
         EnsurePool()
-        SyncScale(true)
+        MatchScale(true)
         AK.Restyle(STYLE)
     else
         -- On: KT_Refresh registered the style on the last write.
@@ -4113,7 +4113,7 @@ function mod.KT_PaintSampleIcon(owner)
             return nil
         end
         EnsurePool()
-        if SyncScale() then
+        if MatchScale() then
             RegisterStyle()
             AK.Restyle(STYLE)
         end

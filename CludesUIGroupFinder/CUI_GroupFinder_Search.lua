@@ -119,7 +119,7 @@ local DIFFS = {
 local function FinderCfg()
     return mod.Cfg()
 end
-local function Accent()
+local function AccentRGB()
     local a = CM.CLUDES_GREEN
     return a.r, a.g, a.b
 end
@@ -2349,7 +2349,7 @@ local function MenuItem(hostFrame, posY, textValue, onClick)
         self:SetAlpha(off and 0.35 or 1)
     end
     function entry:SetChecked(isOn)
-        local red, green, blue = Accent()
+        local red, green, blue = AccentRGB()
         self.fill:SetColorTexture(red, green, blue, 1)
         self.fill:SetShown(isOn)
         if isOn then
@@ -2487,7 +2487,7 @@ local function AddRoleItems(menu, posY, raids)
             ClickOff = XF.ClickOff,
             Tip = XF.Tip,
             Untip = XF.Untip,
-            Accent = Accent,
+            Accent = AccentRGB,
             parent = SP,
             MenuItem = MenuItem,
             ClassLine = XF.ClassLine,
@@ -2605,7 +2605,7 @@ function XF.OpenOpList(button, roleName)
     L.owner, L.role = button, roleName
     local rule = (FinderCfg().roleCounts or XF.EMPTY)[roleName]
     local current = (type(rule) == "table" and rule.op) or "lt"
-    local ar, ag, ab = Accent()
+    local ar, ag, ab = AccentRGB()
     local tR, tG, tB, tA = CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A
     for _, entry in ipairs(L.items) do
         if entry.opKey == current then
@@ -2726,7 +2726,7 @@ function XF.PaintCountRows(menu)
                 line.box:SetText(n and tostring(n) or "")
             end
             local swatchBtn = line.sw
-            local ar, ag, ab = Accent()
+            local ar, ag, ab = AccentRGB()
             swatchBtn.fill:SetColorTexture(ar, ag, ab, 1)
             swatchBtn.fill:SetShown(isOn)
             if isOn then
@@ -2875,7 +2875,7 @@ function XF.PaintRating(menu)
     end
     local cfg = FinderCfg()
     local isOn = cfg.ratingOn == true
-    local ar, ag, ab = Accent()
+    local ar, ag, ab = AccentRGB()
     region.cb.fill:SetColorTexture(ar, ag, ab, 1)
     region.cb.fill:SetShown(isOn)
     if isOn then
@@ -3933,7 +3933,7 @@ end
 -- a drop button's label color from its last paint
 function XF.PaintLabel(button)
     if button.active then
-        button.label:SetTextColor(Accent())
+        button.label:SetTextColor(AccentRGB())
     else
         button.label:SetTextColor(1, 1, 1, 1)
     end
@@ -4013,7 +4013,7 @@ Paint = function()
             hidden = true
         end
         if hidden then
-            raidBtn.Glyph:SetVertexColor(Accent())
+            raidBtn.Glyph:SetVertexColor(AccentRGB())
         else
             raidBtn.Glyph:SetVertexColor(1, 1, 1)
         end
@@ -4097,7 +4097,7 @@ PaintRefresh = function()
         g:SetVertexColor(1, 1, 1)
         g:SetAlpha(0.3)
     elseif pending then
-        g:SetVertexColor(Accent())
+        g:SetVertexColor(AccentRGB())
         g:SetAlpha(1)
     else
         g:SetVertexColor(1, 1, 1)
@@ -4603,7 +4603,7 @@ local function LayoutPanel()
             Font = XF.Font,
             ThemeFill = ThemeFill,
             ThemeBorder = ThemeBorder,
-            Accent = Accent,
+            Accent = AccentRGB,
             GLYPH = XF.GLYPH,
             Dim = DimForMenu,
             Filters = difficultyBtn,
@@ -5056,7 +5056,7 @@ local function PaintSwitch(callback)
     local raw = callback:GetChecked()
     local enabled = callback:IsEnabled()
     local swatchBtn = skinData.switch
-    local red, green, blue = Accent()
+    local red, green, blue = AccentRGB()
     swatchBtn.trackOn:SetColorTexture(red, green, blue, 0.75)
     if IsSecret(raw) then
         -- secret: draw both looks and let the value pick one.

@@ -35,7 +35,7 @@ local TT_DEFAULT_MAX = 8
 local TT_BAR_H = 18
 local TT_BAR_SP = 1
 local TT_WIDTH = 275
-local function TT_MAX()
+local function TipRowCap()
     local conf = DB and DB()
     return (conf and conf.showAllBreakdownSpells == false) and TT_DEFAULT_MAX or 15
 end
@@ -457,7 +457,7 @@ local function GatedEnemyPreview(barFrame, curSession, curSessionID, ApplyTTHead
         local duration = GetBreakdownDuration(curSession, curSessionID)
         local texFile, textureKey = GetBreakdownBarTexturePath()
         local numFmt = DB().numberFormat or 2
-        local ttMax = TT_MAX()
+        local ttMax = TipRowCap()
         local bgR, bgG, bgB = TooltipBgRGB()
         for index = 1, #mobs do
             if usedCount == GATE_MAX then
@@ -623,7 +623,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
         end
         deathTime = deathTime or GetTime()
         local sum = #reversed
-        local ttMax = TT_MAX()
+        local ttMax = TipRowCap()
         local total = math.min(ttMax, sum)
         local startIdx = sum - total -- skip oldest events, show last N
         for index = 1, math.max(ttMax, #_ttBars) do
@@ -759,7 +759,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
         ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src) or "Unknown", L("Damage Taken"))
         local texFile, textureKey = GetBreakdownBarTexturePath()
         local maxAmount = players[1].total
-        local ttMax = TT_MAX()
+        local ttMax = TipRowCap()
         local total = math.min(ttMax, playerCount)
         local numFmt = DB().numberFormat or 2
         for index = 1, math.max(ttMax, #_ttBars) do
@@ -824,7 +824,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
         end
     end
     local texFile, textureKey = GetBreakdownBarTexturePath()
-    local ttMax = TT_MAX()
+    local ttMax = TipRowCap()
     local total = math.min(ttMax, #_ttSorted)
     for index = 1, math.max(ttMax, #_ttBars) do
         local b = EnsureTTBar(index)

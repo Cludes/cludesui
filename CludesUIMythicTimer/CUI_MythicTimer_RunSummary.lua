@@ -1201,7 +1201,7 @@ local function BuildMembers(runRecord, runState, order)
     SortMembers(result)
 end
 
-local function TryFinishHarvest()
+local function FinishHarvest()
     local lastSummary = previousRun
     if not (lastSummary and lastSummary.awaitingMeter) then
         return
@@ -1321,7 +1321,7 @@ local function FinishRun()
     SyncSummaryEvents()
 end
 
-local function ShowPending()
+local function ShowQueuedSummary()
     local lastSummary = previousRun
     if not lastSummary then
         return
@@ -1345,10 +1345,10 @@ local function EndSettling()
     if not (lastSummary and not lastSummary.settled) then
         return
     end
-    TryFinishHarvest()
+    FinishHarvest()
     RefreshScores()
     if lastSummary.lootArmed then
-        ShowPending()
+        ShowQueuedSummary()
     end
     lastSummary.awaitingMeter = false
     lastSummary.settled = true
@@ -1365,7 +1365,7 @@ local function ArmLootWait()
     end
     local cfg = Cfg()
     if not (cfg and cfg.showAfterLoot) then
-        ShowPending()
+        ShowQueuedSummary()
         return
     end
     -- Opens on the rewards payload or the loot window closing; if neither
@@ -1458,7 +1458,7 @@ local function OnEvent(_, evt, ...)
             end
         end
         if lastSummary and lastSummary.lootArmed then
-            ShowPending()
+            ShowQueuedSummary()
         end
     elseif evt == "ENCOUNTER_LOOT_RECEIVED" then
         local lastSummary = previousRun
@@ -1511,9 +1511,9 @@ local function OnEvent(_, evt, ...)
         end
     elseif evt == "LOOT_CLOSED" then
         if previousRun and previousRun.lootArmed then
-            ShowPending()
+            ShowQueuedSummary()
         end
-        TryFinishHarvest()
+        FinishHarvest()
         RefreshScores()
         SweepInspects()
     elseif evt == "ADDON_RESTRICTION_STATE_CHANGED" then
@@ -1530,7 +1530,7 @@ local function OnEvent(_, evt, ...)
                 segment.unbanked = true
             end
         end
-        TryFinishHarvest()
+        FinishHarvest()
     elseif evt == "DAMAGE_METER_RESET" then
         local segment, lastSummary = ResetScope()
         if lastSummary then
@@ -1543,7 +1543,7 @@ local function OnEvent(_, evt, ...)
         -- so free the slot and carry on.
         inspectPending = nil
         SweepInspects()
-        TryFinishHarvest()
+        FinishHarvest()
     elseif evt == "PLAYER_ENTERING_WORLD" then
         EndSettling()
     elseif evt == "INSPECT_READY" then

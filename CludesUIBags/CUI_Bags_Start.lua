@@ -525,7 +525,7 @@ local function StartAddon()
             mod.PadReleaseBlizzBags()
         end
     end
-    local function ToggleCUI()
+    local function ToggleBags()
         if CUI_Bags:IsVisible() then
             CloseBags()
         else
@@ -588,12 +588,12 @@ local function StartAddon()
             characterBagHooksInstalled = true
             widget:HookScript("OnShow", function()
                 if BP().bagOpenWithCharacter and not CUI_Bags:IsVisible() then
-                    ToggleCUI()
+                    ToggleBags()
                 end
             end)
             widget:HookScript("OnHide", function()
                 if BP().bagOpenWithCharacter and CUI_Bags:IsVisible() then
-                    ToggleCUI()
+                    ToggleBags()
                 end
             end)
         end
@@ -611,7 +611,7 @@ local function StartAddon()
         _visibleBeforeToggle = CUI_Bags:IsVisible()
         local enhancedEnabled = BP().enhancedBags ~= false
         if enhancedEnabled then
-            ToggleCUI()
+            ToggleBags()
         else
             if OriginalToggleAllBags then
                 OriginalToggleAllBags()
@@ -701,7 +701,7 @@ local function StartAddon()
             end
             local isOpen = wasVisible or mod.BagAutoWindowOn("bagAutoOpenWindows", mod.BagAutoWindowKey(widget))
             if isOpen and not CUI_Bags:IsVisible() then
-                ToggleCUI()
+                ToggleBags()
             elseif not isOpen and CUI_Bags:IsVisible() then
                 CloseBags()
             end
@@ -907,7 +907,7 @@ local function StartAddon()
         end
         refreshPending, rerun, refreshDefers = false, false, 0
     end
-    local function ScheduleRefresh()
+    local function QueueRefresh()
         if not CUI_Bags.refreshEnabled then
             return
         end
@@ -1170,7 +1170,7 @@ local function StartAddon()
             -- categories built from the old set list.
             CUI_Bags.InvalidateSetCategories()
             if CUI_Bags:IsVisible() then
-                ScheduleRefresh()
+                QueueRefresh()
             end
             return
         end
@@ -1183,7 +1183,7 @@ local function StartAddon()
             -- the next manual open already forces a full RefreshInventory
             -- (ToggleCUI). This only matters while bags are already visible.
             if CUI_Bags:IsVisible() then
-                ScheduleRefresh()
+                QueueRefresh()
             end
             return
         end
@@ -1212,7 +1212,7 @@ local function StartAddon()
             if CUI_Bags._unlockSort then
                 CUI_Bags._unlockSort()
             end
-            ScheduleRefresh()
+            QueueRefresh()
         elseif eventName == "ITEM_LOCK_CHANGED" then
             if not CUI_Bags.refreshEnabled then
                 return
@@ -1220,7 +1220,7 @@ local function StartAddon()
             if CUI_Bags._unlockSort then
                 CUI_Bags._unlockSort()
             end
-            ScheduleRefresh()
+            QueueRefresh()
         elseif eventName == "CURRENCY_DISPLAY_UPDATE" then
             SyncBagFrameToFooter()
         end

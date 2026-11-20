@@ -537,7 +537,7 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
             labelFS:SetText(L(btnText))
 
             local inUse, pickable, hovered = false, true, false
-            local function Paint()
+            local function PaintCard()
                 local lit = inUse or (hovered and pickable)
                 if lit then
                     brd:SetColor(accentR, accentG, accentB, 0.9)
@@ -560,11 +560,11 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
             end
             local function Enter()
                 hovered = true
-                Paint()
+                PaintCard()
             end
             local function Leave()
                 hovered = false
-                Paint()
+                PaintCard()
             end
             local function Pick()
                 if pickable and options.onPick then
@@ -577,7 +577,7 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
             button:SetScript("OnEnter", Enter)
             button:SetScript("OnLeave", Leave)
             button:SetScript("OnClick", Pick)
-            Paint()
+            PaintCard()
 
             handles[def.key] = {
                 card = cardFrame,
@@ -586,7 +586,7 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
                     badge:SetShown(inUse)
                     cardFrame:SetAlpha(inUse and inUseAlpha or 1)
                     labelFS:SetText(L(labelText or btnText))
-                    Paint()
+                    PaintCard()
                 end,
             }
         end

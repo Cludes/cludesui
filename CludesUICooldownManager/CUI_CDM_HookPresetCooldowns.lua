@@ -1219,11 +1219,11 @@ _customBuffFrame:SetScript("OnUpdate", function(self)
     end
 end)
 
-local function QueueCustomBuffUpdate()
+local function QueueCustomBuffs()
     _customBuffDirty = true
     _customBuffFrame:Show()
 end
-mod.QueueCustomBuffUpdate = QueueCustomBuffUpdate
+mod.QueueCustomBuffUpdate = QueueCustomBuffs
 
 -- Bloodlust on a Custom Auras (icon) bar reuses the potion-preset machinery:
 -- the Sated-debuff rising edge (detected in CUI_CDM_BuffBarPresets.lua) emulates a "cast" of
@@ -1241,7 +1241,7 @@ end
 function mod.SignalLustCast()
     _pendingCastIDs[2825] = true
     _pendingCastIDs[32182] = true
-    QueueCustomBuffUpdate()
+    QueueCustomBuffs()
 end
 
 -- True if any enabled Custom Auras (custom_buff) bar tracks the lust buff, so the
@@ -1272,7 +1272,7 @@ end
 -- a 10s Custom Auras (icon) display. A no-op for any bar not tracking it.
 function mod.SignalTimeSpiralCast()
     _pendingCastIDs[374968] = true
-    QueueCustomBuffUpdate()
+    QueueCustomBuffs()
 end
 
 -- Called from the Time Spiral glow-HIDE edge (proc consumed): expire any active
@@ -1292,7 +1292,7 @@ function mod.SignalTimeSpiralEnd()
         end
     end
     if any then
-        QueueCustomBuffUpdate()
+        QueueCustomBuffs()
         if mod.QueueReanchor then
             mod.QueueReanchor()
         end
@@ -1326,12 +1326,12 @@ _spellCastListener:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 _spellCastListener:SetScript("OnEvent", function(_, _, _, _, spellId)
     if spellId then
         _pendingCastIDs[spellId] = true
-        QueueCustomBuffUpdate()
+        QueueCustomBuffs()
     end
 end)
 
 Inner._customAuraTimers, Inner._pendingCastIDs = _customAuraTimers, _pendingCastIDs
 Inner.ApplyPresetGCDSwipe, Inner.PotSwap = ApplyPresetGCDSwipe, PotSwap
 Inner.ProcessPresetCooldowns = ProcessPresetCooldowns
-Inner.QueueCustomBuffUpdate = QueueCustomBuffUpdate
+Inner.QueueCustomBuffUpdate = QueueCustomBuffs
 Inner.broken = false

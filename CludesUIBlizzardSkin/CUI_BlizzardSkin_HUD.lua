@@ -30,7 +30,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
 ; ------------------------------------------------------------------------------- --  Blizzard HUD reskins: tooltip progress/status bars, UI widget status bar
 (function()
     local _WS
-    local function WS()
+    local function WindowSkinNS()
         if _WS then
             return _WS
         end
@@ -61,7 +61,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         if type(size) ~= "number" or size <= 0 then
             fontStr:SetFont(filePath or STANDARD_TEXT_FONT, 11, flags or "")
         end
-        local W = WS()
+        local W = WindowSkinNS()
         if W then
             if white then
                 W.White(fontStr)
@@ -112,7 +112,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     end
 
     local function BarFill(barFrame)
-        local W = WS()
+        local W = WindowSkinNS()
         if W and W.ApplyBarFill then
             W.ApplyBarFill(barFrame)
         elseif barFrame.SetStatusBarColor then
@@ -1325,7 +1325,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         end
     end
 
-    local function StripExtraAction()
+    local function StripExtraButton()
         local button = _G.ExtraActionButton1
         if not button or button:IsForbidden() then
             return
@@ -1372,7 +1372,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
             -- stacking every squared item tile uses. NOT AddBorder: its border
             -- container renders below same-level ARTWORK regions, and the icon
             -- stretched over the full button rect would hide the edge entirely.
-            local W = WS()
+            local W = WindowSkinNS()
             if W and W.QualityBorder then
                 W.QualityBorder(button, button.icon or button, 0, 0, 0)
                 skinData.border = true
@@ -1393,7 +1393,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         local button = _G.ExtraActionButton1
         if button and not GetFFD(button).showHook then
             GetFFD(button).showHook = true
-            button:HookScript("OnShow", StripExtraAction)
+            button:HookScript("OnShow", StripExtraButton)
         end
         -- ExtraActionBar_Update is where Blizzard re-arts the button (runs from
         -- ActionBarController's own UPDATE_EXTRA_ACTIONBAR handler); hooking it
@@ -1402,15 +1402,15 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         -- call per grant while off.
         if not _eabUpdateHooked and type(_G.ExtraActionBar_Update) == "function" then
             _eabUpdateHooked = true
-            hooksecurefunc("ExtraActionBar_Update", StripExtraAction)
+            hooksecurefunc("ExtraActionBar_Update", StripExtraButton)
         end
         if not (CludesUIDB and CludesUIDB.reskinExtraActionButton == true) then
             return
         end
-        StripExtraAction()
+        StripExtraButton()
         if C_Timer then
-            C_Timer.After(0, StripExtraAction)
-            C_Timer.After(0.3, StripExtraAction)
+            C_Timer.After(0, StripExtraButton)
+            C_Timer.After(0.3, StripExtraButton)
         end
     end)
 
@@ -1491,7 +1491,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
                     -- granted-ability buttons match. Guarded by d.border, which
                     -- matters here because these buttons are POOLED and this
                     -- runs per zone change.
-                    local W = WS()
+                    local W = WindowSkinNS()
                     if W and W.QualityBorder then
                         W.QualityBorder(button, button.Icon or button, 0, 0, 0)
                         skinData.border = true

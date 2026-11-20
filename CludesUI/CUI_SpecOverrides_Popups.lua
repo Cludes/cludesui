@@ -84,7 +84,7 @@ CludesUI.SpecOverrides_GroupListingPages = CludesUI.SpecOverrides_GroupListingPa
 
 -- Forced rebuild of the pages that list override groups: the overrides list
 -- page and every page a module registered above.
-local function RefreshGroupListingPage()
+local function RedrawGroupListing()
     local ap = CludesUI:GetActivePage()
     local pages = CludesUI.SpecOverrides_GroupListingPages[CludesUI:GetActiveModule()]
     if ap == LIST_PAGE or (pages and pages[ap]) then
@@ -474,7 +474,7 @@ local function ShowNameIconPopup(specIDs, isEditing)
                 -- SetGroupSpecs already rebuilt the listing pages; only a new
                 -- name or icon needs another rebuild.
                 if changed then
-                    RefreshGroupListingPage()
+                    RedrawGroupListing()
                 end
                 return
             end
@@ -945,7 +945,7 @@ local function SetGroupSpecs(group, newSpecs)
     RequestGoldWalk()
     RefreshCardsPopup()
     -- The membership already changed here, even if the name/icon step is cancelled.
-    RefreshGroupListingPage()
+    RedrawGroupListing()
 end
 
 local function EditGroupSpecs(group)
@@ -1169,7 +1169,7 @@ RefreshCardsPopup = function()
                         end
                         UpdateIndicator() -- current spec may have been a member
                         RefreshCardsPopup()
-                        RefreshGroupListingPage()
+                        RedrawGroupListing()
                     end,
                 })
             end,
@@ -1610,7 +1610,7 @@ function Cond.ShowNameIconPopup(conds, keyStr, current)
                 Cond.EnterEdit(newGroup)
             end
             Cond.RefreshCards()
-            RefreshGroupListingPage()
+            RedrawGroupListing()
         end)
         Cond._namePopup = dialog
     end
@@ -1799,7 +1799,7 @@ function Cond.ShowPickerPopup(current)
         local kl = CludesUI.MakeFont(keyBtn, 11, nil, 1, 1, 1, 0.85)
         kl:SetPoint("CENTER")
         dialog._keyRow, dialog._keyLblFS = keyRow, kl
-        local function ShowKeyText()
+        local function SyncKeyText()
             if dialog._capturing then
                 kl:SetText(L("Press a key..."))
             elseif dialog._stagedKey then
@@ -1808,7 +1808,7 @@ function Cond.ShowPickerPopup(current)
                 kl:SetText(L("Click to Set Key"))
             end
         end
-        dialog._showKeyText = ShowKeyText
+        dialog._showKeyText = SyncKeyText
         -- Ends a capture. Its keyboard calls run out of combat only (a hide at
         -- combat start skips them: a hidden popup takes no keys), so every open
         -- releases again.
@@ -1833,7 +1833,7 @@ function Cond.ShowPickerPopup(current)
             if dialog.SetPropagateKeyboardInput then
                 dialog:SetPropagateKeyboardInput(not dialog._capturing)
             end
-            ShowKeyText()
+            SyncKeyText()
         end)
         dialog:SetScript("OnKeyDown", function(_, key)
             if not dialog._capturing or InCombatLockdown() then
@@ -1869,7 +1869,7 @@ function Cond.ShowPickerPopup(current)
                 end
                 dialog._stagedKey = mods .. key
             end
-            ShowKeyText()
+            SyncKeyText()
         end)
         local keyClear = CreateFrame("Button", nil, keyRow)
         keyClear:SetSize(20, 20)
@@ -1885,7 +1885,7 @@ function Cond.ShowPickerPopup(current)
         end)
         keyClear:SetScript("OnClick", function()
             dialog._stagedKey = nil
-            ShowKeyText()
+            SyncKeyText()
         end)
 
         dialog._syncKeyRow = function()
@@ -1894,7 +1894,7 @@ function Cond.ShowPickerPopup(current)
             dialog:SetHeight(-posY + 56 + extra)
             -- Toggled while shown (Keybind checkbox): refit the bottom edge.
             dialog._brd:Fit()
-            ShowKeyText()
+            SyncKeyText()
         end
 
         local nextBtn = CreateFrame("Button", nil, dialog)

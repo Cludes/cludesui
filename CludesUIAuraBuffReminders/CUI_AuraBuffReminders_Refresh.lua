@@ -1955,7 +1955,7 @@ local function _doRefresh()
     _lastRefreshTime = GetTime()
     Refresh()
 end
-local function RequestRefresh()
+local function QueueRefresh()
     if refreshQueued then
         return
     end
@@ -1999,7 +1999,7 @@ function REMIND.FvSyncGroupWatch(fams, roster)
                 return
             end
             if evt ~= "UNIT_AURA" or REMIND.FvAuraRelevant(unitToken, details) then
-                RequestRefresh()
+                QueueRefresh()
             end
         end
         local tokens = REMIND.FvTokens()
@@ -2014,7 +2014,7 @@ function REMIND.FvSyncGroupWatch(fams, roster)
         end
         W.world = CreateFrame("Frame")
         W.world:SetScript("OnEvent", function()
-            RequestRefresh()
+            QueueRefresh()
         end)
         REMIND._fvWatch = W
     end
@@ -2157,7 +2157,7 @@ UpdateDurationTicker = function()
         if not REMIND.ShowUnderThresholdApplies() then
             return
         end
-        RequestRefresh()
+        QueueRefresh()
     end)
 end
 
@@ -2175,9 +2175,9 @@ function REMIND.ArmSoulstoneCooldownRefresh(remaining)
     end
     REMIND._soulstoneCdTimer = C_Timer.NewTimer(remaining + 0.1, function()
         REMIND._soulstoneCdTimer = nil
-        RequestRefresh()
+        QueueRefresh()
     end)
 end
 
-Inner.RequestRefresh = RequestRefresh
+Inner.RequestRefresh = QueueRefresh
 Inner.broken = false

@@ -88,7 +88,7 @@ local function EMChatFindSystem(layout, sysChat)
     end
 end
 
-local function EMChatSettingRow(sys, settingID)
+local function EditModeSetting(sys, settingID)
     local st = sys and sys.settings
     if type(st) ~= "table" then
         return nil
@@ -135,10 +135,10 @@ end
 -- Stored chat size of a chat system entry (Edit Mode encodes each dimension
 -- as hundreds + tens-and-ones setting pairs). nil when unreadable.
 local function EMChatReadSize(sys, setEnum)
-    local wH = EMChatSettingRow(sys, setEnum.WidthHundreds)
-    local wT = EMChatSettingRow(sys, setEnum.WidthTensAndOnes)
-    local hH = EMChatSettingRow(sys, setEnum.HeightHundreds)
-    local hT = EMChatSettingRow(sys, setEnum.HeightTensAndOnes)
+    local wH = EditModeSetting(sys, setEnum.WidthHundreds)
+    local wT = EditModeSetting(sys, setEnum.WidthTensAndOnes)
+    local hH = EditModeSetting(sys, setEnum.HeightHundreds)
+    local hT = EditModeSetting(sys, setEnum.HeightTensAndOnes)
     if
         not (
             wH
@@ -295,7 +295,7 @@ end
 -- One size row (added when the entry lacks it), noted for Uninstall CUI
 -- first. pairID: the dimension's other row, which goes back with it.
 local function EMChatSetRow(layout, sys, ident, value, pairID)
-    local row = EMChatSettingRow(sys, ident)
+    local row = EditModeSetting(sys, ident)
     if not row then
         if type(sys.settings) ~= "table" then
             sys.settings = {}
@@ -525,7 +525,7 @@ end
 -- the rect resolves (defined after ApplyChatPosition, which arms it).
 local CanonicalizeChatPosition
 
-local function ApplyChatPosition()
+local function PlaceChat()
     -- A grip resize is an engine-driven op on ChatFrame1; the op re-anchors
     -- the frame, Edit Mode's machinery reacts with ApplySystemAnchor, and
     -- the guard below would then re-apply the SAVED anchors every tick --
@@ -657,7 +657,7 @@ CanonicalizeChatPosition = function()
             return
         end
         mod._chatCanonLaps = laps
-        ApplyChatPosition()
+        PlaceChat()
         return
     end
     mod._chatCanonLaps = nil
@@ -680,10 +680,10 @@ CanonicalizeChatPosition = function()
         x = l + frame[1] * (region - l - sw),
         y = b + frame[2] * (t - b - sh),
     }
-    ApplyChatPosition()
+    PlaceChat()
 end
 
-CHAT.ApplyChatPosition = ApplyChatPosition
+CHAT.ApplyChatPosition = PlaceChat
 mod._EMChatSizeDelta = EMChatSizeDelta
 
 -- Unlock Mode's Relative to Screen for chat (the cog): the point of the
@@ -708,7 +708,7 @@ function mod.SetChatScreenPoint(anchorPoint)
     end
     conf.chatScreenPoint = anchorPoint
     if not CludesUI._unlockActive then
-        ApplyChatPosition()
+        PlaceChat()
     end
 end
 
@@ -738,7 +738,7 @@ chatReassert:SetScript("OnUpdate", function(self)
     end
     local conf = CHAT.DB()
     if conf and conf.chatPosition then
-        ApplyChatPosition()
+        PlaceChat()
     end
 end)
 

@@ -2408,7 +2408,7 @@ do
         end
     end
 
-    local function RecolorProfessions()
+    local function TintProfessions()
         -- Profession frames chain to each other; a chained frame inherits the shift
         -- of the frame it hangs from, so only chain roots get the x offset
         -- (shifting every frame would compound 30px per row down the chain).
@@ -2432,7 +2432,7 @@ do
                 _profSettlePending = false
                 local popFrame = _G.ProfessionsBookFrame
                 if popFrame and popFrame:IsVisible() then
-                    RecolorProfessions()
+                    TintProfessions()
                 end
             end)
         end
@@ -2754,14 +2754,14 @@ do
         end
         SeatProfHelp()
 
-        RecolorProfessions()
+        TintProfessions()
         if not _profHook and type(_G.ProfessionsBookFrame_Update) == "function" then
             _profHook = true
             hooksecurefunc(
                 "ProfessionsBookFrame_Update",
                 Skin.Debounce(function()
                     if win:IsVisible() then
-                        RecolorProfessions()
+                        TintProfessions()
                     end
                 end)
             )
@@ -2772,7 +2772,7 @@ do
             win,
             Skin.Debounce(function()
                 if win:IsVisible() then
-                    RecolorProfessions()
+                    TintProfessions()
                     SeatProfHelp()
                     Skin.Restrip()
                 end
@@ -7928,7 +7928,7 @@ do
                     "GuildOrdersButton",
                     "PersonalOrdersButton",
                 }
-                local function SkinOrderTabs()
+                local function StyleOrderTabs()
                     for _, keyName in ipairs(ORDER_TAB_KEYS) do
                         local button = subFrame[keyName]
                         if button then
@@ -7936,9 +7936,9 @@ do
                         end
                     end
                 end
-                SkinOrderTabs()
+                StyleOrderTabs()
                 if C_Timer then
-                    C_Timer.After(0, SkinOrderTabs)
+                    C_Timer.After(0, StyleOrderTabs)
                 end
                 -- Re-skin AND repaint selection on every order-type switch. These
                 -- tabs carry no tabID and BrowseFrame is no TabSystem, so the
@@ -7951,7 +7951,7 @@ do
                 -- to Public); hooksecurefunc runs after the original so isSelected is current.
                 if op.SetCraftingOrderType and not GetFFD(op).orderTypeHook then
                     GetFFD(op).orderTypeHook = true
-                    hooksecurefunc(op, "SetCraftingOrderType", SkinOrderTabs)
+                    hooksecurefunc(op, "SetCraftingOrderType", StyleOrderTabs)
                 end
                 -- Tab row starts where the sort header starts: shift the chain root
                 -- right by the measured delta (one-shot; other three chain off it).
@@ -7994,10 +7994,10 @@ do
                 if not GetFFD(subFrame).alignHook then
                     GetFFD(subFrame).alignHook = true
                     subFrame:HookScript("OnShow", function()
-                        SkinOrderTabs()
+                        StyleOrderTabs()
                         if C_Timer then
                             C_Timer.After(0, function()
-                                SkinOrderTabs()
+                                StyleOrderTabs()
                                 AlignOrderTabs()
                             end)
                         else
@@ -11885,7 +11885,7 @@ do
         end
         -- Money edit box: the classic template's box art is GLOBAL-suffixed
         -- (<name>Left/Middle/Right), which the engine's keyed fade misses, so it sits over our fill and reads unskinned.
-        local function MoneyBox(editField)
+        local function SkinMoneyBox(editField)
             if not editField then
                 return
             end
@@ -11904,8 +11904,8 @@ do
             if not mi then
                 return
             end
-            MoneyBox(mi.GoldBox)
-            MoneyBox(mi.SilverBox)
+            SkinMoneyBox(mi.GoldBox)
+            SkinMoneyBox(mi.SilverBox)
         end
         -- Click-to-sort column headers, guild-roster treatment: 3-slice art
         -- cleared, flat plate, white label, standard hover. Headers pool/rebuild per list refresh, re-runs from RefreshScrollFrame hook.
@@ -12034,7 +12034,7 @@ do
         end
         -- List panel: framed chrome off, slim scrollbar, headers when present.
         -- seatTop: top-anchored views seat header row at the wash top; item-detail views keep stock header position.
-        local function List(entries, hasHeader, seatTop)
+        local function SkinList(entries, hasHeader, seatTop)
             if not entries then
                 return
             end
@@ -12388,7 +12388,7 @@ do
         -- Browse results (Buy tab).
         local br = win.BrowseResultsFrame
         if br then
-            List(br.ItemList, true, true)
+            SkinList(br.ItemList, true, true)
         end
         if br then
             ClampBottom(br.ItemList)
@@ -12423,7 +12423,7 @@ do
             -- Commodities uses the SIDE-BY-SIDE layout (buy panel left, price list
             -- right, NO sort captions), so no header/strip (a wash-wide strip would
             -- cut across the buy panel). Only item-buy (display above, headered list below) gets the strip.
-            List(cbf.ItemList, false)
+            SkinList(cbf.ItemList, false)
             local buttonData = cbf.BuyDisplay
             if buttonData then
                 Skin.FadeRegions(buttonData)
@@ -12477,7 +12477,7 @@ do
                 end
             end
             ItemDisplay(ibf)
-            List(ibf.ItemList, true)
+            SkinList(ibf.ItemList, true)
         end
         local function ReFadeMoney()
             for _, n in ipairs({
@@ -12486,7 +12486,7 @@ do
                 "BidAmountGold",
                 "BidAmountSilver",
             }) do
-                MoneyBox(_G[n])
+                SkinMoneyBox(_G[n])
             end
         end
         ReFadeMoney()
@@ -12506,8 +12506,8 @@ do
         -- Sell tab.
         SellFrame(win.ItemSellFrame)
         SellFrame(win.CommoditiesSellFrame)
-        List(win.ItemSellList, true, true)
-        List(win.CommoditiesSellList, true, true)
+        SkinList(win.ItemSellList, true, true)
+        SkinList(win.CommoditiesSellList, true, true)
         -- Sell lists measure against the sell tab's 50/50 wash, not the rail one.
         if win.ItemSellList then
             GetFFD(win.ItemSellList).washRef = frameData.sellWash
@@ -12554,11 +12554,11 @@ do
                 StateBtn(auctionsFrame.BidFrame.BidButton)
             end
             StateBtn(auctionsFrame.CancelAuctionButton)
-            List(auctionsFrame.CommoditiesList, true)
-            List(auctionsFrame.ItemList, true)
-            List(auctionsFrame.SummaryList, false)
-            List(auctionsFrame.AllAuctionsList, true, true)
-            List(auctionsFrame.BidsList, true, true)
+            SkinList(auctionsFrame.CommoditiesList, true)
+            SkinList(auctionsFrame.ItemList, true)
+            SkinList(auctionsFrame.SummaryList, false)
+            SkinList(auctionsFrame.AllAuctionsList, true, true)
+            SkinList(auctionsFrame.BidsList, true, true)
             -- Auctions sidebar (SummaryList): its rows are a SEPARATE ScrollBox
             -- pool that the buy tab's category-rail setup hook never touches, so
             -- they get the same tile treatment here (flat card + border, white
@@ -13802,7 +13802,7 @@ do
                 Skin.StateButtonLabel(button)
             end
         end
-        local function MoneyBox(editField)
+        local function SkinMoneyBox(editField)
             if not editField then
                 return
             end
@@ -13887,7 +13887,7 @@ do
                 end
             end
         end
-        local function List(entries)
+        local function SkinList(entries)
             if not entries then
                 return
             end
@@ -14165,7 +14165,7 @@ do
                 end
             end
             -- Results list; headers rebuild via SetupTable.
-            List(browse.RecipeList)
+            SkinList(browse.RecipeList)
             if browse.SetupTable and not GetFFD(browse).tableHook then
                 GetFFD(browse).tableHook = true
                 hooksecurefunc(
@@ -14286,8 +14286,8 @@ do
                     end
                 end
                 if pay.TipMoneyInputFrame then
-                    MoneyBox(pay.TipMoneyInputFrame.GoldBox)
-                    MoneyBox(pay.TipMoneyInputFrame.SilverBox)
+                    SkinMoneyBox(pay.TipMoneyInputFrame.GoldBox)
+                    SkinMoneyBox(pay.TipMoneyInputFrame.SilverBox)
                 end
                 if pay.DurationDropdown then
                     Skin.Dropdown(pay.DurationDropdown)
@@ -14301,7 +14301,7 @@ do
                 if cls.CloseButton then
                     Skin.CloseButton(cls.CloseButton)
                 end
-                List(cls.OrderList)
+                SkinList(cls.OrderList)
             end
             local qd = form.QualityDialog
             if qd then
@@ -14338,7 +14338,7 @@ do
                 )
             end
             Skin.RefreshGlyph(mo.RefreshButton)
-            List(mo.OrderList)
+            SkinList(mo.OrderList)
         end
 
         -- Bottom tabs (frame.Tabs table, AH-style). These carry NONE of the

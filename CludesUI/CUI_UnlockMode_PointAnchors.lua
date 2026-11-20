@@ -136,7 +136,7 @@ local function Dimensions(widget)
     return widget:GetWidth(), widget:GetHeight(), widget:GetEffectiveScale()
 end
 
-local function Extent(key, side, fallback)
+local function EdgeExtent(key, side, fallback)
     local success, value = pcall(CludesUI._GetAnchorTargetExtent, key, side)
     if not success then
         return
@@ -170,8 +170,8 @@ function PA.Rect(key, widget, target)
     local ratio = scale / UIParent:GetEffectiveScale()
     l, r, t, b = (l + il) * ratio, (r - ir) * ratio, (t - it) * ratio, (b + ib) * ratio
     if target and CludesUI._GetAnchorTargetExtent then
-        l, r = Extent(key, "LEFT", l), Extent(key, "RIGHT", r)
-        t, b = Extent(key, "TOP", t), Extent(key, "BOTTOM", b)
+        l, r = EdgeExtent(key, "LEFT", l), EdgeExtent(key, "RIGHT", r)
+        t, b = EdgeExtent(key, "TOP", t), EdgeExtent(key, "BOTTOM", b)
     end
     if not (Number(l) and Number(r) and Number(t) and Number(b)) or r <= l or t <= b then
         return

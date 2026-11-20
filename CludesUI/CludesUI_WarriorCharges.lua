@@ -100,7 +100,7 @@ end
 local HostRecolor -- forward (lift re-applies through it)
 local HostSyncByKey -- forward
 
-local function EnsureLift()
+local function HookLift()
     if S.liftHooked then
         return
     end
@@ -147,7 +147,7 @@ HostRecolor = function(H, powerKey, red, green, blue, a)
         H.lastR, H.lastG, H.lastB, H.lastA = red, green, blue, a
     else
         H.dirty = true
-        EnsureLift()
+        HookLift()
     end
 end
 
@@ -555,7 +555,7 @@ local function StyleThresholds(H, widget, sp, num)
     end)
     if not success then
         H.dirty = true
-        EnsureLift()
+        HookLift()
     end
 end
 
@@ -730,7 +730,7 @@ HostSyncByKey = function(H, widget, powerKey, options)
             st.regMax = wantMax
         else
             H.dirty = true
-            EnsureLift()
+            HookLift()
         end
     end
     StyleSeparators(H, options.manualAttach and H.proxy or widget, options, st.regMax or wantMax)
@@ -749,7 +749,7 @@ HostSyncByKey = function(H, widget, powerKey, options)
     if st.tc and options.text then
         if not pcall(st.tc.SetShown, st.tc, options.text.shown and true or false) then
             H.dirty = true
-            EnsureLift()
+            HookLift()
         end
     end
     H.proxy:Show()

@@ -524,7 +524,7 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
         return percent, knobHeight, travelMax, scrollRange
     end
 
-    local function UpdateThumb()
+    local function SyncThumb()
         if clamp then
             local range = scrollFrame:GetVerticalScrollRange() or 0
             local current = scrollFrame:GetVerticalScroll()
@@ -562,7 +562,7 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
         local current = scrollFrame:GetVerticalScroll()
         local newVal = math.max(0, math.min(scrollRange, current - delta * SCROLL_STEP))
         scrollFrame:SetVerticalScroll(newVal)
-        UpdateThumb()
+        SyncThumb()
     end
     scrollFrame:SetScript("OnMouseWheel", OnWheel)
     owner:EnableMouseWheel(true)
@@ -594,7 +594,7 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
         local deltaPct = deltaY / travelMax
         local newPct = math.max(0, math.min(1, _dragStartPct + deltaPct))
         scrollFrame:SetVerticalScroll(newPct * scrollRange)
-        UpdateThumb()
+        SyncThumb()
     end)
 
     rail:RegisterForDrag("LeftButton")
@@ -624,7 +624,7 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
             -- Click on track: jump to position
             local clickPct = math.max(0, math.min(1, (cursorLocalY - knobHeight / 2) / travelMax))
             scrollFrame:SetVerticalScroll(clickPct * scrollRange)
-            UpdateThumb()
+            SyncThumb()
             _isDragging = true
             _dragStartY = midY / zoom
             _dragStartPct = clickPct
@@ -673,7 +673,7 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
             hooksecurefunc(railBg, "Show", PadSteps)
             hooksecurefunc(railBg, "Hide", PadSteps)
             scrollFrame:HookScript("OnVerticalScroll", function()
-                UpdateThumb()
+                SyncThumb()
             end)
             CUI.PadHint(rail, "nodeignore")
         end
@@ -684,7 +684,7 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
         railBg:SetColorTexture(1, 1, 1, enabled and 0.15 or 0.06)
         PadSteps()
     end
-    return rail, knob, UpdateThumb
+    return rail, knob, SyncThumb
 end
 
 -------------------------------------------------------------------------------
@@ -967,7 +967,7 @@ do
 
     -- Re-checks the slot the dialog was opened on after every repaint: pooled
     -- buttons get repurposed, and the count can change under us.
-    local function Validate()
+    local function CheckInput()
         if not dialogFrame or not dialogFrame:IsShown() then
             return
         end
@@ -1137,17 +1137,17 @@ do
             },
         })
 
-        hooksecurefunc(CUI_Bags, "RefreshInventory", Validate)
+        hooksecurefunc(CUI_Bags, "RefreshInventory", CheckInput)
         CUI_Bags:HookScript("OnHide", function()
             WindowHidden(CUI_Bags)
         end)
-        hooksecurefunc(CUI_BagsReagent, "RefreshInventory", Validate)
+        hooksecurefunc(CUI_BagsReagent, "RefreshInventory", CheckInput)
         CUI_BagsReagent:HookScript("OnHide", function()
             WindowHidden(CUI_BagsReagent)
         end)
         local bankFrame = _G.CUI_BankFrame
         if bankFrame then
-            hooksecurefunc(bankFrame, "RefreshBank", Validate)
+            hooksecurefunc(bankFrame, "RefreshBank", CheckInput)
             bankFrame:HookScript("OnHide", function()
                 WindowHidden(bankFrame)
             end)
@@ -1205,7 +1205,7 @@ do
                 end)
             end
         end
-        hooksecurefunc(gb, "Update", Validate)
+        hooksecurefunc(gb, "Update", CheckInput)
         gb:HookScript("OnHide", function()
             WindowHidden(gb)
         end)

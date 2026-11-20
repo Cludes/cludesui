@@ -362,10 +362,10 @@ do
         UpdateRotationHighlightsNow()
     end)
 
-    local function QueueRotationHighlightUpdate()
+    local function QueueRotationHighlight()
         _rotDirty:Show()
     end
-    mod.UpdateRotationHighlights = QueueRotationHighlightUpdate
+    mod.UpdateRotationHighlights = QueueRotationHighlight
 
     local function _rotSyncCombat()
         local inCombat = InCombatLockdown() or UnitAffectingCombat("player")
@@ -398,26 +398,26 @@ do
 
         if EventRegistry and EventRegistry.RegisterCallback then
             EventRegistry:RegisterCallback("AssistedCombatManager.OnAssistedHighlightSpellChange", function()
-                QueueRotationHighlightUpdate()
+                QueueRotationHighlight()
             end, "ECME_CDM_RotationHelper")
             -- Clear highlights if the user flips Blizzard's CVar off at runtime.
             EventRegistry:RegisterCallback("AssistedCombatManager.OnSetUseAssistedHighlight", function()
-                QueueRotationHighlightUpdate()
+                QueueRotationHighlight()
             end, "ECME_CDM_RotationHelper_CVar")
         end
 
         if AssistedCombatManager and AssistedCombatManager.UpdateAllAssistedHighlightFramesForSpell then
             hooksecurefunc(AssistedCombatManager, "UpdateAllAssistedHighlightFramesForSpell", function()
-                QueueRotationHighlightUpdate()
+                QueueRotationHighlight()
             end)
         end
 
         -- Re-run after bar rebuilds so the shine follows icon recycling.
         if mod.CollectAndReanchor then
-            hooksecurefunc(mod, "CollectAndReanchor", QueueRotationHighlightUpdate)
+            hooksecurefunc(mod, "CollectAndReanchor", QueueRotationHighlight)
         end
 
-        QueueRotationHighlightUpdate()
+        QueueRotationHighlight()
     end
 end
 

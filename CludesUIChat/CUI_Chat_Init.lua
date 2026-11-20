@@ -561,7 +561,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Idle reset throttle: max once per second.
         local _lastIdleReset = 0
-        local function OnActiveMessage()
+        local function OnNewMessage()
             -- (No passthrough sweep needed on messages anymore: Blizzard's
             -- line pool is parked in the engine's hidden container, and OUR
             -- message frames are hidden outright while passthrough is
@@ -596,7 +596,7 @@ initFrame:SetScript("OnEvent", function(self)
         wakeFrame:Hide()
         wakeFrame:SetScript("OnUpdate", function(self)
             self:Hide()
-            OnActiveMessage()
+            OnNewMessage()
         end)
         local function WakeOnChat(castFrame, evt)
             if evt == nil or wakeFrame:IsShown() then
@@ -624,13 +624,13 @@ initFrame:SetScript("OnEvent", function(self)
         -- IME paths, so composing by paste then pausing can fade chat mid-edit;
         -- any committed character un-fades it.
         CHAT._RegisterEditBoxFocusGained("CUI_Chat_IdleFade", function()
-            OnActiveMessage()
+            OnNewMessage()
         end)
         for index = 1, 10 do
             local eb = _G["ChatFrame" .. index .. "EditBox"]
             if eb then
                 eb:HookScript("OnChar", function(...)
-                    OnActiveMessage(...)
+                    OnNewMessage(...)
                 end)
             end
         end
@@ -712,7 +712,7 @@ initFrame:SetScript("OnEvent", function(self)
             whisperWindow:RegisterEvent("CHAT_MSG_WHISPER")
             whisperWindow:RegisterEvent("CHAT_MSG_BN_WHISPER")
             whisperWindow:SetScript("OnEvent", function()
-                OnActiveMessage()
+                OnNewMessage()
                 local conf = CHAT.DB()
                 local key = conf and conf.whisperSoundKey
                 if not key or key == "none" or key == "mute" then
@@ -737,7 +737,7 @@ initFrame:SetScript("OnEvent", function(self)
         local _hoverCount = 0
         local _editFocusCount = 0
 
-        local function UpdateHoverState()
+        local function SyncHover()
             local over = (_hoverCount > 0) or (_editFocusCount > 0)
             if not IsIdleApplicable() then
                 return
@@ -816,14 +816,14 @@ initFrame:SetScript("OnEvent", function(self)
         if sideBar then
             sideBar:HookScript("OnEnter", function()
                 _hoverCount = _hoverCount + 1
-                UpdateHoverState()
+                SyncHover()
                 if CHAT.FollowArm then
                     CHAT.FollowArm()
                 end
             end)
             sideBar:HookScript("OnLeave", function()
                 _hoverCount = upper(0, _hoverCount - 1)
-                UpdateHoverState()
+                SyncHover()
                 if CHAT.FollowRelease then
                     CHAT.FollowRelease()
                 end
@@ -847,7 +847,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 _editFocusCount = _editFocusCount + 1
-                UpdateHoverState()
+                SyncHover()
             end)
             if EventRegistry and EventRegistry.RegisterCallback then
                 EventRegistry:RegisterCallback("ChatFrame.OnEditBoxFocusLost", function(_, eb)
@@ -855,7 +855,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return
                     end
                     _editFocusCount = upper(0, _editFocusCount - 1)
-                    UpdateHoverState()
+                    SyncHover()
                 end, "CUI_Chat_HoverEditFocus")
             end
         end
@@ -1071,7 +1071,7 @@ initFrame:SetScript("OnEvent", function(self)
         local toastFrame = _G.BNToastFrame
         if toastFrame then
             -- Apply saved position or default to bottom-right of chat bg
-            local function ApplyToastPosition()
+            local function PlaceToast()
                 local conf = CHAT.DB()
                 if not conf or not conf.toastPosition then
                     return
@@ -1117,7 +1117,7 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                     local c = CHAT.DB()
                     if c and c.toastPosition then
-                        ApplyToastPosition()
+                        PlaceToast()
                     end
                 end)
             end)
@@ -1146,7 +1146,7 @@ initFrame:SetScript("OnEvent", function(self)
                         end
                     end
                 end
-                ApplyToastPosition()
+                PlaceToast()
             end)
 
             -- Register with unlock mode
@@ -1181,7 +1181,7 @@ initFrame:SetScript("OnEvent", function(self)
                                 y = posY,
                             }
                             if not CUI._unlockActive then
-                                ApplyToastPosition()
+                                PlaceToast()
                             end
                         end,
                         loadPos = function()
@@ -1199,7 +1199,7 @@ initFrame:SetScript("OnEvent", function(self)
                             conf.toastPosition = nil
                         end,
                         applyPos = function()
-                            ApplyToastPosition()
+                            PlaceToast()
                         end,
                     }),
                 })

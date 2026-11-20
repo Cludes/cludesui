@@ -707,7 +707,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         -- Unified dynamic layout: lay out exactly the buttons ActiveLinks() reports,
         -- with one divider between each adjacent pair. This renders the existing
         -- cases pixel-identically and naturally handles match-buttons-without-resize.
-        local function LayoutActionRow()
+        local function PlaceActionLinks()
             local gap = 8
             local itemList = ActiveLinks()
             if #itemList == 0 then
@@ -736,7 +736,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             end
         end
         -- For MatchH.CommitMatchExtra (file scope): the matched label changes width.
-        handle._layoutActionRow = LayoutActionRow
+        handle._layoutActionRow = PlaceActionLinks
 
         -- Anchored indicator: name label turns orange when anchored
         -- No separate font string needed
@@ -1080,7 +1080,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             if not linkHovered then
                 SyncLinkStates()
             end
-            LayoutActionRow()
+            PlaceActionLinks()
             AnimateHoverTo(1)
             pickText:Hide()
         end
@@ -1359,7 +1359,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 MatchH.ClearWidthMatch(barId)
                 LM.hasChanges = true
                 SyncLinkStates()
-                LayoutActionRow()
+                PlaceActionLinks()
                 return
             end
             -- Element-declared dynamic block on NEW matches (clearing above stays
@@ -1394,7 +1394,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 MatchH.ClearHeightMatch(barId)
                 LM.hasChanges = true
                 SyncLinkStates()
-                LayoutActionRow()
+                PlaceActionLinks()
                 return
             end
             -- Element-declared dynamic block on NEW matches (see wmBtn above).
@@ -1437,7 +1437,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 LM.hasChanges = true
                 SyncAnchoredIdle()
                 SyncLinkStates()
-                LayoutActionRow()
+                PlaceActionLinks()
                 if handles[barId] and handles[barId].RefreshAnchoredText then
                     handles[barId]:RefreshAnchoredText()
                 end
@@ -3542,7 +3542,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             end
         end
 
-        local function UpdateSnapLabel()
+        local function SyncSnapLabel()
             local tgt = handle._snapTarget
             if tgt == "_disable_" then
                 snapDropdownText:SetText(CludesUI.L("Snap to: None"))
@@ -3647,7 +3647,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 menuItem:SetScript("OnClick", function()
                     onClick()
                     HideSnapMenu()
-                    UpdateSnapLabel()
+                    SyncSnapLabel()
                 end)
                 itemList[#itemList + 1] = menuItem
                 rowOffset = rowOffset - ITEM_H
@@ -3786,7 +3786,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         subItem:SetScript("OnClick", function()
                             handle._snapTarget = ek
                             HideSnapMenu()
-                            UpdateSnapLabel()
+                            SyncSnapLabel()
                         end)
                         rsYOff = rsYOff - ITEM_H
                     end
@@ -3922,7 +3922,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         end
         handle._isVisOnly = isVisOnly
         handle._snapTarget = nil -- per-mover snap target (nil = auto)
-        handle._updateSnapLabel = UpdateSnapLabel
+        handle._updateSnapLabel = SyncSnapLabel
         RefreshSnapDDState() -- apply initial grayed-out state if snap is disabled
 
         ---------------------------------------------------------------------------
@@ -4553,14 +4553,14 @@ CUI_NS.unlockParts.Movers = function(LM)
             selElemItem:SetScript("OnClick", function()
                 if hasTarget then
                     handle._snapTarget = nil
-                    UpdateSnapLabel()
+                    SyncSnapLabel()
                     HideGearMenu()
                 else
                     handle._preSelectTarget = handle._snapTarget
                     handle._snapTarget = "_select_"
                     LM.selectElementPicker = handle
                     FadeOverlayForSelectElement(true)
-                    UpdateSnapLabel()
+                    SyncSnapLabel()
                     HideGearMenu()
                 end
             end)

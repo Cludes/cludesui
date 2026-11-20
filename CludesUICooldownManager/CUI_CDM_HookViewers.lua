@@ -385,9 +385,9 @@ function mod.SetupViewerHooks()
             -- A pin asked for in combat runs once combat ends (one queued pin
             -- per viewer, however many asks).
             local pinKey = "CDMViewerPin" .. barId
-            local function SyncViewerToBar()
+            local function MatchViewerToBar()
                 if InCombatLockdown() then
-                    mod.CombatQueue.Defer(pinKey, SyncViewerToBar)
+                    mod.CombatQueue.Defer(pinKey, MatchViewerToBar)
                     return
                 end
                 local boxHolder = cdmBarFrames[barId]
@@ -405,10 +405,10 @@ function mod.SetupViewerHooks()
             -- after its own SetPoint (a snap break saves it into the layout) and
             -- must find its own anchor there, never our bar.
             local deferPin
-            hooksecurefunc(viewerFrame, "Layout", SyncViewerToBar)
+            hooksecurefunc(viewerFrame, "Layout", MatchViewerToBar)
             hooksecurefunc(viewerFrame, "SetPoint", function(_, _, relativeTo)
                 if InCombatLockdown() then
-                    SyncViewerToBar() -- queues the pin for combat end
+                    MatchViewerToBar() -- queues the pin for combat end
                     return
                 end
                 local boxHolder = cdmBarFrames[barId]
@@ -417,19 +417,19 @@ function mod.SetupViewerHooks()
                 end
                 local hostFrame = viewerFrame:GetParent()
                 if not issecretvalue(hostFrame) and hostFrame == BottomManagedFrameContainer then
-                    SyncViewerToBar()
+                    MatchViewerToBar()
                     return
                 end
                 if not deferPin then
                     deferPin = mod.TakeShell()
                     deferPin:SetScript("OnUpdate", function(self)
                         self:Hide()
-                        SyncViewerToBar()
+                        MatchViewerToBar()
                     end)
                 end
                 deferPin:Show()
             end)
-            SyncViewerToBar()
+            MatchViewerToBar()
         end
     end
 

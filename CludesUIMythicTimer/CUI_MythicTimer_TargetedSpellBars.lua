@@ -119,7 +119,7 @@ local function PlaceContainer()
     end
 end
 
-local function EnsureContainer()
+local function MakeContainer()
     if boxHolder then
         return boxHolder
     end
@@ -136,7 +136,7 @@ end
 --  passes nothing and hangs its bars on the group container.
 --------------------------------------------------------------------------------
 local function BuildBar(hostFrame)
-    local holderFrame = CreateFrame("Frame", nil, hostFrame or EnsureContainer())
+    local holderFrame = CreateFrame("Frame", nil, hostFrame or MakeContainer())
     holderFrame:Hide()
 
     holderFrame.bg = holderFrame:CreateTexture(nil, "BACKGROUND")
@@ -721,7 +721,7 @@ local function ArmTimerTicker()
         return
     end
     if not timerTicker and CludesUI.Tick and CludesUI.Tick.NewAnimTicker then
-        timerTicker = CludesUI.Tick.NewAnimTicker(EnsureContainer(), TimerBody, 0.1)
+        timerTicker = CludesUI.Tick.NewAnimTicker(MakeContainer(), TimerBody, 0.1)
     end
     if timerTicker then
         TimerBody()
@@ -1209,7 +1209,7 @@ local function Activate()
         return
     end
     isActive = true
-    EnsureContainer()
+    MakeContainer()
     for i = 1, #CAST_EVENTS do
         evt:RegisterEvent(CAST_EVENTS[i])
     end
@@ -1350,7 +1350,7 @@ local function ShowPreview()
         return
     end
     ReleaseAll()
-    EnsureContainer()
+    MakeContainer()
     local rowList = math.min(#PREVIEW_ROWS, conf.maxBars or 5)
     for i = 1, rowList do
         local e = { unit = "preview" .. i, bar = AcquireBarFrame(), preview = true }
@@ -1481,7 +1481,7 @@ local function RegisterUnlock()
                 return not (conf and conf.enabled == true)
             end,
             getFrame = function()
-                return EnsureContainer()
+                return MakeContainer()
             end,
             getSize = function()
                 local conf = Cfg()

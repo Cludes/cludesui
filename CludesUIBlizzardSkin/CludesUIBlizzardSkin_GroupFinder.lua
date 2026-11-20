@@ -1930,7 +1930,7 @@ end
 -- scale change, which always ends by re-applying position, re-docks too).
 local _dockingCharacterFrame = false
 
-local function DockCharacterFrame()
+local function DockCharacter()
     if _dockingCharacterFrame then
         return
     end
@@ -2054,11 +2054,11 @@ local function InstallPVEDockHooks()
     -- below re-docks it, and the dock's own re-entry guard (plus Shifter's) keeps
     -- that from looping. No field is written on CharacterFrame: the managed-frame
     -- opt-out flag is read only by the HUD's managed frame system, never for panels.
-    _G.CharacterFrame:HookScript("OnShow", DockCharacterFrame)
-    hooksecurefunc(_G.CharacterFrame, "SetPoint", DockCharacterFrame)
+    _G.CharacterFrame:HookScript("OnShow", DockCharacter)
+    hooksecurefunc(_G.CharacterFrame, "SetPoint", DockCharacter)
 
-    PVEFrame:HookScript("OnShow", DockCharacterFrame)
-    hooksecurefunc(PVEFrame, "SetPoint", DockCharacterFrame)
+    PVEFrame:HookScript("OnShow", DockCharacter)
+    hooksecurefunc(PVEFrame, "SetPoint", DockCharacter)
     PVEFrame:HookScript("OnHide", function()
         if _G.CharacterFrame and _G.CharacterFrame:IsShown() then
             RestoreDefaultCharacterPoint()

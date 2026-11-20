@@ -326,7 +326,7 @@ local _lustZoneGuard = 0 -- suppress rising edges until this time (set on zone-i
 local _lustListenerActive = false -- baseline _satedPresent only on (re)enable, not every rebuild
 local _lustListener
 
-local function _playerHasSated()
+local function _hasSated()
     if not (C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID) then
         return false
     end
@@ -350,7 +350,7 @@ local function _ensureLustListener(enable)
                     -- Zone/login aura refresh: re-baseline WITHOUT arming and suppress edges
                     -- briefly. An already-carried Sated debuff (zoning out of a dungeon) must
                     -- never read as a fresh cast and pop a phantom 40s bar in the open world.
-                    _satedPresent = _playerHasSated()
+                    _satedPresent = _hasSated()
                     _satedSince = nil
                     _lustZoneGuard = GetTime() + 1.5
                     return
@@ -359,7 +359,7 @@ local function _ensureLustListener(enable)
                     -- Death strips the lockout debuff, so the 590s pin below has to be
                     -- released here: a wipe followed by a fresh lust would otherwise be
                     -- swallowed for the rest of the window the pin was stamped for.
-                    _satedPresent = _playerHasSated()
+                    _satedPresent = _hasSated()
                     _satedSince = nil
                     return
                 end
@@ -369,7 +369,7 @@ local function _ensureLustListener(enable)
                 if _satedPresent and _satedSince and GetTime() < _satedSince + 590 then
                     return
                 end
-                local present = _playerHasSated()
+                local present = _hasSated()
                 -- Arm ONLY on a genuine incremental application: not a full
                 -- aura refresh (zone/login resends every aura), and not inside
                 -- the post-zone grace window. The UNIT_AURA payload and its
@@ -403,7 +403,7 @@ local function _ensureLustListener(enable)
         -- (fires during zone changes, sometimes while the aura table is momentarily empty)
         -- could set _satedPresent=false and make the debuff's return look like a cast.
         if not _lustListenerActive then
-            _satedPresent = _playerHasSated()
+            _satedPresent = _hasSated()
             _satedSince = nil
             _lustListener:RegisterUnitEvent("UNIT_AURA", "player")
             _lustListener:RegisterEvent("PLAYER_ENTERING_WORLD")

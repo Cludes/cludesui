@@ -132,7 +132,7 @@ end
 -- One host frame, parent main chunk (parent-billed by design; see header).
 local watchHost = CreateFrame("Frame")
 
-local function EnsureTicker()
+local function SyncTicker()
     if frameCount + tickCount == 0 then
         if ticker then
             ticker.Stop()
@@ -171,7 +171,7 @@ function M.SubscribeFrame(key, func, motionOnly)
         stillSince = GetTime()
         Tick.Add("mouse", OnRenderFrame)
     end
-    EnsureTicker()
+    SyncTicker()
 end
 
 function M.UnsubscribeFrame(key)
@@ -184,7 +184,7 @@ function M.UnsubscribeFrame(key)
         frameArmed = false
         Tick.Remove("mouse")
     end
-    EnsureTicker()
+    SyncTicker()
 end
 
 -- Tier B. fn(rawX, rawY) every `interval` seconds (multiples of the watch
@@ -201,7 +201,7 @@ function M.SubscribeTick(key, interval, func)
         tickCount = tickCount + 1
         tickSubs[key] = { fn = func, interval = interval or WATCH_SLOW, acc = 0 }
     end
-    EnsureTicker()
+    SyncTicker()
 end
 
 function M.UnsubscribeTick(key)
@@ -210,5 +210,5 @@ function M.UnsubscribeTick(key)
     end
     tickSubs[key] = nil
     tickCount = tickCount - 1
-    EnsureTicker()
+    SyncTicker()
 end

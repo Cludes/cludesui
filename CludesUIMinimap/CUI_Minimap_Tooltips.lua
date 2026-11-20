@@ -193,7 +193,7 @@ do
     -- Hover-stable hide: small grace period so cursor can travel from button to tooltip
     local _fttHideToken = 0
     local _fttMenuOpen = false
-    local function CancelFTTHide()
+    local function KeepTipShown()
         _fttHideToken = _fttHideToken + 1
     end
     local function ScheduleFTTHide()
@@ -338,7 +338,7 @@ do
         m._target = goal
         m._bnet = bnet
         _fttMenuOpen = true
-        CancelFTTHide()
+        KeepTipShown()
         m:ClearAllPoints()
         m:SetPoint("TOPLEFT", rowBtn, "TOPRIGHT", 0, 0)
         m:Show()
@@ -353,7 +353,7 @@ do
         frame:SetFrameLevel(200)
         frame:SetClampedToScreen(true)
         frame:EnableMouse(true)
-        frame:SetScript("OnEnter", CancelFTTHide)
+        frame:SetScript("OnEnter", KeepTipShown)
         frame:SetScript("OnLeave", ScheduleFTTHide)
         frame:HookScript("OnHide", function()
             if _fttMenu then
@@ -398,7 +398,7 @@ do
         highlight:Hide()
         button._hl = highlight
         button:SetScript("OnEnter", function(self)
-            CancelFTTHide()
+            KeepTipShown()
             if self._entry then
                 self._hl:Show()
             end
@@ -416,7 +416,7 @@ do
                 FTTShowRowMenu(self)
             elseif mouseButton == "LeftButton" then
                 FTTOpenWhisper(self._fttTarget, self._fttBnet)
-                CancelFTTHide()
+                KeepTipShown()
                 if _friendsTT then
                     _friendsTT:Hide()
                 end
@@ -484,7 +484,7 @@ do
     end
 
     function ShowFriendsTooltip(anchor)
-        CancelFTTHide()
+        KeepTipShown()
         local guild, favorites, friendList = GatherOnlineFriends()
         local tooltip = GetFriendsTT()
         -- Scale the whole tooltip to the user's Custom Tooltip Size (re-applied each show).

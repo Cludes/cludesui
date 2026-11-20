@@ -1951,7 +1951,7 @@ mod.ContentGapsOf = ContentGapsOf
 -- (start offset from bar start) as well as seg.px: segments normally chain
 -- seamlessly, but a Force Centered block leaves uncovered background beside
 -- it, so consumers must position from seg.at, never a running cursor.
-function mod.SolveLayout(barConf, L, measure)
+function mod.SolveLayout(barConf, L, blockWidth)
     local segmentList = {}
     local num = #barConf.blocks
     if num == 0 then
@@ -1967,8 +1967,8 @@ function mod.SolveLayout(barConf, L, measure)
         for i = 1, num do
             local b = barConf.blocks[i]
             local hasShare = true
-            if b.type ~= "spacer" and measure then
-                hasShare = (measure(b) or 0) > 0
+            if b.type ~= "spacer" and blockWidth then
+                hasShare = (blockWidth(b) or 0) > 0
             end
             shares[i] = hasShare
             if hasShare then
@@ -2021,8 +2021,8 @@ function mod.SolveLayout(barConf, L, measure)
     -- and bare content width (for exact content-centering).
     local function SizedPx(b)
         local wid = 0
-        if b.type ~= "spacer" and measure then
-            wid = measure(b) or 0
+        if b.type ~= "spacer" and blockWidth then
+            wid = blockWidth(b) or 0
             if wid <= 0 then
                 -- Collapsed block (nothing rendered, e.g. xprep with no XP and no
                 -- watched faction): contributes nothing, gaps included, as if not
@@ -2659,7 +2659,7 @@ ApplyLayout = function(ident)
         L2 = 1
     end
 
-    local function measure(b)
+    local function blockWidth(b)
         local instance = barRec.insts[b.id]
         if instance and instance.GetAutoLength then
             local wid = instance:GetAutoLength()
@@ -2668,7 +2668,7 @@ ApplyLayout = function(ident)
         return 0
     end
 
-    local segmentList = mod.SolveLayout(conf, L2, measure)
+    local segmentList = mod.SolveLayout(conf, L2, blockWidth)
     for i = 1, #segmentList do
         local segment = segmentList[i]
         local slotFrame = barRec.slots[segment.block.id]
@@ -2984,14 +2984,14 @@ function mod.NormalizedShare(barConf, blockId)
     if L < 1 then
         L = 1
     end
-    local function measure(b)
+    local function blockWidth(b)
         local instance = barRec and barRec.insts[b.id]
         if instance and instance.GetAutoLength then
             return instance:GetAutoLength() or 0
         end
         return 0
     end
-    local segmentList = mod.SolveLayout(barConf, L, measure)
+    local segmentList = mod.SolveLayout(barConf, L, blockWidth)
     for i = 1, #segmentList do
         if segmentList[i].block.id == blockId then
             return segmentList[i].px * 100 / L

@@ -176,7 +176,7 @@ local function NewMember(unitToken)
     return m
 end
 
-local function Dispatch(name, ...)
+local function Notify(name, ...)
     for _, hgt in pairs(subs) do
         local func = hgt[name]
         if func then
@@ -223,7 +223,7 @@ end
 --------------------------------------------------------------------------------
 local function StartCd(m, start, dur)
     m.downAt, m.downFor, m.readyAt = start, dur, start + dur
-    Dispatch("cooldown", m.unit, start, dur)
+    Notify("cooldown", m.unit, start, dur)
 end
 
 local function ClearCd(m)
@@ -231,7 +231,7 @@ local function ClearCd(m)
         return
     end
     m.downAt, m.downFor, m.readyAt = nil, nil, nil
-    Dispatch("cooldown", m.unit, nil, nil)
+    Notify("cooldown", m.unit, nil, nil)
 end
 
 -- The member's interrupt and its cooldowns from what is known of them.
@@ -314,7 +314,7 @@ end
 
 -- Reads every slot: a new GUID resets the record (and asks for an inspect),
 -- an empty slot clears it. Role, pet and the kick are re-read every time.
-local function SyncRoster()
+local function ReadRoster()
     local nowTime = GetTime()
     local didChange = false
     for i = 1, #GROUP_UNITS do
@@ -368,7 +368,7 @@ local function SyncRoster()
         end
     end
     if didChange then
-        Dispatch("roster", nowTime)
+        Notify("roster", nowTime)
     end
 end
 
@@ -395,7 +395,7 @@ RefreshPlayer = function(m, quiet)
     m.pet = PetFamily("player")
     local didChange = ResolveKick(m)
     if didChange and not quiet then
-        Dispatch("roster", GetTime())
+        Notify("roster", GetTime())
     end
     return didChange
 end
@@ -562,7 +562,7 @@ local function OnReadReady(unitGuid)
             member.readTries = nil
         end
         if ResolveKick(member) then
-            Dispatch("roster", GetTime())
+            Notify("roster", GetTime())
         end
     end
     DoneReading()
@@ -649,7 +649,7 @@ end
 
 -- Members whose talents were read a while ago are read again (a talent swap
 -- before the key), while a key is not running.
-local function ReReadStale()
+local function RefreshStale()
     if KeyActive() then
         return
     end
@@ -883,7 +883,7 @@ end
 -- with it); one that rose is a kick whose own Interrupts update, in this
 -- frame, reads it (adopted here, that kick would read as nothing new), so
 -- the baseline stays. A reset or a load forces it and forgets the lists.
-local function Rebase(force)
+local function ResetSession(force)
     local newSession = force
     if not force then
         if GetTime() == cache.frameT then
@@ -960,7 +960,7 @@ local function ReadSpecs()
         end
     end
     if didChange then
-        Dispatch("roster", GetTime())
+        Notify("roster", GetTime())
     end
 end
 
@@ -1009,7 +1009,7 @@ local function LearnRow(m, key, T)
     local map = m.classID and IconSpecs(m.classID, m.class)
     m.specIcon, m.specID, m.specSrc = iconTex, map and map[iconTex] or nil, "row"
     ResolveKick(m)
-    Dispatch("roster", T)
+    Notify("roster", T)
 end
 
 --------------------------------------------------------------------------------
@@ -1312,13 +1312,13 @@ local function SendGate(T, withPlates, platesOnly)
     if platesOnly and #gatePlates == 0 then
         return
     end
-    Dispatch("gate", T, gateList, gatePrev, gateCur, gatePlates, platesOnly and true or false)
+    Notify("gate", T, gateList, gatePrev, gateCur, gatePlates, platesOnly and true or false)
 end
 
 -- Reports the kick to the displays for each plate unit kicked this frame.
 local function EmitStopped(T, caster, entries, method)
     for i = 1, #wasStopped do
-        Dispatch("kick", wasStopped[i], caster, entries, stoppedBy[i], method, T)
+        Notify("kick", wasStopped[i], caster, entries, stoppedBy[i], method, T)
     end
     wipe(wasStopped)
     wipe(stoppedBy)
@@ -1516,7 +1516,7 @@ local function Attribute()
         end
     end
     if #countList > 0 then
-        Dispatch("counts", T, countList, auraMap)
+        Notify("counts", T, countList, auraMap)
     end
 
     wipe(rosterGrew)
@@ -1729,7 +1729,7 @@ local function OnOwnCast(spellId)
     m.lastKick, m.lastSure = T, true
     local backing = TargetPlate()
     if backing then
-        Dispatch("kick", backing, "player", nil, nil, "cast", T)
+        Notify("kick", backing, "player", nil, nil, "cast", T)
     end
 end
 
@@ -1765,16 +1765,16 @@ local function OnEvent(_, eventName, firstArg, a2, a3, a4, a5)
     elseif eventName == "UNIT_SPELLCAST_EMPOWER_STOP" then
         OnStop(firstArg, a3, a5)
     elseif eventName == "DAMAGE_METER_CURRENT_SESSION_UPDATED" then
-        Rebase()
+        ResetSession()
     elseif eventName == "DAMAGE_METER_RESET" then
-        Rebase(true)
+        ResetSession(true)
     elseif eventName == "GROUP_ROSTER_UPDATE" then
         -- A roster storm (a load, a group forming) syncs once per frame, and
         -- once more after it: the burst's last event carries its final state.
         local T = GetTime()
         if T ~= rosterT then
             rosterT = T
-            SyncRoster()
+            ReadRoster()
             if not InCombatLockdown() then
                 ReadSpecs()
             end
@@ -1785,7 +1785,7 @@ local function OnEvent(_, eventName, firstArg, a2, a3, a4, a5)
                 if not isActive then
                     return
                 end
-                SyncRoster()
+                ReadRoster()
                 if not InCombatLockdown() then
                     ReadSpecs()
                 end
@@ -1796,7 +1796,7 @@ local function OnEvent(_, eventName, firstArg, a2, a3, a4, a5)
         if member and member.class == "WARLOCK" then
             member.pet = PetFamily(firstArg)
             if ResolveKick(member) then
-                Dispatch("roster", GetTime())
+                Notify("roster", GetTime())
             end
         end
     elseif eventName == "PLAYER_SPECIALIZATION_CHANGED" then
@@ -1807,7 +1807,7 @@ local function OnEvent(_, eventName, firstArg, a2, a3, a4, a5)
             if m and m.guid then
                 m.specID, m.specIcon, m.specSrc, m.talents, m.readAt = nil, nil, nil, nil, nil
                 if ResolveKick(m) then
-                    Dispatch("roster", GetTime())
+                    Notify("roster", GetTime())
                 end
                 AskRead(firstArg)
             end
@@ -1822,11 +1822,11 @@ local function OnEvent(_, eventName, firstArg, a2, a3, a4, a5)
         end
     elseif eventName == "PLAYER_REGEN_ENABLED" then
         ReadSpecs()
-        ReReadStale()
+        RefreshStale()
         ReadNext()
     elseif eventName == "CHALLENGE_MODE_START" then
         -- A last chance before the key locks the inspect data.
-        ReReadStale()
+        RefreshStale()
         ReadNext()
     elseif eventName == "PLAYER_ENTERING_WORLD" then
         for _, m in pairs(rosterMap) do
@@ -1840,9 +1840,9 @@ local function OnEvent(_, eventName, firstArg, a2, a3, a4, a5)
         cache.lastT, cache.pairedT, cache.who, cache.scratch, cache.how = -1, -1, nil, nil, nil
         cache.rowKey, cache.rowHow, cache.learn, cache.gated, cache.grew = nil, nil, nil, false, false
         gateT = -1
-        Rebase(true)
-        SyncRoster()
-        ReReadStale()
+        ResetSession(true)
+        ReadRoster()
+        RefreshStale()
     end
 end
 
@@ -1860,13 +1860,13 @@ local function Activate()
     end
     eventTag:RegisterUnitEvent("UNIT_PET", "player", "party1", "party2", "party3", "party4")
     cache.frameT = -1
-    Rebase(true)
-    SyncRoster()
+    ResetSession(true)
+    ReadRoster()
     RegisterOwnCasts()
     if not InCombatLockdown() then
         ReadSpecs()
     end
-    ReReadStale()
+    RefreshStale()
     ReadNext()
 end
 

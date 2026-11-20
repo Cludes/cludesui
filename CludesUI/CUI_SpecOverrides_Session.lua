@@ -1260,7 +1260,7 @@ ApplyEditOverlay = function()
     editOverlay:SetShown(_overlayWanted and not IsExcludedContext())
 end
 
-local function SetEditOverlayShown(isShown)
+local function ShowEditOverlay(isShown)
     _overlayWanted = isShown and true or false
     if isShown and not editOverlay then
         local rootFrame = _G.CludesUIFrame
@@ -1288,7 +1288,7 @@ TeardownEditSession = function()
     SetEnterSnap(nil)
     _sessionIgnored = {}
     HideEditBanner()
-    SetEditOverlayShown(false)
+    ShowEditOverlay(false)
     UpdateIndicator()
     UpdateEditLocks() -- release threshold/hands-off locks
     RequestGoldWalk() -- clear conflict-red marks back to gold
@@ -1330,12 +1330,12 @@ function CludesUI.SpecOverrides_UpdateBmPassiveChrome()
             banner._done:Hide()
         end -- nothing to exit
         banner:Show()
-        SetEditOverlayShown(true)
+        ShowEditOverlay(true)
         _bmPassiveChrome = true
     elseif _bmPassiveChrome then
         _bmPassiveChrome = false
         HideEditBanner()
-        SetEditOverlayShown(false)
+        ShowEditOverlay(false)
         if banner and banner._done then
             banner._done:Show()
         end
@@ -1576,7 +1576,7 @@ EnterGroupEdit = function(set, force)
     _lastAttr.snap, _lastAttr.busy = nil, false
     _watchTicker = C_Timer.NewTicker(0.4, WatchTick)
     ShowEditBanner(set)
-    SetEditOverlayShown(true)
+    ShowEditOverlay(true)
     UpdateIndicator()
     UpdateEditLocks()
     RequestGoldWalk()
@@ -1829,7 +1829,7 @@ Cond.EnterEdit = function(group, force)
     _watchTicker = C_Timer.NewTicker(0.4, WatchTick)
     ShowEditBanner(group)
     SetEditStatus(L("Any setting you change now applies only while this conditional is active."), 1, 1, 0.6)
-    SetEditOverlayShown(true)
+    ShowEditOverlay(true)
     UpdateIndicator()
     UpdateEditLocks()
     RequestGoldWalk()

@@ -758,7 +758,7 @@ end
 
 -- One slot's text. Runs from Blizzard's per-slot update (only while the
 -- slots are shown), from the options refreshers and from item data landing.
-local function PaintSlotText(slot)
+local function DrawSlotText(slot)
     local skinData = FFD[slot]
     local stats = skinData and skinData.stats
     if not stats then
@@ -908,7 +908,7 @@ local function OnItemInfo(_, _, itemId, success)
                 if skinData then
                     skinData.paintLink = nil
                 end
-                PaintSlotText(slot)
+                DrawSlotText(slot)
             end
         end
     end
@@ -982,7 +982,7 @@ local function BuildSlotText()
     for i = 1, #SLOTS do
         local slot = _G[SLOTS[i]]
         if slot and slot:IsVisible() then
-            PaintSlotText(slot)
+            DrawSlotText(slot)
         end
     end
 end
@@ -1000,7 +1000,7 @@ local function RedrawSlotText()
     for i = 1, #SLOTS do
         local slot = _G[SLOTS[i]]
         if slot and slot:IsVisible() then
-            PaintSlotText(slot)
+            DrawSlotText(slot)
         end
     end
 end
@@ -1022,7 +1022,7 @@ local function OnSlotUpdate(slot)
         ColorSlotBorder(slot)
     end
     if skinData.stats then
-        PaintSlotText(slot)
+        DrawSlotText(slot)
     end
 end
 

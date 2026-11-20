@@ -173,7 +173,7 @@ local GetCVar, GetCVarBitfield = C_CVar.GetCVar, C_CVar.GetCVarBitfield
 
 -- The part of the record a CVar belongs to: this character's for a
 -- per-character one (nil while the character is unknown).
-local function CVarRoot(name)
+local function CVarScope(name)
     local _, _, _, perChar = C_CVar.GetCVarInfo(name)
     if perChar then
         return CharRecord()
@@ -200,7 +200,7 @@ local function Note(name, before, ownerFrame)
     if _fresh == nil or before == nil then
         return
     end
-    local root = CVarRoot(name)
+    local root = CVarScope(name)
     if not root then
         return
     end
@@ -241,7 +241,7 @@ function CludesUI.HoldCVar(name, value, ownerFrame)
         return false
     end
     local current = GetCVar(name)
-    local root = _fresh ~= nil and current ~= nil and CVarRoot(name)
+    local root = _fresh ~= nil and current ~= nil and CVarScope(name)
     local key = name:lower()
     local snap
     if root and not (root.held and root.held[key]) then
@@ -280,7 +280,7 @@ function CludesUI.ReleaseCVar(name, value, ownerFrame)
     if _fresh == nil or current == nil then
         return success
     end
-    local root = CVarRoot(name)
+    local root = CVarScope(name)
     if not root then
         return success
     end
@@ -316,7 +316,7 @@ function CludesUI.SetCVarBitfield(name, index, value, ownerFrame)
     end
     local before = GetCVarBitfield(name, index)
     local success = C_CVar.SetCVarBitfield(name, index, value)
-    local root = success and _fresh ~= nil and before ~= nil and CVarRoot(name)
+    local root = success and _fresh ~= nil and before ~= nil and CVarScope(name)
     if root then
         local tbl = Sub(Sub(root, "bits"), name:lower())
         local e = tbl[index]
@@ -367,7 +367,7 @@ function CludesUI.DropHold(name, ownerFrame)
     if _fresh == nil then
         return
     end
-    local root = CVarRoot(name)
+    local root = CVarScope(name)
     local key = name:lower()
     local hgt = root and root.held and root.held[key]
     if not (hgt and hgt.o == ownerFrame) then
@@ -389,7 +389,7 @@ function CludesUI.ReleaseStaleHold(name, ownerFrame)
     if _uninstalled or _fresh == nil then
         return
     end
-    local root = CVarRoot(name)
+    local root = CVarScope(name)
     local key = name:lower()
     local hgt = root and root.held and root.held[key]
     if hgt and hgt.o == ownerFrame then

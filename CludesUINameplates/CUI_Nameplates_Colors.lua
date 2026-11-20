@@ -170,7 +170,7 @@ end
 
 -- Righteous Fury's state, read only while the aura is readable (outside an aura
 -- restriction nothing is secret).
-local function FvReadFury()
+local function ReadFuryForever()
     local S = C_Secrets
     if S and S.ShouldSpellAuraBeSecret then
         local success, secret = pcall(S.ShouldSpellAuraBeSecret, FV_FURY)
@@ -194,7 +194,7 @@ local function FvFuryProbe(details)
         return false
     end
     if not details then
-        FvReadFury()
+        ReadFuryForever()
         return true
     end
     local full = details.isFullUpdate
@@ -202,7 +202,7 @@ local function FvFuryProbe(details)
         return false
     end
     if full then
-        FvReadFury()
+        ReadFuryForever()
         return true
     end
     local added = details.addedAuras
@@ -276,7 +276,7 @@ local function FvTankSync(isOn)
     if isOn then
         if FV_TANK_CLASS == "fury" then
             tankFrame:RegisterUnitEvent("UNIT_AURA", "player")
-            FvReadFury()
+            ReadFuryForever()
         else
             tankFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
         end
@@ -332,7 +332,7 @@ local function RefreshThreatCache()
     -- tank shapes and Righteous Fury while the group has no assigned tank
     -- (PlayerTankVerdict).
     if FV_TANK_CLASS == "fury" then
-        FvReadFury()
+        ReadFuryForever()
     end
     if fvTankOn then
         FvReadRoleTank()

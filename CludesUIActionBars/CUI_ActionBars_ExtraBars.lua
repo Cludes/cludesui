@@ -529,7 +529,7 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
     -- Early return skips all position capture/restore code below.
     if barId == "MicroBar" or barId == "BagBar" then
         ABAR.db.profile.barPositions[barId] = nil
-        local function SyncFollow()
+        local function MatchBlizzSize()
             local fw, fh = blizzFrame:GetWidth(), blizzFrame:GetHeight()
             if fw and fw > 1 and fh and fh > 1 then
                 -- In our own units: Edit Mode's Size setting scales the frame.
@@ -542,19 +542,19 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
             mod.AB_ExtraCaps(barId)
             FadeForeverBarArt(barId)
         end
-        SyncFollow()
+        MatchBlizzSize()
         blizzFrame:HookScript("OnSizeChanged", function()
-            SyncFollow()
+            MatchBlizzSize()
         end)
         if blizzFrame.ApplySystemAnchor then
             hooksecurefunc(blizzFrame, "ApplySystemAnchor", function()
-                C_Timer_After(0, SyncFollow)
+                C_Timer_After(0, MatchBlizzSize)
             end)
         end
         -- A Size change only rescales the frame (no size event).
         if blizzFrame.UpdateSystemSettingSize then
             hooksecurefunc(blizzFrame, "UpdateSystemSettingSize", function()
-                C_Timer_After(0, SyncFollow)
+                C_Timer_After(0, MatchBlizzSize)
             end)
         end
         return holderFrame
@@ -623,7 +623,7 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
         SafeEnableMouse(holderFrame, false)
 
         -- Reparent to UIParent (independent of micro menu visibility)
-        local function EnsureQueueParent()
+        local function ParentQueueFrame()
             if blizzFrame:GetParent() ~= UIParent and not InCombatLockdown() then
                 blizzFrame:SetParent(UIParent)
                 if MicroMenuContainer and MicroMenuContainer.Layout then
@@ -635,7 +635,7 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
                 end
             end
         end
-        EnsureQueueParent()
+        ParentQueueFrame()
 
         local function SyncQueueHolderSize()
             local fw, fh = blizzFrame:GetWidth(), blizzFrame:GetHeight()
@@ -664,7 +664,7 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
             end
             _upGuard = true
             RepositionQueue()
-            EnsureQueueParent()
+            ParentQueueFrame()
             _upGuard = false
         end
         if type(blizzFrame.UpdatePosition) == "function" then
@@ -691,7 +691,7 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
         -- force Show() if the player is actually in a queue.
         if type(blizzFrame.UpdateDisplay) == "function" then
             hooksecurefunc(blizzFrame, "UpdateDisplay", function()
-                EnsureQueueParent()
+                ParentQueueFrame()
             end)
         end
 
@@ -702,7 +702,7 @@ local function SetupExtraBarHolder(barId, frameName, barInfo)
         queueWatcher:RegisterEvent("LFG_ROLE_CHECK_UPDATE")
         queueWatcher:RegisterEvent("LFG_PROPOSAL_UPDATE")
         queueWatcher:SetScript("OnEvent", function()
-            EnsureQueueParent()
+            ParentQueueFrame()
             RepositionQueue()
         end)
 

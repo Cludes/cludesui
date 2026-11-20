@@ -140,7 +140,7 @@ local function LimitedCurrencyCost(index)
     return itemLink ~= nil and limited ~= nil and limited(itemLink) ~= nil
 end
 
-local function SyncEvents()
+local function SyncBuyEvents()
     if job or confirm or (dialog and dialog:IsShown()) then
         events:RegisterEvent("MERCHANT_CLOSED")
     else
@@ -160,7 +160,7 @@ end
 local function CancelJob()
     local jdx = job
     job = nil
-    SyncEvents()
+    SyncBuyEvents()
     if not jdx then
         return
     end
@@ -215,7 +215,7 @@ local function StartJob(index, itemId, qty, step, chunk)
         last = total,
         issued = 0,
     }
-    SyncEvents()
+    SyncBuyEvents()
     StepJob()
 end
 
@@ -284,10 +284,10 @@ local function DoBuy()
             onConfirm = start,
             onCancel = function()
                 confirm = nil
-                SyncEvents()
+                SyncBuyEvents()
             end,
         })
-        SyncEvents()
+        SyncBuyEvents()
     else
         start()
     end
@@ -433,8 +433,8 @@ local function CreateDialog()
         skin = SKIN,
         onChange = ShowCost,
         onEnter = BuyOrSnap,
-        onShow = SyncEvents,
-        onHide = SyncEvents,
+        onShow = SyncBuyEvents,
+        onHide = SyncBuyEvents,
         buttons = {
             {
                 key = "stack",

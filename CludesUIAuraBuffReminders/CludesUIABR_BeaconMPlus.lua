@@ -50,7 +50,7 @@ local function IsHoly()
     return specInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo) == HOLY_SPEC
 end
 
-local function RefreshTank()
+local function FindTank()
     for index = 1, 4 do
         local u = PARTY[index]
         if UnitExists(u) then
@@ -174,7 +174,7 @@ local function PlaceOver(btnFrame)
     return true
 end
 
-local function Disarm()
+local function StandDown()
     if owner then
         owner:Hide()
     end
@@ -226,7 +226,7 @@ local function Sync()
     end
     level = wanted
     eventFrame:UnregisterAllEvents()
-    Disarm()
+    StandDown()
     if wanted == 0 then
         return
     end
@@ -239,7 +239,7 @@ local function Sync()
         eventFrame:RegisterEvent("CHALLENGE_MODE_RESET")
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         WatchRoster(C_ChallengeMode.IsChallengeModeActive())
-        RefreshTank()
+        FindTank()
         if IsEncounterInProgress() then
             Arm()
         else
@@ -253,15 +253,15 @@ eventFrame:SetScript("OnEvent", function(_, evt)
         Arm()
     elseif evt == "CHALLENGE_MODE_START" then
         WatchRoster(true)
-        RefreshTank()
+        FindTank()
         Prebuild()
     elseif evt == "ENCOUNTER_END" then
-        Disarm()
+        StandDown()
     elseif evt == "CHALLENGE_MODE_COMPLETED" or evt == "CHALLENGE_MODE_RESET" then
         WatchRoster(false)
-        Disarm()
+        StandDown()
     elseif evt == "GROUP_ROSTER_UPDATE" or evt == "PLAYER_ROLES_ASSIGNED" then
-        RefreshTank()
+        FindTank()
     elseif evt == "PLAYER_ENTERING_WORLD" then
         if not started then
             -- After every module's OnEnable, so ABR's DB and refresh exist. The
@@ -273,9 +273,9 @@ eventFrame:SetScript("OnEvent", function(_, evt)
             Sync()
             return
         end
-        Disarm()
+        StandDown()
         WatchRoster(C_ChallengeMode.IsChallengeModeActive())
-        RefreshTank()
+        FindTank()
         if IsEncounterInProgress() then
             Arm()
         else

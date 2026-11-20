@@ -154,7 +154,7 @@ local function SetWatch(on)
     mod.UpdateRotationAssistIconKeybind = nil
 end
 
-local function Update()
+local function RunPass()
     -- A direct pass also consumes a queued one.
     driver:Hide()
     if not live then
@@ -222,7 +222,7 @@ local function OnEvent(self, evt)
     self:Show()
 end
 
-local function ApplyPosition()
+local function PlaceIcon()
     if not widget or CludesUI._unlockActive then
         return
     end
@@ -235,9 +235,9 @@ end
 local function OnUnlock(activeSession)
     preview = activeSession and true or false
     if not activeSession then
-        ApplyPosition()
+        PlaceIcon()
     end
-    Update()
+    RunPass()
 end
 
 local function RegisterMover()
@@ -274,7 +274,7 @@ local function RegisterMover()
                 if conf then
                     conf.position = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 end
-                ApplyPosition()
+                PlaceIcon()
             end,
             loadPos = function()
                 local conf = Settings()
@@ -286,7 +286,7 @@ local function RegisterMover()
                     conf.position = nil
                 end
             end,
-            applyPos = ApplyPosition,
+            applyPos = PlaceIcon,
         }),
     }, "CludesUICooldownManager")
     CludesUI:RegisterUnlockModeListener(widget, OnUnlock)
@@ -320,7 +320,7 @@ end
 
 local function OnHighlightState()
     SetLive(mod.RotationAssistAvailable())
-    Update()
+    RunPass()
 end
 
 local function CreateIcon()
@@ -347,7 +347,7 @@ local function CreateIcon()
     -- pass, and its one-shot OnUpdate (Update hides it first) runs that pass.
     driver = mod.TakeShell()
     driver:Hide()
-    driver:SetScript("OnUpdate", Update)
+    driver:SetScript("OnUpdate", RunPass)
     driver:SetScript("OnEvent", OnEvent)
 end
 
@@ -374,11 +374,11 @@ function mod.RefreshRotationAssistIcon()
     mod.StyleCDMKeybind(keybind, conf, textOverlay, CludesUI.PP.mult, mod.GetCDMFont())
     -- Settings edge: the next pass repaints the texture and the label.
     paintedTexture, paintedKey = nil, false
-    ApplyPosition()
+    PlaceIcon()
     if not isActive then
         isActive = true
         EventRegistry:RegisterCallback(CB_STATE, OnHighlightState, driver)
     end
     SetLive(mod.RotationAssistAvailable())
-    Update()
+    RunPass()
 end

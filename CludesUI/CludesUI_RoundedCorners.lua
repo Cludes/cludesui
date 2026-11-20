@@ -92,7 +92,7 @@ local floor, min, max, log, exp = math.floor, math.min, math.max, math.log, math
 local pairs, select, pcall = pairs, select, pcall
 
 -- Media paths by number, built on first use.
-local function Paths(fmt)
+local function PathTable(fmt)
     return setmetatable({}, {
         __index = function(tbl, num)
             local val = MEDIA .. fmt:format(num)
@@ -115,8 +115,8 @@ local function MaskPaths(prefixText)
 end
 local ROUNDED = MaskPaths("rounded")
 local ROUNDED_INV = MaskPaths("rounded-inv")
-local GLOW_CORNER = Paths("glow-corner-%d.tga")
-local GLOW_TIGHT = Paths("glow-tight-%d.tga")
+local GLOW_CORNER = PathTable("glow-corner-%d.tga")
+local GLOW_TIGHT = PathTable("glow-tight-%d.tga")
 
 -- dx, dy: the inward direction from each corner.
 local CORNERS = {
@@ -879,8 +879,8 @@ end
 -- the colour is the texture's vertex colour.
 local WEAK_K = { __mode = "k" }
 local layers = setmetatable({}, WEAK_K) -- layer frame -> layer object
-local PILL = Paths("pill-%d.tga")
-local CIRCLE = Paths("circle-%d.tga")
+local PILL = PathTable("pill-%d.tga")
+local CIRCLE = PathTable("circle-%d.tga")
 local ART_MIN, ART_MAX = 2, 48
 
 function CludesUI.SetPillArt(texture, hgt)

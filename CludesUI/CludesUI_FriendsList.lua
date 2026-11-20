@@ -1852,13 +1852,13 @@ end
 -------------------------------------------------------------------------------
 local barBusy = false -- the bar and the list are telling each other one spot
 
-local function ScrollRange()
+local function MaxScroll()
     return math.max(0, contentFrame:GetHeight() - scrollFrame:GetHeight())
 end
 
 -- Where the view stands, after a scroll step of the list
 local function SyncBarSpot()
-    local range = ScrollRange()
+    local range = MaxScroll()
     barBusy = true
     bar:SetScrollPercentage(range > 0 and scrollFrame:GetVerticalScroll() / range or 0, true)
     barBusy = false
@@ -1866,7 +1866,7 @@ end
 
 -- The whole bar, after the list or the view changed size
 local function SyncBar()
-    local range = ScrollRange()
+    local range = MaxScroll()
     barBusy = true
     bar:SetVisibleExtentPercentage(range > 0 and scrollFrame:GetHeight() / contentFrame:GetHeight() or 1)
     bar:SetPanExtentPercentage(range > 0 and (tileHeight + ROW_GAP) / range or 0)
@@ -1894,7 +1894,7 @@ local function OnBarScroll(_, percentage)
         return
     end
     barBusy = true
-    ScrollTo(percentage * ScrollRange())
+    ScrollTo(percentage * MaxScroll())
     barBusy = false
 end
 
@@ -1902,7 +1902,7 @@ end
 -- The view keeps its spot; only a spot past the new end is pulled back.
 Refill = function()
     Rebuild()
-    local range = ScrollRange()
+    local range = MaxScroll()
     if scrollFrame:GetVerticalScroll() > range then
         ScrollTo(range)
     else
@@ -2276,7 +2276,7 @@ end
 
 -- The friends view hid: nothing of ours runs until it shows again. Blizzard's
 -- list stays covered, so its cards are not painted for nothing meanwhile.
-local function Park()
+local function ParkList()
     if not isActive then
         return
     end
@@ -2353,12 +2353,12 @@ end
 -- the view shows; it stays over Blizzard's hidden list until it stands down.
 local function Sync()
     if not WantActive() then
-        Park()
+        ParkList()
         Uncover()
     elseif driver and driver:IsVisible() then
         Activate()
     else
-        Park()
+        ParkList()
     end
 end
 
@@ -2386,7 +2386,7 @@ function FL.Refresh()
         if driver then
             driver:Hide()
         end
-        Park()
+        ParkList()
         Uncover()
         return
     end
@@ -2394,7 +2394,7 @@ function FL.Refresh()
         -- A child of the friends view: its show and hide are the list's
         driver = CreateFrame("Frame", nil, View())
         driver:SetScript("OnShow", Sync)
-        driver:SetScript("OnHide", Park)
+        driver:SetScript("OnHide", ParkList)
     end
     driver:Show()
     Sync()

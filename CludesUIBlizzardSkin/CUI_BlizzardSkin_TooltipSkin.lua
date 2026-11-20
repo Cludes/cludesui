@@ -27,7 +27,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
     local _RAID_CC = RAID_CLASS_COLORS
     local _nameL1 = nil -- cached ref to GameTooltipTextLeft1
 
-    local function _enabled()
+    local function _tipsOn()
         return not CludesUIDB or CludesUIDB.customTooltips ~= false
     end
     -- Popups + context menus reskin. customTooltips governs ONLY the game tooltip; reskinPopupsMenus
@@ -174,7 +174,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
     CludesUI._getPopupMenuButtonTextColor = _getElementColor
 
     local function _ttSkin(tip, _, isEmbedded)
-        if not tip or tip:IsForbidden() or not _enabled() then
+        if not tip or tip:IsForbidden() or not _tipsOn() then
             return
         end
         -- Embedded tooltips (EmbeddedItemTooltip, reward block inside a world-quest tooltip) render INSIDE a parent; skip bg/border to avoid a nested-tooltip look.
@@ -206,7 +206,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
     CludesUI._skinBlizzardTooltipFrame = _ttSkin
 
     local function _ttFonts(tip, startFrom)
-        if not tip or tip:IsForbidden() or not _enabled() then
+        if not tip or tip:IsForbidden() or not _tipsOn() then
             return
         end
         local fp = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
@@ -247,7 +247,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
         -- forbidden-object access (field-hit via Blizzard_PTRFeedback's tooltip hook,
         -- which Shows the tooltip from secure code with our OnShow hook behind it);
         -- the recalc is optional polish, the font writes above are region-level and legal regardless.
-        if _enabled() and not _ttRelaying[self] then
+        if _tipsOn() and not _ttRelaying[self] then
             _ttRelaying[self] = true
             pcall(self.Show, self)
             _ttRelaying[self] = nil
@@ -1839,7 +1839,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             -- options. Context menu/static popup reskins (reskinPopupsMenus) and
             -- per-window reskins use their own keys, seeded from the old master once by the
             -- blizzskin_reskin_master_split_v1 migration at parent ADDON_LOADED.
-            if _enabled() then
+            if _tipsOn() then
                 _ttInitData()
                 _ttInitVisual()
             end
@@ -1888,7 +1888,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             return
         end
         local saved = CludesUIDB or {}
-        local on = _enabled()
+        local on = _tipsOn()
         -- Extras exist only under the reskin, as on the live tooltip.
         local posX = on and saved or {}
         local L = CludesUI.L
@@ -2188,7 +2188,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
         if not inb then
             return
         end
-        if _enabled() then
+        if _tipsOn() then
             if not inb.SetTooltipBackdrop then
                 return
             end

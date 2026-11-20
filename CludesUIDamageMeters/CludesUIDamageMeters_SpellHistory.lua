@@ -89,7 +89,7 @@ local _spellInfoCache = {}
 
 -- Cached DB accessor; defaults are merged once at init, not per-call
 local _shDB
-local function DB()
+local function HistoryDB()
     if _shDB then
         return _shDB
     end
@@ -123,7 +123,7 @@ end
 
 local function GetBarTexturePath()
     local dmCfg = mod.EDM.DB()
-    local historyCfg = DB()
+    local historyCfg = HistoryDB()
     local castKey = historyCfg.spellHistoryBarTexture
     if not castKey or castKey == "match" then
         castKey = (dmCfg and dmCfg.barTexture) or "none"
@@ -149,7 +149,7 @@ local function OutcomeColor(statusText)
     if statusText == "failed" or statusText == "interrupted" then
         return CLR_STOPPED[1], CLR_STOPPED[2], CLR_STOPPED[3]
     end
-    local historyCfg = DB()
+    local historyCfg = HistoryDB()
     if historyCfg.barColorUseClass then
         local _, class = UnitClass("player")
         local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
@@ -239,7 +239,7 @@ local StartCastAnim
 --  History management
 -------------------------------------------------------------------------------
 local function RefreshViews()
-    local historyCfg = DB()
+    local historyCfg = HistoryDB()
     if historyCfg.iconEnabled then
         BuildIconStrip()
     end
@@ -666,7 +666,7 @@ local ANIM_SLIDE_PX = 6
 -- existing profile.  The container expands around that fixed icon so changing
 -- the history length or growth direction never makes the row wander.
 local function IconStripGeometry(total)
-    local historyCfg = DB()
+    local historyCfg = HistoryDB()
     local iconSize = SnapSize(historyCfg.iconSize or 24)
     local gap = historyCfg.iconSpacing or 1
     local direction = historyCfg.growDirection or "LEFT"
@@ -704,7 +704,7 @@ local function PositionIconContainer(total)
         return
     end
 
-    local place = DB().iconPos
+    local place = HistoryDB().iconPos
     local firstLeft, firstTop
     if place and place.x and place.y then
         firstLeft, firstTop = place.x, place.y
@@ -725,7 +725,7 @@ local function SaveIconPositionFromFrame(total)
         return
     end
     local _, _, _, _, _, leftOffset, upOffset = IconStripGeometry(total)
-    DB().iconPos = { x = leftX + leftOffset, y = topY - upOffset }
+    HistoryDB().iconPos = { x = leftX + leftOffset, y = topY - upOffset }
 end
 
 local function StartIconDrag(button)
@@ -774,7 +774,7 @@ local function FadeBase(e)
     return e._fadeBase or e.timestamp or 0
 end
 
-local function StopFadeClock()
+local function CancelFade()
     if _fadeTimer then
         _fadeTimer:Cancel()
         _fadeTimer = nil
@@ -788,7 +788,7 @@ end
 -- the next fade start. Out-of-combat only; entries are newest first, so effective ages
 -- grow with the index and the scan can stop at the first fully-faded entry.
 local function ScheduleFade(fadeSecs, maxIcons)
-    StopFadeClock()
+    CancelFade()
     local num = min(#_history, maxIcons)
     if num == 0 then
         return
@@ -840,11 +840,11 @@ local function EnsureFadeEvents()
     _fadeEvents:SetScript("OnEvent", function(_, evt)
         if evt == "PLAYER_REGEN_DISABLED" then
             _combatStart = GetTime()
-            StopFadeClock()
+            CancelFade()
         else
             local cs = _combatStart
             _combatStart = nil
-            if (DB().iconFadeTime or 0) <= 0 then
+            if (HistoryDB().iconFadeTime or 0) <= 0 then
                 return
             end
             local nowTime = GetTime()
@@ -950,7 +950,7 @@ local function MakeIcon(hostFrame)
     iconCell.bg = backdrop
     iconCell.tex = iconCell.frame:CreateTexture(nil, "ARTWORK")
     iconCell.tex:SetAllPoints()
-    local z = DB().iconZoom or 0.08
+    local z = HistoryDB().iconZoom or 0.08
     iconCell.tex:SetTexCoord(z, 1 - z, z, 1 - z)
     iconCell.frame:Hide()
     return iconCell
@@ -994,7 +994,7 @@ local function GetPreviewIcons()
 end
 
 BuildIconStrip = function()
-    local historyCfg = DB()
+    local historyCfg = HistoryDB()
     if
         not historyCfg.iconEnabled
         or ShouldHide(
@@ -1008,7 +1008,7 @@ BuildIconStrip = function()
         if _iconContainer then
             _iconContainer:Hide()
         end
-        StopFadeClock()
+        CancelFade()
         return
     end
 
@@ -1093,7 +1093,7 @@ BuildIconStrip = function()
             ScheduleFade(fadeSecs, maxIcons)
         end
     else
-        StopFadeClock()
+        CancelFade()
     end
 
     -- Unlock Mode always reserves the configured maximum footprint. Live
@@ -1243,7 +1243,7 @@ end
 -- preview mode, giving the strip the same labeled placement box as Combat Timer.
 mod.MakeIconHistoryUnlockElement = function(MK)
     local function UnlockGeometry()
-        return IconStripGeometry(DB().iconCount or 5)
+        return IconStripGeometry(HistoryDB().iconCount or 5)
     end
     return MK({
         key = "EDM_IconHistory",
@@ -1267,7 +1267,7 @@ mod.MakeIconHistoryUnlockElement = function(MK)
             return w, height
         end,
         isHidden = function()
-            return not DB().iconEnabled
+            return not HistoryDB().iconEnabled
         end,
         savePos = function(_, anchorPoint, relPoint, posX, posY)
             -- Unlock Mode stores registered elements as CENTER/CENTER offsets.
@@ -1284,10 +1284,10 @@ mod.MakeIconHistoryUnlockElement = function(MK)
             if direction == "UP" then
                 firstTop = firstTop - height + iconSize
             end
-            DB().iconPos = { x = firstLeft, y = firstTop }
+            HistoryDB().iconPos = { x = firstLeft, y = firstTop }
         end,
         loadPos = function()
-            local place = DB().iconPos
+            local place = HistoryDB().iconPos
             local iconSize, _, direction, w, height = UnlockGeometry()
             local firstLeft = place and place.x or (UIParent:GetWidth() * 0.5 - iconSize * 0.5)
             local firstTop = place and place.y or (UIParent:GetHeight() * 0.5 + iconSize * 0.5)
@@ -1301,11 +1301,11 @@ mod.MakeIconHistoryUnlockElement = function(MK)
             }
         end,
         clearPos = function()
-            DB().iconPos = nil
+            HistoryDB().iconPos = nil
         end,
         applyPos = function()
             PositionIconContainer(
-                (CUI._unlockActive and DB().iconCount) or _iconContainer and _iconContainer._layoutCount
+                (CUI._unlockActive and HistoryDB().iconCount) or _iconContainer and _iconContainer._layoutCount
             )
         end,
     })
@@ -1330,7 +1330,7 @@ local function MakeHistoryBar(hostFrame)
     barFrame.icon = barFrame.row:CreateTexture(nil, "OVERLAY")
     barFrame.icon:SetSize(18, 18)
     barFrame.icon:SetPoint("LEFT", barFrame.row, "LEFT", 0, 0)
-    local z = DB().iconZoom or 0.08
+    local z = HistoryDB().iconZoom or 0.08
     barFrame.icon:SetTexCoord(z, 1 - z, z, 1 - z)
 
     barFrame.fill = CreateFrame("StatusBar", nil, barFrame.row)
@@ -1350,7 +1350,7 @@ local function MakeHistoryBar(hostFrame)
     tf:SetAllPoints(barFrame.fill)
     tf:SetFrameLevel(barFrame.fill:GetFrameLevel() + 2)
 
-    local historyCfg = DB()
+    local historyCfg = HistoryDB()
     local fontStr = historyCfg.textSize or 11
 
     barFrame.label = tf:CreateFontString(nil, "OVERLAY")
@@ -1376,7 +1376,7 @@ local RESIZE_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\resize_element.p
 local MIN_W, MIN_H = 150, 80
 
 local function BuildBarWindow()
-    local historyCfg = DB()
+    local historyCfg = HistoryDB()
     local dmCfg = mod.EDM.DB()
     if
         not historyCfg.barEnabled
@@ -1503,7 +1503,7 @@ local function BuildBarWindow()
             widget._locked and "Locked" or "Unlocked",
             function()
                 widget._locked = not widget._locked
-                DB().barLocked = widget._locked
+                HistoryDB().barLocked = widget._locked
                 local iconCell = widget._lockBtn._icon
                 if not mod.DMPaintHdrArt(iconCell, widget._locked and "locked" or "unlocked") then
                     iconCell:SetTexture(
@@ -1562,7 +1562,7 @@ local function BuildBarWindow()
             end
             widget._resizing = false
             resizeFrame:Hide()
-            DB().barWidth = floor(widget:GetWidth() + 0.5)
+            HistoryDB().barWidth = floor(widget:GetWidth() + 0.5)
         end)
 
         -- Header drag
@@ -1575,7 +1575,7 @@ local function BuildBarWindow()
             widget:StopMovingOrSizing()
             local l, t = widget:GetLeft(), widget:GetTop()
             if l and t then
-                DB().barPos = { x = l, y = t }
+                HistoryDB().barPos = { x = l, y = t }
             end
         end)
 
@@ -1671,7 +1671,7 @@ RefreshBarWindow = function()
     end
 
     local dmCfg = mod.EDM.DB()
-    local historyCfg = DB()
+    local historyCfg = HistoryDB()
     local barH, barSp, stride =
         mod._RowMetrics(historyCfg.shBarHeight or 18, dmCfg.barSpacing or 2, _barWin:GetEffectiveScale())
     local texPath = GetBarTexturePath()
@@ -1881,7 +1881,7 @@ end
 --  Public API
 -------------------------------------------------------------------------------
 function mod.ApplySpellHistory()
-    local historyCfg = DB()
+    local historyCfg = HistoryDB()
     local isActive = historyCfg.iconEnabled or historyCfg.barEnabled
 
     -- Dynamic event registration: zero overhead when disabled
@@ -1909,7 +1909,7 @@ function mod.ApplySpellHistory()
     if historyCfg.iconEnabled and not mod._iconUnlockListenerRegistered and CUI.RegisterUnlockModeListener then
         mod._iconUnlockListenerRegistered = true
         CUI:RegisterUnlockModeListener("EDM_IconHistory", function()
-            if DB().iconEnabled then
+            if HistoryDB().iconEnabled then
                 BuildIconStrip()
             end
         end)

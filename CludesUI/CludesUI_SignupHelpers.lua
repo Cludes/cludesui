@@ -188,7 +188,7 @@ local function NoteEnabled()
     return CludesUIDB and CludesUIDB.persistSignupNote
 end
 
-local function HideCopyField(focusTarget)
+local function CloseCopyField(focusTarget)
     if not copyHelper then
         return
     end
@@ -263,12 +263,12 @@ local function RefreshCopyHelper(dialog)
 
         copyBox:SetScript("OnEditFocusLost", function()
             if not hidingCopyField and not btnFrame:IsMouseOver() then
-                HideCopyField(false)
+                CloseCopyField(false)
             end
         end)
         copyBox:SetScript("OnKeyUp", function(_, key)
             if key == "C" and IsControlKeyDown() then
-                HideCopyField(true)
+                CloseCopyField(true)
             end
         end)
 
@@ -282,7 +282,7 @@ local function RefreshCopyHelper(dialog)
         end)
         btnFrame:SetScript("OnClick", function()
             if copyBox:IsShown() then
-                HideCopyField(false)
+                CloseCopyField(false)
                 return
             end
             local note = SavedNote()
@@ -306,7 +306,7 @@ local function RefreshCopyHelper(dialog)
     copyHelper:SetFrameLevel(dialog:GetFrameLevel() + 20)
     copyHelper.button:SetFrameLevel(copyHelper:GetFrameLevel() + 1)
     copyHelper.copyBox:SetFrameLevel(copyHelper:GetFrameLevel() + 2)
-    HideCopyField()
+    CloseCopyField()
     copyHelper:Show()
 end
 

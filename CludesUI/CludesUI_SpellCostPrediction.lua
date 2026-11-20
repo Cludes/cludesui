@@ -238,7 +238,7 @@ end
 
 -- Cast events are heard while at least one attached host bar is visible;
 -- when the last one hides or detaches they are dropped along with the cast.
-local function Listen()
+local function SyncListeners()
     local enabled = false
     for _, h in pairs(hosts) do
         if h.bar:IsVisible() then
@@ -266,7 +266,7 @@ end
 local function OnHostShow(bar)
     local h = built[bar]
     if hosts[h.key] == h then
-        Listen()
+        SyncListeners()
         if castGUID then
             Show(h)
         end
@@ -276,7 +276,7 @@ end
 local function OnHostHide(bar)
     local h = built[bar]
     if hosts[h.key] == h then
-        Listen()
+        SyncListeners()
     end
 end
 
@@ -318,7 +318,7 @@ function SCP.Attach(key, bar, cb)
         end
         h.cb, h.key = cb, key
         hosts[key] = h
-        Listen()
+        SyncListeners()
     end
     -- A cast already in flight is laid out again when this attach is new or
     -- the rebuild behind it moved an input of the last draw.
@@ -336,5 +336,5 @@ function SCP.Detach(key)
     if h.seg then
         h.seg:Hide()
     end
-    Listen()
+    SyncListeners()
 end

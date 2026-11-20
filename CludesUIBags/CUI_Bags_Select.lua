@@ -443,7 +443,7 @@ EnterAssignSelectMode = function(catKey, junkList)
         local hoveredBtn = nil
         local savedR, savedG, savedB, savedA, savedBrdSize
 
-        local function ClearHover()
+        local function DropHover()
             if hoveredBtn then
                 if savedR then
                     SetInsetBorderColor(hoveredBtn, savedR, savedG, savedB, savedA)
@@ -458,7 +458,7 @@ EnterAssignSelectMode = function(catKey, junkList)
             hoverOverlay:ClearAllPoints()
             hoverOverlay:Hide()
         end
-        castFrame._clearHover = ClearHover
+        castFrame._clearHover = DropHover
 
         -- Re-tests only when the cursor or the scroll moved, or on a show
         -- (_hoverDirty); the wheel scrolls under a still cursor
@@ -476,7 +476,7 @@ EnterAssignSelectMode = function(catKey, junkList)
             if button == hoveredBtn then
                 return
             end
-            ClearHover()
+            DropHover()
             if button and button.icon and button.icon:IsShown() then
                 savedR, savedG, savedB, savedA, savedBrdSize = GetInsetBorderStyle(button)
                 if savedR then
@@ -495,7 +495,7 @@ EnterAssignSelectMode = function(catKey, junkList)
 
         castFrame:SetScript("OnMouseDown", function(_, btnFrame)
             if btnFrame == "RightButton" then
-                ClearHover()
+                DropHover()
                 LeaveAssignMode()
                 return
             end
@@ -521,7 +521,7 @@ EnterAssignSelectMode = function(catKey, junkList)
                             mod.RepaintJunkItem(details.itemID)
                             CUI_Bags._junkDirty = true
                         else
-                            ClearHover()
+                            DropHover()
                             CUI_CategoryManager:AssignItem(details.itemID, _assignSelectCatKey)
                             LeaveAssignMode()
                             CUI_Bags:RefreshInventory()
@@ -535,7 +535,7 @@ EnterAssignSelectMode = function(catKey, junkList)
             if junkMode and CUI_Bags:IsMouseOver() then
                 return
             end
-            ClearHover()
+            DropHover()
             LeaveAssignMode()
         end)
 

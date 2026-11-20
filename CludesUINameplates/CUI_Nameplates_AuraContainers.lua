@@ -479,7 +479,7 @@ local function NPCustomIconBorder()
     return tbl
 end
 
-local function BuildNPStyle(kindName, variant)
+local function MakePlateStyle(kindName, variant)
     local px = NPSize(kindName)
     local height, isCropped = NPHeight(kindName, px)
     -- User text settings, resolved through the legacy fallback chains, so
@@ -2757,14 +2757,14 @@ function mod.NPC_ReloadAll()
         npFP.style = val
         for i = 1, #KINDS do
             local kindName = KINDS[i]
-            AK.styles["np:" .. kindName] = BuildNPStyle(kindName)
+            AK.styles["np:" .. kindName] = MakePlateStyle(kindName)
             AK.RestyleSoon("np:" .. kindName)
         end
         -- The buffs row's style twins restyle in lockstep: the non-Magic
         -- glow half and the plain (non-glow) remainder.
-        AK.styles["np:buffs2"] = BuildNPStyle("buffs", 2)
+        AK.styles["np:buffs2"] = MakePlateStyle("buffs", 2)
         AK.RestyleSoon("np:buffs2")
-        AK.styles["np:buffsplain"] = BuildNPStyle("buffs", "plain")
+        AK.styles["np:buffsplain"] = MakePlateStyle("buffs", "plain")
         AK.RestyleSoon("np:buffsplain")
         -- A bundle pooled while its glow was static (or off) kept the auras
         -- it showed; release those buttons before the restyle above hands
@@ -2975,10 +2975,10 @@ boot:SetScript("OnEvent", function(self, evt)
             SORT_DIR = AuraContainerSortDirection.Normal
         end
         for i = 1, #KINDS do
-            AK.styles["np:" .. KINDS[i]] = BuildNPStyle(KINDS[i])
+            AK.styles["np:" .. KINDS[i]] = MakePlateStyle(KINDS[i])
         end
-        AK.styles["np:buffs2"] = BuildNPStyle("buffs", 2)
-        AK.styles["np:buffsplain"] = BuildNPStyle("buffs", "plain")
+        AK.styles["np:buffs2"] = MakePlateStyle("buffs", 2)
+        AK.styles["np:buffsplain"] = MakePlateStyle("buffs", "plain")
         -- No skeleton pre-birth: creation is combat-legal since 68914, so pool jobs
         -- birth their skeletons inline whenever they run. Plates that spawn before the
         -- first bundles land wait in `waiting` and are serviced as bundles complete.

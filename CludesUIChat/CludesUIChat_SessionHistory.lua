@@ -80,7 +80,7 @@ local function HistoryOn()
     return saved.persistChatHistory == true
 end
 
-local function SessionHistorySafe()
+local function HistoryUsable()
     if not HistoryOn() then
         return false
     end
@@ -629,7 +629,7 @@ local function RunRestore(token)
     if token ~= restoreToken then
         return
     end
-    if not SessionHistorySafe() then
+    if not HistoryUsable() then
         return false
     end
 
@@ -664,7 +664,7 @@ local function ArmDeferredRestore(token)
                 return
             end
         end
-        if not SessionHistorySafe() then
+        if not HistoryUsable() then
             return
         end
         UnarmDeferredRestore()
@@ -685,7 +685,7 @@ TryRestore = function(token, attempt)
     if not HistoryOn() then
         return
     end
-    if not SessionHistorySafe() then
+    if not HistoryUsable() then
         ArmDeferredRestore(token)
         return
     end
@@ -760,7 +760,7 @@ eventFrame:SetScript("OnEvent", function(_, evt, ...)
     if evt == "PLAYER_ENTERING_WORLD" then
         local isInitialLogin, isReloadingUi = ...
         if not isInitialLogin and not isReloadingUi then
-            if SessionHistorySafe() then
+            if HistoryUsable() then
                 CHAT.RestoreChatSessionHistory()
             end
             return

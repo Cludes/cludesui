@@ -287,7 +287,7 @@ local function ShowBeaconIcon(spellId, show)
     end
 end
 
-local function BeaconRefresh()
+local function SyncBeacons()
     if not _B.isPaladin then
         return
     end
@@ -338,7 +338,7 @@ local function BeaconRefreshSoon()
     _B.refreshPending = true
     C_Timer.After(0, function()
         _B.refreshPending = false
-        BeaconRefresh()
+        SyncBeacons()
     end)
 end
 
@@ -367,11 +367,11 @@ local function BeaconInit()
 
     BeaconUpdateInstanceCache()
     BeaconUpdateOverlayEvents()
-    BeaconRefresh()
+    SyncBeacons()
 end
 
 -- Expose for options and anchor positioning
-_G._CUABR_BeaconRefresh = BeaconRefresh
+_G._CUABR_BeaconRefresh = SyncBeacons
 
 -- Beacon tracking is retail Holy Paladin; WoW Forever registers nothing here
 -- (BeaconInit is skipped there too, so the handler would only ever return).
@@ -391,7 +391,7 @@ _B.frame:SetScript("OnEvent", function(_, e, ident)
     end
     if e == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW" or e == "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE" then
         if ident == _B.BOL or ident == _B.BOF then
-            BeaconRefresh()
+            SyncBeacons()
         end
         return
     end
@@ -423,9 +423,9 @@ _B.frame:SetScript("OnEvent", function(_, e, ident)
         BeaconRefreshSoon()
         return
     end
-    BeaconRefresh()
+    SyncBeacons()
 end)
 
-Inner.BeaconInit, Inner.BeaconRefresh, Inner.TrackItemUse = BeaconInit, BeaconRefresh, TrackItemUse
+Inner.BeaconInit, Inner.BeaconRefresh, Inner.TrackItemUse = BeaconInit, SyncBeacons, TrackItemUse
 Inner.BeaconCombatEdge = BeaconCombatEdge
 Inner.broken = false

@@ -1507,7 +1507,7 @@ local CHROME = {
 
 -- The window-skin engine, when Blizz UI Enhanced is loaded (not a dependency).
 -- Probed for this build's exports: a mismatched install paints the flat look.
-local function ChromeEngine()
+local function SkinEngine()
     local bs = CludesUI._ModuleNS.CludesUIBlizzardSkin
     local ws = bs and bs.WSkin
     return ws and ws.CoverFit and ws or nil
@@ -1545,7 +1545,7 @@ local function PaintChrome()
     if not (friendsSkinned and widget) or LegacyFriendsRetired() then
         return
     end
-    local ws = ChromeEngine()
+    local ws = SkinEngine()
     local look = ChromeStyle(ws)
     local shellFrame = look ~= "flat"
     local frameData = GetFFD(widget)
@@ -1675,7 +1675,7 @@ end
 -- only when this window's look changed. Its other inputs (border size/color,
 -- class color, accent) change through ApplyFriends, which paints directly.
 local function OnChromeStylesChanged()
-    local ws = ChromeEngine()
+    local ws = SkinEngine()
     local look = ChromeStyle(ws)
     local seen = chromePainted
     if look == seen.style then
@@ -1692,7 +1692,7 @@ end
 
 -- Options: the Border rows stand down while a window skin draws the frame.
 CludesUI._ModuleNS[ADDON_NAME].FR_ChromeShell = function()
-    return ChromeStyle(ChromeEngine()) ~= "flat"
+    return ChromeStyle(SkinEngine()) ~= "flat"
 end
 
 -------------------------------------------------------------------------------
@@ -3616,7 +3616,7 @@ local function SkinFriendsFrame()
 
     -- Window Skins style picks and the Modern color repaint this live. The
     -- first paint follows every build call (ApplyFriends, EBS:OnEnable).
-    local ws = ChromeEngine()
+    local ws = SkinEngine()
     if ws then
         ws.OnStylesChanged(OnChromeStylesChanged)
     end
@@ -3625,7 +3625,7 @@ local function SkinFriendsFrame()
 end
 
 -- Live updates: colors, border, opacity
-local function ApplyFriends()
+local function StyleFriends()
     -- Every profile apply (live switch, spec switch, import) re-syncs the
     -- auto-accept listener before any look or combat gate below.
     if _G._CUFR_SyncAutoAccept then
@@ -3705,7 +3705,7 @@ end
 
 -- Apply All
 ApplyAll = function()
-    ApplyFriends()
+    StyleFriends()
     if CludesUI.RequestVisibilityUpdate then
         C_Timer.After(0, CludesUI.RequestVisibilityUpdate)
     end
@@ -3726,7 +3726,7 @@ function SKIN:OnInitialize()
 
     -- Global bridge for options <-> main communication
     _G._CUFR_DB = SKIN.db
-    _G._CUFR_ApplyFriends = ApplyFriends
+    _G._CUFR_ApplyFriends = StyleFriends
     _G._CUFR_ProcessFriendButtons = function()
         ProcessFriendButtons(true)
     end
@@ -3806,7 +3806,7 @@ function SKIN:OnEnable()
             type = "callback",
             fn = function()
                 if FriendsFrame and SKIN.db.profile.friends.enabled then
-                    ApplyFriends()
+                    StyleFriends()
                 end
             end,
         }
@@ -3828,13 +3828,13 @@ function SKIN:OnEnable()
                 if addon == "Blizzard_SocialUI" then
                     C_Timer.After(0.1, function()
                         if FriendsFrame and SKIN.db.profile.friends.enabled then
-                            ApplyFriends()
+                            StyleFriends()
                         end
                     end)
                     if FriendsFrame then
                         hooksecurefunc(FriendsFrame, "Show", function()
                             if not friendsSkinned and SKIN.db.profile.friends.enabled then
-                                C_Timer.After(0, ApplyFriends)
+                                C_Timer.After(0, StyleFriends)
                             end
                         end)
                     end

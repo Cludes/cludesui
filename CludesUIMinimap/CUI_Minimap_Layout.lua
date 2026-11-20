@@ -687,14 +687,14 @@ local function MO_OverAny()
     return false
 end
 
-local function MO_Apply(show)
+local function MO_Fade(show)
     local a = show and 1 or 0
     for i = 1, #_moButtons do
         _moButtons[i]:SetAlpha(a)
     end
 end
 
-local function MO_CancelHide()
+local function MO_KeepShown()
     if _moHideTimer then
         _moHideTimer:Cancel()
         _moHideTimer = nil
@@ -706,16 +706,16 @@ MO_Evaluate = function()
     if not _moActive then
         return
     end
-    MO_CancelHide()
+    MO_KeepShown()
     if MO_OverAny() then
-        MO_Apply(true)
+        MO_Fade(true)
     else
         -- Brief delay bridges adjacent-frame gaps (minimap -> button, button -> button)
         -- so crossing one doesn't flash the stack off and on.
         _moHideTimer = C_Timer.NewTimer(0.12, function()
             _moHideTimer = nil
             if _moActive and not MO_OverAny() then
-                MO_Apply(false)
+                MO_Fade(false)
             end
         end)
     end
@@ -729,8 +729,8 @@ local function MO_HookFrame(widget)
     _moHooked[widget] = true
     widget:HookScript("OnEnter", function()
         if _moActive then
-            MO_CancelHide()
-            MO_Apply(true)
+            MO_KeepShown()
+            MO_Fade(true)
         end
     end)
     widget:HookScript("OnLeave", function()
@@ -773,7 +773,7 @@ local function MO_Refresh(profile)
         end
         MO_Evaluate()
     else
-        MO_CancelHide()
+        MO_KeepShown()
         -- Restore full alpha (harmless on buttons hidden by hideExtraBtns).
         if _greatVaultBtn then
             _greatVaultBtn:SetAlpha(1)
@@ -1875,8 +1875,8 @@ function SKIN._HVHideNow()
                 MO_Evaluate()
             end
         else
-            MO_CancelHide()
-            MO_Apply(false)
+            MO_KeepShown()
+            MO_Fade(false)
         end
     end
 end

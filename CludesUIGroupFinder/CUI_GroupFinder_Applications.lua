@@ -282,7 +282,7 @@ local function Layout()
 end
 
 local shares = {} -- reused per paint
-local function Refresh()
+local function RedrawCard()
     if not (cardFrame and cardFrame:IsVisible()) then
         return
     end
@@ -388,7 +388,7 @@ BuildCardInto = function()
     cardFrame.empty:SetText(CludesUI.L("N/A"))
     cardFrame.empty:Hide()
     barFrame:SetScript("OnSizeChanged", function()
-        Refresh()
+        RedrawCard()
     end)
     return cardFrame
 end
@@ -437,7 +437,7 @@ local function Apply()
             end
         end
     end
-    Refresh()
+    RedrawCard()
 end
 mod.ApplyApplications = Apply
 
@@ -493,7 +493,7 @@ local function Count(status, oldStatus, resultID)
     tbl[key] = tbl[key] + 1
     tbl = Counts("character")
     tbl[key] = tbl[key] + 1
-    Refresh()
+    RedrawCard()
 end
 
 function mod.ResetApplications(scope)
@@ -508,7 +508,7 @@ function mod.ResetApplications(scope)
     elseif myKey then
         a.chars[myKey] = ZeroCounts()
     end
-    Refresh()
+    RedrawCard()
 end
 
 local hooked = false

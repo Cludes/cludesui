@@ -276,7 +276,7 @@ mod.unlockParts.PointPicker = function(LM)
         return set
     end
 
-    local function Show(set, mover)
+    local function ShowPicker(set, mover)
         if set.mover ~= mover then
             set:Hide()
         end
@@ -312,7 +312,7 @@ mod.unlockParts.PointPicker = function(LM)
         end
         sourceSet = sourceSet or CreateSet()
         sourcePoint = nil
-        Show(sourceSet, mover)
+        ShowPicker(sourceSet, mover)
     end
 
     function picker.Enter(mover)
@@ -326,7 +326,7 @@ mod.unlockParts.PointPicker = function(LM)
             return
         end
         targetSet = targetSet or CreateSet()
-        Show(targetSet, mover)
+        ShowPicker(targetSet, mover)
     end
 
     function picker.Leave(mover)
@@ -346,10 +346,10 @@ mod.unlockParts.PointPicker = function(LM)
             return
         end
         if sourceSet and sourceSet.mover == mover and sourceSet:IsShown() then
-            Show(sourceSet, mover)
+            ShowPicker(sourceSet, mover)
         end
         if targetSet and targetSet.mover == mover and targetSet:IsShown() then
-            Show(targetSet, mover)
+            ShowPicker(targetSet, mover)
         end
     end
 

@@ -991,7 +991,7 @@ end
 SetClassPowerTopPush(GetClassPowerTopPush)
 
 -- Find the target plate and update pips
-local function RefreshClassPower()
+local function SyncClassPower()
     -- Form check (e.g. Druid combo points only in cat form)
     if formRequired and GetShapeshiftFormID() ~= formRequired then
         -- Only need to hide pips on the target plate (others never have them)
@@ -1088,7 +1088,7 @@ local function EnableClassPowerWatcher()
                 return
             end
             elapsed = 0
-            RefreshClassPower()
+            SyncClassPower()
         end)
         powerWatcher:RegisterUnitEvent("UNIT_AURA", "player")
         powerWatcher:RegisterEvent("PLAYER_TARGET_CHANGED")
@@ -1119,9 +1119,9 @@ local function EnableClassPowerWatcher()
             elseif evt == "PLAYER_TARGET_CHANGED" then
                 RefreshClassPowerFull()
             elseif evt == "PLAYER_REGEN_ENABLED" then
-                RefreshClassPower()
+                SyncClassPower()
             else
-                RefreshClassPower()
+                SyncClassPower()
             end
         end)
     else
@@ -1153,7 +1153,7 @@ local function EnableClassPowerWatcher()
             elseif evt == "PLAYER_TARGET_CHANGED" or evt == "UPDATE_SHAPESHIFT_FORM" then
                 RefreshClassPowerFull()
             else
-                RefreshClassPower()
+                SyncClassPower()
             end
         end)
     end

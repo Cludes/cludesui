@@ -444,12 +444,12 @@ local function ShowFirstInstallPopup()
         doneBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.9)
     end)
 
-    local function RefreshButtonLabel()
+    local function SyncButtonLabel()
         -- Picking addons always ends in a reload so the enable/disable choices
         -- take effect, so the button always reads "Reload UI".
         doneLbl:SetText(CludesUI.L("Reload UI"))
     end
-    RefreshButtonLabel()
+    SyncButtonLabel()
 
     -- Hook each checkbox click to refresh the button label
     for _, row in ipairs(allRows) do
@@ -458,7 +458,7 @@ local function ShowFirstInstallPopup()
             if origOnClick then
                 origOnClick(self, ...)
             end
-            RefreshButtonLabel()
+            SyncButtonLabel()
         end)
     end
 
@@ -471,7 +471,7 @@ local function ShowFirstInstallPopup()
                 row._boxBorder:SetColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, CB_ACT_BRD_A)
             end
         end
-        RefreshButtonLabel()
+        SyncButtonLabel()
     end)
     uncheckAllBtn:SetScript("OnClick", function()
         for _, row in ipairs(allRows) do
@@ -481,7 +481,7 @@ local function ShowFirstInstallPopup()
                 row._boxBorder:SetColor(BORDER_R, BORDER_G, BORDER_B, CB_BRD_A)
             end
         end
-        RefreshButtonLabel()
+        SyncButtonLabel()
     end)
 
     local function Close(triggerReload)

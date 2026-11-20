@@ -105,7 +105,7 @@ do
     -- hmx; liveField = the account store). The live stores can exist empty
     -- (profile restores write them), so a missing bucket table is created only
     -- once the store holds a TBB entry.
-    local function BankExtra(b, field, liveField)
+    local function CopyExtra(b, field, liveField)
         local saved = CludesUIDB
         local storage = saved and saved[liveField]
         local dest = b[field]
@@ -151,8 +151,8 @@ do
         CopyOne(an, b.anchors)
         CopyOne(wm, b.wm)
         CopyOne(hm, b.hm)
-        BankExtra(b, "wmx", "unlockWidthMatchExtra")
-        BankExtra(b, "hmx", "unlockHeightMatchExtra")
+        CopyExtra(b, "wmx", "unlockWidthMatchExtra")
+        CopyExtra(b, "hmx", "unlockHeightMatchExtra")
     end
 
     -- Replace a live store's TBB child entries with a bucket table's.
@@ -224,8 +224,8 @@ do
                 end
             end
             -- Extras seed and prune like their links.
-            BankExtra(b, "wmx", "unlockWidthMatchExtra")
-            BankExtra(b, "hmx", "unlockHeightMatchExtra")
+            CopyExtra(b, "wmx", "unlockWidthMatchExtra")
+            CopyExtra(b, "hmx", "unlockHeightMatchExtra")
             local xsets = { b.wmx, b.hmx }
             for i = 1, 2 do
                 local set = xsets[i]

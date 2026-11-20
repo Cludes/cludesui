@@ -1887,7 +1887,7 @@ end -- IS_FOREVER
 do
     local IS_FOREVER = CludesUI.IS_FOREVER == true
 
-    local function PadCP()
+    local function ConsolePortPad()
         local cp = _G.ConsolePort
         if type(cp) == "table" and cp.AddInterfaceCursorFrame then
             return cp
@@ -1901,7 +1901,7 @@ do
     end
 
     local function PadInUse()
-        return PadCP() ~= nil or PadNative()
+        return ConsolePortPad() ~= nil or PadNative()
     end
 
     -- Connected, not in use: gamepad support is on (the GamePadEnable CVar)
@@ -1946,7 +1946,7 @@ do
         return PadConnected()
     end
 
-    CludesUI.PadCP = PadCP
+    CludesUI.PadCP = ConsolePortPad
     CludesUI.PadNative = PadNative
     CludesUI.PadInUse = PadInUse
     CludesUI.PadConnected = PadConnected
@@ -2054,7 +2054,7 @@ do
         if not CanAutoSetGamePadCursorControl(true) then
             return
         end
-        if PadCP() or PadGamepadUI() then
+        if ConsolePortPad() or PadGamepadUI() then
             return
         end
         SetGamePadCursorControl(true)
@@ -2077,7 +2077,7 @@ do
         if POOL and POOL.ExemptScripts then
             POOL.ExemptScripts(frame, "OnShow", "OnHide")
         end
-        local cp = PadCP()
+        local cp = ConsolePortPad()
         if not cp then
             return
         end
@@ -2093,7 +2093,7 @@ do
 
     -- nodeignore / nodepass / nodepriority / hidekeyboard ... (v nil = true)
     function CludesUI.PadHint(frame, attr, val)
-        if not frame or not PadCP() then
+        if not frame or not ConsolePortPad() then
             return
         end
         if frame:IsProtected() and InCombatLockdown() then
@@ -2125,13 +2125,13 @@ do
     end
 
     function CludesUI.PadCursorShown()
-        local cp = PadCP()
+        local cp = ConsolePortPad()
         return (cp and cp:IsCursorActive()) and true or false
     end
 
     -- Only while the cursor is already on screen; a no-op otherwise.
     function CludesUI.PadFocus(node)
-        local cp = PadCP()
+        local cp = ConsolePortPad()
         if cp and node then
             cp:SetCursorNodeIfActive(node)
         end
@@ -2165,7 +2165,7 @@ do
         if drawLayer then
             return drawLayer
         end
-        if not PadCP() then
+        if not ConsolePortPad() then
             return UIParent
         end
         drawLayer = CreateFrame("Frame", "CludesUI_PadOverlayLayer", UIParent)

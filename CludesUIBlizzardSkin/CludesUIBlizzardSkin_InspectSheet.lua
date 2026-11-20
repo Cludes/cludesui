@@ -458,7 +458,7 @@ local function SkinInspectSheet()
 
     -- Create model background (matches character sheet: character-bg.png, no glow/gradient)
     -- Deferred until InspectModelFrame exists (created lazily by Blizzard)
-    local function TryCreateModelBg()
+    local function MakeModelBg()
         if GetFFD(widget).modelBgFrame then
             return
         end
@@ -496,7 +496,7 @@ local function SkinInspectSheet()
         GetFFD(widget).modelBg = bgTex
         GetFFD(widget).modelBgFrame = backdrop
     end
-    TryCreateModelBg()
+    MakeModelBg()
     -- Retry on show in case model frame wasn't ready on first skin.
     -- Staggered retries: Blizzard creates InspectModelFrame lazily
     -- after the inspect target is set, which can take multiple frames.
@@ -504,9 +504,9 @@ local function SkinInspectSheet()
     if not GetFFD(widget)._modelBgHooked then
         GetFFD(widget)._modelBgHooked = true
         widget:HookScript("OnShow", function()
-            C_Timer.After(0, TryCreateModelBg)
-            C_Timer.After(0.2, TryCreateModelBg)
-            C_Timer.After(0.5, TryCreateModelBg)
+            C_Timer.After(0, MakeModelBg)
+            C_Timer.After(0.2, MakeModelBg)
+            C_Timer.After(0.5, MakeModelBg)
         end)
     end
 

@@ -1785,7 +1785,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             end
 
             -- Dynamic icon: show the first selected item or equipped trinket
-            local function RefreshIcon()
+            local function SyncIcon()
                 local saved = GetDB()
                 local icon
                 if def.checkboxes then
@@ -1808,8 +1808,8 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                 end
                 texture:SetTexture(icon or def.macroIcon or def.icon)
             end
-            btn._refreshIcon = RefreshIcon
-            RefreshIcon()
+            btn._refreshIcon = SyncIcon
+            SyncIcon()
 
             -------------------------------------------------------------------
             --  Right-click dropdown menu (lazy-built)
@@ -2277,7 +2277,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                             end
                             UC()
                             UpdateMacro(def, saved)
-                            RefreshIcon()
+                            SyncIcon()
                         end)
 
                         -- Drag (3px threshold via OnMouseDown/Up/Update)
@@ -2347,7 +2347,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                                 rf._updateCheck()
                             end
                             UpdateMacro(def, saved)
-                            RefreshIcon()
+                            SyncIcon()
                         end)
                         row:SetScript("OnUpdate", function(self)
                             if not dsY then

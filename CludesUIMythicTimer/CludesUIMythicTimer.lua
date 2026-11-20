@@ -965,7 +965,7 @@ local function FlushRefresh()
         _G._CUMT_StandaloneRefresh()
     end
 end
-local function NotifyRefresh()
+local function QueueRefresh()
     if _refreshPending then
         return
     end
@@ -1054,7 +1054,7 @@ local function OnTimerTick()
     ScanPartyAlive()
 
     UpdateObjectives()
-    NotifyRefresh()
+    QueueRefresh()
 end
 
 -- Primary driver: hook Blizzard's ChallengeModeBlock.UpdateTime. Blizzard's
@@ -1253,7 +1253,7 @@ local function StartRun()
     OnTimerTick() -- prime the display immediately
 
     SuppressBlizzardMPlus()
-    NotifyRefresh()
+    QueueRefresh()
 end
 
 local function CompleteRun()
@@ -1289,7 +1289,7 @@ local function CompleteRun()
     if store and store.profile then
         store.profile._activeRunSplits = nil
     end
-    NotifyRefresh()
+    QueueRefresh()
 end
 
 local function ResetRun()
@@ -1315,7 +1315,7 @@ local function ResetRun()
     StopTimerLoop()
 
     UnsuppressBlizzardMPlus()
-    NotifyRefresh()
+    QueueRefresh()
 end
 
 -- Preview data. SEASON UPDATE (cosmetic): a current-season dungeon and affixes,
@@ -3703,7 +3703,7 @@ local function _centerPosFromSaved(place)
     return place.centerX / scale, place.centerY / scale
 end
 
-local function ApplyStandalonePosition()
+local function PlaceStandalone()
     if not store then
         return
     end
@@ -3727,7 +3727,7 @@ local function ApplyStandalonePosition()
         soloFrame:SetPoint("CENTER", UIParent, "CENTER", sx, sy)
     end
 end
-_G._CUMT_ApplyStandalonePosition = ApplyStandalonePosition
+_G._CUMT_ApplyStandalonePosition = PlaceStandalone
 
 -- True only when every scenario objective is complete: Avoids false times being saved/missed runs due to completion on same tick
 local function IsDungeonComplete()
@@ -3846,7 +3846,7 @@ for _, ev in ipairs(_ALWAYS_EVENTS) do
 end
 runtimeFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_ENTERING_WORLD" then
-        ApplyStandalonePosition()
+        PlaceStandalone()
         -- API data isn't fully populated at PEW; retry once after 10s
         -- to catch a /reload mid-key.
         C_Timer.After(10, function()
@@ -3948,7 +3948,7 @@ function EMT:OnEnable()
             if unlockLayoutActive then
                 RenderStandalone()
                 if not anchored then
-                    ApplyStandalonePosition()
+                    PlaceStandalone()
                 end
             else
                 if not store.profile.showPreview and not activeRun.active and not activeRun.completed then
@@ -3959,7 +3959,7 @@ function EMT:OnEnable()
                     RenderStandalone()
                 end
                 if not anchored then
-                    ApplyStandalonePosition()
+                    PlaceStandalone()
                 end
             end
         end)
@@ -4062,7 +4062,7 @@ function EMT:OnEnable()
                 end,
                 applyPos = function()
                     if soloFrame then
-                        ApplyStandalonePosition()
+                        PlaceStandalone()
                     end
                 end,
             }),

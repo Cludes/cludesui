@@ -1664,7 +1664,7 @@ local function BuildSidebar()
     end)
     CludesUI._addonScrollArrow = arrowButton
 
-    local function UpdateAddonThumb()
+    local function SyncAddonThumb()
         local scrollMax = CludesUI.SafeScrollRange(addonScroller) or 0
         -- A shorter list (a group collapsed) pulls the offset back into range.
         if (tonumber(addonScroller:GetVerticalScroll()) or 0) > scrollMax then
@@ -1717,7 +1717,7 @@ local function BuildSidebar()
         local diff = addonScrollTarget - cur
         if math.abs(diff) < 0.3 then
             addonScroller:SetVerticalScroll(addonScrollTarget)
-            UpdateAddonThumb()
+            SyncAddonThumb()
             addonIsSmoothing = false
             addonSmoothFrame:Hide()
             return
@@ -1731,7 +1731,7 @@ local function BuildSidebar()
         end
         nextScroll = math.max(0, math.min(scrollMax, nextScroll))
         addonScroller:SetVerticalScroll(nextScroll)
-        UpdateAddonThumb()
+        SyncAddonThumb()
     end)
 
     addonScroller:SetScript("OnMouseWheel", function(self, stepDelta)
@@ -1754,14 +1754,14 @@ local function BuildSidebar()
             addonSmoothFrame:Show()
         end
     end)
-    addonScroller:SetScript("OnScrollRangeChanged", UpdateAddonThumb)
-    addonScroller:HookScript("OnSizeChanged", UpdateAddonThumb)
+    addonScroller:SetScript("OnScrollRangeChanged", SyncAddonThumb)
+    addonScroller:HookScript("OnSizeChanged", SyncAddonThumb)
     -- Controller cursor: it scrolls the list itself to reach a row, so the thumb
     -- follows (the lerp already paints its own frames).
     if CludesUI.PadCP() then
         addonScroller:HookScript("OnVerticalScroll", function()
             if not addonIsSmoothing and not addonRail:GetScript("OnUpdate") then
-                UpdateAddonThumb()
+                SyncAddonThumb()
             end
         end)
     end
@@ -1806,7 +1806,7 @@ local function BuildSidebar()
         nextScroll = math.max(0, math.min(scrollMax, nextScroll))
         addonScrollTarget = nextScroll
         addonScroller:SetVerticalScroll(nextScroll)
-        UpdateAddonThumb()
+        SyncAddonThumb()
     end
     addonRail:SetScript("OnMouseDown", function(self)
         _scrollToCursor()

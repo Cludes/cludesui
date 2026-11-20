@@ -2322,14 +2322,14 @@ local function SkinCharacterSheet()
         thumbTex:SetColorTexture(1, 1, 1, SCROLLBAR_ALPHA)
         thumbTex:SetAllPoints()
 
-        local function _info()
+        local function _scrollInfo()
             local contentH = scrollChild:GetHeight() or 0
             local viewH = scroller:GetHeight() or 0
             return contentH, viewH, math.max(0, contentH - viewH)
         end
 
         local function UpdateThumb()
-            local contentH, viewH, maxScroll = _info()
+            local contentH, viewH, maxScroll = _scrollInfo()
             if contentH <= 0 or viewH <= 0 or maxScroll <= 0 then
                 track:Hide()
                 return
@@ -2351,7 +2351,7 @@ local function SkinCharacterSheet()
         scrollChild:HookScript("OnSizeChanged", UpdateThumb)
 
         local function refreshVerticalScroll()
-            local _, _, maxScroll = _info()
+            local _, _, maxScroll = _scrollInfo()
             -- Unconditional on maxScroll so it still clamps after a collapse disables scrolling.
             local newScroll = math.max(0, math.min(maxScroll, scroller:GetVerticalScroll()))
             scroller:SetVerticalScroll(newScroll)
@@ -2360,7 +2360,7 @@ local function SkinCharacterSheet()
 
         scroller:EnableMouseWheel(true)
         scroller:SetScript("OnMouseWheel", function(_, delta)
-            local _, _, maxScroll = _info()
+            local _, _, maxScroll = _scrollInfo()
             if maxScroll <= 0 then
                 return
             end
@@ -2382,7 +2382,7 @@ local function SkinCharacterSheet()
                 self:SetScript("OnUpdate", nil)
                 return
             end
-            local _, _, maxScroll = _info()
+            local _, _, maxScroll = _scrollInfo()
             if maxScroll <= 0 then
                 return
             end
@@ -3923,7 +3923,7 @@ local function SkinCharacterSheet()
     end)
 
     -- Repaint every stat row.
-    local function UpdateAllStats()
+    local function RedrawStats()
         local secondaryRaw = CludesUIDB and CludesUIDB.showSecondaryRaw
         local tertiaryRaw = CludesUIDB and CludesUIDB.showTertiaryRaw
         local secondaryBoth = CludesUIDB and CludesUIDB.showSecondaryBoth
@@ -3959,9 +3959,9 @@ local function SkinCharacterSheet()
             end
         end
     end
-    CludesUI._refreshStatFormats = UpdateAllStats
+    CludesUI._refreshStatFormats = RedrawStats
 
-    UpdateAllStats()
+    RedrawStats()
 
     -- Event-driven stat refresh: every stat the sheet displays updates on one of these events. Never poll this from an OnUpdate.
     local statsEventFrame = CreateFrame("Frame")
@@ -3997,7 +3997,7 @@ local function SkinCharacterSheet()
                 RefreshAttributeStats()
                 SyncStatSections()
             elseif (widget.selectedTab or 1) == 1 then
-                UpdateAllStats()
+                RedrawStats()
             end
         end
         GetFFD(widget).queueStats = function(specInfo)
@@ -4037,7 +4037,7 @@ local function SkinCharacterSheet()
     -- Refresh once on open, in case no event fired since the last close.
     widget:HookScript("OnShow", function()
         if widget and (widget.selectedTab or 1) == 1 then
-            UpdateAllStats()
+            RedrawStats()
         end
     end)
 

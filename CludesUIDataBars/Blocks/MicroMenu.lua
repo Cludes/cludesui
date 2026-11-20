@@ -1390,7 +1390,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         end
     end
 
-    local function ApplyCombatState()
+    local function SyncCombatLook()
         -- Combat does not hide the strip or kill mouse: buttons stay visible and
         -- hoverable (combat notice tooltip), clicks are inert in lockdown (secure
         -- buttons drop *type1 via their state driver). The one combat hide left: a strip
@@ -1435,7 +1435,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
 
     function instance:Refresh()
         mod.RefreshMicroMenuHider()
-        ApplyCombatState()
+        SyncCombatLook()
         if not contentFrame:IsShown() or InCombatLockdown() then
             SyncStyleEvents()
             return
@@ -1543,7 +1543,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
             -- its hider runs off a CONSTANT state driver, so the snippet fires once and
             -- nothing re-asserts it; force makes the refresh re-push and re-register it.
             -- Both safe here: REGEN already calls Refresh in combat, and the hider defers its driver work until OOC.
-            ApplyCombatState()
+            SyncCombatLook()
             self:Refresh()
             mod.RefreshMicroMenuHider(true)
         else
@@ -1553,7 +1553,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                     iconTex._edbWow = nil
                 end
             end
-            ApplyCombatState()
+            SyncCombatLook()
             self:Refresh()
         end
     end)
@@ -1566,7 +1566,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         RegisterInstEvents(self)
         SyncStyleEvents()
         mod.RefreshMicroMenuHider()
-        ApplyCombatState()
+        SyncCombatLook()
     end
 
     function instance:Disable()

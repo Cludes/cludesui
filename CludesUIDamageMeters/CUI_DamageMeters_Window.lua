@@ -1055,7 +1055,7 @@ local function CreateDMWindow(winIdx)
 
     -- artKey: the header key whose stock-style art replaces the CUI glyph
     -- under a stock style (ns.DM_HDR_ART); the glyph stays where none exists.
-    local function MakeHeaderBtn(texFile, xOff, tooltip, onClick, artKey)
+    local function NewHeaderBtn(texFile, xOff, tooltip, onClick, artKey)
         local button = CreateFrame("Button", nil, header)
         button:SetSize(btnSize, btnSize)
         button:SetPoint("RIGHT", header, "RIGHT", xOff, mod.DMHdrLift())
@@ -1095,7 +1095,7 @@ local function CreateDMWindow(winIdx)
         return button
     end
 
-    W.settingsBtn = MakeHeaderBtn("dm_settings.png", -(btnPad + 2), "Settings", function()
+    W.settingsBtn = NewHeaderBtn("dm_settings.png", -(btnPad + 2), "Settings", function()
         -- "Default on M+ Start" submenu: meter type this window switches to when a key starts; "Off" (default) leaves it alone
         local function mythicStartEntry(labelText, dmType)
             return {
@@ -1285,7 +1285,7 @@ local function CreateDMWindow(winIdx)
         ShowEDMMenu(itemList, W.settingsBtn)
     end, "settings")
 
-    W.segmentBtn = MakeHeaderBtn("dm_sheet.png", -(btnSize + btnPad * 2 + 2), L("Select Segment"), function()
+    W.segmentBtn = NewHeaderBtn("dm_sheet.png", -(btnSize + btnPad * 2 + 2), L("Select Segment"), function()
         -- A Threat list (WoW Forever) has no segments.
         if W.curDMType == "threat" then
             return
@@ -1350,7 +1350,7 @@ local function CreateDMWindow(winIdx)
         end
     end
 
-    W.modeBtn = MakeHeaderBtn("dm_arrow.png", -(btnSize * 2 + btnPad * 3 + 2), "Switch Meter Type", function()
+    W.modeBtn = NewHeaderBtn("dm_arrow.png", -(btnSize * 2 + btnPad * 3 + 2), "Switch Meter Type", function()
         local function sel(dmType)
             return function()
                 W.SetDMType(dmType)
@@ -1407,7 +1407,7 @@ local function CreateDMWindow(winIdx)
     local winActionIcon = (winIdx == 1) and (MEDIA .. "dm_open.png") or (MEDIA .. "dm_close.png")
     local winActionTip = (winIdx == 1) and L("New Window") or L("Close Window")
     local winActionKey = (winIdx == 1) and "open" or "close"
-    W.winActionBtn = MakeHeaderBtn(
+    W.winActionBtn = NewHeaderBtn(
         "dm_settings.png",
         -(btnSize * 4 + btnPad * 5 + 2),
         winActionTip,
@@ -1527,7 +1527,7 @@ local function CreateDMWindow(winIdx)
     end
 
     -- Reset Data button, left of win action button
-    W.resetBtn = MakeHeaderBtn("dm_undo.png", -(btnSize * 3 + btnPad * 4 + 2), "Reset Data", function()
+    W.resetBtn = NewHeaderBtn("dm_undo.png", -(btnSize * 3 + btnPad * 4 + 2), "Reset Data", function()
         if C_DamageMeter and C_DamageMeter.ResetAllCombatSessions then
             C_DamageMeter.ResetAllCombatSessions()
             SetCombatEndTime(0)
@@ -2014,7 +2014,7 @@ local function CreateDMWindow(winIdx)
         W.lockBtn:SetSize(18, 18)
     end
 
-    local function UpdateLockIcon()
+    local function PaintLockIcon()
         if W.windowLocked then
             if not mod.DMPaintHdrArt(lockTex, "locked") then
                 lockTex:SetTexture(MEDIA .. "dm_locked.png")
@@ -2041,7 +2041,7 @@ local function CreateDMWindow(winIdx)
             end
         end
     end
-    UpdateLockIcon()
+    PaintLockIcon()
 
     W.lockBtn:SetScript("OnEnter", function(self)
         self:SetAlpha(0.7)
@@ -2054,7 +2054,7 @@ local function CreateDMWindow(winIdx)
     W.lockBtn:SetScript("OnClick", function()
         W.windowLocked = not W.windowLocked
         wdb.locked = W.windowLocked
-        UpdateLockIcon()
+        PaintLockIcon()
         if W.windowLocked then
             W.resizeGrip:SetAlpha(0)
             W.lockBtn:SetAlpha(W.isHovered and 0.3 or 0)
@@ -2066,7 +2066,7 @@ local function CreateDMWindow(winIdx)
         CUI.HideWidgetTooltip()
         CUI.ShowWidgetTooltip(W.lockBtn, W.windowLocked and "Locked" or "Unlocked")
     end)
-    W._updateLockIcon = UpdateLockIcon
+    W._updateLockIcon = PaintLockIcon
 
     local resizeStartX, resizeStartY, resizeStartW, resizeStartH
     local resizeAnchorLeft, resizeAnchorTop -- pinned TOPLEFT during resize
@@ -4345,7 +4345,7 @@ local function CreateDMWindow(winIdx)
             closeTex:SetPoint("CENTER", W.winActionBtn, "CENTER", 0, 0)
         end
         LayoutHeaderButtons(W, cfg, sz)
-        UpdateLockIcon()
+        PaintLockIcon()
         local a = W.isHovered and 0.3 or 0
         W.resizeGrip:SetAlpha(W.windowLocked and 0 or a)
         W.lockBtn:SetAlpha(a)

@@ -481,7 +481,7 @@ local function ReleaseBlizz(bubble)
     SetBlizzAlpha(childFrame, 1)
 end
 
-local function ReleaseAll()
+local function ReleaseBubbles()
     for bubble in pairs(ours) do
         ReleaseBlizz(bubble)
     end
@@ -1019,7 +1019,7 @@ local function OnEvent(_, evt, ...)
         -- handful of frames and makes the logout branch symmetric with SetActive(false), so
         -- an engine bubble frame that outlives the reload cannot come back invisible for the
         -- next speaker.
-        ReleaseAll()
+        ReleaseBubbles()
         return
     end
 
@@ -1030,7 +1030,7 @@ local function OnEvent(_, evt, ...)
         wipe(recentList)
         wipe(isBound)
         if suspended then
-            ReleaseAll()
+            ReleaseBubbles()
         end
         return
     end
@@ -1127,7 +1127,7 @@ local function SetActive(on)
         wipe(registeredChat)
         wipe(recentList)
         wipe(isBound)
-        ReleaseAll()
+        ReleaseBubbles()
         return
     end
 
@@ -1259,7 +1259,7 @@ function CB.Refresh()
     end
     if suspended then
         wipe(recentList)
-        ReleaseAll()
+        ReleaseBubbles()
         return
     end
     -- A channel just switched off hands its drawn bubbles straight back to Blizzard. Clearing
