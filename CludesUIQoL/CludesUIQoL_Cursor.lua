@@ -1529,14 +1529,14 @@ function ECL:OnInitialize()
     self.db.ResetProfile = function(dbSelf)
         local defaultSet = cursorDefaults.profile.cursor
         wipe(dbSelf.profile)
-        for k, val in pairs(defaultSet) do
+        for key, val in pairs(defaultSet) do
             if type(val) == "table" then
-                dbSelf.profile[k] = {}
+                dbSelf.profile[key] = {}
                 for k2, v2 in pairs(val) do
-                    dbSelf.profile[k][k2] = v2
+                    dbSelf.profile[key][k2] = v2
                 end
             else
-                dbSelf.profile[k] = val
+                dbSelf.profile[key] = val
             end
         end
     end

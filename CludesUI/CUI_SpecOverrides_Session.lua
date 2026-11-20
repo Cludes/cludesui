@@ -1709,8 +1709,8 @@ Cond.ExitEdit = function(noRestore, noRecheck)
             Cond.WriteValues(CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil)
         if t2 then
             changedSet = changedSet or {}
-            for k in pairs(t2) do
-                changedSet[k] = true
+            for key in pairs(t2) do
+                changedSet[key] = true
             end
         end
         if changedSet then
@@ -1813,8 +1813,8 @@ Cond.EnterEdit = function(group, force)
     local t2 = Cond.WriteValues(group.id, true)
     if t2 then
         changedSet = changedSet or {}
-        for k in pairs(t2) do
-            changedSet[k] = true
+        for key in pairs(t2) do
+            changedSet[key] = true
         end
     end
     if changedSet then

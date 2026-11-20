@@ -599,9 +599,9 @@ local function GetOrCreateButton(slot, hostFrame, details, index, skipProtected)
             if fr[tail] == button then
                 fr[tail] = nil
             else
-                for k, frame in pairs(fr) do
+                for key, frame in pairs(fr) do
                     if frame == button then
-                        fr[k] = nil
+                        fr[key] = nil
                     end
                 end
             end

@@ -157,14 +157,14 @@ CUI_NS.unlockParts.Session = function(LM)
         wipe(snapshotHeightMatch)
         local wmDB = MatchH.GetWidthMatchDB()
         if wmDB then
-            for k, v in pairs(wmDB) do
-                snapshotWidthMatch[k] = v
+            for key, val in pairs(wmDB) do
+                snapshotWidthMatch[key] = val
             end
         end
         local hmDB = MatchH.GetHeightMatchDB()
         if hmDB then
-            for k, v in pairs(hmDB) do
-                snapshotHeightMatch[k] = v
+            for key, val in pairs(hmDB) do
+                snapshotHeightMatch[key] = val
             end
         end
         -- ...and each match's Extra Width / Height, reverted with its link.
@@ -173,14 +173,14 @@ CUI_NS.unlockParts.Session = function(LM)
         wipe(startX.h)
         local wxDB = CludesUIDB and CludesUIDB.unlockWidthMatchExtra
         if wxDB then
-            for k, v in pairs(wxDB) do
-                startX.w[k] = v
+            for key, val in pairs(wxDB) do
+                startX.w[key] = val
             end
         end
         local hxDB = CludesUIDB and CludesUIDB.unlockHeightMatchExtra
         if hxDB then
-            for k, v in pairs(hxDB) do
-                startX.h[k] = v
+            for key, val in pairs(hxDB) do
+                startX.h[key] = val
             end
         end
 
@@ -540,15 +540,15 @@ CUI_NS.unlockParts.Session = function(LM)
         local wmDB = MatchH.GetWidthMatchDB()
         if wmDB then
             wipe(wmDB)
-            for k, v in pairs(snapshotWidthMatch) do
-                wmDB[k] = v
+            for key, val in pairs(snapshotWidthMatch) do
+                wmDB[key] = val
             end
         end
         local hmDB = MatchH.GetHeightMatchDB()
         if hmDB then
             wipe(hmDB)
-            for k, v in pairs(snapshotHeightMatch) do
-                hmDB[k] = v
+            for key, val in pairs(snapshotHeightMatch) do
+                hmDB[key] = val
             end
         end
         -- Each match's Extra Width / Height, in the same step as its link. A CDM bar
@@ -559,17 +559,17 @@ CUI_NS.unlockParts.Session = function(LM)
             local relayout
             local function Note(live, snapshot)
                 if live then
-                    for k, v in pairs(live) do
-                        if snapshot[k] ~= v and k:sub(1, 4) == "CDM_" then
+                    for key, val in pairs(live) do
+                        if snapshot[key] ~= val and key:sub(1, 4) == "CDM_" then
                             relayout = relayout or {}
-                            relayout[k] = true
+                            relayout[key] = true
                         end
                     end
                 end
-                for k, v in pairs(snapshot) do
-                    if not (live and live[k] == v) and k:sub(1, 4) == "CDM_" then
+                for key, val in pairs(snapshot) do
+                    if not (live and live[key] == val) and key:sub(1, 4) == "CDM_" then
                         relayout = relayout or {}
-                        relayout[k] = true
+                        relayout[key] = true
                     end
                 end
             end
@@ -578,20 +578,20 @@ CUI_NS.unlockParts.Session = function(LM)
             if CludesUIDB.unlockWidthMatchExtra then
                 wipe(CludesUIDB.unlockWidthMatchExtra)
             end
-            for k, v in pairs(startX.w) do
-                MatchH.SetMatchExtra("w", k, v)
+            for key, val in pairs(startX.w) do
+                MatchH.SetMatchExtra("w", key, val)
             end
             if CludesUIDB.unlockHeightMatchExtra then
                 wipe(CludesUIDB.unlockHeightMatchExtra)
             end
-            for k, v in pairs(startX.h) do
-                MatchH.SetMatchExtra("h", k, v)
+            for key, val in pairs(startX.h) do
+                MatchH.SetMatchExtra("h", key, val)
             end
             if relayout then
-                for k in pairs(relayout) do
-                    local e = registeredElements[k]
+                for key in pairs(relayout) do
+                    local e = registeredElements[key]
                     if e and e.setWidth then
-                        pcall(e.setWidth, k)
+                        pcall(e.setWidth, key)
                     end
                 end
             end

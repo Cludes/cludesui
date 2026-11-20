@@ -16561,8 +16561,8 @@ do
         if not (rl and rr and rt and fl and fRight and ft) then
             return nil
         end
-        for _, v in ipairs({ rl, rr, rt, fl, fRight, ft }) do
-            if issecretvalue(v) then
+        for _, val in ipairs({ rl, rr, rt, fl, fRight, ft }) do
+            if issecretvalue(val) then
                 return nil
             end
         end

@@ -98,9 +98,9 @@ local function DB()
         skinData.spellHistory = {}
     end
     local historyCfg = skinData.spellHistory
-    for k, v in pairs(SH_DEFAULTS) do
-        if historyCfg[k] == nil then
-            historyCfg[k] = v
+    for key, val in pairs(SH_DEFAULTS) do
+        if historyCfg[key] == nil then
+            historyCfg[key] = val
         end
     end
     _shDB = historyCfg

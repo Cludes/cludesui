@@ -248,9 +248,9 @@ function mod.RegisterTBBUnlockElements()
             aliases = {}
             CludesUI._unlockKeyAliases = aliases
         end
-        for k, val in pairs(aliases) do
+        for key, val in pairs(aliases) do
             if type(val) == "string" and val:find("^TBBG_") then
-                aliases[k] = nil
+                aliases[key] = nil
             end
         end
         for gkey, record in pairs(reg) do

@@ -1452,8 +1452,8 @@ do
         local ALL_SIZES = { "none", "thin", "normal", "heavy", "strong" }
         local function AllSizes(offX, offY, shiftAmtX, shiftAmtY)
             local tbl = {}
-            for _, k in ipairs(ALL_SIZES) do
-                tbl[k] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
+            for _, key in ipairs(ALL_SIZES) do
+                tbl[key] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
             end
             return tbl
         end
@@ -1486,8 +1486,8 @@ do
         local ALL_SIZES = { [0] = true, [1] = true, [2] = true, [3] = true, [4] = true }
         local function AllSizes(offX, offY, shiftAmtX, shiftAmtY)
             local tbl = {}
-            for k in pairs(ALL_SIZES) do
-                tbl[k] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
+            for key in pairs(ALL_SIZES) do
+                tbl[key] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
             end
             return tbl
         end

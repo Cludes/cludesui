@@ -433,13 +433,13 @@ end
 function CludesUI._BuildColorPalette(result, defaultSet, custom, darkenPct)
     wipe(result)
     if defaultSet then
-        for k, def in pairs(defaultSet) do
-            result[k] = { r = def.r, g = def.g, b = def.b }
+        for key, def in pairs(defaultSet) do
+            result[key] = { r = def.r, g = def.g, b = def.b }
         end
     end
     if custom then
-        for k, c in pairs(custom) do
-            result[k] = { r = c.r, g = c.g, b = c.b }
+        for key, c in pairs(custom) do
+            result[key] = { r = c.r, g = c.g, b = c.b }
         end
     end
     if darkenPct and darkenPct > 0 then
@@ -773,8 +773,8 @@ CludesUI.POWER_KEY_TO_ENUM = {
 -- Integer power-type -> string key (reverse of POWER_KEY_TO_ENUM). UnitPowerType's 1st return
 -- is readable on EVERY unit, so it recovers a color key when the string token (2nd return) is unreadable, as on non-player units (boss/target/focus).
 CludesUI.POWER_ENUM_TO_KEY = {}
-for k, val in pairs(CludesUI.POWER_KEY_TO_ENUM) do
-    CludesUI.POWER_ENUM_TO_KEY[val] = k
+for key, val in pairs(CludesUI.POWER_KEY_TO_ENUM) do
+    CludesUI.POWER_ENUM_TO_KEY[val] = key
 end
 
 -- CUI power color (r,g,b or nil) for a unit's CURRENT power. Mirrors oUF's bar ladder so

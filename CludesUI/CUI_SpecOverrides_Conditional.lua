@@ -799,8 +799,8 @@ function Cond.PruneRedundant()
         if groupDef then
             for fieldKey in pairs(groupDef) do
                 local held = false
-                for k, m in pairs(record.values) do
-                    if k ~= "default" and type(m) == "table" and m[fieldKey] ~= nil then
+                for key, m in pairs(record.values) do
+                    if key ~= "default" and type(m) == "table" and m[fieldKey] ~= nil then
                         held = true
                         break
                     end
@@ -990,13 +990,13 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
             return false
         end
         local ac, bc = a.conds or {}, b.conds or {}
-        for k in pairs(ac) do
-            if not bc[k] then
+        for key in pairs(ac) do
+            if not bc[key] then
                 return false
             end
         end
-        for k in pairs(bc) do
-            if not ac[k] then
+        for key in pairs(bc) do
+            if not ac[key] then
                 return false
             end
         end
@@ -1093,8 +1093,8 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
                     local isImported = moduleFolder and importedFolders[moduleFolder] or false
                     if isImported ~= keepImported then
                         groupDef[fieldKey] = nil
-                        for k, m in pairs(ne.values) do
-                            if k ~= "default" and type(m) == "table" then
+                        for key, m in pairs(ne.values) do
+                            if key ~= "default" and type(m) == "table" then
                                 m[fieldKey] = nil
                             end
                         end
@@ -1114,11 +1114,11 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
             return
         end
         local nv = {}
-        for k, m in pairs(record.values) do
-            if k ~= "default" and keyMap[k] then
-                nv[keyMap[k]] = m
+        for key, m in pairs(record.values) do
+            if key ~= "default" and keyMap[key] then
+                nv[keyMap[key]] = m
             else
-                nv[k] = m
+                nv[key] = m
             end
         end
         record.values = nv
@@ -1129,8 +1129,8 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
             return map
         end
         local result = {}
-        for k, val in pairs(map) do
-            result[keyMap[k] or k] = val
+        for key, val in pairs(map) do
+            result[keyMap[key] or key] = val
         end
         return result
     end
@@ -1178,9 +1178,9 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
             needsCond[record.group] = true
         end
         if type(record.values) == "table" then
-            for k in pairs(record.values) do
-                if k ~= "default" then
-                    needsCond[k] = true
+            for key in pairs(record.values) do
+                if key ~= "default" then
+                    needsCond[key] = true
                 end
             end
         end

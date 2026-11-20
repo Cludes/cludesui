@@ -3850,13 +3850,13 @@ function mod.CreateBar(templateKey)
     for _, bt in ipairs(tbl.blocks) do
         local b = mod.AddBlock(ident, bt.type)
         if b then
-            for k, v in pairs(bt) do
-                if k == "settings" then
-                    for sk, savedVars in pairs(v) do
+            for key, val in pairs(bt) do
+                if key == "settings" then
+                    for sk, savedVars in pairs(val) do
                         b.settings[sk] = DeepCopy(savedVars)
                     end
-                elseif k ~= "type" then
-                    b[k] = DeepCopy(v)
+                elseif key ~= "type" then
+                    b[key] = DeepCopy(val)
                 end
             end
         end

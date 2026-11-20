@@ -743,8 +743,8 @@ function CludesUI:ShowConfirmPopup(options)
     -- asked for as its pre-reload work. The caller's table is left as is.
     if options.reload then
         local swatchOpts = {}
-        for k, v in pairs(options) do
-            swatchOpts[k] = v
+        for key, val in pairs(options) do
+            swatchOpts[key] = val
         end
         swatchOpts.reload = nil
         local work = options.onConfirm

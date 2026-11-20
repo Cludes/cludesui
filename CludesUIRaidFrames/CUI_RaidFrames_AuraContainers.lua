@@ -778,11 +778,11 @@ function mod.RFC_DispelBorderColorMap(cfg)
     for i = 1, #DISPEL_SLOTS do
         local defaults = DISPEL_SLOTS[i]
         local color = cfg[defaults.colorKey]
-        local r = (color and color.r) or defaults.fallback[1]
-        local g = (color and color.g) or defaults.fallback[2]
-        local b = (color and color.b) or defaults.fallback[3]
-        map[defaults.token] = CreateColor(r, g, b, 1)
-        fp[#fp + 1] = string.format("%.3f,%.3f,%.3f", r, g, b)
+        local red = (color and color.r) or defaults.fallback[1]
+        local green = (color and color.g) or defaults.fallback[2]
+        local blue = (color and color.b) or defaults.fallback[3]
+        map[defaults.token] = CreateColor(red, green, blue, 1)
+        fp[#fp + 1] = string.format("%.3f,%.3f,%.3f", red, green, blue)
     end
     return map, table.concat(fp, ";")
 end
@@ -1286,8 +1286,8 @@ local function ApplyDebuffConfig(boxHolder, d, s)
     -- renderer, so with it explicitly disabled the debuff row is EMPTY by design.
     -- Park every group (record variants and tile containers park via DM_ParkGroups).
     local declared = d.rfcDebuffGroups or {}
-    for k in pairs(declared) do
-        CludesUI.AuraKit.SetGroupCap(boxHolder, k, 0)
+    for key in pairs(declared) do
+        CludesUI.AuraKit.SetGroupCap(boxHolder, key, 0)
     end
     if mod.DM_ParkGroups then
         mod.DM_ParkGroups(boxHolder, declared, d)

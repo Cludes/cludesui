@@ -848,8 +848,8 @@ end
 local function NPF_Cand(extra, edgeSide)
     local cand = {}
     if extra then
-        for k, val in pairs(extra) do
-            cand[k] = val
+        for key, val in pairs(extra) do
+            cand[key] = val
         end
     end
     local m

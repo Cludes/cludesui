@@ -469,11 +469,11 @@ local function ScaleRect(source, k)
         return nil
     end
     local region = {}
-    for key, v in pairs(source) do
-        if type(v) == "number" then
-            region[key] = v * k
+    for key, val in pairs(source) do
+        if type(val) == "number" then
+            region[key] = val * k
         else
-            region[key] = v
+            region[key] = val
         end
     end
     return region

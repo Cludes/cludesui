@@ -112,8 +112,8 @@ end
 
 function mod.NicknameCount()
     local num = 0
-    for k in pairs(Store()) do
-        if not k:find("-", 1, true) then
+    for key in pairs(Store()) do
+        if not key:find("-", 1, true) then
             num = num + 1
         end
     end

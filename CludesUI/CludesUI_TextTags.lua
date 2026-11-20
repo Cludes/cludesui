@@ -182,8 +182,8 @@ local function ResolveKey(category, inner)
     if not s then
         return category.map[tag] ~= nil and tag or nil
     end
-    for k in pairs(modSeen) do
-        modSeen[k] = nil
+    for key in pairs(modSeen) do
+        modSeen[key] = nil
     end
     local place = e + 1
     while true do

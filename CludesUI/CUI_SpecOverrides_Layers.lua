@@ -118,15 +118,15 @@ local function HarvestLayer(carry, base)
     local stripSets = { layerRec.anchors, layerRec.widthMatch, layerRec.heightMatch }
     for idx = 1, 3 do
         local t, kill = stripSets[idx], nil
-        for k in pairs(t) do
-            if IsTBBChildKey(k) then
+        for key in pairs(t) do
+            if IsTBBChildKey(key) then
                 kill = kill or {}
-                kill[#kill + 1] = k
+                kill[#kill + 1] = key
             end
         end
         if kill then
-            for _, k in ipairs(kill) do
-                t[k] = nil
+            for _, key in ipairs(kill) do
+                t[key] = nil
             end
         end
     end
@@ -135,17 +135,17 @@ local function HarvestLayer(carry, base)
     layerRec.widthMatchExtra, layerRec.heightMatchExtra = {}, {}
     local wx = CludesUIDB and CludesUIDB.unlockWidthMatchExtra
     if wx then
-        for k, val in pairs(wx) do
-            if layerRec.widthMatch[k] ~= nil then
-                layerRec.widthMatchExtra[k] = val
+        for key, val in pairs(wx) do
+            if layerRec.widthMatch[key] ~= nil then
+                layerRec.widthMatchExtra[key] = val
             end
         end
     end
     local hx = CludesUIDB and CludesUIDB.unlockHeightMatchExtra
     if hx then
-        for k, val in pairs(hx) do
-            if layerRec.heightMatch[k] ~= nil then
-                layerRec.heightMatchExtra[k] = val
+        for key, val in pairs(hx) do
+            if layerRec.heightMatch[key] ~= nil then
+                layerRec.heightMatchExtra[key] = val
             end
         end
     end
@@ -164,9 +164,9 @@ local function HarvestLayer(carry, base)
     if ab then
         layerRec.abPos = DeepCopy(ab.barPositions or {})
         if ab.bars then
-            for k, conf in pairs(ab.bars) do
+            for key, conf in pairs(ab.bars) do
                 if type(conf) == "table" and conf.growDirection then
-                    layerRec.abGrow[k] = conf.growDirection
+                    layerRec.abGrow[key] = conf.growDirection
                 end
             end
         end
@@ -185,9 +185,9 @@ local function HarvestLayer(carry, base)
                     local success, p = pcall(element.loadRawPosition, elemKey)
                     if success and type(p) == "table" and p.point then
                         record = {}
-                        for k, val in pairs(p) do
+                        for key, val in pairs(p) do
                             if type(val) ~= "table" then
-                                record[k] = val
+                                record[key] = val
                             end
                         end
                         record.relPoint = record.relPoint or record.point
@@ -312,13 +312,13 @@ local function RawPosEqual(current, record)
     if (current.relPoint or current.point) ~= (record.relPoint or record.point) then
         return false
     end
-    for k, val in pairs(record) do
-        if not RAW_POS_LAYER_KEYS[k] and current[k] ~= val then
+    for key, val in pairs(record) do
+        if not RAW_POS_LAYER_KEYS[key] and current[key] ~= val then
             return false
         end
     end
-    for k, val in pairs(current) do
-        if not RAW_POS_LAYER_KEYS[k] and record[k] ~= val then
+    for key, val in pairs(current) do
+        if not RAW_POS_LAYER_KEYS[key] and record[key] ~= val then
             return false
         end
     end
@@ -347,28 +347,28 @@ local function ApplyLayer(layerRec, baseLayer)
         -- entries (per-spec, bucket-owned) ride the wipe whole, fallback
         -- included, and layer-borne ones are skipped on refill.
         local fallbacks, tbbKept
-        for k, details in pairs(anchors) do
-            if IsTBBChildKey(k) then
+        for key, details in pairs(anchors) do
+            if IsTBBChildKey(key) then
                 tbbKept = tbbKept or {}
-                tbbKept[k] = details
+                tbbKept[key] = details
             elseif details.fallback then
                 fallbacks = fallbacks or {}
-                fallbacks[k] = { tgt = details.target, fb = details.fallback }
+                fallbacks[key] = { tgt = details.target, fb = details.fallback }
             end
         end
         wipe(anchors)
-        for k, details in pairs(layerRec.anchors or {}) do
-            if not IsTBBChildKey(k) then
-                anchors[k] = DeepCopy(details)
-                local f = fallbacks and fallbacks[k]
+        for key, details in pairs(layerRec.anchors or {}) do
+            if not IsTBBChildKey(key) then
+                anchors[key] = DeepCopy(details)
+                local f = fallbacks and fallbacks[key]
                 if f and f.tgt == details.target then
-                    anchors[k].fallback = f.fb
+                    anchors[key].fallback = f.fb
                 end
             end
         end
         if tbbKept then
-            for k, details in pairs(tbbKept) do
-                anchors[k] = details
+            for key, details in pairs(tbbKept) do
+                anchors[key] = details
             end
         end
         CludesUI._anchorLinksStamp = (CludesUI._anchorLinksStamp or 0) + 1
@@ -378,21 +378,21 @@ local function ApplyLayer(layerRec, baseLayer)
             CludesUIDB.unlockWidthMatch = wm
         end
         local wmKept
-        for k, val in pairs(wm) do
-            if IsTBBChildKey(k) then
+        for key, val in pairs(wm) do
+            if IsTBBChildKey(key) then
                 wmKept = wmKept or {}
-                wmKept[k] = val
+                wmKept[key] = val
             end
         end
         wipe(wm)
-        for k, val in pairs(layerRec.widthMatch or {}) do
-            if not IsTBBChildKey(k) then
-                wm[k] = val
+        for key, val in pairs(layerRec.widthMatch or {}) do
+            if not IsTBBChildKey(key) then
+                wm[key] = val
             end
         end
         if wmKept then
-            for k, val in pairs(wmKept) do
-                wm[k] = val
+            for key, val in pairs(wmKept) do
+                wm[key] = val
             end
         end
         local hm = CludesUIDB.unlockHeightMatch
@@ -401,21 +401,21 @@ local function ApplyLayer(layerRec, baseLayer)
             CludesUIDB.unlockHeightMatch = hm
         end
         local hmKept
-        for k, val in pairs(hm) do
-            if IsTBBChildKey(k) then
+        for key, val in pairs(hm) do
+            if IsTBBChildKey(key) then
                 hmKept = hmKept or {}
-                hmKept[k] = val
+                hmKept[key] = val
             end
         end
         wipe(hm)
-        for k, val in pairs(layerRec.heightMatch or {}) do
-            if not IsTBBChildKey(k) then
-                hm[k] = val
+        for key, val in pairs(layerRec.heightMatch or {}) do
+            if not IsTBBChildKey(key) then
+                hm[key] = val
             end
         end
         if hmKept then
-            for k, val in pairs(hmKept) do
-                hm[k] = val
+            for key, val in pairs(hmKept) do
+                hm[key] = val
             end
         end
         -- Match extras follow the links above, the same way for both axes: TBB
@@ -428,28 +428,28 @@ local function ApplyLayer(layerRec, baseLayer)
             local tbl = CludesUIDB[field]
             local kept
             if tbl then
-                for k, val in pairs(tbl) do
-                    if IsTBBChildKey(k) then
+                for key, val in pairs(tbl) do
+                    if IsTBBChildKey(key) then
                         kept = kept or {}
-                        kept[k] = val
+                        kept[key] = val
                     end
                 end
                 wipe(tbl)
             end
             if type(source) == "table" then
-                for k, val in pairs(source) do
-                    if not IsTBBChildKey(k) then
+                for key, val in pairs(source) do
+                    if not IsTBBChildKey(key) then
                         if not tbl then
                             tbl = {}
                             CludesUIDB[field] = tbl
                         end
-                        tbl[k] = val
+                        tbl[key] = val
                     end
                 end
             end
             if kept then
-                for k, val in pairs(kept) do
-                    tbl[k] = val
+                for key, val in pairs(kept) do
+                    tbl[key] = val
                 end
             end
         end
@@ -467,8 +467,8 @@ local function ApplyLayer(layerRec, baseLayer)
                 cdmStore.cdmBarPositions = tbl
             end
             wipe(tbl)
-            for k, val in pairs(place) do
-                tbl[k] = DeepCopy(val)
+            for key, val in pairs(place) do
+                tbl[key] = DeepCopy(val)
             end
             -- Per-bar missing-means-baseline: a layer's cdmPos is a snapshot from its
             -- last harvest, so bars created AFTER it have no entry in older layers and
@@ -477,9 +477,9 @@ local function ApplyLayer(layerRec, baseLayer)
             -- rule below); the layer self-heals to full coverage at its next harvest.
             local bpos = baseLayer and baseLayer.cdmPos
             if bpos and bpos ~= place then
-                for k, val in pairs(bpos) do
-                    if tbl[k] == nil then
-                        tbl[k] = DeepCopy(val)
+                for key, val in pairs(bpos) do
+                    if tbl[key] == nil then
+                        tbl[key] = DeepCopy(val)
                     end
                 end
             end
@@ -518,15 +518,15 @@ local function ApplyLayer(layerRec, baseLayer)
                 ab.barPositions = tbl
             end
             wipe(tbl)
-            for k, val in pairs(place) do
-                tbl[k] = DeepCopy(val)
+            for key, val in pairs(place) do
+                tbl[key] = DeepCopy(val)
             end
             -- Per-bar missing-means-baseline, same as cdmPos above.
             local bpos = baseLayer and baseLayer.abPos
             if bpos and bpos ~= place then
-                for k, val in pairs(bpos) do
-                    if tbl[k] == nil then
-                        tbl[k] = DeepCopy(val)
+                for key, val in pairs(bpos) do
+                    if tbl[key] == nil then
+                        tbl[key] = DeepCopy(val)
                     end
                 end
             end
@@ -536,14 +536,14 @@ local function ApplyLayer(layerRec, baseLayer)
             local lg = (layerRec.abPos ~= nil) and layerRec.abGrow or nil
             local backdrop = (baseLayer and baseLayer.abPos ~= nil) and baseLayer.abGrow or nil
             if lg or backdrop then
-                for k, conf in pairs(ab.bars) do
+                for key, conf in pairs(ab.bars) do
                     if type(conf) == "table" then
                         local gd
                         if lg then
-                            gd = lg[k]
+                            gd = lg[key]
                         end
                         if gd == nil and backdrop then
-                            gd = backdrop[k]
+                            gd = backdrop[key]
                         end
                         conf.growDirection = gd
                     end
@@ -633,17 +633,17 @@ function CludesUI.SpecOverrides_ApplyUnlock(specId, force)
             end
             local added = false
             if layerPos then
-                for k, val in pairs(layerPos) do
-                    if tbl[k] == nil then
-                        tbl[k] = DeepCopy(val)
+                for key, val in pairs(layerPos) do
+                    if tbl[key] == nil then
+                        tbl[key] = DeepCopy(val)
                         added = true
                     end
                 end
             end
             if basePos and basePos ~= layerPos then
-                for k, val in pairs(basePos) do
-                    if tbl[k] == nil then
-                        tbl[k] = DeepCopy(val)
+                for key, val in pairs(basePos) do
+                    if tbl[key] == nil then
+                        tbl[key] = DeepCopy(val)
                         added = true
                     end
                 end
@@ -1054,8 +1054,8 @@ function CludesUI.SpecOverrides_FlushUnlock()
             local t2 = CludesUI._CondOv.ApplyValues()
             if t2 then
                 touched = touched or {}
-                for k in pairs(t2) do
-                    touched[k] = true
+                for key in pairs(t2) do
+                    touched[key] = true
                 end
             end
         end
@@ -1285,8 +1285,8 @@ local function BmApplyLayer(layerRec, skipPageRefresh)
         rf.bmIndicators = ind
     end
     wipe(ind)
-    for k, val in pairs(layerRec.indicators or {}) do
-        ind[k] = DeepCopy(val)
+    for key, val in pairs(layerRec.indicators or {}) do
+        ind[key] = DeepCopy(val)
     end
     local simple = rf.bmSimple
     if type(simple) ~= "table" then
@@ -1294,8 +1294,8 @@ local function BmApplyLayer(layerRec, skipPageRefresh)
         rf.bmSimple = simple
     end
     wipe(simple)
-    for k, val in pairs(layerRec.simple or {}) do
-        simple[k] = type(val) == "table" and DeepCopy(val) or val
+    for key, val in pairs(layerRec.simple or {}) do
+        simple[key] = type(val) == "table" and DeepCopy(val) or val
     end
     rf.bmDisplayMode = layerRec.displayMode or "custom"
     rf.bmIconZoom = layerRec.iconZoom or 0.08

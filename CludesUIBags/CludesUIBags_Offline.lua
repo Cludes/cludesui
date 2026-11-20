@@ -293,13 +293,13 @@ end
 
 -- true when two saved containers hold the same items
 local function SameMap(a, b)
-    for k, val in pairs(a) do
-        if b[k] ~= val then
+    for key, val in pairs(a) do
+        if b[key] ~= val then
             return false
         end
     end
-    for k in pairs(b) do
-        if a[k] == nil then
+    for key in pairs(b) do
+        if a[key] == nil then
             return false
         end
     end

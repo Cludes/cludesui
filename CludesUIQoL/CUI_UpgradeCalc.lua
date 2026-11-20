@@ -1264,8 +1264,8 @@ end
 local function SaveCrestManualAdds()
     local saved = DB()
     saved.crestManualAdds = {}
-    for k, val in pairs(manualCrests) do
-        saved.crestManualAdds[k] = val
+    for key, val in pairs(manualCrests) do
+        saved.crestManualAdds[key] = val
     end
 end
 
@@ -1996,8 +1996,8 @@ scanBtn:SetScript("OnClick", function()
         scanBtnTxt:SetText(CUI.L("Update at Upgrader"))
         scanBtn:SetAlpha(1)
         if success then
-            for k in pairs(manualCrests) do
-                manualCrests[k] = 0
+            for key in pairs(manualCrests) do
+                manualCrests[key] = 0
             end
             SaveCrestManualAdds()
             PopulateGear()
@@ -2076,8 +2076,8 @@ frame:SetScript("OnShow", function()
     -- Reload persisted crest manual-add offsets each time the frame opens,
     -- so that values the user set before logging out are visible immediately.
     local dbAdds = DB().crestManualAdds
-    for k in pairs(manualCrests) do
-        manualCrests[k] = (dbAdds and dbAdds[k]) or 0
+    for key in pairs(manualCrests) do
+        manualCrests[key] = (dbAdds and dbAdds[key]) or 0
     end
     equipListener:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
     equipListener:RegisterEvent("PLAYER_REGEN_DISABLED")

@@ -75,9 +75,9 @@ local function Note(where, key, zone)
     if not e then
         if list.n >= SEEN_MAX then
             local oldest
-            for k, val in pairs(list.entries) do
+            for key, val in pairs(list.entries) do
                 if not oldest or val.at < list.entries[oldest].at then
-                    oldest = k
+                    oldest = key
                 end
             end
             list.entries[oldest] = nil

@@ -63,20 +63,20 @@ do
     -- Types of `a` also in / not in `b`, as a fresh set; nil when none are left.
     local function TypesAnd(a, b)
         local result
-        for k in pairs(a) do
-            if b[k] then
+        for key in pairs(a) do
+            if b[key] then
                 result = result or {}
-                result[k] = true
+                result[key] = true
             end
         end
         return result
     end
     local function TypesMinus(a, b)
         local result
-        for k in pairs(a) do
-            if not (b and b[k]) then
+        for key in pairs(a) do
+            if not (b and b[key]) then
                 result = result or {}
-                result[k] = true
+                result[key] = true
             end
         end
         return result
@@ -87,8 +87,8 @@ do
         for index = 1, #p.tokens do
             t[index] = p.tokens[index]
         end
-        for k, v in pairs(p.cand) do
-            c[k] = v
+        for key, val in pairs(p.cand) do
+            c[key] = val
         end
         return { tokens = t, cand = c }
     end
@@ -149,13 +149,13 @@ do
                         inc = MergeTypes(inc, cc.includeDispelTypes)
                         nTypes, typeKey = nTypes + 1, class.key
                     else
-                        for k, v in pairs(cc) do
+                        for key, val in pairs(cc) do
                             -- Two picks on one field (stale data only: the setters keep
                             -- Non-Player and From Any Player exclusive) never match.
-                            if cand[k] ~= nil and cand[k] ~= v then
+                            if cand[key] ~= nil and cand[key] ~= val then
                                 clash = true
                             end
-                            cand[k] = v
+                            cand[key] = val
                         end
                         cats[#cats + 1] = class.key
                     end
@@ -164,9 +164,9 @@ do
                         exc = MergeTypes(exc, cc.includeDispelTypes)
                     else
                         hideBool = hideBool or {}
-                        for k, v in pairs(cc) do
-                            if type(v) == "boolean" then
-                                hideBool[k] = not v
+                        for key, val in pairs(cc) do
+                            if type(val) == "boolean" then
+                                hideBool[key] = not val
                             end
                         end
                     end
@@ -178,9 +178,9 @@ do
         end
         -- A Show pick owns its field; the Hide lane vetoes only what is left open.
         if hideBool then
-            for k, v in pairs(hideBool) do
-                if cand[k] == nil then
-                    cand[k] = v
+            for key, val in pairs(hideBool) do
+                if cand[key] == nil then
+                    cand[key] = val
                 end
             end
         end
@@ -404,8 +404,8 @@ local function CandFP(castFrame)
         return "-"
     end
     local keyList = {}
-    for k in pairs(castFrame) do
-        keyList[#keyList + 1] = k
+    for key in pairs(castFrame) do
+        keyList[#keyList + 1] = key
     end
     table.sort(keyList)
     local parts = {}
@@ -444,23 +444,23 @@ local function MergeCandidateFilters(base, extra)
         return extra
     end
     local result = {}
-    for k, v in pairs(base) do
-        result[k] = v
+    for key, val in pairs(base) do
+        result[key] = val
     end
-    for k, v in pairs(extra) do
-        if k == "excludeSpellIDs" and result[k] then
+    for key, val in pairs(extra) do
+        if key == "excludeSpellIDs" and result[key] then
             -- Exclude maps UNION (never overwrite): the catch-all's subtract set
             -- and the extras' blacklist both survive.
             local m = {}
-            for ident in pairs(result[k]) do
+            for ident in pairs(result[key]) do
                 m[ident] = true
             end
-            for ident in pairs(v) do
+            for ident in pairs(val) do
                 m[ident] = true
             end
-            result[k] = m
+            result[key] = m
         else
-            result[k] = v
+            result[key] = val
         end
     end
     return result
@@ -493,8 +493,8 @@ local function EnsurePabSizedStyle(baseKey, size, shape)
     end
     local variantKey = baseKey .. ":sz" .. tostring(size)
     local v = {}
-    for k, val in pairs(base) do
-        v[k] = val
+    for key, val in pairs(base) do
+        v[key] = val
     end
     -- Snapped like BuildStyle's own width/height (same button SetSize path, so a raw
     -- value reintroduces the 1px border/icon disagreement); the variant KEY stays
@@ -572,8 +572,8 @@ local function ApplyGroupConfig(
             -- link.cand is from the shared class vocabulary -- copy it so the merges
             -- below never mutate it.
             candidateFilters = {}
-            for k, v in pairs(itemLink.cand) do
-                candidateFilters[k] = v
+            for key, val in pairs(itemLink.cand) do
+                candidateFilters[key] = val
             end
         end
         candidateFilters = MergeCandidateFilters(candidateFilters, itemLink.excludeCand)

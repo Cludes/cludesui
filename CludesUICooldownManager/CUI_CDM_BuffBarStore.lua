@@ -91,9 +91,9 @@ do
         if not storage then
             return
         end
-        for k, val in pairs(storage) do
-            if type(k) == "string" then
-                local slot = k:match("^TBB_(%d+)$")
+        for key, val in pairs(storage) do
+            if type(key) == "string" then
+                local slot = key:match("^TBB_(%d+)$")
                 if slot then
                     dest[slot] = CopyEntry(val)
                 end
@@ -114,8 +114,8 @@ do
                 return
             end
             local any
-            for k in pairs(storage) do
-                if type(k) == "string" and k:find("^TBB_%d+$") then
+            for key in pairs(storage) do
+                if type(key) == "string" and key:find("^TBB_%d+$") then
                     any = true
                     break
                 end
@@ -158,15 +158,15 @@ do
     -- Replace a live store's TBB child entries with a bucket table's.
     local function SwapOne(storage, source)
         local kill
-        for k in pairs(storage) do
-            if type(k) == "string" and k:match("^TBB_%d+$") then
+        for key in pairs(storage) do
+            if type(key) == "string" and key:match("^TBB_%d+$") then
                 kill = kill or {}
-                kill[#kill + 1] = k
+                kill[#kill + 1] = key
             end
         end
         if kill then
-            for _, k in ipairs(kill) do
-                storage[k] = nil
+            for _, key in ipairs(kill) do
+                storage[key] = nil
             end
         end
         for slot, val in pairs(source) do
@@ -334,8 +334,8 @@ local function AddTrackedBuffBarCore(tbb, targetGid)
     -- Base from pure defaults (spell identity, enable state and stack-threshold numbers
     -- start fresh), then dress it: the style key set is the authoritative visual copy.
     local newBar = {}
-    for k, val in pairs(TBB_DEFAULT_BAR) do
-        newBar[k] = val
+    for key, val in pairs(TBB_DEFAULT_BAR) do
+        newBar[key] = val
     end
     if preset then
         mod.ApplyTBBStylePresetToCfg(preset, newBar)
@@ -460,8 +460,8 @@ function mod.MoveTrackedBuffBarInGroup(position, place)
     local oldAnchor = mod.TBBGroupAnchorIndex(groupId)
     table.remove(members, from)
     table.insert(members, place, conf)
-    for k, jdx in ipairs(slots) do
-        barList[jdx] = members[k]
+    for key, jdx in ipairs(slots) do
+        barList[jdx] = members[key]
     end
     -- A disabled member can hand the anchor role to another slot: carry the
     -- group origin there, as the group mover's save does for every member.

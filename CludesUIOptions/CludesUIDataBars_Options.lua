@@ -2150,19 +2150,19 @@ CludesUI.AtOptionsLogin(function()
                 if not color then
                     return 0.067, 0.067, 0.067
                 end
-                local r = color.r
-                if r == nil then
-                    r = 0.067
+                local red = color.r
+                if red == nil then
+                    red = 0.067
                 end
-                local g = color.g
-                if g == nil then
-                    g = 0.067
+                local green = color.g
+                if green == nil then
+                    green = 0.067
                 end
                 local b2 = color.b
                 if b2 == nil then
                     b2 = 0.067
                 end
-                return r, g, b2
+                return red, green, b2
             end, function(red, green, blue)
                 local color = skinName.modernColor
                 if not color then
@@ -2853,13 +2853,13 @@ CludesUI.AtOptionsLogin(function()
                         if not color then
                             return 0, 0, 0, 0.5
                         end
-                        local r = color.r
-                        if r == nil then
-                            r = 0
+                        local red = color.r
+                        if red == nil then
+                            red = 0
                         end
-                        local g = color.g
-                        if g == nil then
-                            g = 0
+                        local green = color.g
+                        if green == nil then
+                            green = 0
                         end
                         local b2 = color.b
                         if b2 == nil then
@@ -2869,7 +2869,7 @@ CludesUI.AtOptionsLogin(function()
                         if a == nil then
                             a = 0.5
                         end
-                        return r, g, b2, a
+                        return red, green, b2, a
                     end,
                     function(red, green, blue, a)
                         block.bg = { r = red, g = green, b = blue, a = a }

@@ -1246,8 +1246,8 @@ do
     local navInfo = {}
     for _, details in ipairs(ADDON_ROSTER) do
         local copy = {}
-        for k, v in pairs(details) do
-            copy[k] = v
+        for key, val in pairs(details) do
+            copy[key] = val
         end
         navInfo[details.folder] = copy
     end
@@ -1958,12 +1958,12 @@ CludesUI.ALERT_SOUND_ORDER = {
 function CludesUI.BuildAlertSoundTables()
     local dir = MEDIA_PATH .. "sounds\\"
     local paths, nameList, sequence = {}, {}, {}
-    for i, k in ipairs(CludesUI.ALERT_SOUND_ORDER) do
-        sequence[i] = k
-        nameList[k] = CludesUI.ALERT_SOUND_NAMES[k]
-        local f = CludesUI.ALERT_SOUND_FILES[k]
+    for i, key in ipairs(CludesUI.ALERT_SOUND_ORDER) do
+        sequence[i] = key
+        nameList[key] = CludesUI.ALERT_SOUND_NAMES[key]
+        local f = CludesUI.ALERT_SOUND_FILES[key]
         if f then
-            paths[k] = dir .. f
+            paths[key] = dir .. f
         end
     end
     return paths, nameList, sequence
@@ -2060,13 +2060,13 @@ CludesUI.BAR_TEXTURE_ORDER = {
 function CludesUI.BuildBarTextureTables(includeExtras)
     local dir = MEDIA_PATH .. "textures\\"
     local texture, nameList, sequence = {}, {}, {}
-    for _, k in ipairs(CludesUI.BAR_TEXTURE_ORDER) do
-        if includeExtras or (k ~= "blinkii-diamonds" and k ~= "kringel-window") then
-            sequence[#sequence + 1] = k
-            nameList[k] = CludesUI.BAR_TEXTURE_NAMES[k]
-            local f = CludesUI.BAR_TEXTURE_FILES[k]
+    for _, key in ipairs(CludesUI.BAR_TEXTURE_ORDER) do
+        if includeExtras or (key ~= "blinkii-diamonds" and key ~= "kringel-window") then
+            sequence[#sequence + 1] = key
+            nameList[key] = CludesUI.BAR_TEXTURE_NAMES[key]
+            local f = CludesUI.BAR_TEXTURE_FILES[key]
             if f then
-                texture[k] = dir .. f
+                texture[key] = dir .. f
             end
         end
     end
@@ -2286,23 +2286,23 @@ function CludesUI.GetTooltipBg()
     local saved = CludesUIDB
     local color = saved and saved.tooltipBgColor
     local R = CludesUI.RESKIN
-    local r = (color and color.r) or R.BG_R
-    local g = (color and color.g) or R.BG_G
-    local b = (color and color.b) or R.BG_B
+    local red = (color and color.r) or R.BG_R
+    local green = (color and color.g) or R.BG_G
+    local blue = (color and color.b) or R.BG_B
     local a = (saved and saved.tooltipBgOpacity) or R.TT_ALPHA
-    return r, g, b, a
+    return red, green, blue, a
 end
 -- Tooltip border for the Blizzard tooltip reskin (Blizz UI Enhanced > Blizzard Tooltip >
 -- Border); unset = white @ BRD_ALPHA, 1px. Returns r,g,b,a,size (0 is valid).
 function CludesUI.GetTooltipBorder()
     local saved = CludesUIDB
     local color = saved and saved.tooltipBorderColor
-    local r = (color and color.r) or 1
-    local g = (color and color.g) or 1
-    local b = (color and color.b) or 1
+    local red = (color and color.r) or 1
+    local green = (color and color.g) or 1
+    local blue = (color and color.b) or 1
     local a = (saved and saved.tooltipBorderOpacity) or CludesUI.RESKIN.BRD_ALPHA
     local px = (saved and saved.tooltipBorderSize) or 1
-    return r, g, b, a, px
+    return red, green, blue, a, px
 end
 -- Layout
 CludesUI.DUAL_ITEM_W = STYLE.DUAL_ITEM_W
@@ -3934,8 +3934,8 @@ function CludesUI.AppendSharedMediaTextures(nameList, sequence, castBarNames, te
         -- matching on the file alone would swallow the library's entry and
         -- leave the user unable to find that texture by name.
         local native = {}
-        for k, filePath in pairs(textures) do
-            local nm = nameList and nameList[k]
+        for key, filePath in pairs(textures) do
+            local nm = nameList and nameList[key]
             if nm then
                 native[string.lower(nm)] = filePath
             end

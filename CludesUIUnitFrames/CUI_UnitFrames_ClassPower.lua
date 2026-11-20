@@ -774,9 +774,9 @@ local function ApplyEnemyColors()
     local function setIdx(index, custom)
         local frame = FACTION_BAR_COLORS[index]
         local region = (custom and custom.r) or (frame and frame.r) or 1
-        local g = (custom and custom.g) or (frame and frame.g) or 1
-        local b = (custom and custom.b) or (frame and frame.b) or 1
-        mod.Colors.reaction[index] = CreateColor(region, g, b)
+        local green = (custom and custom.g) or (frame and frame.g) or 1
+        local blue = (custom and custom.b) or (frame and frame.b) or 1
+        mod.Colors.reaction[index] = CreateColor(region, green, blue)
     end
     for i = 1, 3 do
         setIdx(i, ec.hostile)

@@ -642,12 +642,12 @@ end
 local function MergeTypes(acc, add)
     local result = {}
     if acc then
-        for k, val in pairs(acc) do
-            result[k] = val
+        for key, val in pairs(acc) do
+            result[key] = val
         end
     end
-    for k, val in pairs(add) do
-        result[k] = val
+    for key, val in pairs(add) do
+        result[key] = val
     end
     return result
 end
@@ -759,13 +759,13 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
             tbl.isPriorityAura = false
         end
         if bo then
-            for k, val in pairs(bo) do
-                tbl[k] = val
+            for key, val in pairs(bo) do
+                tbl[key] = val
             end
         end
         if withSub then
-            for k, val in pairs(withSub) do
-                tbl[k] = val
+            for key, val in pairs(withSub) do
+                tbl[key] = val
             end
         end
         return tbl
@@ -777,8 +777,8 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
     local function ShownCand(cc)
         local dead = cc.includeDispelTypes ~= nil and excludeDispelTypes ~= nil
         if dead then
-            for k in pairs(cc.includeDispelTypes) do
-                if not excludeDispelTypes[k] then
+            for key in pairs(cc.includeDispelTypes) do
+                if not excludeDispelTypes[key] then
                     dead = false
                     break
                 end
@@ -800,8 +800,8 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 ex.excludeDispelTypes = MergeTypes(ex.excludeDispelTypes, flipTypes)
             end
             if flipBools then
-                for k, val in pairs(flipBools) do
-                    ex[k] = val
+                for key, val in pairs(flipBools) do
+                    ex[key] = val
                 end
             end
         end
@@ -810,9 +810,9 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
 
     local function CollectSub(cc)
         subCand = subCand or {}
-        for k, val in pairs(cc) do
+        for key, val in pairs(cc) do
             if type(val) == "boolean" then
-                subCand[k] = not val
+                subCand[key] = not val
             end
         end
     end
@@ -1007,9 +1007,9 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         local ex = ExtraCand()
         if subCand then
             ex = ex or {}
-            for k, val in pairs(subCand) do
-                if ex[k] == nil then
-                    ex[k] = val
+            for key, val in pairs(subCand) do
+                if ex[key] == nil then
+                    ex[key] = val
                 end
             end
         end

@@ -1327,8 +1327,8 @@ function mod.BM_ApplyPreviewIndicators(frame, index, cfg)
                 return
             end
             local v = {}
-            for k, val in pairs(indicator) do
-                v[k] = val
+            for key, val in pairs(indicator) do
+                v[key] = val
             end
             -- Preview parity: per-filter square colors expand exactly like the
             -- live view assembly.
@@ -2912,8 +2912,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     -- gained or lost a Buff Manager since the popup was built).
                     wipe(createPopup._srcValues)
                     wipe(createPopup._srcOrder)
-                    for k, v in pairs(values) do
-                        createPopup._srcValues[k] = v
+                    for key, val in pairs(values) do
+                        createPopup._srcValues[key] = val
                     end
                     for idx = 1, #sequence do
                         createPopup._srcOrder[idx] = sequence[idx]
@@ -4243,9 +4243,9 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
             -- Position gains an "Anchor To" subnav (v2): picking another indicator
             -- of the SAME type continues its run; anchored position/growth/wrap come from the target.
             local posValues, posOrder = {}, {}
-            for _, k in ipairs(POSITION_ORDER) do
-                posOrder[#posOrder + 1] = k
-                posValues[k] = POSITION_VALUES[k]
+            for _, key in ipairs(POSITION_ORDER) do
+                posOrder[#posOrder + 1] = key
+                posValues[key] = POSITION_VALUES[key]
             end
             local anchorVals = {}
             local entries = GetSpecIndicators(saved, selectedSpecKey) or {}
@@ -5347,11 +5347,11 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 local EXCLUDED_BORDER_STYLES = { shadow = true, lightspark = true }
                 local allVals, allOrder = CludesUI.GetBorderTextureDropdown()
                 local bsVals, bsOrder = {}, {}
-                for _, k in ipairs(allOrder) do
-                    if not EXCLUDED_BORDER_STYLES[k] then
-                        bsVals[k] = allVals[k]
-                        bsOrder[#bsOrder + 1] = k
-                        if k == "solid" then
+                for _, key in ipairs(allOrder) do
+                    if not EXCLUDED_BORDER_STYLES[key] then
+                        bsVals[key] = allVals[key]
+                        bsOrder[#bsOrder + 1] = key
+                        if key == "solid" then
                             bsVals.dashed = "Dashed"
                             bsOrder[#bsOrder + 1] = "dashed"
                         end

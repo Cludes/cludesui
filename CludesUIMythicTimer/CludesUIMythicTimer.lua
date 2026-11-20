@@ -999,8 +999,8 @@ local function CheckSavedSplits(timePassed)
     if not stale and splitList.start then
         stale = GetServerTime() - timePassed > splitList.start + 30
     elseif not stale then
-        for k, t in pairs(splitList) do
-            if type(k) == "number" and t > timePassed then
+        for key, t in pairs(splitList) do
+            if type(key) == "number" and t > timePassed then
                 stale = true
                 break
             end

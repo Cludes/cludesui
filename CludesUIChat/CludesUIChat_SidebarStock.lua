@@ -45,9 +45,9 @@ end
 local function Entry(base, tbl)
     tbl = tbl or {}
     if base then
-        for k, val in pairs(base) do
-            if tbl[k] == nil then
-                tbl[k] = val
+        for key, val in pairs(base) do
+            if tbl[key] == nil then
+                tbl[key] = val
             end
         end
     end

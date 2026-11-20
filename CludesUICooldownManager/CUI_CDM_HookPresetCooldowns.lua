@@ -76,17 +76,17 @@ do
     function PotSwap.Order(preset, orderStr)
         local result, seen = {}, {}
         if orderStr then
-            for k in string.gmatch(orderStr, "[^,]+") do
-                if famByKey[k] and not seen[k] then
-                    seen[k] = true
-                    result[#result + 1] = k
+            for key in string.gmatch(orderStr, "[^,]+") do
+                if famByKey[key] and not seen[key] then
+                    seen[key] = true
+                    result[#result + 1] = key
                 end
             end
         end
-        for _, k in ipairs(preset.potDefaultOrder or {}) do
-            if famByKey[k] and not seen[k] then
-                seen[k] = true
-                result[#result + 1] = k
+        for _, key in ipairs(preset.potDefaultOrder or {}) do
+            if famByKey[key] and not seen[key] then
+                seen[key] = true
+                result[#result + 1] = key
             end
         end
         return result
@@ -1285,9 +1285,9 @@ function mod.SignalTimeSpiralEnd()
     local suffix = ":374968"
     local num = #suffix
     local any = false
-    for k in pairs(_customAuraTimers) do
-        if type(k) == "string" and k:sub(-num) == suffix then
-            _customAuraTimers[k] = nil
+    for key in pairs(_customAuraTimers) do
+        if type(key) == "string" and key:sub(-num) == suffix then
+            _customAuraTimers[key] = nil
             any = true
         end
     end

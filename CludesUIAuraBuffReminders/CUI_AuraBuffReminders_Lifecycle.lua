@@ -142,9 +142,9 @@ function REMIND:OnInitialize()
             end
             return nil -- "all" or unknown => every difficulty on
         end
-        for k, val in pairs(collector.showIn) do
+        for key, val in pairs(collector.showIn) do
             if type(val) == "string" then
-                collector.showIn[k] = tierToSet(val)
+                collector.showIn[key] = tierToSet(val)
             end
         end
     end
@@ -876,8 +876,8 @@ local function DetectUsedItem()
         end
     end
     wipe(_prevBagCounts)
-    for k, val in pairs(_bagCounts) do
-        _prevBagCounts[k] = val
+    for key, val in pairs(_bagCounts) do
+        _prevBagCounts[key] = val
     end
 end
 
@@ -891,8 +891,8 @@ if not REMIND.FOREVER then
             C_Timer.After(1, function()
                 RebuildBagCounts()
                 wipe(_prevBagCounts)
-                for k, val in pairs(_bagCounts) do
-                    _prevBagCounts[k] = val
+                for key, val in pairs(_bagCounts) do
+                    _prevBagCounts[key] = val
                 end
             end)
         elseif ev == "BAG_UPDATE_DELAYED" then

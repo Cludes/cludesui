@@ -362,12 +362,12 @@ do
         },
     }
     for section, keyList in pairs(map) do
-        for _, k in ipairs(keyList) do
-            mod._PARTY_KEY_SECTION[k] = section
+        for _, key in ipairs(keyList) do
+            mod._PARTY_KEY_SECTION[key] = section
         end
     end
-    for _, k in ipairs(mod.RF_TEXT_NEW_KEYS) do
-        mod._PARTY_KEY_SECTION[k] = "textDisplay"
+    for _, key in ipairs(mod.RF_TEXT_NEW_KEYS) do
+        mod._PARTY_KEY_SECTION[key] = "textDisplay"
     end
 end
 
@@ -564,8 +564,8 @@ for _, k in ipairs({
     INDICATOR_SCALE_KEYS[k] = true
 end
 -- The second Health Text and the Custom texts: font size and offsets.
-for _, k in ipairs(mod.RF_TEXT_NEW_SCALE_KEYS) do
-    INDICATOR_SCALE_KEYS[k] = true
+for _, key in ipairs(mod.RF_TEXT_NEW_SCALE_KEYS) do
+    INDICATOR_SCALE_KEYS[key] = true
 end
 
 mod._scaledProfile = setmetatable({}, {
@@ -696,22 +696,22 @@ function mod._RefreshProxyModes()
     -- _partyProxy: base profile + party_ overrides for custom sections.
     local pp = mod._partyProxy
     wipe(pp)
-    for k, v in pairs(profile) do
-        rawset(pp, k, v)
+    for key, val in pairs(profile) do
+        rawset(pp, key, val)
     end
     local keySection = mod._PARTY_KEY_SECTION
     local pxSib = mod._PARTY_PX_SIBLING
     if keySection and mod._IsPartySectionCustom then
-        for k, section in pairs(keySection) do
+        for key, section in pairs(keySection) do
             if mod._IsPartySectionCustom(section) then
-                local pv = rawget(profile, "party_" .. k)
-                local sib = pxSib[k]
+                local pv = rawget(profile, "party_" .. key)
+                local sib = pxSib[key]
                 if sib and rawget(profile, "party_" .. sib) ~= nil then
                     -- Companion of a stored party sibling: the party value only
                     -- (a nil unsets the raid copy; the __index rule answers nil too).
-                    rawset(pp, k, pv)
+                    rawset(pp, key, pv)
                 elseif pv ~= nil then
-                    rawset(pp, k, pv)
+                    rawset(pp, key, pv)
                 end
             end
         end
@@ -721,11 +721,11 @@ function mod._RefreshProxyModes()
     local sp = mod._scaledProfile
     wipe(sp)
     local iScale = mod._indicatorScale or 1
-    for k, v in pairs(profile) do
-        if iScale ~= 1 and scaleKeys[k] and type(v) == "number" then
-            rawset(sp, k, v * iScale)
+    for key, val in pairs(profile) do
+        if iScale ~= 1 and scaleKeys[key] and type(val) == "number" then
+            rawset(sp, key, val * iScale)
         else
-            rawset(sp, k, v)
+            rawset(sp, key, val)
         end
     end
     if mod._activeSizeW then
@@ -741,11 +741,11 @@ function mod._RefreshProxyModes()
     wipe(spp)
     if not mod._pvOverlayProxy then
         local pScale = mod._partyIndicatorScale or 1
-        for k, v in pairs(pp) do
-            if pScale ~= 1 and scaleKeys[k] and type(v) == "number" then
-                rawset(spp, k, v * pScale)
+        for key, val in pairs(pp) do
+            if pScale ~= 1 and scaleKeys[key] and type(val) == "number" then
+                rawset(spp, key, val * pScale)
             else
-                rawset(spp, k, v)
+                rawset(spp, key, val)
             end
         end
         local pw, ph, _, pres = mod.RF_PartyDims(pp)
@@ -754,8 +754,8 @@ function mod._RefreshProxyModes()
         if mod.RF_PartyKit() then
             local kv = mod.RF_KitViewKeys(pp)
             if kv then
-                for k, v in pairs(kv) do
-                    rawset(spp, k, v)
+                for key, val in pairs(kv) do
+                    rawset(spp, key, val)
                 end
             end
         end
@@ -765,11 +765,11 @@ function mod._RefreshProxyModes()
     local sep = mod._scaledExtraProxy
     wipe(sep)
     local xRatio = mod._xfExtraRatio or 1
-    for k, v in pairs(sp) do
-        if xRatio ~= 1 and scaleKeys[k] and type(v) == "number" then
-            rawset(sep, k, v * xRatio)
+    for key, val in pairs(sp) do
+        if xRatio ~= 1 and scaleKeys[key] and type(val) == "number" then
+            rawset(sep, key, val * xRatio)
         else
-            rawset(sep, k, v)
+            rawset(sep, key, val)
         end
     end
 

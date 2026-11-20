@@ -519,8 +519,8 @@ local function MigrateLegacyProfile(prof, live)
             if live then
                 if HasPalettes(legacy) and not HasPalettes(live) then
                     wipe(live)
-                    for k, val in pairs(legacy) do
-                        live[k] = val
+                    for key, val in pairs(legacy) do
+                        live[key] = val
                     end
                     CludesUI.Lite.DeepMergeDefaults(live, DB_DEFAULTS.profile)
                     -- Converted by the next P(), like any switched-in profile:

@@ -707,9 +707,9 @@ local function _loadVariantBases()
         -- spec scoping existed. Those answers cannot be attributed to a spec so
         -- they cannot be trusted; drop them rather than leave them orphaned.
         -- Clearing existing fields during pairs() is defined behaviour in Lua.
-        for k in pairs(root) do
-            if type(k) ~= "string" then
-                root[k] = nil
+        for key in pairs(root) do
+            if type(key) ~= "string" then
+                root[key] = nil
             end
         end
     end

@@ -562,8 +562,8 @@ local function MergeDuplicates(items)
                     -- merge pass of its own and would show one slot's count inflated
                     -- by its twins. data.info stays shared by reference on purpose.
                     local proxy = AcquireSlotTable()
-                    for k, val in pairs(previous) do
-                        proxy[k] = val
+                    for key, val in pairs(previous) do
+                        proxy[key] = val
                     end
                     proxy._mergedCount = previous.info.stackCount or 1
                     result[position] = proxy

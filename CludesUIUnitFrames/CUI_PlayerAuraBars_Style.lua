@@ -114,10 +114,10 @@ local function BuildDispelColorMap(conf)
         local def = DISPEL_SLOTS[index]
         local color = conf[def.colorKey]
         local region = (color and color.r) or def.fallback[1]
-        local g = (color and color.g) or def.fallback[2]
-        local b = (color and color.b) or def.fallback[3]
-        map[def.token] = CreateColor(region, g, b, 1)
-        fp[#fp + 1] = string.format("%.3f,%.3f,%.3f", region, g, b)
+        local green = (color and color.g) or def.fallback[2]
+        local blue = (color and color.b) or def.fallback[3]
+        map[def.token] = CreateColor(region, green, blue, 1)
+        fp[#fp + 1] = string.format("%.3f,%.3f,%.3f", region, green, blue)
     end
     return map, table.concat(fp, ";")
 end

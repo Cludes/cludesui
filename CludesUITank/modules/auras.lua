@@ -131,8 +131,8 @@ function mod.DebuffCandidateFilters()
         end
     end
     local filters = {}
-    for k, val in pairs(mode.filters) do
-        filters[k] = val
+    for key, val in pairs(mode.filters) do
+        filters[key] = val
     end
     return filters
 end

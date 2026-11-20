@@ -1102,9 +1102,9 @@ CludesUI._unlockCoreInit = function()
         ["TBB_"] = { module = "CludesUICooldownManager", page = "Tracking Bars" },
     }
     if CludesUI._elemMapPre then
-        for k, val in pairs(CludesUI._elemMapPre) do
-            if CludesUI._ELEMENT_SETTINGS_MAP[k] == nil then
-                CludesUI._ELEMENT_SETTINGS_MAP[k] = val
+        for key, val in pairs(CludesUI._elemMapPre) do
+            if CludesUI._ELEMENT_SETTINGS_MAP[key] == nil then
+                CludesUI._ELEMENT_SETTINGS_MAP[key] = val
             end
         end
         CludesUI._elemMapPre = nil

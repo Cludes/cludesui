@@ -105,12 +105,12 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
     -- deleted the user's custom placement.
     local anyRacialOwned = false
     if activeProfile and activeProfile.barSpells and mod.StoreVariantValue then
-        for k, bsd in pairs(activeProfile.barSpells) do
-            if k ~= GHOST_CD_BAR_KEY and type(bsd) == "table" and type(bsd.assignedSpells) == "table" then
+        for key, bsd in pairs(activeProfile.barSpells) do
+            if key ~= GHOST_CD_BAR_KEY and type(bsd) == "table" and type(bsd.assignedSpells) == "table" then
                 for _, csid in ipairs(bsd.assignedSpells) do
                     if type(csid) == "number" and csid > 0 then
                         ownerOf = ownerOf or {}
-                        mod.StoreVariantValue(ownerOf, csid, k, false)
+                        mod.StoreVariantValue(ownerOf, csid, key, false)
                         if ALL_RACIAL_SPELLS[csid] then
                             anyRacialOwned = true
                         end
@@ -749,10 +749,10 @@ function mod.ReconcileAssignedSpellDrops(barId)
         do
             local bsAll = activeProfile.barSpells
             if bsAll and mod.StoreVariantValue then
-                for k, bsd in pairs(bsAll) do
+                for key, bsd in pairs(bsAll) do
                     if
-                        k ~= barId
-                        and k ~= GHOST_CD_BAR_KEY
+                        key ~= barId
+                        and key ~= GHOST_CD_BAR_KEY
                         and type(bsd) == "table"
                         and type(bsd.assignedSpells) == "table"
                     then

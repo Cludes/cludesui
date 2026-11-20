@@ -236,8 +236,8 @@ local function CandFP(castFrame)
         return "-"
     end
     local keyList = {}
-    for k in pairs(castFrame) do
-        keyList[#keyList + 1] = k
+    for key in pairs(castFrame) do
+        keyList[#keyList + 1] = key
     end
     table.sort(keyList)
     local parts = {}
@@ -501,12 +501,12 @@ end
 local function MergeDispelTypes(acc, add)
     local result = {}
     if acc then
-        for k, val in pairs(acc) do
-            result[k] = val
+        for key, val in pairs(acc) do
+            result[key] = val
         end
     end
-    for k, val in pairs(add) do
-        result[k] = val
+    for key, val in pairs(add) do
+        result[key] = val
     end
     return result
 end
@@ -579,9 +579,9 @@ local function BuildChain(baseSet, buffSide, cfg, unitToken)
                 end
             else
                 subPick = subPick or {}
-                for k, val in pairs(classColor) do
+                for key, val in pairs(classColor) do
                     if type(val) == "boolean" then
-                        subPick[k] = not val
+                        subPick[key] = not val
                     end
                 end
                 -- Non-player "Important" renders through TWO groups (priority +
@@ -604,15 +604,15 @@ local function BuildChain(baseSet, buffSide, cfg, unitToken)
         local result
         if baseCand then
             result = {}
-            for k, val in pairs(baseCand) do
-                result[k] = val
+            for key, val in pairs(baseCand) do
+                result[key] = val
             end
         end
         if subPick then
             result = result or {}
-            for k, val in pairs(subPick) do
-                if result[k] == nil then
-                    result[k] = val
+            for key, val in pairs(subPick) do
+                if result[key] == nil then
+                    result[key] = val
                 end
             end
         end
@@ -764,8 +764,8 @@ local function BuildChain(baseSet, buffSide, cfg, unitToken)
                     flipTypes = MergeDispelTypes(flipTypes, classFile.cand.includeDispelTypes)
                 elseif classFile.cand.isBossAura or classFile.cand.isRoleAura or classFile.cand.canApplyAura then
                     flipBools = flipBools or {}
-                    for k, val in pairs(classFile.cand) do
-                        flipBools[k] = not val
+                    for key, val in pairs(classFile.cand) do
+                        flipBools[key] = not val
                     end
                 end
             end
@@ -803,8 +803,8 @@ local function BuildChain(baseSet, buffSide, cfg, unitToken)
             if (npOwned or anyOwned) and not skipNp then
                 local src = candidate
                 candidate = {}
-                for k, val in pairs(src) do
-                    candidate[k] = val
+                for key, val in pairs(src) do
+                    candidate[key] = val
                 end
                 isOwned = true
                 if candidate.isFromPlayerOrPlayerPet == nil then
@@ -815,8 +815,8 @@ local function BuildChain(baseSet, buffSide, cfg, unitToken)
                 if not isOwned then
                     local src = candidate
                     candidate = {}
-                    for k, val in pairs(src) do
-                        candidate[k] = val
+                    for key, val in pairs(src) do
+                        candidate[key] = val
                     end
                     isOwned = true
                 end
@@ -845,8 +845,8 @@ local function BuildChain(baseSet, buffSide, cfg, unitToken)
                 end
             end
             if bools then
-                for k, val in pairs(bools) do
-                    if candidate[k] == nil then
+                for key, val in pairs(bools) do
+                    if candidate[key] == nil then
                         if not isOwned then
                             local src = candidate
                             candidate = {}
@@ -855,7 +855,7 @@ local function BuildChain(baseSet, buffSide, cfg, unitToken)
                             end
                             isOwned = true
                         end
-                        candidate[k] = val
+                        candidate[key] = val
                         wasCarried = true
                     end
                 end
@@ -864,8 +864,8 @@ local function BuildChain(baseSet, buffSide, cfg, unitToken)
                 if not isOwned then
                     local src = candidate
                     candidate = {}
-                    for k, val in pairs(src) do
-                        candidate[k] = val
+                    for key, val in pairs(src) do
+                        candidate[key] = val
                     end
                     isOwned = true
                 end
@@ -876,8 +876,8 @@ local function BuildChain(baseSet, buffSide, cfg, unitToken)
                 if not isOwned then
                     local src = candidate
                     candidate = {}
-                    for k, val in pairs(src) do
-                        candidate[k] = val
+                    for key, val in pairs(src) do
+                        candidate[key] = val
                     end
                     isOwned = true
                 end
@@ -898,8 +898,8 @@ local function BuildChain(baseSet, buffSide, cfg, unitToken)
                 if m then
                     local src = candidate
                     candidate = {}
-                    for k, val in pairs(src) do
-                        candidate[k] = val
+                    for key, val in pairs(src) do
+                        candidate[key] = val
                     end
                     candidate.includeDispelTypes = m
                 end
@@ -933,8 +933,8 @@ local function BuildChain(baseSet, buffSide, cfg, unitToken)
             end
             if boolOwner then
                 boolCarry = boolCarry or {}
-                for k, val in pairs(classFile.cand) do
-                    boolCarry[k] = not val
+                for key, val in pairs(classFile.cand) do
+                    boolCarry[key] = not val
                 end
             end
             if classFile.cand.includeDispelTypes and classFile.key ~= "dispeltyped" then
@@ -1278,13 +1278,13 @@ local function PlayerDebuffMatch(cfg)
                 elseif classColor.includeDispelTypes then
                     included = MergeDispelTypes(included, classColor.includeDispelTypes)
                 else
-                    for k, val in pairs(classColor) do
+                    for key, val in pairs(classColor) do
                         -- Two picks on one field (stale data only: the setters keep
                         -- Non-Player and From Any Player exclusive) never match.
-                        if candidate[k] ~= nil and candidate[k] ~= val then
+                        if candidate[key] ~= nil and candidate[key] ~= val then
                             clash = true
                         end
-                        candidate[k] = val
+                        candidate[key] = val
                     end
                 end
             elseif negated and negated[classFile.skey] == true then
@@ -1292,9 +1292,9 @@ local function PlayerDebuffMatch(cfg)
                     exc = MergeDispelTypes(exc, classColor.includeDispelTypes)
                 else
                     hideBool = hideBool or {}
-                    for k, val in pairs(classColor) do
+                    for key, val in pairs(classColor) do
                         if type(val) == "boolean" then
-                            hideBool[k] = not val
+                            hideBool[key] = not val
                         end
                     end
                 end
@@ -1305,9 +1305,9 @@ local function PlayerDebuffMatch(cfg)
         return nil
     end
     if hideBool then
-        for k, val in pairs(hideBool) do
-            if candidate[k] == nil then
-                candidate[k] = val
+        for key, val in pairs(hideBool) do
+            if candidate[key] == nil then
+                candidate[key] = val
             end
         end
     end
@@ -1455,9 +1455,9 @@ local function PlayerDebuffChain(cfg)
                 end
             else
                 subPick = subPick or {}
-                for k, val in pairs(classColor) do
+                for key, val in pairs(classColor) do
                     if type(val) == "boolean" then
-                        subPick[k] = not val
+                        subPick[key] = not val
                     end
                 end
             end
@@ -1474,8 +1474,8 @@ local function PlayerDebuffChain(cfg)
     end
     local candidate = { excludeSpellIDs = ex }
     if subPick then
-        for k, val in pairs(subPick) do
-            candidate[k] = val
+        for key, val in pairs(subPick) do
+            candidate[key] = val
         end
     end
     if excludeDispelTypes then
@@ -1553,8 +1553,8 @@ local function ChainFor(unitToken, baseSet, cfg)
         if not (c.hidden or c.inc) then
             local candidate = { maxDuration = math.huge }
             if c.cand then
-                for k, val in pairs(c.cand) do
-                    candidate[k] = val
+                for key, val in pairs(c.cand) do
+                    candidate[key] = val
                 end
                 if candidate.maxDuration == nil then
                     candidate.maxDuration = math.huge
@@ -3314,8 +3314,8 @@ local function ApplyGroupConfig(boxHolder, unitToken, baseSet, cfg, filterChain,
             incPark = false
             if anyC then
                 local cd = { isFromPlayerOrPlayerPet = true }
-                for k, val in pairs(anyC.cand) do
-                    cd[k] = val
+                for key, val in pairs(anyC.cand) do
+                    cd[key] = val
                 end
                 isActive[anyC.key] = cd
                 if mineC then
@@ -3363,20 +3363,20 @@ local function ApplyGroupConfig(boxHolder, unitToken, baseSet, cfg, filterChain,
             if ac then
                 groupCand = {}
                 if candidate then
-                    for k, val in pairs(candidate) do
-                        groupCand[k] = val
+                    for key, val in pairs(candidate) do
+                        groupCand[key] = val
                     end
                 end
-                for k, val in pairs(ac) do
-                    groupCand[k] = val
+                for key, val in pairs(ac) do
+                    groupCand[key] = val
                 end
             end
             boxHolder:SetAuraGroupCandidateFilters(eff, groupCand)
             if glowKeySet and glowKeySet[eff] then
                 if not glowLayout then
                     glowLayout = { layoutIndex = 0 }
-                    for k, val in pairs(layout) do
-                        glowLayout[k] = val
+                    for key, val in pairs(layout) do
+                        glowLayout[key] = val
                     end
                 end
                 boxHolder:SetAuraGroupLayout(eff, glowLayout)

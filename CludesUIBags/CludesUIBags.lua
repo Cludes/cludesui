@@ -365,8 +365,8 @@ local function PinnedItems(create)
     own = {}
     local shared = saved.bagPinnedItems
     if type(shared) == "table" then
-        for k, val in pairs(shared) do
-            own[k] = val
+        for key, val in pairs(shared) do
+            own[key] = val
         end
     end
     if type(byChar) ~= "table" then

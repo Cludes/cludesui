@@ -518,9 +518,9 @@ do
             highlightSecondaryItems = false,
             highlightTertiaryItems = false,
         }
-        for keyName, v in pairs(defaultSet) do
+        for keyName, val in pairs(defaultSet) do
             if CludesUIDB[keyName] == nil then
-                CludesUIDB[keyName] = v
+                CludesUIDB[keyName] = val
             end
         end
     end)

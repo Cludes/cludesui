@@ -759,9 +759,9 @@ do
 
         local players = set.players or {}
         set.players = players
-        for k, val in ipairs(players) do
+        for key, val in ipairs(players) do
             if val == name then
-                table.remove(players, k)
+                table.remove(players, key)
                 mod.XF_Apply()
                 return
             end

@@ -383,9 +383,9 @@ local function PruneOrphanEntries()
     local healed = false
     for _, record in ipairs(storeTbl) do
         if record.group ~= nil and record.values then
-            for k in pairs(record.values) do
-                if type(k) == "number" and not SpecInAnyGroup(k) then
-                    record.values[k] = nil
+            for key in pairs(record.values) do
+                if type(key) == "number" and not SpecInAnyGroup(key) then
+                    record.values[key] = nil
                     healed = true
                 end
             end
@@ -660,39 +660,39 @@ local function PromoteGroupToProfile(group)
                 abGrow = {},
                 elems = {},
             }
-            for k, v in pairs(layerRec.anchors or {}) do
-                if not IsTBBChildKey(k) then
-                    nb.anchors[k] = DeepCopy(v)
+            for key, val in pairs(layerRec.anchors or {}) do
+                if not IsTBBChildKey(key) then
+                    nb.anchors[key] = DeepCopy(val)
                 end
             end
-            for k, v in pairs(layerRec.widthMatch or {}) do
-                if not IsTBBChildKey(k) then
-                    nb.widthMatch[k] = v
+            for key, val in pairs(layerRec.widthMatch or {}) do
+                if not IsTBBChildKey(key) then
+                    nb.widthMatch[key] = val
                 end
             end
-            for k, v in pairs(layerRec.heightMatch or {}) do
-                if not IsTBBChildKey(k) then
-                    nb.heightMatch[k] = v
+            for key, val in pairs(layerRec.heightMatch or {}) do
+                if not IsTBBChildKey(key) then
+                    nb.heightMatch[key] = val
                 end
             end
             -- Match extras ride with the links (a fork without them promotes none).
             nb.widthMatchExtra, nb.heightMatchExtra = {}, {}
-            for k, v in pairs(layerRec.widthMatchExtra or {}) do
-                if not IsTBBChildKey(k) then
-                    nb.widthMatchExtra[k] = v
+            for key, val in pairs(layerRec.widthMatchExtra or {}) do
+                if not IsTBBChildKey(key) then
+                    nb.widthMatchExtra[key] = val
                 end
             end
-            for k, v in pairs(layerRec.heightMatchExtra or {}) do
-                if not IsTBBChildKey(k) then
-                    nb.heightMatchExtra[k] = v
+            for key, val in pairs(layerRec.heightMatchExtra or {}) do
+                if not IsTBBChildKey(key) then
+                    nb.heightMatchExtra[key] = val
                 end
             end
             local function MergePos(lp, bp)
                 local out = lp and DeepCopy(lp) or (bp and DeepCopy(bp) or nil)
                 if lp and bp then
-                    for k, v in pairs(bp) do
-                        if out[k] == nil then
-                            out[k] = DeepCopy(v)
+                    for key, val in pairs(bp) do
+                        if out[key] == nil then
+                            out[key] = DeepCopy(val)
                         end
                     end
                 end
@@ -705,13 +705,13 @@ local function PromoteGroupToProfile(group)
             -- layer's grow, else the baseline's.
             local function MergeGrow(out, lAuth, lg, bAuth, bg)
                 if bAuth and bg then
-                    for k, v in pairs(bg) do
-                        out[k] = v
+                    for key, val in pairs(bg) do
+                        out[key] = val
                     end
                 end
                 if lAuth and lg then
-                    for k, v in pairs(lg) do
-                        out[k] = v
+                    for key, val in pairs(lg) do
+                        out[key] = val
                     end
                 end
             end
@@ -730,15 +730,15 @@ local function PromoteGroupToProfile(group)
                 base and base.abGrow
             )
             if base and base.elems then
-                for k, record in pairs(base.elems) do
-                    if not LayerSkipsKey(k) then
-                        nb.elems[k] = DeepCopy(record)
+                for key, record in pairs(base.elems) do
+                    if not LayerSkipsKey(key) then
+                        nb.elems[key] = DeepCopy(record)
                     end
                 end
             end
-            for k, record in pairs(layerRec.elems or {}) do
-                if not LayerSkipsKey(k) then
-                    nb.elems[k] = DeepCopy(record)
+            for key, record in pairs(layerRec.elems or {}) do
+                if not LayerSkipsKey(key) then
+                    nb.elems[key] = DeepCopy(record)
                 end
             end
             cfg.baselineLayout = nb
@@ -965,10 +965,10 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
     local stranded
     for _, item in ipairs(storeTbl or {}) do
         if item.values then
-            for k in pairs(item.values) do
-                if type(k) == "number" and SpecStrandedOnEntry(item, k) then
+            for key in pairs(item.values) do
+                if type(key) == "number" and SpecStrandedOnEntry(item, key) then
                     stranded = stranded or {}
-                    stranded[#stranded + 1] = { entry = item, spec = k }
+                    stranded[#stranded + 1] = { entry = item, spec = key }
                 end
             end
         end

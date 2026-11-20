@@ -543,9 +543,9 @@ function mod.SetupRPTSync(specsSet, sourceSpecKey)
         b.specProfiles = {}
     end
     b.rptSyncSpecs = {}
-    for k, val in pairs(specsSet) do
+    for key, val in pairs(specsSet) do
         if val then
-            b.rptSyncSpecs[k] = true
+            b.rptSyncSpecs[key] = true
         end
     end
     if sourceSpecKey then
@@ -574,24 +574,24 @@ function mod.UpdateRPTSyncSpecs(specsSet)
     if isActive and specsSet[isActive] and old[isActive] then
         source = isActive
     else
-        for k in pairs(old) do
-            if specsSet[k] then
-                source = k
+        for key in pairs(old) do
+            if specsSet[key] then
+                source = key
                 break
             end
         end
     end
     local newSet = {}
-    for k, val in pairs(specsSet) do
+    for key, val in pairs(specsSet) do
         if val then
-            newSet[k] = true
+            newSet[key] = true
         end
     end
     b.rptSyncSpecs = newSet
     if source then
-        for k in pairs(newSet) do
-            if k ~= source and not old[k] then
-                ApplyRPT(b.specProfiles, source, k)
+        for key in pairs(newSet) do
+            if key ~= source and not old[key] then
+                ApplyRPT(b.specProfiles, source, key)
             end
         end
     end

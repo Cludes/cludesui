@@ -950,9 +950,9 @@ events:RegisterEvent("CLUB_MEMBERS_UPDATED")
 events:SetScript("OnEvent", function(_, evt, arg1)
     if evt == "ADDON_LOADED" and arg1 == ADDON then
         CludesUITitleLineDB = CludesUITitleLineDB or {}
-        for k, val in pairs(DEFAULTS) do
-            if CludesUITitleLineDB[k] == nil then
-                CludesUITitleLineDB[k] = type(val) == "table" and {} or val
+        for key, val in pairs(DEFAULTS) do
+            if CludesUITitleLineDB[key] == nil then
+                CludesUITitleLineDB[key] = type(val) == "table" and {} or val
             end
         end
         PruneSeen()

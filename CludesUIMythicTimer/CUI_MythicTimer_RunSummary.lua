@@ -865,8 +865,8 @@ local function StartCollecting(skipBaseline)
         -- first pull (a meter clearing itself at key start) banks nothing.
         for _, m in ipairs(METRICS) do
             local cfg = {}
-            for unitGuid, v in pairs(baseTotals[m.key]) do
-                cfg[unitGuid] = v
+            for unitGuid, val in pairs(baseTotals[m.key]) do
+                cfg[unitGuid] = val
             end
             segRec.snap[m.key] = cfg
         end
@@ -950,12 +950,12 @@ local function HarvestInto(runRecord, runState, base, baseDur, based, segment)
             -- checkpoint, the bank IS the whole run, so it matches on its own.
             if bk then
                 local complete = isDamage and rowList == 0 and not segment.unbanked
-                for unitGuid, v in pairs(bk) do
+                for unitGuid, val in pairs(bk) do
                     local runRec = runState[unitGuid]
                     if runRec and totals[unitGuid] == nil then
-                        runRec[m.key] = v
+                        runRec[m.key] = val
                         if isDamage and deltaDuration and deltaDuration > 1 then
-                            runRec.dps = v / deltaDuration
+                            runRec.dps = val / deltaDuration
                         end
                         if complete then
                             matched = matched + 1
@@ -1027,8 +1027,8 @@ local function Checkpoint(segment, runState)
                 cfg = {}
                 segment.snap[m.key] = cfg
             end
-            for unitGuid, v in pairs(scratchTotals) do
-                cfg[unitGuid] = v
+            for unitGuid, val in pairs(scratchTotals) do
+                cfg[unitGuid] = val
             end
             if m.key == "damage" and (rowList == 0 or next(scratchTotals) ~= nil) then
                 readable = true
@@ -1060,8 +1060,8 @@ local function BankReset(base, segment, baseDur)
         end
         local snap, b = segment.snap[m.key], base[m.key]
         if snap then
-            for unitGuid, v in pairs(snap) do
-                local gain = v - ((b and b[unitGuid]) or 0)
+            for unitGuid, val in pairs(snap) do
+                local gain = val - ((b and b[unitGuid]) or 0)
                 if gain > 0 then
                     bank[unitGuid] = (bank[unitGuid] or 0) + gain
                 end

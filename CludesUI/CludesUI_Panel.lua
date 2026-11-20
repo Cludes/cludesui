@@ -7142,9 +7142,9 @@ do
 
     -- The outside addon that built a table, from its fields' writers.
     local function Author(t)
-        for k in pairs(t) do
-            if type(k) == "string" then
-                local by = WriterOf(t, k)
+        for key in pairs(t) do
+            if type(key) == "string" then
+                local by = WriterOf(t, key)
                 if by then
                     return by
                 end

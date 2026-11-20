@@ -801,10 +801,10 @@ local function CopySeedMap(seedMap)
         return nil
     end
     local result
-    for k, val in pairs(seedMap) do
-        if not MatchOwnedFKey(k) then
+    for key, val in pairs(seedMap) do
+        if not MatchOwnedFKey(key) then
             result = result or {}
-            result[k] = (type(val) == "table") and DeepCopy(val) or val
+            result[key] = (type(val) == "table") and DeepCopy(val) or val
         end
     end
     return result
@@ -1926,8 +1926,8 @@ function Cond.ShowPickerPopup(current)
                 return
             end
             local conds = {}
-            for k, val in pairs(dialog._staged) do
-                conds[k] = val
+            for key, val in pairs(dialog._staged) do
+                conds[key] = val
             end
             dialog:Hide()
             Cond.ShowNameIconPopup(conds, dialog._stagedKey, dialog._editing)
@@ -1971,8 +1971,8 @@ function Cond.ShowPickerPopup(current)
     dialog._stagedKey = current and current.key or nil
     dialog._releaseKeys()
     if current and current.conds then
-        for k, val in pairs(current.conds) do
-            dialog._staged[k] = val
+        for key, val in pairs(current.conds) do
+            dialog._staged[key] = val
         end
     end
     for _, line in ipairs(dialog._rows) do

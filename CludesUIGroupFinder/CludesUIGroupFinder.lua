@@ -220,12 +220,12 @@ function GF:OnInitialize()
         local filters = {}
         local cfg = Profile() and Profile().search
         if cfg then
-            for k in pairs(FILTER_KEYS) do
-                local val = cfg[k]
+            for key in pairs(FILTER_KEYS) do
+                local val = cfg[key]
                 if type(val) == "table" then
                     val = CopyTable(val)
                 end
-                filters[k] = val
+                filters[key] = val
             end
         end
         charDB.filters = filters

@@ -135,7 +135,7 @@ end
 local function LegacyCopy(v)
     if type(v) ~= "table" then return v end
     local tbl = {}
-    for k, posX in pairs(v) do tbl[k] = LegacyCopy(posX) end
+    for key, posX in pairs(v) do tbl[key] = LegacyCopy(posX) end
     return tbl
 end
 
@@ -153,11 +153,11 @@ end
 
 local function SameValue(a, b)
     if type(a) == "table" and type(b) == "table" then
-        for k, v in pairs(a) do
-            if not SameValue(v, b[k]) then return false end
+        for key, val in pairs(a) do
+            if not SameValue(val, b[key]) then return false end
         end
-        for k in pairs(b) do
-            if a[k] == nil then return false end
+        for key in pairs(b) do
+            if a[key] == nil then return false end
         end
         return true
     end
@@ -171,10 +171,10 @@ local function IndMatchesDefault(ind, def)
     if (ind.type or "icon") ~= "icon" then return false end
     if ind.position ~= def.position then return false end
     if not SameSpellSet(ind.spells, def.spells) then return false end
-    for k, v in pairs(ind) do
-        if k ~= "id" and k ~= "spells" and k ~= "position" then
-            local dv = def[k]
-            if dv ~= nil and not SameValue(v, dv) then return false end
+    for key, val in pairs(ind) do
+        if key ~= "id" and key ~= "spells" and key ~= "position" then
+            local dv = def[key]
+            if dv ~= nil and not SameValue(val, dv) then return false end
         end
     end
     return true
@@ -347,9 +347,9 @@ function _G._CURF_BM2ApplyLayer(layer)
         end
     end
     wipe(store.specs)
-    for k, v in pairs(layer.bm2.specs or {}) do store.specs[k] = LegacyCopy(v) end
+    for key, val in pairs(layer.bm2.specs or {}) do store.specs[key] = LegacyCopy(val) end
     wipe(store.seeded)
-    for k, v in pairs(layer.bm2.seeded or {}) do store.seeded[k] = v end
+    for key, val in pairs(layer.bm2.seeded or {}) do store.seeded[key] = val end
     -- WoW Forever: the starter seed reads which layer live now holds
     -- (CludesUI_Migration.lua).
     if FVBW then FVBW.Painted(layer) end
@@ -1183,8 +1183,8 @@ function mod.BM2_SpecIndicators(frameKind)
                 local viewKey = ind.id or ("x" .. idx)
                 local v = views[viewKey]
                 if not v then v = {}; views[viewKey] = v end
-                for k in pairs(v) do v[k] = nil end
-                for k, val in pairs(ind) do v[k] = val end
+                for key in pairs(v) do v[key] = nil end
+                for key, val in pairs(ind) do v[key] = val end
                 v.spells = resolved
                 -- Exact ids, which match their own aura alone (nil = every id
                 -- keeps its curated family; BmIncludeMap reads it).

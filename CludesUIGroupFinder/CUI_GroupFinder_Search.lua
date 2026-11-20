@@ -314,8 +314,8 @@ end
 
 local function Picks(frame)
     local p = {}
-    for _, k in ipairs(PICK_KEYS) do
-        p[k] = frame[k]
+    for _, key in ipairs(PICK_KEYS) do
+        p[key] = frame[key]
     end
     return p
 end
@@ -344,8 +344,8 @@ function XF.GetFilter()
     local frame = C_LFGList.GetAdvancedFilter()
     local p = frame and DimOn() and Cfg().dimPicks
     if type(p) == "table" then
-        for _, k in ipairs(PICK_KEYS) do
-            frame[k] = p[k]
+        for _, key in ipairs(PICK_KEYS) do
+            frame[key] = p[key]
         end
     end
     return frame
@@ -378,8 +378,8 @@ function XF.RestoreCharFilter()
     end
     local saved = mod.CharBlizzFilter()
     if type(saved) == "table" then
-        for _, k in ipairs(PICK_KEYS) do
-            frame[k] = saved[k]
+        for _, key in ipairs(PICK_KEYS) do
+            frame[key] = saved[key]
         end
     end
     XF.filterRestored = true
@@ -391,8 +391,8 @@ function XF.RestoreCharFilter()
         end
         Widen(frame)
     elseif type(cfg.dimPicks) == "table" then
-        for _, k in ipairs(PICK_KEYS) do
-            frame[k] = cfg.dimPicks[k]
+        for _, key in ipairs(PICK_KEYS) do
+            frame[key] = cfg.dimPicks[key]
         end
         cfg.dimPicks = nil
     end
@@ -1460,8 +1460,8 @@ function mod.DimFiltersChanged()
     else
         local p = cfg.dimPicks
         if type(p) == "table" then
-            for _, k in ipairs(PICK_KEYS) do
-                frame[k] = p[k]
+            for _, key in ipairs(PICK_KEYS) do
+                frame[key] = p[key]
             end
         end
         cfg.dimPicks = nil
@@ -1782,8 +1782,8 @@ local function DecorateIcons(record, resultID, details, activityInfo)
                 members[#members + 1] = p
             end
         end
-        for k, p in ipairs(members) do
-            p._cmOrder = (XF.ROLE_RANK[p.assignedRole] or 4) * 100 + k
+        for key, p in ipairs(members) do
+            p._cmOrder = (XF.ROLE_RANK[p.assignedRole] or 4) * 100 + key
         end
         table.sort(members, XF.ByOrder)
     end
@@ -1861,9 +1861,9 @@ local function DecorateIcons(record, resultID, details, activityInfo)
                 -- match role + class, then role, then whoever's next.
                 local m
                 for pass = 1, 3 do
-                    for k, p in ipairs(members) do
+                    for key, p in ipairs(members) do
                         if
-                            not used[k]
+                            not used[key]
                             and (
                                 pass == 3
                                 or (
@@ -1872,7 +1872,7 @@ local function DecorateIcons(record, resultID, details, activityInfo)
                                 )
                             )
                         then
-                            used[k] = true
+                            used[key] = true
                             m = p
                             break
                         end
@@ -4763,8 +4763,8 @@ local function PinBottomButtons(panelFrame, lefts, right)
     local x0 = padding
     local pw = panelFrame:GetWidth()
     local wid = (type(pw) == "number" and pw > 0) and (pw - padding - x0 - SQ_GAP) / 2 or nil
-    for _, k in ipairs(lefts) do
-        local widget = panelFrame[k]
+    for _, key in ipairs(lefts) do
+        local widget = panelFrame[key]
         if type(widget) == "table" then
             widget:ClearAllPoints()
             widget:SetPoint("BOTTOMLEFT", panelFrame, "BOTTOMLEFT", x0, BOTTOM_Y)
@@ -4984,8 +4984,8 @@ function XF.AlignEntryRows()
     local TXT_X = XF.TXT_X
     local lg = EC.ListGroupButton
     local bw = type(lg) == "table" and lg:GetWidth()
-    for _, k in ipairs(XF.ENTRY_BOX_ROWS) do
-        local line = EC[k]
+    for _, key in ipairs(XF.ENTRY_BOX_ROWS) do
+        local line = EC[key]
         local checkBox = type(line) == "table" and line.EditBox
         local rr = type(line) == "table" and line.GetRight and line:GetRight()
         if checkBox and rr then
@@ -5005,8 +5005,8 @@ function XF.AlignEntryRows()
         end
     end
     local sl = style:GetLeft()
-    for _, k in ipairs(XF.ENTRY_CHECK_ROWS) do
-        local line = EC[k]
+    for _, key in ipairs(XF.ENTRY_CHECK_ROWS) do
+        local line = EC[key]
         local callback = type(line) == "table" and line.CheckButton
         local rl = type(line) == "table" and line.GetLeft and line:GetLeft()
         if type(callback) == "table" and sl and rl then
@@ -5194,8 +5194,8 @@ local function LayoutEntrySwitches()
     if not EC or not XF.SkinOn() then
         return
     end
-    for _, k in ipairs(XF.ENTRY_SWITCH_ROWS) do
-        SwitchCheckbox(EC[k])
+    for _, key in ipairs(XF.ENTRY_SWITCH_ROWS) do
+        SwitchCheckbox(EC[key])
     end
 end
 

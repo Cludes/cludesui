@@ -256,9 +256,9 @@ local function Set()
             skinData.flag = FLAG_DIR .. skinData.key .. ".png"
             byKey[skinData.key] = skinData
         end
-        for k, realms in pairs(set.realms) do
+        for key, realms in pairs(set.realms) do
             for _, region in ipairs(realms) do
-                realmOf[region] = k
+                realmOf[region] = key
             end
         end
     end

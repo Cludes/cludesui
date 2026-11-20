@@ -184,16 +184,16 @@ local function CollectAndReanchor()
     -- Buff bars: existing entry-based collection (unchanged)
     local perBarLists = _scratch_barLists
     local seenSpell = _scratch_seenSpell
-    for k, entries in pairs(perBarLists) do
+    for key, entries in pairs(perBarLists) do
         ReleaseEntries(entries)
     end
-    for k, sub in pairs(seenSpell) do
+    for key, sub in pairs(seenSpell) do
         wipe(sub)
     end
 
     -- CD/utility bars: simple frame lists keyed by barKey
     local cdFrames = _scratch_cdFrames
-    for k, entries in pairs(cdFrames) do
+    for key, entries in pairs(cdFrames) do
         wipe(entries)
     end
 

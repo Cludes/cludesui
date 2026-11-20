@@ -648,8 +648,8 @@ end
 local function DisabledKey()
     local profile = BP()
     local dis = profile.bagSplitSetGearBySet and "split|" or ""
-    for k in pairs(profile.bagDisabledCategories or _emptyP) do
-        dis = dis .. k .. ","
+    for key in pairs(profile.bagDisabledCategories or _emptyP) do
+        dis = dis .. key .. ","
     end
     return dis
 end

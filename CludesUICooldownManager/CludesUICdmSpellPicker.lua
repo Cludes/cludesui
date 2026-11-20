@@ -1665,8 +1665,8 @@ function mod.BuffFamHasCdKey(storage)
         return _cdKeyGate.has
     end
     local hit = false
-    for k in pairs(storage) do
-        if type(k) == "string" and string.byte(k, 1) == 99 then
+    for key in pairs(storage) do
+        if type(key) == "string" and string.byte(key, 1) == 99 then
             hit = true
             break
         end -- 'c'

@@ -2900,8 +2900,8 @@ do
         -- go on resolving to a different corner for the life of the profile.
         if place.point == "CENTER" and statsPanel._measured then
             local copy = {}
-            for k, val in pairs(place) do
-                copy[k] = val
+            for key, val in pairs(place) do
+                copy[key] = val
             end
             copy.point, copy.relPoint = "TOPLEFT", "BOTTOMLEFT"
             copy.x, copy.y =

@@ -1206,14 +1206,14 @@ local function InitHealthBarTextures()
     -- Seed from the shared catalogue INTO the existing file-scope tables
     -- (their identity is load-bearing: resolver closures capture them).
     local t, num, o = CludesUI.BuildBarTextureTables(true)
-    for k, val in pairs(t) do
-        healthBarTextures[k] = val
+    for key, val in pairs(t) do
+        healthBarTextures[key] = val
     end
-    for k, val in pairs(num) do
-        healthBarTextureNames[k] = val
+    for key, val in pairs(num) do
+        healthBarTextureNames[key] = val
     end
-    for index, k in ipairs(o) do
-        healthBarTextureOrder[index] = k
+    for index, key in ipairs(o) do
+        healthBarTextureOrder[index] = key
     end
     -- RF-only divergence: "none" is a real solid texture here, not nil.
     healthBarTextures["none"] = "Interface\\Buttons\\WHITE8X8"

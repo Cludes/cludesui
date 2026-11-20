@@ -254,8 +254,8 @@ end
 
 local function MatchCopy(match)
     local copy = { tok = {}, cf = {}, empty = match.empty }
-    for k, val in pairs(match.tok) do copy.tok[k] = val end
-    for k, val in pairs(match.cf) do copy.cf[k] = val end
+    for key, val in pairs(match.tok) do copy.tok[key] = val end
+    for key, val in pairs(match.cf) do copy.cf[key] = val end
     if match.inc then copy.inc = {}; for T in pairs(match.inc) do copy.inc[T] = true end end
     if match.exc then copy.exc = {}; for T in pairs(match.exc) do copy.exc[T] = true end end
     return copy
@@ -351,7 +351,7 @@ local function MatchFinish(match)
     if br == true and match.cf.isBossAura == false and match.cf.isRoleAura == false then return nil end
     if br == false and (match.cf.isBossAura == true or match.cf.isRoleAura == true) then return nil end
     local castFrame = {}
-    for k, val in pairs(match.cf) do castFrame[k] = val end
+    for key, val in pairs(match.cf) do castFrame[key] = val end
     if match.inc then
         local included
         for T in pairs(match.inc) do
@@ -485,15 +485,15 @@ local function RecSpec(region)
             MatchSet(match, match.tok, tk, place)
         end
     end
-    for k, val in pairs(region.cand) do
-        if k == "includeDispelTypes" then
+    for key, val in pairs(region.cand) do
+        if key == "includeDispelTypes" then
             match.inc = {}
             for T in pairs(val) do match.inc[T] = true end
-        elseif k == "excludeDispelTypes" then
+        elseif key == "excludeDispelTypes" then
             match.exc = {}
             for T in pairs(val) do match.exc[T] = true end
         else
-            match.cf[k] = val
+            match.cf[key] = val
         end
     end
     return match
@@ -611,7 +611,7 @@ local function FxListFP(entries)
         local entry = entries[i]
         local keyList = {}
         if entry.filters then
-            for k, on in pairs(entry.filters) do if on then keyList[#keyList + 1] = k end end
+            for key, on in pairs(entry.filters) do if on then keyList[#keyList + 1] = key end end
             table.sort(keyList)
         end
         local bc = entry.borderColor or {}
@@ -1381,7 +1381,7 @@ local function BuildRecords(s, dmCfg)
         if included then
             if (included == TYPED_DEBUFFS or typedCopies[included]) and included[T] then
                 local match = {}
-                for k, val in pairs(included) do match[k] = val end
+                for key, val in pairs(included) do match[key] = val end
                 match[T] = nil
                 typedCopies[match] = true
                 castFrame.includeDispelTypes = match
@@ -2057,7 +2057,7 @@ end
 local function CandFP(castFrame)
     if not castFrame then return "-" end
     local keyList = {}
-    for k in pairs(castFrame) do keyList[#keyList + 1] = k end
+    for key in pairs(castFrame) do keyList[#keyList + 1] = key end
     table.sort(keyList)
     local parts = {}
     for i = 1, #keyList do
@@ -2190,14 +2190,14 @@ local function EffectFilterForTile(dmCfg, tileDef, category)
                 if included then
                     if included[T] then
                         local match = {}
-                        for k, val in pairs(included) do match[k] = val end
+                        for key, val in pairs(included) do match[key] = val end
                         match[T] = nil
                         castFrame.includeDispelTypes = match
                     end
                 elseif castFrame.excludeDispelTypes ~= TYPED_DEBUFFS then
                     local match = {}
                     if castFrame.excludeDispelTypes then
-                        for k, val in pairs(castFrame.excludeDispelTypes) do match[k] = val end
+                        for key, val in pairs(castFrame.excludeDispelTypes) do match[key] = val end
                     end
                     match[T] = true
                     castFrame.excludeDispelTypes = match
@@ -2728,11 +2728,11 @@ local function ParkTileContainer(c)
     local AKit = CludesUI.AuraKit
     local grid = c._dmType == "icons" or c._dmType == "square"
     if c._dmDecl then
-        for k in pairs(c._dmDecl) do
+        for key in pairs(c._dmDecl) do
             if grid then
-                AKit.SetGroupCap(c, k, 0)
+                AKit.SetGroupCap(c, key, 0)
             elseif c.SetAuraSlotEnabled then
-                c:SetAuraSlotEnabled(k, false)
+                c:SetAuraSlotEnabled(key, false)
             end
         end
     end
@@ -2748,7 +2748,7 @@ local function UnparkTileContainer(c)
     c._dmParked = nil
     c:SetEnabled(true)
     if c._dmDecl and c.SetAuraSlotEnabled and c._dmType ~= "icons" and c._dmType ~= "square" then
-        for k in pairs(c._dmDecl) do c:SetAuraSlotEnabled(k, true) end
+        for key in pairs(c._dmDecl) do c:SetAuraSlotEnabled(key, true) end
     end
 end
 
@@ -2926,9 +2926,9 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
     end
 
     -- Park everything the base does not want (legacy preset groups, stale record variants); setters are dirty marks, runs only on an FP change.
-    for k in pairs(declared) do
-        if k ~= "cc" and not wantedBase[k] then
-            CludesUI.AuraKit.SetGroupCap(boxHolder, k, 0)
+    for key in pairs(declared) do
+        if key ~= "cc" and not wantedBase[key] then
+            CludesUI.AuraKit.SetGroupCap(boxHolder, key, 0)
         end
     end
 
@@ -3216,9 +3216,9 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                             tWanted[region.gkey] = region
                             if not tDecl[region.gkey] then tMissing = true end
                         end
-                        for k in pairs(tDecl) do
-                            if tWanted[k] == nil then
-                                CludesUI.AuraKit.SetGroupCap(tileHost, k, 0)
+                        for key in pairs(tDecl) do
+                            if tWanted[key] == nil then
+                                CludesUI.AuraKit.SetGroupCap(tileHost, key, 0)
                             end
                         end
                         local tCap = tileDef.cap or cap
@@ -3414,10 +3414,10 @@ function mod.DM_DeadEdge(skinData, unitToken)
     if swap.tileId then c = skinData.dmTiles and skinData.dmTiles[swap.tileId] else c = skinData.rfcDebuffs end
     if not c then return end
     if dead then
-        for k in pairs(swap.park) do CludesUI.AuraKit.SetGroupCap(c, k, 0) end
+        for key in pairs(swap.park) do CludesUI.AuraKit.SetGroupCap(c, key, 0) end
         CludesUI.AuraKit.SetGroupCap(c, swap.show, swap.cap)
     else
-        for k, num in pairs(swap.park) do CludesUI.AuraKit.SetGroupCap(c, k, num) end
+        for key, num in pairs(swap.park) do CludesUI.AuraKit.SetGroupCap(c, key, num) end
         CludesUI.AuraKit.SetGroupCap(c, swap.show, 0)
     end
 end
@@ -3425,9 +3425,9 @@ end
 -- Legacy-config tail hook: while INACTIVE the legacy ApplyDebuffConfig drives only its own preset groups, so a
 -- just-disabled manager's record variants and tile containers would otherwise keep rendering.
 function mod.DM_ParkGroups(boxHolder, declared, skinData)
-    for k in pairs(declared) do
-        if k:sub(1, 3) == "dm_" then
-            CludesUI.AuraKit.SetGroupCap(boxHolder, k, 0)
+    for key in pairs(declared) do
+        if key:sub(1, 3) == "dm_" then
+            CludesUI.AuraKit.SetGroupCap(boxHolder, key, 0)
         end
     end
     if skinData and skinData.dmTiles then
@@ -3799,8 +3799,8 @@ function mod.DM_CopyTile(source, bucketKey)
     local tileDef = mod.DM_AddTile(source.type, bucketKey)
     if not tileDef then return nil end
     local keep = tileDef.id
-    for k in pairs(tileDef) do tileDef[k] = nil end
-    for k, val in pairs(CopyTable(source)) do tileDef[k] = val end
+    for key in pairs(tileDef) do tileDef[key] = nil end
+    for key, val in pairs(CopyTable(source)) do tileDef[key] = val end
     tileDef.id = keep
     return tileDef
 end
@@ -3857,7 +3857,7 @@ function _G._CURF_DMApplyLayer(dmCfg, noPageRefresh)
     local live = profile.dmDebuff
     if type(live) ~= "table" then live = {}; profile.dmDebuff = live end
     wipe(live)
-    for k, val in pairs(CopyTable(dmCfg)) do live[k] = val end
+    for key, val in pairs(CopyTable(dmCfg)) do live[key] = val end
     if mod.RFC_ReloadAll then mod.RFC_ReloadAll() end
     if not noPageRefresh and mod._dmRoot and CludesUI and CludesUI.RefreshPage then
         CludesUI:RefreshPage(true)

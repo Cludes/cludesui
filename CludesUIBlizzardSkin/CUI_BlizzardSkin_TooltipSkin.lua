@@ -1005,8 +1005,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                     parts[#parts + 1] = UnitCreatureType(unitToken)
                 end
                 local secret = false
-                for _, v in ipairs(parts) do
-                    if _isSecret and _isSecret(v) then
+                for _, val in ipairs(parts) do
+                    if _isSecret and _isSecret(val) then
                         secret = true
                     end
                 end

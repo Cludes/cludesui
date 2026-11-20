@@ -289,9 +289,9 @@ local function Detected(name, acted, fromShare)
                 )
             end
         elseif Get("kosGuildWarn") and p.guild then
-            for k in pairs(Store().kos) do
-                local other = Data(k)
-                if other and other.guild == p.guild and k ~= name then
+            for key in pairs(Store().kos) do
+                local other = Data(key)
+                if other and other.guild == p.guild and key ~= name then
                     Warn(
                         ("%s of <%s> (a Kill on Sight guild)"):format(Label(name), p.guild),
                         1,
@@ -924,8 +924,8 @@ local function Row(i)
         local reasons = Store().reasons[self.player]
         if reasons and next(reasons) then
             local list = {}
-            for k in pairs(reasons) do
-                list[#list + 1] = k
+            for key in pairs(reasons) do
+                list[#list + 1] = key
             end
             GameTooltip:AddLine("Reasons: " .. table.concat(list, ", "), 1, 0.5, 0.5, true)
         end

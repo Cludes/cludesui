@@ -1670,8 +1670,8 @@ local function PvNames(kind)
     for index, a in ipairs(PV_APPS[kind]) do
         local ident = kind .. index
         local m = {}
-        for k, skinData in ipairs(a.members) do
-            m[k] = {
+        for key, skinData in ipairs(a.members) do
+            m[key] = {
                 name = skinData[9] or Take(skinData[1]),
                 class = skinData[1],
                 spec = skinData[2],

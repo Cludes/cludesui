@@ -213,8 +213,8 @@ local function AddonsToCanon(addonMap)
         return addonMap
     end
     local output = {}
-    for k, v in pairs(addonMap) do
-        output[FOLDER_TO_CANON[k] or k] = v
+    for key, val in pairs(addonMap) do
+        output[FOLDER_TO_CANON[key] or key] = val
     end
     return output
 end
@@ -226,8 +226,8 @@ local function CanonToLocal(addonMap)
         return addonMap
     end
     local output = {}
-    for k, v in pairs(addonMap) do
-        output[CANON_TO_FOLDER[k] or k] = v
+    for key, val in pairs(addonMap) do
+        output[CANON_TO_FOLDER[key] or key] = val
     end
     return output
 end
@@ -418,13 +418,13 @@ local function SerializeValue(v, pieces)
             SerializeValue(v[i], pieces)
         end
         -- Then hash part (non-integer keys, or integer keys > n)
-        for k, value in pairs(v) do
-            local kt = type(k)
-            if kt == "number" and k >= 1 and k <= num and k == math.floor(k) then
+        for key, value in pairs(v) do
+            local kt = type(key)
+            if kt == "number" and key >= 1 and key <= num and key == math.floor(key) then
                 -- Already serialized in array part
             else
                 pieces[#pieces + 1] = "K"
-                SerializeValue(k, pieces)
+                SerializeValue(key, pieces)
                 SerializeValue(value, pieces)
             end
         end
@@ -555,21 +555,21 @@ local function DeepCopy(src, seen)
     end
     local duplicate = {}
     seen[src] = duplicate
-    for k, v in pairs(src) do
+    for key, val in pairs(src) do
         -- Skip frame references and other userdata that can't be serialized
-        if type(v) ~= "userdata" and type(v) ~= "function" then
-            duplicate[k] = DeepCopy(v, seen)
+        if type(val) ~= "userdata" and type(val) ~= "function" then
+            duplicate[key] = DeepCopy(val, seen)
         end
     end
     return duplicate
 end
 
 local function DeepMerge(destination, src)
-    for k, v in pairs(src) do
-        if type(v) == "table" and type(destination[k]) == "table" then
-            DeepMerge(destination[k], v)
+    for key, val in pairs(src) do
+        if type(val) == "table" and type(destination[key]) == "table" then
+            DeepMerge(destination[key], val)
         else
-            destination[k] = DeepCopy(v)
+            destination[key] = DeepCopy(val)
         end
     end
 end
@@ -1043,29 +1043,29 @@ local function SnapshotUnlockLayout()
         phantomBounds = DeepCopy(CludesUIDB.phantomBounds or {}),
     }
     if ba then
-        for k, v in pairs(CludesUIDB.unlockAnchors or {}) do
-            if type(k) == "string" and k:find("^TBB_%d+$") then
-                layoutSnap.anchors[k] = DeepCopy(v)
+        for key, val in pairs(CludesUIDB.unlockAnchors or {}) do
+            if type(key) == "string" and key:find("^TBB_%d+$") then
+                layoutSnap.anchors[key] = DeepCopy(val)
             end
         end
-        for k, v in pairs(CludesUIDB.unlockWidthMatch or {}) do
-            if type(k) == "string" and k:find("^TBB_%d+$") then
-                layoutSnap.widthMatch[k] = v
+        for key, val in pairs(CludesUIDB.unlockWidthMatch or {}) do
+            if type(key) == "string" and key:find("^TBB_%d+$") then
+                layoutSnap.widthMatch[key] = val
             end
         end
-        for k, v in pairs(CludesUIDB.unlockHeightMatch or {}) do
-            if type(k) == "string" and k:find("^TBB_%d+$") then
-                layoutSnap.heightMatch[k] = v
+        for key, val in pairs(CludesUIDB.unlockHeightMatch or {}) do
+            if type(key) == "string" and key:find("^TBB_%d+$") then
+                layoutSnap.heightMatch[key] = val
             end
         end
-        for k, v in pairs(CludesUIDB.unlockWidthMatchExtra or {}) do
-            if type(k) == "string" and k:find("^TBB_%d+$") then
-                layoutSnap.widthMatchExtra[k] = v
+        for key, val in pairs(CludesUIDB.unlockWidthMatchExtra or {}) do
+            if type(key) == "string" and key:find("^TBB_%d+$") then
+                layoutSnap.widthMatchExtra[key] = val
             end
         end
-        for k, v in pairs(CludesUIDB.unlockHeightMatchExtra or {}) do
-            if type(k) == "string" and k:find("^TBB_%d+$") then
-                layoutSnap.heightMatchExtra[k] = v
+        for key, val in pairs(CludesUIDB.unlockHeightMatchExtra or {}) do
+            if type(key) == "string" and key:find("^TBB_%d+$") then
+                layoutSnap.heightMatchExtra[key] = val
             end
         end
     end
@@ -1239,11 +1239,11 @@ local function RepointAllDBs(profName)
     -- Restore fonts and custom colors from the profile
     if profileRec.fonts then
         local fontsDB = CludesUI.GetFontsDB()
-        for k in pairs(fontsDB) do
-            fontsDB[k] = nil
+        for key in pairs(fontsDB) do
+            fontsDB[key] = nil
         end
-        for k, v in pairs(profileRec.fonts) do
-            fontsDB[k] = DeepCopy(v)
+        for key, val in pairs(profileRec.fonts) do
+            fontsDB[key] = DeepCopy(val)
         end
         if fontsDB.global == nil then
             fontsDB.global = CludesUI.DEFAULT_FONT_NAME
@@ -1524,11 +1524,11 @@ function CludesUI.ApplyProfileData(profileRec)
                 -- this profile blob. No save/restore needed here: ImportProfile
                 -- sets the new profile's bucket directly, and on a profile switch
                 -- the live accessor + RefreshAllAddons rebuild pick it up.
-                for k in pairs(activeProfile) do
-                    activeProfile[k] = nil
+                for key in pairs(activeProfile) do
+                    activeProfile[key] = nil
                 end
-                for k, v in pairs(layoutSnap) do
-                    activeProfile[k] = DeepCopy(v)
+                for key, val in pairs(layoutSnap) do
+                    activeProfile[key] = DeepCopy(val)
                 end
                 -- Pre-dropdown imports carry showPlayerAbsorb as the legacy boolean
                 -- toggle. The conversion migrations are SKIPPED for imported profiles
@@ -1704,11 +1704,11 @@ function CludesUI.ApplyProfileData(profileRec)
     -- wiped/restored here (see the custom-colours global-mode design).
     if profileRec.fonts then
         local fontsDB = CludesUI.GetFontsDB()
-        for k in pairs(fontsDB) do
-            fontsDB[k] = nil
+        for key in pairs(fontsDB) do
+            fontsDB[key] = nil
         end
-        for k, v in pairs(profileRec.fonts) do
-            fontsDB[k] = DeepCopy(v)
+        for key, val in pairs(profileRec.fonts) do
+            fontsDB[key] = DeepCopy(val)
         end
         if fontsDB.global == nil then
             fontsDB.global = CludesUI.DEFAULT_FONT_NAME
@@ -2647,8 +2647,8 @@ local function TranslateForeignPayload(v)
         return v
     end
     local output = {}
-    for k, value in pairs(v) do
-        output[TranslateForeignPayload(k)] = TranslateForeignPayload(value)
+    for key, value in pairs(v) do
+        output[TranslateForeignPayload(key)] = TranslateForeignPayload(value)
     end
     return output
 end
@@ -2827,8 +2827,8 @@ local BLIZZ_SKIN_GLOBAL_KEYS = {}
 do
     local keyList = BLIZZ_SKIN_GLOBAL_KEYS
     local function addFn(entries)
-        for _, k in ipairs(entries) do
-            keyList[#keyList + 1] = k
+        for _, key in ipairs(entries) do
+            keyList[#keyList + 1] = key
         end
     end
     -- Tooltips, Menus & Popups tab
@@ -3048,10 +3048,10 @@ local function SnapshotBlizzSkinGlobals()
         return nil
     end
     local output = {}
-    for _, k in ipairs(BLIZZ_SKIN_GLOBAL_KEYS) do
-        local v = CludesUIDB[k]
+    for _, key in ipairs(BLIZZ_SKIN_GLOBAL_KEYS) do
+        local v = CludesUIDB[key]
         if v ~= nil then
-            output[k] = DeepCopy(v)
+            output[key] = DeepCopy(v)
         end
     end
     return output
@@ -3067,8 +3067,8 @@ function CludesUI.ApplyBlizzSkinGlobals(bundle)
     if type(bundle) ~= "table" or not CludesUIDB then
         return
     end
-    for _, k in ipairs(BLIZZ_SKIN_GLOBAL_KEYS) do
-        CludesUIDB[k] = DeepCopy(bundle[k])
+    for _, key in ipairs(BLIZZ_SKIN_GLOBAL_KEYS) do
+        CludesUIDB[key] = DeepCopy(bundle[key])
     end
 end
 
@@ -3431,8 +3431,8 @@ local FULL_IMPORT_MERGE = {
         end
         local entryKey = type(packed) == "table" and packed[label]
         if entryKey then
-            for num, k in pairs(ownValue) do
-                if k == entryKey and num ~= label then
+            for num, key in pairs(ownValue) do
+                if key == entryKey and num ~= label then
                     return ownValue
                 end
             end
@@ -3448,9 +3448,9 @@ local FULL_IMPORT_MERGE = {
             ownValue = {}
         end
         local profileNames = type(ownValue.profiles) == "table" and ownValue.profiles or {}
-        for k, v in pairs(packed) do
-            if k ~= "profiles" then
-                ownValue[k] = v
+        for key, val in pairs(packed) do
+            if key ~= "profiles" then
+                ownValue[key] = val
             end
         end
         profileNames[label] = type(packed.profiles) == "table" and packed.profiles[label] or nil
@@ -3475,9 +3475,9 @@ function CludesUI.ExportFullAccountData()
     local saved = GetProfilesDB()
     local activeProfileName = saved.activeProfile or "Default"
     local output = {}
-    for k, v in pairs(CludesUIDB) do
-        if k ~= "profiles" and not FULL_EXPORT_EXCLUDED[k] then
-            output[k] = DeepCopy(v)
+    for key, val in pairs(CludesUIDB) do
+        if key ~= "profiles" and not FULL_EXPORT_EXCLUDED[key] then
+            output[key] = DeepCopy(val)
         end
     end
     -- ONLY the active profile travels; the exporter's other profiles are
@@ -3569,26 +3569,26 @@ function CludesUI.ImportFullAccountData(bundle)
     local fvSnapKey = CludesUI._FvSnapFlag
     local fvSnap = fvSnapKey and type(CludesUIDB._migrations) == "table" and CludesUIDB._migrations[fvSnapKey]
     local ownValue = {}
-    for k in pairs(FULL_IMPORT_MERGE) do
-        ownValue[k] = CludesUIDB[k]
+    for key in pairs(FULL_IMPORT_MERGE) do
+        ownValue[key] = CludesUIDB[key]
     end
-    for k, v in pairs(body) do
+    for key, val in pairs(body) do
         if
-            k ~= "profiles"
-            and k ~= "profileOrder"
-            and k ~= "activeProfile"
-            and not FULL_EXPORT_EXCLUDED[k]
-            and not (otherClient and (k == "spellAssignments" or k == "_tbbLinkOwner"))
+            key ~= "profiles"
+            and key ~= "profileOrder"
+            and key ~= "activeProfile"
+            and not FULL_EXPORT_EXCLUDED[key]
+            and not (otherClient and (key == "spellAssignments" or key == "_tbbLinkOwner"))
         then
-            CludesUIDB[k] = DeepCopy(v)
+            CludesUIDB[key] = DeepCopy(val)
         end
     end
-    for k, merge in pairs(FULL_IMPORT_MERGE) do
-        local packed = CludesUIDB[k]
-        if packed == ownValue[k] then
+    for key, merge in pairs(FULL_IMPORT_MERGE) do
+        local packed = CludesUIDB[key]
+        if packed == ownValue[key] then
             packed = nil
         end -- not carried, or refused above
-        CludesUIDB[k] = merge(ownValue[k], packed, activeProfileName)
+        CludesUIDB[key] = merge(ownValue[key], packed, activeProfileName)
     end
     if fvSweep then
         if type(CludesUIDB._migrations) ~= "table" then
@@ -3758,9 +3758,9 @@ function CludesUI.ForeverCDMSelection(assignments, options, output)
             Opened(spec.key)
         end
     end
-    for k, v in pairs(options.lockedSpecs or {}) do
-        if v then
-            Opened(k)
+    for key, val in pairs(options.lockedSpecs or {}) do
+        if val then
+            Opened(key)
         end
     end
     local done = {}
@@ -3786,8 +3786,8 @@ function CludesUI.ForeverCDMSelection(assignments, options, output)
                     any = true
                 end
             elseif isOpen[nameToken] then
-                for _, k in ipairs(isOpen[nameToken]) do
-                    output[k] = true
+                for _, key in ipairs(isOpen[nameToken]) do
+                    output[key] = true
                 end
                 any = true
             end
@@ -3824,18 +3824,18 @@ do
         -- tooltip string (or true). opts.disabledSpecs likewise grays specs out.
         local lockedOnSpecs, disabledSpecs = {}, {}
         if options.lockedSpecs then
-            for k, v in pairs(options.lockedSpecs) do
-                local numID = tonumber(k)
-                if numID and v then
-                    lockedOnSpecs[numID] = v
+            for key, val in pairs(options.lockedSpecs) do
+                local numID = tonumber(key)
+                if numID and val then
+                    lockedOnSpecs[numID] = val
                 end
             end
         end
         if options.disabledSpecs then
-            for k, v in pairs(options.disabledSpecs) do
-                local numID = tonumber(k)
-                if numID and v then
-                    disabledSpecs[numID] = v
+            for key, val in pairs(options.disabledSpecs) do
+                local numID = tonumber(key)
+                if numID and val then
+                    disabledSpecs[numID] = val
                 end
             end
         end
@@ -4251,16 +4251,16 @@ local function ReconcileImportedMedia(body)
         if depth > 40 then
             return
         end
-        for k, v in pairs(tbl) do
-            if type(v) == "table" then
-                Walk(v, depth + 1)
-            elseif type(v) == "string" and #v >= 9 and #v <= 26 then
+        for key, val in pairs(tbl) do
+            if type(val) == "table" then
+                Walk(val, depth + 1)
+            elseif type(val) == "string" and #val >= 9 and #val <= 26 then
                 -- Saved texture values are either plain names or carry the
                 -- "sm:" dropdown key prefix.
-                local baseTbl = v:match("^sm:(.+)") or v
+                local baseTbl = val:match("^sm:(.+)") or val
                 if RECONCILE_BAR_SIGS[Signature(baseTbl)] then
                     if not LSM:Fetch("statusbar", baseTbl, true) then
-                        tbl[k] = "sm:" .. RECONCILE_TEX_NAME
+                        tbl[key] = "sm:" .. RECONCILE_TEX_NAME
                     end
                 end
             end
@@ -4404,9 +4404,9 @@ local function StripStrandedVisOverrides(addonMap)
         end
         seen[tbl] = true
         tbl.visibilityOverride = nil
-        for _, v in pairs(tbl) do
-            if type(v) == "table" then
-                walk(v)
+        for _, val in pairs(tbl) do
+            if type(val) == "table" then
+                walk(val)
             end
         end
     end
@@ -4612,8 +4612,8 @@ function CludesUI.ImportProfile(importText, profName)
                     "condDmOverrides",
                     "unlockOverrideAnchors",
                 }
-                for _, k in ipairs(OV_KEYS) do
-                    combined[k] = incoming[k]
+                for _, key in ipairs(OV_KEYS) do
+                    combined[key] = incoming[key]
                 end
             else
                 -- The recipient's stores stand, so nothing in the incoming addon data
@@ -4640,8 +4640,8 @@ function CludesUI.ImportProfile(importText, profName)
             baseUL.heightMatchExtra = baseUL.heightMatchExtra or {}
             local function overlayLive(destination, live)
                 if type(live) == "table" then
-                    for k, v in pairs(live) do
-                        destination[k] = DeepCopy(v)
+                    for key, val in pairs(live) do
+                        destination[key] = DeepCopy(val)
                     end
                 end
             end
@@ -6138,8 +6138,8 @@ function CludesUI.GetProfileKeys()
     local _, profileNames = CludesUI.GetProfileList()
     local keyList = {}
     if profileNames then
-        for k in pairs(profileNames) do
-            keyList[k] = true
+        for key in pairs(profileNames) do
+            keyList[key] = true
         end
     end
     return keyList

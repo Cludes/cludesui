@@ -860,10 +860,10 @@ CludesUI.RegisterMigration({
                 local trackerCfg = profileTbl.questTracker
                 local legacy = trackerCfg._legacy or {}
                 local moved = false
-                for _, k in ipairs(OBSOLETE) do
-                    if trackerCfg[k] ~= nil then
-                        legacy[k] = trackerCfg[k]
-                        trackerCfg[k] = nil
+                for _, key in ipairs(OBSOLETE) do
+                    if trackerCfg[key] ~= nil then
+                        legacy[key] = trackerCfg[key]
+                        trackerCfg[key] = nil
                         moved = true
                     end
                 end
@@ -2360,8 +2360,8 @@ CludesUI.RegisterMigration({
                 return src
             end
             local copy = {}
-            for k, val in pairs(src) do
-                copy[k] = DCopy(val)
+            for key, val in pairs(src) do
+                copy[key] = DCopy(val)
             end
             return copy
         end
@@ -2692,10 +2692,10 @@ CludesUI.RegisterMigration({
                 local old = conf.fadeConditions
                 if conf.advancedFadeEnabled == true and type(old) == "table" then
                     local result
-                    for k, val in pairs(old) do
+                    for key, val in pairs(old) do
                         if val then
                             result = result or {}
-                            result[k] = true
+                            result[key] = true
                         end
                     end
                     if result then
@@ -2759,8 +2759,8 @@ CludesUI.RegisterMigration({
                 return src
             end
             local copy = {}
-            for k, val in pairs(src) do
-                copy[k] = DCopy(val)
+            for key, val in pairs(src) do
+                copy[key] = DCopy(val)
             end
             return copy
         end
@@ -2814,10 +2814,10 @@ CludesUI.RegisterMigration({
                 end
                 if not profileRec.addons.CludesUIBags then
                     local bagCfg = {}
-                    for _, k in ipairs(PROFILE_KEYS) do
-                        local val = saved[k]
+                    for _, key in ipairs(PROFILE_KEYS) do
+                        local val = saved[key]
                         if val ~= nil then
-                            bagCfg[k] = DCopy(val)
+                            bagCfg[key] = DCopy(val)
                         end
                     end
                     if next(bagCfg) then
@@ -3274,13 +3274,13 @@ CludesUI.RegisterMigration({
                     q = {}
                     profileSaved.addons.CludesUIQoL = q
                 end
-                for _, k in ipairs(KEYS) do
-                    local val = saved[k]
-                    if val ~= nil and q[k] == nil then
+                for _, key in ipairs(KEYS) do
+                    local val = saved[key]
+                    if val ~= nil and q[key] == nil then
                         if type(val) == "table" then
-                            q[k] = DeepCopy(val)
+                            q[key] = DeepCopy(val)
                         else
-                            q[k] = val
+                            q[key] = val
                         end
                     end
                 end
@@ -3352,8 +3352,8 @@ CludesUI.RegisterMigration({
             end
             if fontMap.outlineIconText == nil and type(oit) == "table" then
                 local tbl = {}
-                for k, val in pairs(oit) do
-                    tbl[k] = val
+                for key, val in pairs(oit) do
+                    tbl[key] = val
                 end
                 fontMap.outlineIconText = tbl
             end
@@ -3444,9 +3444,9 @@ CludesUI.RegisterMigration({
             if type(tbl) ~= "table" or depth > 8 then
                 return
             end
-            for k, val in pairs(tbl) do
+            for key, val in pairs(tbl) do
                 if val == "kringel-diamonds" then
-                    tbl[k] = "blinkii-diamonds"
+                    tbl[key] = "blinkii-diamonds"
                 elseif type(val) == "table" then
                     swap(val, depth + 1)
                 end
@@ -3597,13 +3597,13 @@ local function CdmFlatSettingsEqual(a, b)
     if type(a) ~= "table" or type(b) ~= "table" then
         return false
     end
-    for k, val in pairs(a) do
-        if b[k] ~= val then
+    for key, val in pairs(a) do
+        if b[key] ~= val then
             return false
         end
     end
-    for k, val in pairs(b) do
-        if a[k] ~= val then
+    for key, val in pairs(b) do
+        if a[key] ~= val then
             return false
         end
     end
@@ -3717,8 +3717,8 @@ function CludesUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
                 end
                 if seedValue then
                     local duplicate = {}
-                    for k, val in pairs(seedValue) do
-                        duplicate[k] = val
+                    for key, val in pairs(seedValue) do
+                        duplicate[key] = val
                     end
                     barConf.barSettings = duplicate
                     for _, spellRef in ipairs(barConf.assignedSpells) do
@@ -3729,9 +3729,9 @@ function CludesUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
                             else
                                 -- Divergent override: block seed keys it lacks
                                 -- so the new bar tier can't bleed through.
-                                for k in pairs(duplicate) do
-                                    if entry[k] == nil then
-                                        entry[k] = false
+                                for key in pairs(duplicate) do
+                                    if entry[key] == nil then
+                                        entry[key] = false
                                     end
                                 end
                             end
@@ -3792,9 +3792,9 @@ function CludesUI.MigrateCdmHostedBuffSettings(specProfile)
                     if type(tgt) ~= "table" then
                         stBuff[hostedSpellId] = e
                     else
-                        for k, val in pairs(e) do
-                            if tgt[k] == nil then
-                                tgt[k] = val
+                        for key, val in pairs(e) do
+                            if tgt[key] == nil then
+                                tgt[key] = val
                             end
                         end
                     end
@@ -4313,13 +4313,13 @@ do
         if type(a) ~= "table" or type(b) ~= "table" then
             return false
         end
-        for k, val in pairs(a) do
-            if not DeepEq(val, b[k]) then
+        for key, val in pairs(a) do
+            if not DeepEq(val, b[key]) then
                 return false
             end
         end
-        for k in pairs(b) do
-            if a[k] == nil then
+        for key in pairs(b) do
+            if a[key] == nil then
                 return false
             end
         end
@@ -4354,21 +4354,21 @@ do
         duplicate = type(duplicate) == "table" and duplicate or {}
         defaults = type(defaults) == "table" and defaults or {}
         local keyList = {}
-        for k in pairs(simpleCfg) do
-            keyList[k] = true
+        for key in pairs(simpleCfg) do
+            keyList[key] = true
         end
-        for k in pairs(duplicate) do
-            keyList[k] = true
+        for key in pairs(duplicate) do
+            keyList[key] = true
         end
-        for k in pairs(defaults) do
-            keyList[k] = true
+        for key in pairs(defaults) do
+            keyList[key] = true
         end
-        for k in pairs(keyList) do
-            if type(k) ~= "number" and not RB_SKIP_KEYS[k] then
-                local sv, cv, dv = simpleCfg[k], duplicate[k], defaults[k]
+        for key in pairs(keyList) do
+            if type(key) ~= "number" and not RB_SKIP_KEYS[key] then
+                local sv, cv, dv = simpleCfg[key], duplicate[key], defaults[key]
                 local effS = (sv == nil) and dv or sv
                 local effC = (cv == nil) and dv or cv
-                local filePath = prefixText and (prefixText .. PS .. tostring(k)) or tostring(k)
+                local filePath = prefixText and (prefixText .. PS .. tostring(key)) or tostring(key)
                 if type(effS) == "table" and type(effC) == "table" then
                     DiffSection(
                         type(sv) == "table" and sv or nil,
@@ -6387,17 +6387,17 @@ do
                     return false
                 end
                 if type(cfg.layouts) == "table" then
-                    for k, val in pairs(cfg.layouts) do
+                    for key, val in pairs(cfg.layouts) do
                         if val == l then
-                            return k
+                            return key
                         end
                     end
                 end
             end
             if type(c) == "table" and type(c.layouts) == "table" then
-                for k, val in pairs(c.layouts) do
+                for key, val in pairs(c.layouts) do
                     if val == l then
-                        return "cond:" .. k
+                        return "cond:" .. key
                     end
                 end
             end

@@ -1150,25 +1150,25 @@ CUI_NS.unlockParts.Anchors = function(LM)
             -- Profile swap: skip AB bars entirely (LayoutBar already positioned them from
             -- the new profile; stale resize events would move them wrong). CDM bars pass through (need post-settle).
             local abSkip = CludesUI._abAnchorSuppressed and CludesUI._abBarKeys
-            for k, dim in pairs(keyList) do
-                if abSkip and abSkip[k] then
+            for key, dim in pairs(keyList) do
+                if abSkip and abSkip[key] then
                 -- skip: AB bar during profile swap
                 else
                     -- If this element is itself anchored, re-apply its own position
                     -- first: it resized and must reposition relative to its target.
                     local anchorDB = GetAnchorDB()
                     if anchorDB then
-                        local ownInfo = anchorDB[k]
+                        local ownInfo = anchorDB[key]
                         if ownInfo and ownInfo.target then
                             -- Skip AB growth bars: LayoutBar/applyPos owns their position;
                             -- reapplying from a stale offset yields the wrong edge and visible drift.
-                            local isAB = CludesUI._abBarKeys and CludesUI._abBarKeys[k]
+                            local isAB = CludesUI._abBarKeys and CludesUI._abBarKeys[key]
                             if not isAB or ownInfo.mode == "POINT" then
-                                LM.ApplyAnchorPosition(k, ownInfo.target, ownInfo.side, true)
+                                LM.ApplyAnchorPosition(key, ownInfo.target, ownInfo.side, true)
                             end
                         end
                         -- An alias key (global tracking bar group riding this bar's hooks) may itself be anchored: re-apply on a shared resize.
-                        local aliasK = CludesUI._unlockKeyAliases and CludesUI._unlockKeyAliases[k]
+                        local aliasK = CludesUI._unlockKeyAliases and CludesUI._unlockKeyAliases[key]
                         local aliasInfo = aliasK and anchorDB[aliasK]
                         if aliasInfo and aliasInfo.target then
                             LM.ApplyAnchorPosition(aliasK, aliasInfo.target, aliasInfo.side, true)
@@ -1176,7 +1176,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
                     end
                     -- Propagate with axis filter (nil = all axes)
                     local propagateAxis = (dim == "all") and nil or dim
-                    LM.PropagateAnchorChain(k, nil, propagateAxis)
+                    LM.PropagateAnchorChain(key, nil, propagateAxis)
                 end -- abSkip else
             end
             -- No persistence here: only Save & Exit (CommitPositions) writes the DB; the chain just repositioned in-place.
@@ -1583,9 +1583,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
         matchPad.armed = false
         local batch = matchPad.pending
         matchPad.pending, matchPad.spare = matchPad.spare, batch
-        for k, handle in pairs(batch) do
-            batch[k] = nil
-            CludesUI.ReapplyMatchPads(k, handle)
+        for key, handle in pairs(batch) do
+            batch[key] = nil
+            CludesUI.ReapplyMatchPads(key, handle)
         end
     end
     function CludesUI.MatchPadChanged(barKey)
@@ -1749,8 +1749,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
                     current = saved[current]
                 end
                 -- Mark all visited keys as safe
-                for k in pairs(seen) do
-                    safe[k] = true
+                for key in pairs(seen) do
+                    safe[key] = true
                 end
             end
         end
