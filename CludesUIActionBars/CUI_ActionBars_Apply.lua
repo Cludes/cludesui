@@ -53,15 +53,15 @@ function ABAR:ApplyBordersForBar(barId)
     if mod.AB_Style() ~= "cui" then
         return
     end
-    local s = self.db.profile.bars[barId]
-    if not s then
+    local barCfg = self.db.profile.bars[barId]
+    if not barCfg then
         return
     end
-    local color = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
-    local sz, px = ResolveBorderThickness(s)
+    local color = barCfg.borderColor or { r = 0, g = 0, b = 0, a = 1 }
+    local sz, px = ResolveBorderThickness(barCfg)
     local enabled = sz > 0
     local cr, cg, callback, ca = color.r, color.g, color.b, color.a or 1
-    if s.borderClassColor then
+    if barCfg.borderClassColor then
         local _, classToken = UnitClass("player")
         if classToken then
             local cc = RAID_CLASS_COLORS[classToken]
@@ -70,15 +70,15 @@ function ABAR:ApplyBordersForBar(barId)
             end
         end
     end
-    local zoom = (s.iconZoom or self.db.profile.iconZoom or 5.5) / 100
-    local textureKey = s.borderTexture or "solid"
-    local texOffset = s.borderTextureOffset
-    local texOffsetY = s.borderTextureOffsetY
-    local texShiftX = s.borderTextureShiftX
-    local texShiftY = s.borderTextureShiftY
-    local thicknessKey = s.borderThickness or "thin"
-    local behind = s.borderBehind
-    local above = s.borderAboveEffects
+    local zoom = (barCfg.iconZoom or self.db.profile.iconZoom or 5.5) / 100
+    local textureKey = barCfg.borderTexture or "solid"
+    local texOffset = barCfg.borderTextureOffset
+    local texOffsetY = barCfg.borderTextureOffsetY
+    local texShiftX = barCfg.borderTextureShiftX
+    local texShiftY = barCfg.borderTextureShiftY
+    local thicknessKey = barCfg.borderThickness or "thin"
+    local behind = barCfg.borderBehind
+    local above = barCfg.borderAboveEffects
     local buttons = barButtons[barId]
     if not buttons then
         return
@@ -133,17 +133,17 @@ function ABAR:ApplyShapesForBar(barId)
     if mod.AB_Style() ~= "cui" then
         return
     end
-    local s = self.db.profile.bars[barId]
-    if not s then
+    local barCfg = self.db.profile.bars[barId]
+    if not barCfg then
         return
     end
-    local shape = s.buttonShape or "none"
-    local zoom = (s.iconZoom or self.db.profile.iconZoom or 5.5) / 100
-    local brdSz = ResolveBorderThickness(s)
+    local shape = barCfg.buttonShape or "none"
+    local zoom = (barCfg.iconZoom or self.db.profile.iconZoom or 5.5) / 100
+    local brdSz = ResolveBorderThickness(barCfg)
     local brdOn = brdSz > 0
-    local borderColor = s.shapeBorderColor or s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
+    local borderColor = barCfg.shapeBorderColor or barCfg.borderColor or { r = 0, g = 0, b = 0, a = 1 }
     local brdR, brdG, brdB, brdA = borderColor.r, borderColor.g, borderColor.b, borderColor.a or 1
-    if s.borderClassColor then
+    if barCfg.borderClassColor then
         local _, countText = UnitClass("player")
         if countText then
             local cc = RAID_CLASS_COLORS[countText]
@@ -191,8 +191,8 @@ function ABAR:ApplyIconRowOverrides(barId)
 end
 
 function ABAR:ApplyBarOpacity(barId)
-    local s = self.db.profile.bars[barId]
-    if not s then
+    local barCfg = self.db.profile.bars[barId]
+    if not barCfg then
         return
     end
     local widget = barFrames[barId]
@@ -201,12 +201,12 @@ function ABAR:ApplyBarOpacity(barId)
     end
     -- In mouseover mode the hover system owns alpha (0 when unhovered,
     -- mouseoverAlpha when hovered). Don't override it here.
-    if not s.mouseoverEnabled then
-        local a = s.mouseoverAlpha or 1
+    if not barCfg.mouseoverEnabled then
+        local a = barCfg.mouseoverAlpha or 1
         widget:SetAlpha(a)
         _fadeAlpha[widget] = a
         if barId == "MainBar" then
-            SyncPagingAlpha(s.mouseoverAlpha or 1)
+            SyncPagingAlpha(barCfg.mouseoverAlpha or 1)
         end
     end
 end
@@ -217,11 +217,11 @@ function ABAR:BarSupportsOrientation(barId)
 end
 
 function ABAR:GetOrientationForBar(barId)
-    local s = self.db.profile.bars[barId]
-    if not s then
+    local barCfg = self.db.profile.bars[barId]
+    if not barCfg then
         return true
     end
-    return s.orientation ~= "vertical"
+    return barCfg.orientation ~= "vertical"
 end
 
 function ABAR:LayoutAnchoredBarsFrom(targetKey, depth)
@@ -247,22 +247,22 @@ function ABAR:LayoutAnchoredBarsFrom(targetKey, depth)
 end
 
 function ABAR:SetOrientationForBar(barId, isHorizontal)
-    local s = self.db.profile.bars[barId]
-    if not s then
+    local barCfg = self.db.profile.bars[barId]
+    if not barCfg then
         return
     end
-    s.orientation = isHorizontal and "horizontal" or "vertical"
+    barCfg.orientation = isHorizontal and "horizontal" or "vertical"
     -- Reset growth direction to orientation-appropriate default when switching
-    local g = (s.growDirection or "up"):upper()
+    local g = (barCfg.growDirection or "up"):upper()
     if isHorizontal then
         -- Switching to horizontal: if current growth is vertical-only, reset
         if g == "UP" or g == "DOWN" then
-            s.growDirection = "center"
+            barCfg.growDirection = "center"
         end
     else
         -- Switching to vertical: if current growth is horizontal-only, reset
         if g == "LEFT" or g == "RIGHT" then
-            s.growDirection = "up"
+            barCfg.growDirection = "up"
         end
     end
     LayoutBar(barId)
@@ -270,11 +270,11 @@ function ABAR:SetOrientationForBar(barId, isHorizontal)
 end
 
 function ABAR:SetGrowDirectionForBar(barId, direction)
-    local s = self.db.profile.bars[barId]
-    if not s then
+    local barCfg = self.db.profile.bars[barId]
+    if not barCfg then
         return
     end
-    s.growDirection = direction or "up"
+    barCfg.growDirection = direction or "up"
     LayoutBar(barId)
     self:LayoutAnchoredBarsFrom(barId, 0)
 end
@@ -374,8 +374,8 @@ function ABAR.PlaceButtonText(fontStr, hostFrame, anchor, ox, oy)
 end
 
 function ABAR:ApplyFontsForBar(barId)
-    local s = self.db.profile.bars[barId]
-    if not s then
+    local barCfg = self.db.profile.bars[barId]
+    if not barCfg then
         return
     end
     local buttons = barButtons[barId]
@@ -383,32 +383,32 @@ function ABAR:ApplyFontsForBar(barId)
         return
     end
     local fontFile = CludesUI.GetFontPath("actionBars") or FONT_PATH
-    local hideKB = s.hideKeybind
-    local kbSize = s.keybindFontSize or 12
+    local hideKB = barCfg.hideKeybind
+    local kbSize = barCfg.keybindFontSize or 12
     -- Stance/pet bar buttons are smaller (30px vs 45px) shrink keybind text
     -- by 2px so it doesn't overwhelm the icon.
     local details = BAR_LOOKUP[barId]
     if details and (details.isStance or details.isPetBar) then
         kbSize = max(kbSize - 2, 6)
     end
-    local kbColor = s.keybindFontColor or { r = 1, g = 1, b = 1 }
-    local ctSize = s.countFontSize or 12
-    local ctColor = s.countFontColor or { r = 1, g = 1, b = 1 }
-    local kbOX = s.keybindOffsetX or 0
-    local kbOY = s.keybindOffsetY or 0
-    local kbAnchor = s.keybindAnchor
-    local ctOX = s.countOffsetX or 0
-    local ctOY = s.countOffsetY or 0
-    local ctAnchor = s.countAnchor
-    local hideMacro = s.hideMacroText
-    local macroSize = s.macroFontSize or 12
+    local kbColor = barCfg.keybindFontColor or { r = 1, g = 1, b = 1 }
+    local ctSize = barCfg.countFontSize or 12
+    local ctColor = barCfg.countFontColor or { r = 1, g = 1, b = 1 }
+    local kbOX = barCfg.keybindOffsetX or 0
+    local kbOY = barCfg.keybindOffsetY or 0
+    local kbAnchor = barCfg.keybindAnchor
+    local ctOX = barCfg.countOffsetX or 0
+    local ctOY = barCfg.countOffsetY or 0
+    local ctAnchor = barCfg.countAnchor
+    local hideMacro = barCfg.hideMacroText
+    local macroSize = barCfg.macroFontSize or 12
     if details and (details.isStance or details.isPetBar) then
         macroSize = max(macroSize - 2, 6)
     end
-    local macroColor = s.macroFontColor or { r = 1, g = 1, b = 1 }
-    local macroOX = s.macroOffsetX or 0
-    local macroOY = s.macroOffsetY or 0
-    local macroAnchor = s.macroAnchor
+    local macroColor = barCfg.macroFontColor or { r = 1, g = 1, b = 1 }
+    local macroOX = barCfg.macroOffsetX or 0
+    local macroOY = barCfg.macroOffsetY or 0
+    local macroAnchor = barCfg.macroAnchor
     local RANGE_INDICATOR = RANGE_INDICATOR or "\226\128\162"
 
     for index = 1, #buttons do
@@ -670,15 +670,15 @@ function EAB_VTABLE.CooldownFonts.ApplyToButton(button, fontFile, cdSize, cdOX, 
 end
 
 function ABAR:ApplyCooldownFontsForBar(barId)
-    local s = self.db.profile.bars[barId]
-    if not s then
+    local barCfg = self.db.profile.bars[barId]
+    if not barCfg then
         return
     end
     local buttons = barButtons[barId]
     if not buttons then
         return
     end
-    local fontFile, cdSize, cdOX, cdOY, cdColor, cdFit = EAB_VTABLE.CooldownFonts.GetSettings(s)
+    local fontFile, cdSize, cdOX, cdOY, cdColor, cdFit = EAB_VTABLE.CooldownFonts.GetSettings(barCfg)
 
     C_Timer.After(0, function()
         for index = 1, #buttons do
@@ -855,8 +855,8 @@ end
 local barBackgrounds = {} -- [barKey] = { fill = Texture, border = Frame }
 
 function ABAR:ApplyBackgroundForBar(barId)
-    local s = self.db.profile.bars[barId]
-    if not s then
+    local barCfg = self.db.profile.bars[barId]
+    if not barCfg then
         return
     end
     local widget = barFrames[barId]
@@ -864,12 +864,12 @@ function ABAR:ApplyBackgroundForBar(barId)
         return
     end
 
-    if not s.bgEnabled then
+    if not barCfg.bgEnabled then
         local bgTex = barBackgrounds[barId]
         if bgTex then
             bgTex.fill:Hide()
             if CludesUI and CludesUI.ApplyBorderStyle then
-                CludesUI.ApplyBorderStyle(bgTex.border, 0, 0, 0, 0, s.bgBorderTexture or "solid")
+                CludesUI.ApplyBorderStyle(bgTex.border, 0, 0, 0, 0, barCfg.bgBorderTexture or "solid")
             else
                 bgTex.border:Hide()
             end
@@ -887,18 +887,18 @@ function ABAR:ApplyBackgroundForBar(barId)
         barBackgrounds[barId] = bgTex
     end
 
-    local color = s.bgColor or { r = 0, g = 0, b = 0, a = 0.5 }
-    local alpha = s.bgOpacity ~= nil and s.bgOpacity / 100 or color.a
+    local color = barCfg.bgColor or { r = 0, g = 0, b = 0, a = 0.5 }
+    local alpha = barCfg.bgOpacity ~= nil and barCfg.bgOpacity / 100 or color.a
     bgTex.fill:SetColorTexture(color.r, color.g, color.b, alpha)
     -- bgPadX/bgPadY remain as fallbacks for profiles predating bgPadding.
-    local pad = s.bgPadding
-    local padX = pad ~= nil and pad or (s.bgPadX or 0)
-    local padY = pad ~= nil and pad or (s.bgPadY or 0)
-    local multiplierX = math.max(1, math.min(4, math.floor((s.bgMultiplierX or 1) + 0.5)))
-    local multiplierY = math.max(1, math.min(4, math.floor((s.bgMultiplierY or 1) + 0.5)))
-    local directionX = s.bgExpandDirectionX or "right"
-    local directionY = s.bgExpandDirectionY or "up"
-    local iconPadding = s.buttonPadding or 0
+    local pad = barCfg.bgPadding
+    local padX = pad ~= nil and pad or (barCfg.bgPadX or 0)
+    local padY = pad ~= nil and pad or (barCfg.bgPadY or 0)
+    local multiplierX = math.max(1, math.min(4, math.floor((barCfg.bgMultiplierX or 1) + 0.5)))
+    local multiplierY = math.max(1, math.min(4, math.floor((barCfg.bgMultiplierY or 1) + 0.5)))
+    local directionX = barCfg.bgExpandDirectionX or "right"
+    local directionY = barCfg.bgExpandDirectionY or "up"
+    local iconPadding = barCfg.buttonPadding or 0
     local growX = (multiplierX - 1) * ((widget:GetWidth() or 0) + iconPadding)
     local growY = (multiplierY - 1) * ((widget:GetHeight() or 0) + iconPadding)
     local leftX, right, topY, bottom = -padX, padX, padY, -padY
@@ -919,18 +919,18 @@ function ABAR:ApplyBackgroundForBar(barId)
 
     local border = bgTex.border
     border:SetFrameLevel(
-        s.bgBorderBehind and math.max(0, widget:GetFrameLevel() - 1) or widget:GetFrameLevel()
+        barCfg.bgBorderBehind and math.max(0, widget:GetFrameLevel() - 1) or widget:GetFrameLevel()
     )
     border:ClearAllPoints()
     border:SetPoint("TOPLEFT", widget, "TOPLEFT", leftX, topY)
     border:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", right, bottom)
     if CludesUI and CludesUI.ApplyBorderStyle then
-        local bc = s.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }
-        local thicknessKey = s.bgBorderThickness or "none"
+        local bc = barCfg.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }
+        local thicknessKey = barCfg.bgBorderThickness or "none"
         local thickness = mod.BORDER_THICKNESS and mod.BORDER_THICKNESS[thicknessKey]
         local borderSize = thickness and thickness.regular or 0
         -- Exact size (bgBorderThicknessPx) while it pairs with this step and texture; nil = legacy path.
-        local bgPx = CludesUI.BorderPx(s.bgBorderThicknessPx, borderSize, s.bgBorderTexture)
+        local bgPx = CludesUI.BorderPx(barCfg.bgBorderThicknessPx, borderSize, barCfg.bgBorderTexture)
         CludesUI.ApplyBorderStyle(
             border,
             borderSize,
@@ -938,11 +938,11 @@ function ABAR:ApplyBackgroundForBar(barId)
             bc.g,
             bc.b,
             bc.a or 1,
-            s.bgBorderTexture or "solid",
-            s.bgBorderOffsetX,
-            s.bgBorderOffsetY,
-            s.bgBorderShiftX,
-            s.bgBorderShiftY,
+            barCfg.bgBorderTexture or "solid",
+            barCfg.bgBorderOffsetX,
+            barCfg.bgBorderOffsetY,
+            barCfg.bgBorderShiftX,
+            barCfg.bgBorderShiftY,
             "actionbars",
             thicknessKey,
             nil,
@@ -1052,8 +1052,8 @@ function ABAR:ApplyAlwaysShowButtons(barId)
     if mod._eabBarNever[barId] then
         return
     end
-    local s = self.db.profile.bars[barId]
-    if not s then
+    local barCfg = self.db.profile.bars[barId]
+    if not barCfg then
         return
     end
     local details = BAR_LOOKUP[barId]
@@ -1064,7 +1064,7 @@ function ABAR:ApplyAlwaysShowButtons(barId)
     if not buttons then
         return
     end
-    local showEmpty = s.alwaysShowButtons
+    local showEmpty = barCfg.alwaysShowButtons
     if showEmpty == nil then
         showEmpty = true
     end
@@ -1075,7 +1075,7 @@ function ABAR:ApplyAlwaysShowButtons(barId)
 
     -- Respect icon cutoff (hoisted above the grid half so the signature
     -- below sees every input)
-    local numIcons = s.overrideNumIcons or s.numIcons or details.count
+    local numIcons = barCfg.overrideNumIcons or barCfg.numIcons or details.count
     if numIcons < 1 then
         numIcons = details.count
     end
@@ -1089,8 +1089,8 @@ function ABAR:ApplyAlwaysShowButtons(barId)
         numIcons = 1
     end
 
-    local quickKeybindVisible = ShouldQuickKeybindSurfaceBar(s)
-    local clickable = quickKeybindVisible or not s.clickThrough
+    local quickKeybindVisible = ShouldQuickKeybindSurfaceBar(barCfg)
+    local clickable = quickKeybindVisible or not barCfg.clickThrough
 
     -- Default-config fast path. With Always Show Buttons ON, per-button visibility is
     -- CONSTANT (visible regardless of slot contents), so a pass that already asserted
@@ -1202,7 +1202,7 @@ function ABAR:ApplyAlwaysShowButtons(barId)
                 -- mouse motion so OnEnter/OnLeave still fire for hover fade.
                 if clickable then
                     SafeEnableMouse(button, true)
-                elseif s.mouseoverEnabled then
+                elseif barCfg.mouseoverEnabled then
                     SafeEnableMouseMotionOnly(button, true)
                 else
                     SafeEnableMouse(button, false)

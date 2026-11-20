@@ -1112,14 +1112,14 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
             -- Show When Missing rows for the resources the player's class shows on this bar:
             -- energy and focus share one setting (a class has one of them), mana has its
             -- own. WoW Forever hunters use mana.
-            local _, cls = UnitClass("player")
+            local _, classTok = UnitClass("player")
             local fv = CludesUI.IS_FOREVER
             local restLabel, restTip
-            if cls == "HUNTER" and not fv then
+            if classTok == "HUNTER" and not fv then
                 restLabel = "Show When Focus Missing"
                 restTip =
                     "Shows the Power bar while your focus is below full, even when its Visibility setting hides it."
-            elseif cls == "ROGUE" or cls == "DRUID" or cls == "MONK" then
+            elseif classTok == "ROGUE" or classTok == "DRUID" or classTok == "MONK" then
                 restLabel = "Show When Energy Missing"
                 restTip =
                     "Shows the Power bar while your energy is below full, even when its Visibility setting hides it."
@@ -1137,20 +1137,20 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                 }
             end
             if
-                cls == "PALADIN"
-                or cls == "PRIEST"
-                or cls == "SHAMAN"
-                or cls == "MAGE"
-                or cls == "WARLOCK"
-                or cls == "DRUID"
-                or cls == "MONK"
-                or cls == "EVOKER"
-                or (cls == "HUNTER" and fv)
+                classTok == "PALADIN"
+                or classTok == "PRIEST"
+                or classTok == "SHAMAN"
+                or classTok == "MAGE"
+                or classTok == "WARLOCK"
+                or classTok == "DRUID"
+                or classTok == "MONK"
+                or classTok == "EVOKER"
+                or (classTok == "HUNTER" and fv)
             then
                 rowList[#rowList + 1] = {
                     type = "toggle",
                     label = "Show When Mana Missing",
-                    tooltip = (fv and cls == "DRUID")
+                    tooltip = (fv and classTok == "DRUID")
                             and "Shows the Power bar, or your shapeshifted mana bar, while your mana is below full, even when its Visibility setting hides it."
                         or "Shows the Power bar while your mana is below full, even when its Visibility setting hides it.",
                     get = function()

@@ -470,7 +470,7 @@ function mod.ReconcileAssignedSpellDrops(barId)
         local catalog = mod.EnumerateCDMSettingsCatalog(mod.CDM_ICON_CD_CATS)
         if catalog then
             catalogKeys = {}
-            local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+            local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
             local function AddCatalogVariant(val)
                 if type(val) == "number" and not (issecretvalue and issecretvalue(val)) and val > 0 then
                     catalogKeys[val] = true
@@ -486,7 +486,7 @@ function mod.ReconcileAssignedSpellDrops(barId)
             -- this extra check to stop a removed entry holding rank forever.
             local liveSetByCat = {}
             for _, ce in ipairs(catalog) do
-                local details = gci and ce.cdID and gci(ce.cdID)
+                local details = getCdInfo and ce.cdID and getCdInfo(ce.cdID)
                 local skip = false
                 if mod.CDMEntryHiddenOrRemoved then
                     local lsl = liveSetByCat[ce.category]
@@ -563,14 +563,14 @@ function mod.ReconcileAssignedSpellDrops(barId)
         if nativeCats == nil then
             nativeCats = false
             local evicted = Enum and Enum.CooldownViewerCategory
-            local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-            if evicted and gci and mod.CDMBuildLiveCategorySetLookup then
+            local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+            if evicted and getCdInfo and mod.CDMBuildLiveCategorySetLookup then
                 local cats = { evicted.SpecAgnosticEssential or 5, evicted.SpecAgnosticTracked or 6 }
                 for ci = 1, #cats do
                     local keySet = mod.CDMBuildLiveCategorySetLookup(cats[ci])
                     if keySet and next(keySet) then
                         for cooldownId in pairs(keySet) do
-                            local details = gci(cooldownId)
+                            local details = getCdInfo(cooldownId)
                             local sc = details and details.spellCategoryID
                             if type(sc) == "number" and not (issecretvalue and issecretvalue(sc)) then
                                 -- An item row enumerates through this source: it may
@@ -1135,8 +1135,8 @@ function mod.CDMForeverListedSet()
         return nil
     end
     local ordered = mod.CDMGetProviderDisplayData(provider)
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not (ordered and gci) then
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    if not (ordered and getCdInfo) then
         return nil
     end
     local NormalizeToBase, ResolveToLive = mod.NormalizeToBase, mod.ResolveToLive
@@ -1149,7 +1149,7 @@ function mod.CDMForeverListedSet()
         end
     end
     for _, cooldownId in ipairs(ordered) do
-        local details = _IsUsableSID(cooldownId) and gci(cooldownId)
+        local details = _IsUsableSID(cooldownId) and getCdInfo(cooldownId)
         if details then
             Add(details.spellID)
             Add(details.overrideSpellID)
@@ -1285,8 +1285,8 @@ local function BuildBuffFamilyPresentSet()
     if not ordered then
         return nil
     end
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not gci then
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    if not getCdInfo then
         return nil
     end
     local evicted = Enum and Enum.CooldownViewerCategory
@@ -1318,7 +1318,7 @@ local function BuildBuffFamilyPresentSet()
         local category = type(combinedInfo) == "table" and combinedInfo.category
         if category ~= nil and wantCats[category] then
             sawEntry = true
-            local rawInfo = gci(cooldownId)
+            local rawInfo = getCdInfo(cooldownId)
             -- "hidden"/"removed" entries contribute nothing (absent-or-hidden = absent).
             -- A nil verdict (visible, or the hidden-channel reader not yet available)
             -- means included -- this can only ever widen the present-set, never shrink it.

@@ -2862,7 +2862,7 @@ function mod.PABMP_ShowFilterEditor()
     if CludesUI.GetAccentColor then
         ar, ag, ab = CludesUI.GetAccentColor()
     end
-    local eg = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+    local brandGreen = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     local MEDIA_FE = "Interface\\AddOns\\CludesUI\\media\\icons\\"
 
     local POPUP_W, POPUP_H, SIDE_W = 620, 520, 180
@@ -2944,7 +2944,7 @@ function mod.PABMP_ShowFilterEditor()
         apply = ApplyAll,
         rebuild = Rebuild,
         input = EditorInput,
-        accent = eg,
+        accent = brandGreen,
     })
     local sideBottom = fy - 8 - 26
     -- One-time copy of the Raid Frames Buff Manager filter library into this
@@ -3097,7 +3097,7 @@ function mod.PABMP_ShowFilterEditor()
             end,
             rebuild = Rebuild,
             emptyText = L("No spells yet. Add spell IDs above."),
-            accent = eg,
+            accent = brandGreen,
         }
     )
 

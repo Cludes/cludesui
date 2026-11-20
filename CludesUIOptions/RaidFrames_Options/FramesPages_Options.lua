@@ -2795,8 +2795,8 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         labelText:SetText(CludesUI.L("Synced with Raid Settings"))
         -- Accent on hover so the overlay reads as clickable.
         shade:SetScript("OnEnter", function()
-            local eg = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.83, b = 0.62 }
-            labelText:SetTextColor(eg.r, eg.g, eg.b, 1)
+            local brandGreen = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.83, b = 0.62 }
+            labelText:SetTextColor(brandGreen.r, brandGreen.g, brandGreen.b, 1)
         end)
         shade:SetScript("OnLeave", function()
             labelText:SetTextColor(1, 1, 1, 0.56)

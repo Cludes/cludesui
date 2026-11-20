@@ -285,27 +285,27 @@ CludesUI.AtOptionsLogin(function()
             colorDisabledTooltip = "Color by Type (Magic/Enrage)",
             onChange = RefreshAuraGlows,
             get = function(f)
-                local d = DB()
+                local profile = DB()
                 if f == "style" then
                     return mod.GetDispelGlowStyle and mod.GetDispelGlowStyle() or defaultSet.dispelGlowStyle
                 elseif f == "mode" then
-                    return d.dispelGlowColorMode or (d.dispelGlowColor and "custom" or "default")
+                    return profile.dispelGlowColorMode or (profile.dispelGlowColor and "custom" or "default")
                 end
-                return CludesUI.GlowOptions.FlatGet(d, "dispelGlow", f)
+                return CludesUI.GlowOptions.FlatGet(profile, "dispelGlow", f)
             end,
             set = function(f, a, b2, c2)
-                local d = DB()
+                local profile = DB()
                 if f == "style" then
                     if a == 0 then
-                        d.dispelGlow = false
+                        profile.dispelGlow = false
                     else
-                        d.dispelGlow = true
-                        d.dispelGlowPick = a
+                        profile.dispelGlow = true
+                        profile.dispelGlowPick = a
                     end
                 elseif f == "mode" then
-                    d.dispelGlowColorMode = a
+                    profile.dispelGlowColorMode = a
                 else
-                    CludesUI.GlowOptions.FlatSet(d, "dispelGlow", f, a, b2, c2)
+                    CludesUI.GlowOptions.FlatSet(profile, "dispelGlow", f, a, b2, c2)
                 end
             end,
             -- Magic buffs and enrages are separate groups in the buff row, so the
@@ -344,27 +344,27 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 onChange = RefreshCastGlows,
                 get = function(f)
-                    local d = DB()
+                    local profile = DB()
                     if f == "style" then
-                        return d[keyName.style] or defaultSet[keyName.style] or 1
+                        return profile[keyName.style] or defaultSet[keyName.style] or 1
                     elseif f == "mode" then
-                        return d[keyName.mode] or "custom"
+                        return profile[keyName.mode] or "custom"
                     end
-                    return GO.FlatGet(d, prefixText, f, defaultSet)
+                    return GO.FlatGet(profile, prefixText, f, defaultSet)
                 end,
                 set = function(f, a, b2, c2)
-                    local d = DB()
+                    local profile = DB()
                     if f == "style" then
                         if a == 0 then
-                            d[prefixText] = false
+                            profile[prefixText] = false
                         else
-                            d[prefixText] = true
-                            d[keyName.style] = a
+                            profile[prefixText] = true
+                            profile[keyName.style] = a
                         end
                     elseif f == "mode" then
-                        d[keyName.mode] = a
+                        profile[keyName.mode] = a
                     else
-                        GO.FlatSet(d, prefixText, f, a, b2, c2)
+                        GO.FlatSet(profile, prefixText, f, a, b2, c2)
                     end
                 end,
             }
@@ -394,27 +394,27 @@ CludesUI.AtOptionsLogin(function()
             end,
             onChange = RefreshAuraGlows,
             get = function(f)
-                local d = DB()
+                local profile = DB()
                 if f == "style" then
                     return mod.GetPandemicGlowStyle()
                 elseif f == "mode" then
-                    return d.pandemicGlowMode or "custom"
+                    return profile.pandemicGlowMode or "custom"
                 end
-                return CludesUI.GlowOptions.FlatGet(d, "pandemicGlow", f, defaultSet)
+                return CludesUI.GlowOptions.FlatGet(profile, "pandemicGlow", f, defaultSet)
             end,
             set = function(f, a, b2, c2)
-                local d = DB()
+                local profile = DB()
                 if f == "style" then
                     if a == 0 then
-                        d.pandemicGlow = false
+                        profile.pandemicGlow = false
                     else
-                        d.pandemicGlow = true
-                        d.pandemicGlowPick = a
+                        profile.pandemicGlow = true
+                        profile.pandemicGlowPick = a
                     end
                 elseif f == "mode" then
-                    d.pandemicGlowMode = a
+                    profile.pandemicGlowMode = a
                 else
-                    CludesUI.GlowOptions.FlatSet(d, "pandemicGlow", f, a, b2, c2)
+                    CludesUI.GlowOptions.FlatSet(profile, "pandemicGlow", f, a, b2, c2)
                 end
             end,
         }

@@ -1509,8 +1509,8 @@ local function AccentRGB()
     if r then
         return r, group, b
     end
-    local eg = CludesUI.CLUDES_GREEN
-    return eg.r, eg.g, eg.b
+    local brandGreen = CludesUI.CLUDES_GREEN
+    return brandGreen.r, brandGreen.g, brandGreen.b
 end
 
 -- A header icon under the pointer: its hover look and what it does, unless it

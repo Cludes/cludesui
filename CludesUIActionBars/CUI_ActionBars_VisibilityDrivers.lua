@@ -307,8 +307,8 @@ function ABAR:ApplyCombatVisibility()
     end
     for _, details in ipairs(ALL_BARS) do
         local key = details.key
-        local s = self.db.profile.bars[key]
-        if s then
+        local barCfg = self.db.profile.bars[key]
+        if barCfg then
             local widget = barFrames[key]
                 or (details.isDataBar and dataBarFrames[key])
                 or (details.isBlizzardMovable and blizzMovableHolders[key])
@@ -316,7 +316,7 @@ function ABAR:ApplyCombatVisibility()
                 or (details.visibilityOnly and _G[details.frameName])
             if widget and not details.visibilityOnly then
                 local newStr
-                if ABAR.VisibilityCompat.IsNever(s) then
+                if ABAR.VisibilityCompat.IsNever(barCfg) then
                     newStr = "hide"
                 -- Under Any the compiled driver already carries both halves (Show lanes as
                 -- disjuncts, Hide lanes as leading gates, the Lua-only ones resolved at
@@ -325,10 +325,10 @@ function ABAR:ApplyCombatVisibility()
                 -- ShouldHideNonMacro carries; with all of them skipping it, the "any"
                 -- branch inside CheckVisibilityOptionsNonMacro has no live caller left and
                 -- is kept only so the helper stays correct for a future non-driver one.
-                elseif s.visibilityMatch ~= "any" and CludesUI.CheckVisibilityOptionsNonMacro(s) then
+                elseif barCfg.visibilityMatch ~= "any" and CludesUI.CheckVisibilityOptionsNonMacro(barCfg) then
                     newStr = "hide"
                 else
-                    newStr = BuildVisibilityString(details, s)
+                    newStr = BuildVisibilityString(details, barCfg)
                 end
                 -- Skip re-registration if driver string is unchanged (avoids blink from re-evaluation)
                 if widget._eabLastVisStr ~= newStr then
@@ -359,14 +359,14 @@ function ABAR:_RefreshSoftTargetGate()
     --   long as the setting stands, so its alpha never changes off an edge.
     local anySoft, anyNonMacro, anyHoverGated = false, false, false
     for _, details in ipairs(ALL_BARS) do
-        local s = self.db.profile.bars[details.key]
-        if s then
-            if s.mouseoverEnabled and s.visibilityMatch == "any" then
+        local barCfg = self.db.profile.bars[details.key]
+        if barCfg then
+            if barCfg.mouseoverEnabled and barCfg.visibilityMatch == "any" then
                 anyHoverGated = true
             end
             -- Under Any the counter lane carries the soft-target correction too, so it
             -- arms the same machinery; under All it never did and still does not.
-            if s.visHideNoTarget or (s.visHideWithTarget and s.visibilityMatch == "any") then
+            if barCfg.visHideNoTarget or (barCfg.visHideWithTarget and barCfg.visibilityMatch == "any") then
                 anySoft = true
             end
             -- Driven off the shared key list rather than a hand-written subset: an
@@ -374,7 +374,7 @@ function ABAR:_RefreshSoftTargetGate()
             -- for that bar. Deliberately over-inclusive (it also matches the
             -- macro-expressible lanes) -- a needless walk on a rare zone/mount edge is
             -- cheap, a missed one leaves the bar stale until the next settings change.
-            if not anyNonMacro and CludesUI.VisHasAnyOption(s) then
+            if not anyNonMacro and CludesUI.VisHasAnyOption(barCfg) then
                 anyNonMacro = true
             end
         end

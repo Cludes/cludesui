@@ -2069,7 +2069,7 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         local _, pc = UnitClass("player")
         pvClass = pc
     end
-    local cc = CludesUI.GetClassColor(pvClass)
+    local classColor = CludesUI.GetClassColor(pvClass)
     local mode = s.healthColorMode or "class"
     local fill = healthBar:GetStatusBarTexture()
     -- Textured Background, as on the live frames.
@@ -2103,8 +2103,8 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
     else
-        if cc then
-            healthBar:SetStatusBarColor(cc.r, cc.g, cc.b, (s.healthBarOpacity or 100) / 100)
+        if classColor then
+            healthBar:SetStatusBarColor(classColor.r, classColor.g, classColor.b, (s.healthBarOpacity or 100) / 100)
         end
         if fill then
             fill:SetAlpha(1)
@@ -2249,8 +2249,8 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         if (s.topNameBarTextColorMode or "class") == "custom" then
             local color = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
             tnbText:SetTextColor(color.r, color.g, color.b)
-        elseif cc then
-            tnbText:SetTextColor(cc.r, cc.g, cc.b)
+        elseif classColor then
+            tnbText:SetTextColor(classColor.r, classColor.g, classColor.b)
         else
             tnbText:SetTextColor(1, 1, 1)
         end

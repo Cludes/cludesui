@@ -268,8 +268,8 @@ if CludesUI.IS_FOREVER == true then
 end
 -- The classes the arc draws for (combo points on WoW Forever).
 function mod.UF_ComboClass()
-    local _, cls = UnitClass("player")
-    return cls == "ROGUE" or cls == "DRUID"
+    local _, classTok = UnitClass("player")
+    return classTok == "ROGUE" or classTok == "DRUID"
 end
 -- Combo Points: "target" (the stock spot; anything unknown reads as it),
 -- "player" or "never".

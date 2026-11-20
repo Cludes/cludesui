@@ -1968,9 +1968,9 @@ local function BuildBars()
     -- size unchanged, so the cascade must be explicit; gated so a None-forever
     -- profile schedules ZERO anchor work, and never fires during unlock mode.
     do
-        local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
-        local isActive = pp ~= nil
-            and (pp.shiftElementsIfNoPower == "Up" or pp.shiftElementsIfNoPower == "Down")
+        local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
+        local isActive = primary ~= nil
+            and (primary.shiftElementsIfNoPower == "Up" or primary.shiftElementsIfNoPower == "Down")
         -- Same transition-only guard as the class-resource block above: cascade
         -- only when the shift state actually changes, not every BuildBars call.
         if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then

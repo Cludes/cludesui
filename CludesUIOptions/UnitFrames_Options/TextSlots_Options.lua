@@ -52,8 +52,8 @@ function mod.UFO_EditCustomText(prefixText, db, unitToken, onSave)
         color = PowerColor()
     elseif db[prefixText .. "ClassColor"] then
         if unitToken == "player" then
-            local _, cls = UnitClass("player")
-            color = cls and CludesUI.GetClassColor(cls)
+            local _, classTok = UnitClass("player")
+            color = classTok and CludesUI.GetClassColor(classTok)
         else
             color = { r = 0.9, g = 0.3, b = 0.3 }
         end

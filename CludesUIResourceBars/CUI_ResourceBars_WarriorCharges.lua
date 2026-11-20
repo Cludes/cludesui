@@ -48,9 +48,9 @@ local function FillColor(sp, powerKey)
             return pc.r, pc.g, pc.b, 1
         end
     end
-    local cc = CludesUI.GetClassColor(PLAYER_CLASS)
-    if cc then
-        return cc.r, cc.g, cc.b, 1
+    local classColor = CludesUI.GetClassColor(PLAYER_CLASS)
+    if classColor then
+        return classColor.r, classColor.g, classColor.b, 1
     end
     return 1, 1, 1, 1
 end

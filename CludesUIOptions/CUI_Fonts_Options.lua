@@ -54,8 +54,8 @@ end
 -- font either way), so the card rows lazily create entries and prune them
 -- back out when both values return to global.
 local function FindModuleFontEntry(folder)
-    local f = CludesUI.GetFontsDB()
-    local entries = f.moduleFonts
+    local fontsDB = CludesUI.GetFontsDB()
+    local entries = fontsDB.moduleFonts
     if not entries then
         return nil
     end
@@ -68,20 +68,20 @@ local function FindModuleFontEntry(folder)
 end
 
 local function EnsureModuleFontEntry(folder, display)
-    local f = CludesUI.GetFontsDB()
-    if not f.moduleFonts then
-        f.moduleFonts = {}
+    local fontsDB = CludesUI.GetFontsDB()
+    if not fontsDB.moduleFonts then
+        fontsDB.moduleFonts = {}
     end
     local record = FindModuleFontEntry(folder)
     if not record then
         record = { folder = folder, display = display, font = "__global", outline = "__global" }
-        f.moduleFonts[#f.moduleFonts + 1] = record
+        fontsDB.moduleFonts[#fontsDB.moduleFonts + 1] = record
     end
     return record
 end
 
 local function PruneModuleFontEntry(folder)
-    local f = CludesUI.GetFontsDB()
+    local fontsDB = CludesUI.GetFontsDB()
     local record, position = FindModuleFontEntry(folder)
     if
         record
@@ -89,7 +89,7 @@ local function PruneModuleFontEntry(folder)
         and (record.font or "__global") == "__global"
         and (record.outline or "__global") == "__global"
     then
-        table.remove(f.moduleFonts, position)
+        table.remove(fontsDB.moduleFonts, position)
     end
 end
 
@@ -2335,14 +2335,14 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             region:GetFrameLevel() + 2,
             oitItems,
             function(keyName)
-                local f = CludesUI.GetFontsDB()
-                local t = (f and f.outlineIconText) or (CludesUIDB and CludesUIDB.outlineIconText)
+                local fontsDB = CludesUI.GetFontsDB()
+                local t = (fontsDB and fontsDB.outlineIconText) or (CludesUIDB and CludesUIDB.outlineIconText)
                 return not (t and t[keyName] == false)
             end,
             function(keyName, val)
                 -- Per-profile (rides profile export); seed from the legacy account-global table on first write so other modules' choices carry over.
-                local f = CludesUI.GetFontsDB()
-                if type(f.outlineIconText) ~= "table" then
+                local fontsDB = CludesUI.GetFontsDB()
+                if type(fontsDB.outlineIconText) ~= "table" then
                     local t = {}
                     local seed = CludesUIDB and CludesUIDB.outlineIconText
                     if type(seed) == "table" then
@@ -2350,9 +2350,9 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
                             t[kk] = vv
                         end
                     end
-                    f.outlineIconText = t
+                    fontsDB.outlineIconText = t
                 end
-                f.outlineIconText[keyName] = val and true or false
+                fontsDB.outlineIconText[keyName] = val and true or false
                 -- Reload prompt from setFn, NOT an onChanged callback: a non-nil onChanged re-anchors the open CB dropdown menu absolutely (for page rebuilds), visibly shifting it.
                 FontReload()
             end
@@ -2438,10 +2438,10 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
                 return CludesUI.GetFontsDB().gameTextScale or 100
             end,
             setValue = function(val)
-                local f = CludesUI.GetFontsDB()
-                local changed = (f.gameTextScale or 100) ~= val
+                local fontsDB = CludesUI.GetFontsDB()
+                local changed = (fontsDB.gameTextScale or 100) ~= val
                 if changed then
-                    f.gameTextScale = val ~= 100 and val or nil
+                    fontsDB.gameTextScale = val ~= 100 and val or nil
                 end
                 if CludesUI._sliderDragging then
                     if changed then

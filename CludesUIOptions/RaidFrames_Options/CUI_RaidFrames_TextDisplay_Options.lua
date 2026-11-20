@@ -64,9 +64,9 @@ do
     -- The text's colour mode as the preview shows it, for the player's class and power.
     function CustomText.Color(t)
         local SVal = mod._RFO_OptEnv.SVal
-        local _, cls = UnitClass("player")
+        local _, classTok = UnitClass("player")
         local _, pTok = UnitPowerType("player")
-        local red, green, blue = mod.RF_PreviewTextColor(SVal(t.cm, "custom"), SVal(t.col), cls, 1, 1, 1, pTok)
+        local red, green, blue = mod.RF_PreviewTextColor(SVal(t.cm, "custom"), SVal(t.col), classTok, 1, 1, 1, pTok)
         return { r = red, g = green, b = blue }
     end
 

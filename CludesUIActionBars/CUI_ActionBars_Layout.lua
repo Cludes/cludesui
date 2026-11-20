@@ -1012,11 +1012,11 @@ function ABAR:RecalcFlyoutDirection(barId)
     end
     local widget = barFrames[barId]
     local btns = barButtons[barId]
-    local s = self.db.profile.bars[barId]
-    if not widget or not btns or not s then
+    local barCfg = self.db.profile.bars[barId]
+    if not widget or not btns or not barCfg then
         return
     end
-    local isVert = (s.orientation == "vertical")
+    local isVert = (barCfg.orientation == "vertical")
     local cx, cy = widget:GetCenter()
     if not cx or not cy then
         return

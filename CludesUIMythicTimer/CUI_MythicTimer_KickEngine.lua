@@ -770,16 +770,16 @@ local function ReadRows(keyList, nmap, auraMap, guidMap)
     end
     local demonUnit, demons = nil, 0
     for i = 1, #GROUP_UNITS do
-        local u = GROUP_UNITS[i]
-        local m = rosterMap[u]
+        local unit = GROUP_UNITS[i]
+        local m = rosterMap[unit]
         local g = m and m.guid
         if g then
             local num, amt = ReadSource(g)
             if num then
-                nmap[u] = num
+                nmap[unit] = num
             end
             if i > 1 then
-                local isDemon, pg = DemonGUID(u, m)
+                local isDemon, pg = DemonGUID(unit, m)
                 if isDemon then
                     demons = demons + 1
                     local pn, pamt
@@ -787,12 +787,12 @@ local function ReadRows(keyList, nmap, auraMap, guidMap)
                         pn, pamt = ReadSource(pg)
                     end
                     if pn and pn > 0 then
-                        guidMap[u], auraMap[u] = pn, pamt
+                        guidMap[unit], auraMap[unit] = pn, pamt
                     else
-                        demonUnit = u
+                        demonUnit = unit
                     end
                 elseif num then
-                    guidMap[u], auraMap[u] = num, amt
+                    guidMap[unit], auraMap[unit] = num, amt
                 end
             end
         end
@@ -814,15 +814,15 @@ end
 -- entries the engine never saw land are already there (Bound keeps them).
 local function SyncLists(nmap, prevN)
     for i = 1, #GROUP_UNITS do
-        local u = GROUP_UNITS[i]
-        local m = rosterMap[u]
+        local unit = GROUP_UNITS[i]
+        local m = rosterMap[unit]
         if m then
-            local num = nmap[u] or 0
+            local num = nmap[unit] or 0
             if not m.known then
                 m.known, m.holes = {}, num
                 m.lo, m.hi = 0, (num > 0) and INF or 0
             else
-                local previous = prevN[u] or 0
+                local previous = prevN[unit] or 0
                 if num < previous then
                     wipe(m.known)
                     m.holes = num
@@ -850,12 +850,12 @@ end
 -- for the gate source, a rise the read before it would then miss).
 local function CarryCounts(nmap, auraMap, guidMap)
     for i = 1, #GROUP_UNITS do
-        local u = GROUP_UNITS[i]
-        if nmap[u] == nil then
-            nmap[u] = cache.n[u]
+        local unit = GROUP_UNITS[i]
+        if nmap[unit] == nil then
+            nmap[unit] = cache.n[unit]
         end
-        if auraMap[u] == nil and guidMap[u] == nil then
-            auraMap[u], guidMap[u] = cache.a[u], cache.g[u]
+        if auraMap[unit] == nil and guidMap[unit] == nil then
+            auraMap[unit], guidMap[unit] = cache.a[unit], cache.g[unit]
         end
     end
 end
@@ -865,8 +865,8 @@ end
 local function ListsMoved(keyList, nmap, prevKeys, prevN)
     local shrank, rose = #keyList < #prevKeys, #keyList > #prevKeys
     for i = 1, #GROUP_UNITS do
-        local u = GROUP_UNITS[i]
-        local num, previous = nmap[u] or 0, prevN[u] or 0
+        local unit = GROUP_UNITS[i]
+        local num, previous = nmap[unit] or 0, prevN[unit] or 0
         if num < previous then
             shrank = true
         elseif num > previous then
@@ -1092,9 +1092,9 @@ end
 -- A kick any member with entries may have landed, none of it visible.
 local function LoosenAll()
     for i = 1, #GROUP_UNITS do
-        local u = GROUP_UNITS[i]
-        local m = rosterMap[u]
-        if m and m.hi and (cache.n[u] or 0) > 0 then
+        local unit = GROUP_UNITS[i]
+        local m = rosterMap[unit]
+        if m and m.hi and (cache.n[unit] or 0) > 0 then
             m.hi = m.hi + 1
         end
     end
@@ -1281,13 +1281,13 @@ local function BuildGate(T)
     gateT = T
     local pa, pg, ca, cg = readPrevA, readPrevG, cache.a, cache.g
     for i = 2, #GROUP_UNITS do
-        local u = GROUP_UNITS[i]
-        local m = rosterMap[u]
+        local unit = GROUP_UNITS[i]
+        local m = rosterMap[unit]
         if m and m.guid and m.kick and not StillDown(m, T) then
-            local before, after = pa[u], ca[u]
-            if before ~= nil and after ~= nil and (pg[u] or 0) >= 1 and (cg[u] or 0) >= 1 then
-                gateList[#gateList + 1] = u
-                gatePrev[u], gateCur[u] = before, after
+            local before, after = pa[unit], ca[unit]
+            if before ~= nil and after ~= nil and (pg[unit] or 0) >= 1 and (cg[unit] or 0) >= 1 then
+                gateList[#gateList + 1] = unit
+                gatePrev[unit], gateCur[unit] = before, after
             end
         end
     end
@@ -1510,9 +1510,9 @@ local function Attribute()
     -- Handed on as read, hidden in combat; read at once, never kept.
     wipe(countList)
     for i = 2, #GROUP_UNITS do
-        local u = GROUP_UNITS[i]
-        if (guidMap[u] or 0) >= 1 and auraMap[u] ~= nil then
-            countList[#countList + 1] = u
+        local unit = GROUP_UNITS[i]
+        if (guidMap[unit] or 0) >= 1 and auraMap[unit] ~= nil then
+            countList[#countList + 1] = unit
         end
     end
     if #countList > 0 then

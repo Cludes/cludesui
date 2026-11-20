@@ -499,16 +499,16 @@ local function ShowCombatIcon(m)
     frame._dismissKey = m.dismissKey or nil
     local spellId = m.spellID or (m.data and m.data.castSpell)
     frame._icon:SetTexture(m.texture or (spellId and Tex(spellId)) or 134400)
-    local p = db and db.profile.display
-    if p and p.showText and not m.isEating then
-        local tc = p.textColor or DEFAULT_TEXT_COLOR
-        local fontFile = ResolveFontPath(p.nameFont)
-        local textSize = p.textSize or 11
-        local xOff = p.textXOffset or 0
-        local yOff = p.textYOffset or -2
+    local profile = db and db.profile.display
+    if profile and profile.showText and not m.isEating then
+        local tc = profile.textColor or DEFAULT_TEXT_COLOR
+        local fontFile = ResolveFontPath(profile.nameFont)
+        local textSize = profile.textSize or 11
+        local xOff = profile.textXOffset or 0
+        local yOff = profile.textYOffset or -2
         SetABRFont(frame._text, fontFile, textSize)
         frame._text:ClearAllPoints()
-        local tp, ip = GetTextAnchorPoints(p)
+        local tp, ip = GetTextAnchorPoints(profile)
         frame._text:SetPoint(tp, frame, ip, xOff, yOff)
         frame._text:SetTextColor(tc.r, tc.g, tc.b, 1)
         frame._text:SetText(m.label or "")
@@ -635,16 +635,16 @@ local function ShowCursorIcon(iconIdx, m)
     frame._dismissKey = m.dismissKey or nil
     local spellId = m.spellID or (m.data and m.data.castSpell)
     frame._icon:SetTexture(m.texture or (spellId and Tex(spellId)) or 134400)
-    local p = db and db.profile.display
-    if p and p.showText and not m.isEating then
-        local tc = p.textColor or DEFAULT_TEXT_COLOR
-        local fontFile = ResolveFontPath(p.nameFont)
-        local textSize = p.textSize or 11
-        local xOff = p.textXOffset or 0
-        local yOff = p.textYOffset or -2
+    local profile = db and db.profile.display
+    if profile and profile.showText and not m.isEating then
+        local tc = profile.textColor or DEFAULT_TEXT_COLOR
+        local fontFile = ResolveFontPath(profile.nameFont)
+        local textSize = profile.textSize or 11
+        local xOff = profile.textXOffset or 0
+        local yOff = profile.textYOffset or -2
         SetABRFont(frame._text, fontFile, textSize)
         frame._text:ClearAllPoints()
-        local tp, ip = GetTextAnchorPoints(p)
+        local tp, ip = GetTextAnchorPoints(profile)
         frame._text:SetPoint(tp, frame, ip, xOff, yOff)
         frame._text:SetTextColor(tc.r, tc.g, tc.b, 1)
         frame._text:SetText(m.label or "")
@@ -1347,8 +1347,8 @@ function REMIND.CreateIconBagCountOverlay(frame)
         return frame._bagCount
     end
     local fontStr = REMIND.GetIconTextOverlay(frame):CreateFontString(nil, "OVERLAY")
-    local p = db and db.profile.display
-    SetABRFont(fontStr, ResolveFontPath(p and p.countFont), 11)
+    local profile = db and db.profile.display
+    SetABRFont(fontStr, ResolveFontPath(profile and profile.countFont), 11)
     fontStr:Hide()
     frame._bagCount = fontStr
     return fontStr
@@ -1359,12 +1359,12 @@ function REMIND.SizeIconBagCount(frame, sz)
     if not fontStr or not frame._bagCountShown then
         return
     end
-    local p = db and db.profile.display
-    local base = (p and p.countSize) or 16
+    local profile = db and db.profile.display
+    local base = (profile and profile.countSize) or 16
     local fsz = max(6, floor(base * (sz / ICON_SIZE) + 0.5))
-    SetABRFont(fontStr, ResolveFontPath(p and p.countFont), fsz)
-    local dx = (p and p.countXOffset) or 0
-    local dy = (p and p.countYOffset) or 0
+    SetABRFont(fontStr, ResolveFontPath(profile and profile.countFont), fsz)
+    local dx = (profile and profile.countXOffset) or 0
+    local dy = (profile and profile.countYOffset) or 0
     fontStr:ClearAllPoints()
     fontStr:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", dx, dy)
 end
@@ -1377,8 +1377,8 @@ function REMIND.ApplyIconBagCount(frame, count, outOfStock, substitute, spellRan
     frame._outOfStock = outOfStock and true or nil
     frame._substitute = (substitute and not outOfStock) and true or nil
     local fontStr = frame._bagCount
-    local p = db and db.profile.display
-    local showCount = not p or p.showCount ~= false
+    local profile = db and db.profile.display
+    local showCount = not profile or profile.showCount ~= false
     if showCount and outOfStock then
         frame._bagCountShown = true
         fontStr:SetText("0")
@@ -1492,9 +1492,9 @@ function REMIND.ApplyEatingVisual(frame, m)
     if not expTime then
         return
     end
-    local p = db and db.profile.display
+    local profile = db and db.profile.display
     local fontFile = ResolveFontPath()
-    local textSize = max(14, floor(((p and p.textSize) or 11) * 1.15))
+    local textSize = max(14, floor(((profile and profile.textSize) or 11) * 1.15))
     SetABRFont(frame._count, fontFile, textSize)
     frame._count:SetTextColor(1, 1, 1, 1)
     frame._eatingExp = expTime
@@ -1529,8 +1529,8 @@ function REMIND.ApplyIconExpiry(frame, m)
         end
         frame._expiryBinding = binding
     end
-    local p = db and db.profile.display
-    SetABRFont(count, ResolveFontPath(), max(14, floor(((p and p.textSize) or 11) * 1.15)))
+    local profile = db and db.profile.display
+    SetABRFont(count, ResolveFontPath(), max(14, floor(((profile and profile.textSize) or 11) * 1.15)))
     count:SetTextColor(1, 1, 1, 1)
     frame._expiryDuration:SetTimeFromEnd(expireAt, m.expireTotal)
     binding:SetEnabled(true)

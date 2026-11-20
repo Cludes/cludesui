@@ -437,8 +437,8 @@ local function GetPrimaryPowerType()
     if CludesUI.IS_FOREVER then
         -- Druid "Power Type: Mana" keeps Mana in every form. Its own string
         -- key (no specs there), so it never meets the spec IDs keyed below.
-        local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
-        local shade = pp and pp.powerTypeOverride
+        local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
+        local shade = primary and primary.powerTypeOverride
         if shade and shade.foreverDruid then
             local _, castFrame = UnitClass("player")
             if castFrame == "DRUID" then
@@ -462,8 +462,8 @@ local function GetPrimaryPowerType()
 
     -- Druid form handling
     if class == "DRUID" then
-        local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
-        local shade = pp and pp.powerTypeOverride
+        local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
+        local shade = primary and primary.powerTypeOverride
         local o = ovSpec and shade and shade[ovSpec]
         if o == "mana" then
             return PT.MANA
@@ -484,15 +484,15 @@ local function GetPrimaryPowerType()
     end
 
     if class == "SHAMAN" and specInfo == 1 then
-        local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
-        local shade = pp and pp.powerTypeOverride
+        local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
+        local shade = primary and primary.powerTypeOverride
         if ovSpec and shade and shade[ovSpec] then
             return PT.MAELSTROM
         end -- Elemental alt: Maelstrom
     end
     if class == "PRIEST" and specInfo == 3 then
-        local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
-        local shade = pp and pp.powerTypeOverride
+        local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
+        local shade = primary and primary.powerTypeOverride
         if ovSpec and shade and shade[ovSpec] then
             return PT.INSANITY
         end -- Shadow alt: Insanity
@@ -523,8 +523,8 @@ local function GetPrimaryPowerType()
         return PT.FURY
     end
     if class == "EVOKER" and specInfo == 3 then
-        local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
-        local shade = pp and pp.powerTypeOverride
+        local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
+        local shade = primary and primary.powerTypeOverride
         -- Inverted against the others: Augmentation's DEFAULT is Ebon Might and
         -- the override opts into plain Mana. Same spec-ID key either way.
         if not (ovSpec and shade and shade[ovSpec]) then

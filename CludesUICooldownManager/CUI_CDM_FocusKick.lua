@@ -949,10 +949,10 @@ local function ShowFocusReminder(unitToken)
     -- Color: accent mode reads the live CLUDES_GREEN; custom mode reads the stored RGB. Re-SetTextColor only if the resolved color changed.
     local red, green, blue
     if edge.focusReminderUseAccent then
-        local eg = CludesUI.CLUDES_GREEN
-        red = (eg and eg.r) or 0.298
-        green = (eg and eg.g) or 0.788
-        blue = (eg and eg.b) or 0.941
+        local brandGreen = CludesUI.CLUDES_GREEN
+        red = (brandGreen and brandGreen.r) or 0.298
+        green = (brandGreen and brandGreen.g) or 0.788
+        blue = (brandGreen and brandGreen.b) or 0.941
     else
         red = edge.focusReminderR or 1
         green = edge.focusReminderG or 1

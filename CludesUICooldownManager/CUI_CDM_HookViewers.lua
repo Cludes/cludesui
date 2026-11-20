@@ -704,8 +704,8 @@ function mod.SetupViewerHooks()
                                             cr, cg, callback = frameData._bgR or cr, frameData._bgG or cg, frameData._bgB or callback
                                         end
                                         if classColor then
-                                            local cc = CludesUI.GetClassColor(CludesUI._playerClass)
-                                            cr, cg, callback = cc.r, cc.g, cc.b
+                                            local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+                                            cr, cg, callback = classColor.r, classColor.g, classColor.b
                                         end
                                         frameData.buffGlowOverlay:SetAlpha(1)
                                         mod.StartNativeGlow(frameData.buffGlowOverlay, effGlowType, cr, cg, callback, {

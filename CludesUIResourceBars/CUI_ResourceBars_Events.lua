@@ -95,13 +95,13 @@ end
 -- bar its own bar._castInterp.
 function ERB:ApplySmoothing()
     local interp = Enum and Enum.StatusBarInterpolation and Enum.StatusBarInterpolation.ExponentialEaseOut
-    local p = ERB.db and ERB.db.profile
-    if not (interp and p) then
+    local profile = ERB.db and ERB.db.profile
+    if not (interp and profile) then
         return
     end
-    local _hCfg = _G._CURB_ResolveHealthCfg(p)
-    local _pCfg = _G._CURB_ResolvePowerCfg(p)
-    local _sCfg = _G._CURB_ResolveSecondaryCfg(p)
+    local _hCfg = _G._CURB_ResolveHealthCfg(profile)
+    local _pCfg = _G._CURB_ResolvePowerCfg(profile)
+    local _sCfg = _G._CURB_ResolveSecondaryCfg(profile)
     if health then
         health._smoothing = (_hCfg and _hCfg.smoothBars) and interp or nil
     end
@@ -126,8 +126,8 @@ end
 do
     local waiting
     local function LegacyAnchored()
-        local p = ERB.db and ERB.db.profile
-        if not p then
+        local profile = ERB.db and ERB.db.profile
+        if not profile then
             return nil
         end
         local entries
@@ -141,9 +141,9 @@ do
                 entries[#entries + 1] = { cfg = s, frame = frame }
             end
         end
-        add(p.health, health)
-        add(p.primary, mainBar)
-        add(p.secondary, classFrame)
+        add(profile.health, health)
+        add(profile.primary, mainBar)
+        add(profile.secondary, classFrame)
         return entries
     end
     function mod.MigrateLegacyAnchorTo()
@@ -849,11 +849,11 @@ function ERB:OnInitialize()
         return (mode == "Up") and 1 or -1
     end
     local function ResolveShiftDirPower()
-        local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
-        if not pp then
+        local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
+        if not primary then
             return 0
         end
-        local mode = pp.shiftElementsIfNoPower
+        local mode = primary.shiftElementsIfNoPower
         if mode ~= "Up" and mode ~= "Down" then
             return 0
         end
@@ -901,8 +901,8 @@ function ERB:OnInitialize()
                 if direction == 0 then
                     return 0
                 end
-                local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
-                return direction, (pp and pp.shiftElementsIfNoPowerExtraY) or 0
+                local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
+                return direction, (primary and primary.shiftElementsIfNoPowerExtraY) or 0
             end
             return 0
         end,
@@ -1076,12 +1076,12 @@ function ERB:OnEnable()
     -- The same for the bars: an unseeded profile keeps its own values in the
     -- CludesUI slot before the Classic seed writes over them.
     if mod.ERB_BarsClassic() then
-        local p = self.db.profile
-        local g = p and p.general
+        local profile = self.db.profile
+        local g = profile and profile.general
         if g and not g.classicTextureSeeded and not g.borderAllSeeded and CludesUI.BankEuiStyleSlot then
-            CludesUI.BankEuiStyleSlot(p, mod._erbBarsSlotKeys)
+            CludesUI.BankEuiStyleSlot(profile, mod._erbBarsSlotKeys)
         end
-        mod.ERB_SeedStockBars(p, "classic")
+        mod.ERB_SeedStockBars(profile, "classic")
     end
 
     -- Apply immediately at PLAYER_LOGIN so positions are set before combat

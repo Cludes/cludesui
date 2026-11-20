@@ -1023,8 +1023,8 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
             local hasWarlock = false
             if IsInRaid() then
                 for index = 1, GetNumGroupMembers() do
-                    local _, cls = UnitClass("raid" .. index)
-                    if cls ~= nil and not isSecret(cls) and cls == "WARLOCK" then
+                    local _, classTok = UnitClass("raid" .. index)
+                    if classTok ~= nil and not isSecret(classTok) and classTok == "WARLOCK" then
                         hasWarlock = true
                         break
                     end
@@ -1034,8 +1034,8 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                     hasWarlock = true
                 else
                     for index = 1, GetNumSubgroupMembers() do
-                        local _, cls = UnitClass("party" .. index)
-                        if cls ~= nil and not isSecret(cls) and cls == "WARLOCK" then
+                        local _, classTok = UnitClass("party" .. index)
+                        if classTok ~= nil and not isSecret(classTok) and classTok == "WARLOCK" then
                             hasWarlock = true
                             break
                         end

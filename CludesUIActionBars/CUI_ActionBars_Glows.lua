@@ -1405,9 +1405,9 @@ function ABAR:ApplyCooldownEdge()
         return
     end
     HookCooldownEdge()
-    local p = self.db.profile
-    local cr, cg, callback, ca = ResolveCooldownEdgeColor(p)
-    local sz = p.cooldownEdgeSize or 2.1
+    local profile = self.db.profile
+    local cr, cg, callback, ca = ResolveCooldownEdgeColor(profile)
+    local sz = profile.cooldownEdgeSize or 2.1
     for _, details in ipairs(BAR_CONFIG) do
         local buttonList = barButtons[details.key]
         if buttonList then
@@ -1443,13 +1443,13 @@ function EAB_VTABLE.CooldownFonts.HookAll()
 end
 
 function ABAR:ApplyMiscTextures()
-    local p = self.db.profile
+    local profile = self.db.profile
 
     -- Color the "other" button textures (CheckedTexture, NewActionTexture,
     -- Border) using the pushed texture color settings.  These are the
     -- hard-coded textures the user can't individually customize.
-    local useCC = p.pushedUseClassColor
-    local customC = p.pushedCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
+    local useCC = profile.pushedUseClassColor
+    local customC = profile.pushedCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
     local cr, cg, callback, ca = customC.r, customC.g, customC.b, customC.a or 1
     if useCC then
         local _, classTok = UnitClass("player")
@@ -1492,24 +1492,24 @@ end
 -- the bars where the button's border copy stands in for it (ns._ixElig, kept
 -- current by every pass that can change it while the option is on).
 function ABAR:GetCheckedAlpha(barId)
-    local p = self.db.profile
-    if p.showCastHighlight == false then
+    local profile = self.db.profile
+    if profile.showCastHighlight == false then
         return 0
     end
-    if barId and p.castHighlightBorder and mod._ixElig[barId] then
+    if barId and profile.castHighlightBorder and mod._ixElig[barId] then
         return 0
     end
     return 1
 end
 
 function ABAR:ApplyCheckedTextures()
-    local p = self.db.profile
-    local _, _, ixOn = mod._ixRolesOn(p)
+    local profile = self.db.profile
+    local _, _, ixOn = mod._ixRolesOn(profile)
     local ixEver = mod._ixEver
     for _, details in ipairs(BAR_CONFIG) do
         local buttonList = barButtons[details.key]
         if buttonList then
-            local s = p.bars[details.key]
+            local s = profile.bars[details.key]
             -- Eligibility first: GetCheckedAlpha reads it.
             local ixBar = ixOn and mod._ixBarEligible(details.key)
             local a = self:GetCheckedAlpha(details.key)

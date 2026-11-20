@@ -348,9 +348,9 @@ do
         end
         local red, green, blue
         if mode == "class" then
-            local cc = CludesUI.GetClassColor(CludesUI._playerClass)
-            if cc then
-                red, green, blue = cc.r, cc.g, cc.b
+            local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+            if classColor then
+                red, green, blue = classColor.r, classColor.g, classColor.b
             end
         else
             red, green, blue = CludesUI.ResolveActiveAccent()

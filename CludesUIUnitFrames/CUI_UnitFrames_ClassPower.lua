@@ -267,9 +267,9 @@ local function CreateCustomClassPower(playerFrame, style)
         if rc then
             cr, cg, callback = rc.r, rc.g, rc.b
         else
-            local cc = CludesUI.GetClassColor(playerClass)
-            if cc then
-                cr, cg, callback = cc.r, cc.g, cc.b
+            local classColor = CludesUI.GetClassColor(playerClass)
+            if classColor then
+                cr, cg, callback = classColor.r, classColor.g, classColor.b
             else
                 cr, cg, callback = 1, 1, 1
             end

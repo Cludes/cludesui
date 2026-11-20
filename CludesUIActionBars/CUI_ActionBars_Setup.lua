@@ -791,8 +791,8 @@ function ABAR:FinishSetup()
         _dragState.visible = shouldShow
         for _, details in ipairs(ALL_BARS) do
             local barKey = details.key
-            local s = self.db.profile.bars[barKey]
-            if not s then -- skip bars without settings
+            local barCfg = self.db.profile.bars[barKey]
+            if not barCfg then -- skip bars without settings
             else
                 local widget = barFrames[barKey]
                     or (details.isDataBar and dataBarFrames[barKey])
@@ -819,8 +819,8 @@ function ABAR:FinishSetup()
                             widget:SetFrameStrata("FULLSCREEN_DIALOG")
                         end
                         -- Show mouseover-faded bars at full opacity
-                        if s.mouseoverEnabled then
-                            local fullAlpha = s._savedBarAlpha or 1
+                        if barCfg.mouseoverEnabled then
+                            local fullAlpha = barCfg._savedBarAlpha or 1
                             StopFade(widget, fullAlpha)
                             if status then
                                 status.fadeDir = "in"
@@ -841,10 +841,10 @@ function ABAR:FinishSetup()
                         -- Fade back out if mouseover-enabled and not hovered. Skip
                         -- position-only Blizzard-owned bars (the QueueStatus eye): CUI
                         -- controls only their position, never fades them out.
-                        if s.mouseoverEnabled and not details.noManagedVisibility then
+                        if barCfg.mouseoverEnabled and not details.noManagedVisibility then
                             if not (status and status.isHovered) then
                                 StopFade(widget)
-                                FadeTo(widget, 0, s.mouseoverSpeed or 0.15)
+                                FadeTo(widget, 0, barCfg.mouseoverSpeed or 0.15)
                                 if status then
                                     status.fadeDir = "out"
                                 end
@@ -1112,23 +1112,23 @@ function ABAR:FinishSetup()
         local hasHardTarget = UnitExists("target")
         local softOnly = (hasSoftInteract or hasSoftEnemy or hasSoftFriend) and not hasHardTarget
         for _, details in ipairs(ALL_BARS) do
-            local s = self.db.profile.bars[details.key]
+            local barCfg = self.db.profile.bars[details.key]
             if
-                s
-                and (s.visHideNoTarget or (s.visHideWithTarget and s.visibilityMatch == "any"))
+                barCfg
+                and (barCfg.visHideNoTarget or (barCfg.visHideWithTarget and barCfg.visibilityMatch == "any"))
                 and not (self._visOverride and self._visOverride[details.key])
             then
                 local widget = barFrames[details.key]
                 if widget then
                     -- Under Any a literal "hide" would veto the whole disjunction on this
                     -- one lane; the rebuild below lets the shared builder drop just it.
-                    if softOnly and s.visHideNoTarget and s.visibilityMatch ~= "any" then
+                    if softOnly and barCfg.visHideNoTarget and barCfg.visibilityMatch ~= "any" then
                         if widget._eabLastVisStr ~= "hide" then
                             widget._eabLastVisStr = "hide"
                             RegisterAttributeDriver(widget, "state-visibility", "hide")
                         end
                     else
-                        local newStr = BuildVisibilityString(details, s)
+                        local newStr = BuildVisibilityString(details, barCfg)
                         if widget._eabLastVisStr ~= newStr then
                             widget._eabLastVisStr = newStr
                             RegisterAttributeDriver(widget, "state-visibility", newStr)
@@ -1214,15 +1214,15 @@ function ABAR:FinishSetup()
         regenFrame:RegisterEvent("PLAYER_REGEN_ENABLED") -- guardrails-allow: combat-deferral by Cludes: moved verbatim from CludesUIActionBars.lua
         regenFrame:SetScript("OnEvent", function()
             for _, details in ipairs(ALL_BARS) do
-                local s = self.db.profile.bars[details.key]
+                local barCfg = self.db.profile.bars[details.key]
                 if
-                    s
-                    and (s.visHideNoTarget or (s.visHideWithTarget and s.visibilityMatch == "any"))
+                    barCfg
+                    and (barCfg.visHideNoTarget or (barCfg.visHideWithTarget and barCfg.visibilityMatch == "any"))
                     and not (self._visOverride and self._visOverride[details.key])
                 then
                     local widget = barFrames[details.key]
                     if widget then
-                        local newStr = BuildVisibilityString(details, s)
+                        local newStr = BuildVisibilityString(details, barCfg)
                         if widget._eabLastVisStr ~= newStr then
                             widget._eabLastVisStr = newStr
                             RegisterAttributeDriver(widget, "state-visibility", newStr)

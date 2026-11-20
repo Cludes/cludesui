@@ -200,8 +200,8 @@ do
     -- Druid spec, resolves as no spec (the All Specs tiers only). Unmemoized: the
     -- options helpers call it directly.
     function mod.ForeverThresholdPick(entries)
-        local p = ERB.db and ERB.db.profile
-        local sec = p and p.secondary
+        local profile = ERB.db and ERB.db.profile
+        local sec = profile and profile.secondary
         if sec and entries == sec.thresholdSpecs and select(2, UnitClass("player")) == "DRUID" then
             local ids = CludesUI.ForeverClassSpecIDs("DRUID")
             for i = 1, (ids and #ids or 0) do

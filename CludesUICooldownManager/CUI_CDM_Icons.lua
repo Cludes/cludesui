@@ -930,9 +930,9 @@ local function RefreshCDMIconAppearance(barId)
                         if nColor == "custom" then
                             sgR, sgG, sgB = nR, nG, nB
                         elseif sgMode == "class" then
-                            local cc = CludesUI.GetClassColor(CludesUI._playerClass)
-                            if cc then
-                                sgR, sgG, sgB = cc.r, cc.g, cc.b
+                            local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+                            if classColor then
+                                sgR, sgG, sgB = classColor.r, classColor.g, classColor.b
                             end
                         elseif sgMode == "custom" then
                             sgR, sgG, sgB = barInfo.buffGlowR, barInfo.buffGlowG, barInfo.buffGlowB

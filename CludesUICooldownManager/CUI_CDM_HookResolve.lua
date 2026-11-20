@@ -1192,8 +1192,8 @@ local function ResolveCDIDToBar(cdID, viewerDefaultBar)
     end
 
     local RVV = mod.ResolveVariantValue
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not RVV or not gci then
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    if not RVV or not getCdInfo then
         _cdidRouteMap[cdID] = viewerDefaultBar
         return viewerDefaultBar
     end
@@ -1202,7 +1202,7 @@ local function ResolveCDIDToBar(cdID, viewerDefaultBar)
     local directMap = (viewerDefaultBar == "buffs") and _divertedDirectBuff or _divertedDirectCD
     local varBaseMap = (viewerDefaultBar == "buffs") and _divertedVarBaseBuff or _divertedVarBaseCD
 
-    local details = gci(cdID)
+    local details = getCdInfo(cdID)
     if not details then
         -- Info not ready (transient: login / spec swap). Return the fallback
         -- WITHOUT caching: _cdidRouteMap is wiped only by RebuildSpellRouteMap,

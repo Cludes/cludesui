@@ -220,11 +220,11 @@ end
 function mod.ERB_BarsStyle()
     local val = mod._erbBarsStyle
     if val == nil then
-        local p = ERB.db and ERB.db.profile
-        if not p then
+        local profile = ERB.db and ERB.db.profile
+        if not profile then
             return "cui"
         end
-        val = (p.useClassicStyleBars and "classic") or (p.useBlizzardStyleBars and "blizzard") or "cui"
+        val = (profile.useClassicStyleBars and "classic") or (profile.useBlizzardStyleBars and "blizzard") or "cui"
         mod._erbBarsStyle = val
     end
     return val

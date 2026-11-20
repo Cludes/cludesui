@@ -2600,11 +2600,11 @@ CludesUI.AtOptionsLogin(function()
     local PAGE_SH = "Spell History"
 
     local function SHDB()
-        local d = DB()
-        if not d.spellHistory then
-            d.spellHistory = {}
+        local profile = DB()
+        if not profile.spellHistory then
+            profile.spellHistory = {}
         end
-        return d.spellHistory
+        return profile.spellHistory
     end
 
     local shGrowValues = {

@@ -3583,7 +3583,7 @@ CludesUI.AtOptionsLogin(function()
             contentHalfSize = math.floor(thresholdPage:GetWidth() / 2 - (SIDE_PAD * 2))
             local BUTTON_W, BUTTON_H = 80, 29
             local MEDIA = "Interface\\AddOns\\CludesUI\\media\\"
-            local eg = CludesUI.CLUDES_GREEN
+            local brandGreen = CludesUI.CLUDES_GREEN
 
             -- Colours for CludesUI.MakeStyledButton: background, background
             -- hovered, border, border hovered, text, text hovered (r, g, b, a each).
@@ -3622,7 +3622,7 @@ CludesUI.AtOptionsLogin(function()
             backIcon:SetSize(14, 14)
             Pix.Point(backIcon, "LEFT", backBtn, "LEFT", 10, 0)
             backIcon:SetTexture(MEDIA .. "icons\\cui-arrow-left.png")
-            backIcon:SetVertexColor(eg.r, eg.g, eg.b)
+            backIcon:SetVertexColor(brandGreen.r, brandGreen.g, brandGreen.b)
             backIcon:SetAlpha(0.6)
             if backIcon.SetSnapToPixelGrid then
                 backIcon:SetSnapToPixelGrid(false)

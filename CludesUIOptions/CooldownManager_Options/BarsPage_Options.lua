@@ -1498,11 +1498,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             if rowsNotTwo() then
                                 return true
                             end
-                            local b = BD()
-                            if b.anchorTo and b.anchorTo ~= "none" then
+                            local barData = BD()
+                            if barData.anchorTo and barData.anchorTo ~= "none" then
                                 return true
                             end
-                            if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("CDM_" .. b.key) then
+                            if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("CDM_" .. barData.key) then
                                 return true
                             end
                             return false
@@ -1832,9 +1832,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 step = 1,
                 -- A blocked bar with a value already set can still lower/clear it -- a disabled control must never trap an existing value on.
                 disabled = function()
-                    local b = BD()
-                    return (OverflowShiftBlocked() or BarIsOverflowRecipient(b.key))
-                        and not (b.maxIcons and b.maxIcons > 0)
+                    local barData = BD()
+                    return (OverflowShiftBlocked() or BarIsOverflowRecipient(barData.key))
+                        and not (barData.maxIcons and barData.maxIcons > 0)
                 end,
                 disabledTooltip = function()
                     if BarIsOverflowRecipient(BD().key) then
@@ -1861,20 +1861,20 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 order = ofOrder,
                 -- Recipient bars cannot pick a fresh target (third door); one with a stale target set stays enabled so it can be cleared back to None.
                 disabled = function()
-                    local b = BD()
+                    local barData = BD()
                     return OverflowShiftBlocked()
-                        or (BarIsOverflowRecipient(b.key) and not b.overflowTarget)
-                        or not (b.maxIcons and b.maxIcons > 0)
+                        or (BarIsOverflowRecipient(barData.key) and not barData.overflowTarget)
+                        or not (barData.maxIcons and barData.maxIcons > 0)
                 end,
                 -- Tooltip priority: recipient block, then the plain Max Icons requirement. The
                 -- Shift Icons message only shows when it is the ACTUAL blocker (Max Icons
                 -- already above 0 but a spell carries a shift cooldown-state setting) -- most users never touch that setting, so the default tooltip stays basic.
                 disabledTooltip = function()
-                    local b = BD()
-                    if BarIsOverflowRecipient(b.key) then
+                    local barData = BD()
+                    if BarIsOverflowRecipient(barData.key) then
                         return "Not available while another bar overflows into this bar"
                     end
-                    if not (b.maxIcons and b.maxIcons > 0) then
+                    if not (barData.maxIcons and barData.maxIcons > 0) then
                         return "Requires Max Icons to be above 0"
                     end
                     return "Not available while a spell on this bar uses a Cooldown State Shift Icons setting"
@@ -1934,8 +1934,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 type = "toggle",
                 text = "Keep Buffs in Same Place",
                 disabled = function()
-                    local b = BD()
-                    return b.showInactiveBuffIcons == true or AnyIconAlwaysShowOn(b.key)
+                    local barData = BD()
+                    return barData.showInactiveBuffIcons == true or AnyIconAlwaysShowOn(barData.key)
                 end,
                 disabledTooltip = "Disabled while Always Show Buffs is enabled (on the bar, or on any individual buff)",
                 rawTooltip = true,
@@ -2055,9 +2055,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 region,
                 npRow:GetFrameLevel() + 3,
                 function()
-                    local eg = CludesUI.CLUDES_GREEN
-                    if eg then
-                        return eg.r, eg.g, eg.b
+                    local brandGreen = CludesUI.CLUDES_GREEN
+                    if brandGreen then
+                        return brandGreen.r, brandGreen.g, brandGreen.b
                     end
                     return 0.298, 0.788, 0.941
                 end,
@@ -2636,8 +2636,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 -- "and showInactiveBuffIcons ~= true" keeps a legacy both-on profile
                 -- unlockable: this toggle stays enabled so it can be turned off.
                 disabled = function()
-                    local b = BD()
-                    return b.hidePlaceholderIcon == true and b.showInactiveBuffIcons ~= true
+                    local barData = BD()
+                    return barData.hidePlaceholderIcon == true and barData.showInactiveBuffIcons ~= true
                 end,
                 disabledTooltip = "Disabled while Keep Buffs in Same Place is enabled",
                 rawTooltip = true,
@@ -4380,9 +4380,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 text = "Show Keybind",
                 getValue = BDFieldIs("showKeybind"),
                 setValue = function(value)
-                    local b = BD()
-                    b.showKeybind = value
-                    mod.RefreshCDMIconAppearance(b.key)
+                    local barData = BD()
+                    barData.showKeybind = value
+                    mod.RefreshCDMIconAppearance(barData.key)
                     mod.ApplyCachedKeybinds()
                     UpdateCDMPreview()
                     CludesUI:RefreshPage()
@@ -4514,8 +4514,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         -- A rotation setting read with its default, and written (when the store
         -- exists) with the highlights redrawn either way.
         local function RotGet(barKey, default)
-            local c = RotationBars()
-            return (c and c[barKey]) or default
+            local rotBars = RotationBars()
+            return (rotBars and rotBars[barKey]) or default
         end
         local function RotRedraw()
             if mod.UpdateRotationHighlights then
@@ -4523,9 +4523,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end
         end
         local function RotSet(barKey, value)
-            local c = RotationBars()
-            if c then
-                c[barKey] = value
+            local rotBars = RotationBars()
+            if rotBars then
+                rotBars[barKey] = value
             end
             RotRedraw()
         end
@@ -4535,11 +4535,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 RotGet("rotationAssistColorB", 0)
         end
         local function RotSetCustomRGB(red, green, blue)
-            local c = RotationBars()
-            if c then
-                c.rotationAssistColorR = red
-                c.rotationAssistColorG = green
-                c.rotationAssistColorB = blue
+            local rotBars = RotationBars()
+            if rotBars then
+                rotBars.rotationAssistColorR = red
+                rotBars.rotationAssistColorG = green
+                rotBars.rotationAssistColorB = blue
             end
             RotRedraw()
         end
@@ -4549,8 +4549,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         -- exist only for the styles that read them, so the Style dropdown forces a
         -- rebuild when this key flips.
         local function RotRowsKey()
-            local c = RotationBars()
-            local s = (c and c.rotationAssistStyle) or "blizzard"
+            local rotBars = RotationBars()
+            local s = (rotBars and rotBars.rotationAssistStyle) or "blizzard"
             local barKey = 0
             if s ~= "blizzard" then
                 barKey = 1
@@ -4588,10 +4588,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     return RotGet("rotationAssistStyle", "blizzard")
                 end,
                 setValue = function(value)
-                    local c = RotationBars()
-                    if c then
+                    local rotBars = RotationBars()
+                    if rotBars then
                         local before = RotRowsKey()
-                        c.rotationAssistStyle = value
+                        rotBars.rotationAssistStyle = value
                         RotRedraw()
                         -- Full rebuild only when the Thickness / Outset row set changes;
                         -- the in-place refresh otherwise.
@@ -4609,8 +4609,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     -- cancel can never flip the mode. Dimmed while Blizzard Default
                     -- owns the highlight; clicks are ignored there.
                     local function rotColorOff()
-                        local c = RotationBars()
-                        return not c or c.rotationAssistStyle == "blizzard"
+                        local rotBars = RotationBars()
+                        return not rotBars or rotBars.rotationAssistStyle == "blizzard"
                     end
                     local colorSwatch, defaultSwatch, classSwatch =
                         CludesUI.BuildTrioColorSwatch(colorRgn, rotStyleRow:GetFrameLevel() + 3, {
@@ -4618,14 +4618,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 return RotGet("rotationAssistColorMode", "default")
                             end,
                             setMode = function(mode)
-                                local c = RotationBars()
-                                if not c or c.rotationAssistStyle == "blizzard" then
+                                local rotBars = RotationBars()
+                                if not rotBars or rotBars.rotationAssistStyle == "blizzard" then
                                     return
                                 end
                                 -- Spec Overrides: the slot this write belongs to, read
                                 -- before the write (as the widget factory does).
                                 local snap = CludesUI._SOAttribution(colorRgn)
-                                c.rotationAssistColorMode = mode
+                                rotBars.rotationAssistColorMode = mode
                                 RotRedraw()
                                 CludesUI._NotifySettingWrite(colorRgn, snap)
                             end,
@@ -4721,8 +4721,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     -- Pixel Glow's remaining parameters (Solid Border reads thickness only).
                     if not CludesUI._prebuilding then
                         local function notPixel()
-                            local c = RotationBars()
-                            return not c or c.rotationAssistStyle ~= "pixel"
+                            local rotBars = RotationBars()
+                            return not rotBars or rotBars.rotationAssistStyle ~= "pixel"
                         end
                         -- The shared Pixel Glow rows over the rotationAssist* keys, minus
                         -- Thickness (it sits on this row itself).
@@ -4884,11 +4884,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         cursorY = cursorY - height
         do
             local function SetAddOffset(axisKey, value)
-                local b = BD()
-                if not b then
+                local barData = BD()
+                if not barData then
                     return
                 end
-                b[axisKey] = (value ~= 0) and value or nil
+                barData[axisKey] = (value ~= 0) and value or nil
                 -- The anchor extra-offset registry getter (registered for every eligible bar
                 -- by the unlock registration pass below) reads the live value, so no per-edit
                 -- set/clear is needed. Re-register unlock elements so the mover's offset
@@ -4902,10 +4902,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 mod.BuildAllCDMBars()
                 if
                     CludesUI.IsUnlockAnchored
-                    and CludesUI.IsUnlockAnchored("CDM_" .. b.key)
+                    and CludesUI.IsUnlockAnchored("CDM_" .. barData.key)
                     and CludesUI.PropagateAnchorChain
                 then
-                    CludesUI.PropagateAnchorChain("CDM_" .. b.key)
+                    CludesUI.PropagateAnchorChain("CDM_" .. barData.key)
                 end
                 Refresh()
             end
@@ -4919,8 +4919,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 trackWidth = 120,
                 tooltip = "Extra horizontal shift stacked on top of this bar's normal position. Layout mode shows the base position; the offset re-applies when you exit.",
                 getValue = function()
-                    local b = BD()
-                    return (b and b.addOffsetX) or 0
+                    local barData = BD()
+                    return (barData and barData.addOffsetX) or 0
                 end,
                 setValue = function(value)
                     SetAddOffset("addOffsetX", value)
@@ -4935,8 +4935,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 trackWidth = 120,
                 tooltip = "Extra vertical shift stacked on top of this bar's normal position. Layout mode shows the base position; the offset re-applies when you exit.",
                 getValue = function()
-                    local b = BD()
-                    return (b and b.addOffsetY) or 0
+                    local barData = BD()
+                    return (barData and barData.addOffsetY) or 0
                 end,
                 setValue = function(value)
                     SetAddOffset("addOffsetY", value)

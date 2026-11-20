@@ -154,9 +154,9 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             if fillTex then
                 fillTex:SetAlpha(1)
             end
-            local cc = CludesUI.GetClassColor(classToken)
-            if cc then
-                frame._health:SetStatusBarColor(cc.r, cc.g, cc.b, (s.healthBarOpacity or 100) / 100)
+            local classColor = CludesUI.GetClassColor(classToken)
+            if classColor then
+                frame._health:SetStatusBarColor(classColor.r, classColor.g, classColor.b, (s.healthBarOpacity or 100) / 100)
             end
         end
     end
@@ -173,9 +173,9 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             local color = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
             frame._topNameBarText:SetTextColor(color.r, color.g, color.b)
         else
-            local cc = CludesUI.GetClassColor(classToken)
-            if cc then
-                frame._topNameBarText:SetTextColor(cc.r, cc.g, cc.b)
+            local classColor = CludesUI.GetClassColor(classToken)
+            if classColor then
+                frame._topNameBarText:SetTextColor(classColor.r, classColor.g, classColor.b)
             else
                 frame._topNameBarText:SetTextColor(1, 1, 1)
             end

@@ -826,9 +826,9 @@ local function ApplyUnitFrameCastColor(castBar)
             classToken = nil
         end
         if classToken and CludesUI.GetClassColor then
-            local cc = CludesUI.GetClassColor(classToken)
-            if cc then
-                red, green, blue = cc.r, cc.g, cc.b
+            local classColor = CludesUI.GetClassColor(classToken)
+            if classColor then
+                red, green, blue = classColor.r, classColor.g, classColor.b
             end
         end
         br, bgTex, bb = red, green, blue

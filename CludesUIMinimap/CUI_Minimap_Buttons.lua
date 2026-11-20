@@ -122,9 +122,9 @@ local function EnableFreeMove(widget)
             C_Timer.After(0, function()
                 GetFFD(self).freeMoveJustDragged = nil
             end)
-            local es = self:GetEffectiveScale()
+            local effScale = self:GetEffectiveScale()
             local curX, curY = GetCursorPosition()
-            curX, curY = curX / es, curY / es
+            curX, curY = curX / effScale, curY / effScale
             local dx, dy = curX - startX, curY - startY
             SaveBtnOffset(key, origOffX + dx, origOffY + dy)
             if ApplyMinimap then
@@ -133,9 +133,9 @@ local function EnableFreeMove(widget)
             return
         end
         -- Move the button directly during drag (no full relayout)
-        local es = self:GetEffectiveScale()
+        local effScale = self:GetEffectiveScale()
         local curX, curY = GetCursorPosition()
-        curX, curY = curX / es, curY / es
+        curX, curY = curX / effScale, curY / effScale
         local dx, dy = curX - startX, curY - startY
         if origPoint then
             self:ClearAllPoints()
@@ -157,9 +157,9 @@ local function EnableFreeMove(widget)
         isDragging = true
         -- Block clicks immediately so OnClick can never fire mid-drag whatever the event ordering; cleared on the frame after release.
         GetFFD(self).freeMoveJustDragged = true
-        local es = self:GetEffectiveScale()
+        local effScale = self:GetEffectiveScale()
         startX, startY = GetCursorPosition()
-        startX, startY = startX / es, startY / es
+        startX, startY = startX / effScale, startY / effScale
         origOffX, origOffY = GetBtnOffset(key)
         -- Snapshot the anchor, minus the current offset, to get the base position.
         origPoint, origRel, origRelPoint, origX, origY = self:GetPoint(1)
@@ -174,9 +174,9 @@ local function EnableFreeMove(widget)
         end
         isDragging = false
         self:SetScript("OnUpdate", nil)
-        local es = self:GetEffectiveScale()
+        local effScale = self:GetEffectiveScale()
         local curX, curY = GetCursorPosition()
-        curX, curY = curX / es, curY / es
+        curX, curY = curX / effScale, curY / effScale
         local dx, dy = curX - startX, curY - startY
         SaveBtnOffset(key, origOffX + dx, origOffY + dy)
         C_Timer.After(0, function()

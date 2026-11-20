@@ -460,8 +460,8 @@ function ABAR:ApplyRangeColoring()
     local anyEnabled = nil
     for _, details in ipairs(BAR_CONFIG) do
         local key = details.key
-        local s = self.db.profile.bars[key]
-        if s and s.outOfRangeColoring then
+        local barCfg = self.db.profile.bars[key]
+        if barCfg and barCfg.outOfRangeColoring then
             anyEnabled = true
             -- The acquire path sweeps: EnableActionRangeCheck fires no initial
             -- event, so slots already out of range need the live poll.

@@ -801,8 +801,8 @@ local function MMBuildSocialTip()
                 and not issecretvalue(classID)
                 and C_CreatureInfo.GetClassInfo(classID)
             if ci and ci.classFile then
-                local cc = CludesUI.GetClassColor(ci.classFile)
-                nameText = CludesUI.ColorText(displayCharName, cc.r, cc.g, cc.b)
+                local classColor = CludesUI.GetClassColor(ci.classFile)
+                nameText = CludesUI.ColorText(displayCharName, classColor.r, classColor.g, classColor.b)
             else
                 nameText = format("|cffecd672%s|r", displayCharName or "?")
             end
@@ -847,8 +847,8 @@ local function MMBuildSocialTip()
                 local cr, cg, callback = 1, 1, 1
                 local token = CludesUI.ClassTokenFromLocalized(fi.className)
                 if token then
-                    local cc = CludesUI.GetClassColor(token)
-                    cr, cg, callback = cc.r, cc.g, cc.b
+                    local classColor = CludesUI.GetClassColor(token)
+                    cr, cg, callback = classColor.r, classColor.g, classColor.b
                 end
                 local fname = fi.name
                 mod.Tip_AddClickable(leftX, fi.area or "", function(mouseButton)
@@ -928,8 +928,8 @@ local function MMBuildGuildTip(s)
             isShown = isShown + 1
             local clr, clg, clb = 1, 1, 1
             if class then
-                local cc = CludesUI.GetClassColor(class)
-                clr, clg, clb = cc.r, cc.g, cc.b
+                local classColor = CludesUI.GetClassColor(class)
+                clr, clg, clb = classColor.r, classColor.g, classColor.b
             end
             local st = (status == 1 and DEFAULT_AFK_MESSAGE) or (status == 2 and DEFAULT_DND_MESSAGE) or ""
             local cn = name and name:match("[^-]+") or "?"

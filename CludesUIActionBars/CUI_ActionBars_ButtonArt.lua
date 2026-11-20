@@ -1350,8 +1350,8 @@ local function ApplyShapeToButton(buttonFrame, shapeKey, brdOn, brdR, brdG, brdB
         local cr, cg, callback, ca = 0.973, 0.839, 0.604, 1
         if p then
             if p.cooldownEdgeUseClassColor then
-                local _, cls = UnitClass("player")
-                local cc = RAID_CLASS_COLORS[cls]
+                local _, classTok = UnitClass("player")
+                local cc = RAID_CLASS_COLORS[classTok]
                 if cc then
                     cr, cg, callback = cc.r, cc.g, cc.b
                 end

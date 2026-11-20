@@ -425,10 +425,10 @@ local function EnableIconFreeMove(button)
         if not nat then
             return
         end
-        local es = self:GetEffectiveScale()
+        local effScale = self:GetEffectiveScale()
         local curX, curY = GetCursorPosition()
-        local nx = baseOX + (curX / es - startX)
-        local ny = baseOY + (curY / es - startY)
+        local nx = baseOX + (curX / effScale - startX)
+        local ny = baseOY + (curY / effScale - startY)
         self:ClearAllPoints()
         self:SetPoint(nat.edge, self:GetParent(), nat.edge, nx, nat.y + ny)
         SaveIconOffset(key, nx, ny)
@@ -443,9 +443,9 @@ local function EnableIconFreeMove(button)
             return
         end
         self._freeMoveJustDragged = true
-        local es = self:GetEffectiveScale()
+        local effScale = self:GetEffectiveScale()
         startX, startY = GetCursorPosition()
-        startX, startY = startX / es, startY / es
+        startX, startY = startX / effScale, startY / effScale
         baseOX, baseOY = GetIconOffset(key)
         self:SetScript("OnUpdate", FreeMoveOnUpdate)
     end)

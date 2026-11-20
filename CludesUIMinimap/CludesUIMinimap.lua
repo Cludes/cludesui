@@ -203,9 +203,9 @@ end
 -- borderColor > legacy borderR/G/B, so pre-style users keep their colour until they touch the new controls. Clock/zone edge boxes share this precedence.
 local function GetBorderStyleColor(conf)
     if conf.borderUseClassColor and CludesUI.GetClassColor then
-        local cc = CludesUI.GetClassColor(select(2, UnitClass("player")))
-        if cc then
-            return cc.r, cc.g, cc.b, conf.borderA or 1
+        local classColor = CludesUI.GetClassColor(select(2, UnitClass("player")))
+        if classColor then
+            return classColor.r, classColor.g, classColor.b, conf.borderA or 1
         end
     end
     if conf.useClassColor then

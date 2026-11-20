@@ -126,15 +126,15 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         _buffIdToCdSpec = specKey
         local map
         local gcs = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCategorySet
-        local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-        if gcs and gci then
+        local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+        if gcs and getCdInfo then
             -- 0-8 covers every Midnight CooldownViewerCategory value; the
             -- Hidden pseudo-categories are negative and excluded by the range.
             for category = 0, 8 do
                 local ids = gcs(category, true)
                 if ids then
                     for _, cdID in ipairs(ids) do
-                        local details = gci(cdID)
+                        local details = getCdInfo(cdID)
                         if details then
                             map = map or {}
                             if type(details.spellID) == "number" and details.spellID > 0 then
@@ -1777,8 +1777,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                             -- active since): fall back to cooldownInfo. Each
                             -- field is vetted on its own -- never `or`-chain
                             -- possibly-secret values (truthiness taints).
-                            local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-                            local details = gci and gci(cdID)
+                            local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+                            local details = getCdInfo and getCdInfo(cdID)
                             local raw2 = details and details.overrideSpellID
                             if
                                 not (
@@ -2116,8 +2116,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         -- + cooldownInfo fallback as the buff-bar preview.
                         local cdSpellId = mod._cdmCleanSidByCDID and mod._cdmCleanSidByCDID[cdClaim]
                         if not (type(cdSpellId) == "number" and cdSpellId > 0) then
-                            local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-                            local details = gci and gci(cdClaim)
+                            local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+                            local details = getCdInfo and getCdInfo(cdClaim)
                             local raw2 = details and details.overrideSpellID
                             if
                                 not (
@@ -2149,8 +2149,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         else
                             -- Tracked trinket row with its buff down reads no
                             -- spellID: show the item worn in that slot.
-                            local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-                            local details = gci and gci(cdClaim)
+                            local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+                            local details = getCdInfo and getCdInfo(cdClaim)
                             local eqSlot = details and details.equipSlot
                             if type(eqSlot) == "number" and not issecretvalue(eqSlot) then
                                 local itemId = GetInventoryItemID("player", eqSlot)

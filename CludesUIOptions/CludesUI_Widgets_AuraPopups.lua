@@ -725,7 +725,7 @@ function CludesUI.ShowSpellBlacklistPopup(options)
     end
     options = options or {}
     local fontFile = CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
-    local eg = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+    local brandGreen = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     local PW, PH = 320, 400
 
     -- Controller cursor loaded: the dimmer is a named Button, so the cursor can
@@ -816,7 +816,7 @@ function CludesUI.ShowSpellBlacklistPopup(options)
     addBtn:SetPoint("LEFT", addBox, "RIGHT", 8, 0)
     local addBg = addBtn:CreateTexture(nil, "BACKGROUND")
     addBg:SetAllPoints()
-    addBg:SetColorTexture(eg.r, eg.g, eg.b, 0.8)
+    addBg:SetColorTexture(brandGreen.r, brandGreen.g, brandGreen.b, 0.8)
     CludesUI.RoundBody(addBtn, addBg)
     local addLbl = addBtn:CreateFontString(nil, "OVERLAY")
     addLbl:SetFont(fontFile, 11, "")

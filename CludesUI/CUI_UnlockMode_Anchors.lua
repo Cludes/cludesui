@@ -1246,11 +1246,11 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if LM.isUnlocked or InCombatLockdown() then
                 return
             end
-            local adb = GetAnchorDB()
-            if not adb then
+            local anchorDB = GetAnchorDB()
+            if not anchorDB then
                 return
             end
-            for childBarKey, details in pairs(adb) do
+            for childBarKey, details in pairs(anchorDB) do
                 if
                     details.target
                     and details.mode ~= "POINT"

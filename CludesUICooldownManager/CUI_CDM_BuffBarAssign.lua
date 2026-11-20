@@ -78,11 +78,11 @@ local function MatchFrameToConfig(widget, conf)
     if not cooldownId then
         return false
     end
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not gci then
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    if not getCdInfo then
         return false
     end
-    local details = gci(cooldownId)
+    local details = getCdInfo(cooldownId)
     if not details then
         return false
     end
@@ -909,15 +909,15 @@ function mod.IsSpellInBuffBarViewer(spellId)
     if not viewerFrame or not viewerFrame.itemFramePool then
         return false
     end
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not gci then
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    if not getCdInfo then
         return false
     end
     local GetCanonical = mod.GetCanonicalSpellIDForFrame
     for widget in viewerFrame.itemFramePool:EnumerateActive() do
         local cooldownId = widget.cooldownID
         if cooldownId then
-            local details = gci(cooldownId)
+            local details = getCdInfo(cooldownId)
             if details and MatchesSID(details, spellId) then
                 return true
             end

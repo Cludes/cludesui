@@ -4546,10 +4546,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- (render-equivalent to nil, but blocks the inheritance --
                         -- the per-trinket exclusion). Mirrors the family SetOwn.
                         local function SetCasOwn(key, v2)
-                            local e = EnsureCAS()
-                            e[key] = v2
-                            if v2 == nil and e[key] ~= nil then
-                                e[key] = false
+                            local cas = EnsureCAS()
+                            cas[key] = v2
+                            if v2 == nil and cas[key] ~= nil then
+                                cas[key] = false
                             end
                         end
                         local hasActive = (customState.duration or 0) > 0
@@ -5138,8 +5138,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return customState[keyName]
                             end
                             access.set = function(keyName, value)
-                                local e = EnsureCAS()
-                                e[keyName] = value
+                                local cas = EnsureCAS()
+                                cas[keyName] = value
                             end
                             access.clear = function(keyName)
                                 -- Own clear; when a slot-stamp value would show
@@ -5301,8 +5301,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         MakeSubnavRow("Audio Effect on CD Ready", CDR_ITEMS, function()
                             return (customState and customState.cdReadySoundKey) or "none"
                         end, function(value)
-                            local e = EnsureCAS()
-                            e.cdReadySoundKey = (value ~= "none" and value) or nil
+                            local cas = EnsureCAS()
+                            cas.cdReadySoundKey = (value ~= "none" and value) or nil
                             if mod.FakeActive_Rearm then
                                 mod.FakeActive_Rearm()
                             end
@@ -5331,7 +5331,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                                 return "custom"
                             end, function(value)
-                                local e = EnsureCAS()
+                                local cas = EnsureCAS()
                                 if value == "class" then
                                     SetCasOwn("activeSwipeMode", nil)
                                     SetCasOwn("activeSwipeClassColor", true)
@@ -5343,11 +5343,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     SetCasOwn("activeSwipeClassColor", nil)
                                     -- Chained read: a slot-stamp color showing
                                     -- through is kept as the starting custom color.
-                                    if not e.activeSwipeR then
-                                        e.activeSwipeR = 1
-                                        e.activeSwipeG = 0.776
-                                        e.activeSwipeB = 0.376
-                                        e.activeSwipeA = 0.7
+                                    if not cas.activeSwipeR then
+                                        cas.activeSwipeR = 1
+                                        cas.activeSwipeG = 0.776
+                                        cas.activeSwipeB = 0.376
+                                        cas.activeSwipeA = 0.7
                                     end
                                 end
                             end, function()
@@ -5364,13 +5364,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     end, function()
                                         return (customState and customState.activeSwipeB) or 0.376
                                     end, function(red, green, blue)
-                                        local e = EnsureCAS()
-                                        e.activeSwipeMode = "custom"
+                                        local cas = EnsureCAS()
+                                        cas.activeSwipeMode = "custom"
                                         SetCasOwn("activeSwipeClassColor", nil)
-                                        e.activeSwipeR = red
-                                        e.activeSwipeG = green
-                                        e.activeSwipeB = blue
-                                        e.activeSwipeA = e.activeSwipeA or 0.7
+                                        cas.activeSwipeR = red
+                                        cas.activeSwipeG = green
+                                        cas.activeSwipeB = blue
+                                        cas.activeSwipeA = cas.activeSwipeA or 0.7
                                     end)
                                 end
                             end, {
@@ -5466,10 +5466,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             -- Chained read: a slot-stamp color showing through
                             -- is kept as the starting custom color.
                             if value == "custom" and not customState.glowColorR then
-                                local e = EnsureCAS()
-                                e.glowColorR = 1
-                                e.glowColorG = 0.788
-                                e.glowColorB = 0.137
+                                local cas = EnsureCAS()
+                                cas.glowColorR = 1
+                                cas.glowColorG = 0.788
+                                cas.glowColorB = 0.137
                             end
                         end, function()
                             return not (customState and customState.glowColor)
@@ -5482,11 +5482,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end, function()
                                     return (customState and customState.glowColorB) or 0.137
                                 end, function(red, green, blue)
-                                    local e = EnsureCAS()
-                                    e.glowColor = "custom"
-                                    e.glowColorR = red
-                                    e.glowColorG = green
-                                    e.glowColorB = blue
+                                    local cas = EnsureCAS()
+                                    cas.glowColor = "custom"
+                                    cas.glowColorR = red
+                                    cas.glowColorG = green
+                                    cas.glowColorB = blue
                                 end)
                             end
                         end, {

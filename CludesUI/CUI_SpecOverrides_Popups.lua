@@ -240,8 +240,8 @@ function CludesUI.SpecOverrides_SetupButton(button)
     local texture = button:CreateTexture(nil, "ARTWORK", nil, 3)
     texture:SetSize(11, 11)
     texture:SetPoint("CENTER", button, "CENTER", -3, -3)
-    local eg = CludesUI.CLUDES_GREEN
-    texture:SetColorTexture(eg.r, eg.g, eg.b, 1)
+    local brandGreen = CludesUI.CLUDES_GREEN
+    texture:SetColorTexture(brandGreen.r, brandGreen.g, brandGreen.b, 1)
     CludesUI.RegAccent({ type = "solid", obj = texture, a = 1 })
     button._tex = texture
     button:SetAlpha(0.9)

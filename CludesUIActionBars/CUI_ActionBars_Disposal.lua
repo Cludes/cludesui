@@ -120,8 +120,8 @@ do
     local _keepBlizz
     local function KeepBlizzBroadcasters()
         if _keepBlizz == nil then
-            local _, cls = UnitClass("player")
-            _keepBlizz = CludesUI.IS_FOREVER == true and (cls == "SHAMAN" or CludesUI.PadGamepadUI())
+            local _, classTok = UnitClass("player")
+            _keepBlizz = CludesUI.IS_FOREVER == true and (classTok == "SHAMAN" or CludesUI.PadGamepadUI())
         end
         return _keepBlizz
     end

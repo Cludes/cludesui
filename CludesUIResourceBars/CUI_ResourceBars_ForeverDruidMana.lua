@@ -562,15 +562,15 @@ end
 -- general settings; each falls back to a lookup when omitted.
 function mod.FDM_Apply(pb, pp, g)
     local ERB = mod.ERB
-    local p = ERB.db and ERB.db.profile
-    if not p then
+    local profile = ERB.db and ERB.db.profile
+    if not profile then
         return
     end
     pb = pb or S.pb or _G.ERB_PrimaryBar
-    pp = pp or _G._CURB_ResolvePowerCfg(p)
+    pp = pp or _G._CURB_ResolvePowerCfg(profile)
     local c = pp and pp.foreverDruidMana
     -- Power Type "Mana" keeps the Power Bar itself on mana: nothing to add.
-    local shade = p.primary and p.primary.powerTypeOverride
+    local shade = profile.primary and profile.primary.powerTypeOverride
     if not (pb and c and c.enabled and pp.enabled ~= false) or (shade and shade.foreverDruid) then
         Teardown()
         return
@@ -581,10 +581,10 @@ function mod.FDM_Apply(pb, pp, g)
         S.enabled = true
         evf:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
     end
-    g = g or p.general or EMPTY
+    g = g or profile.general or EMPTY
     local ori, inside = Layout(pb, pp, g, c)
     ApplyBorder(pp, inside)
-    local region, gr, b = ApplyLook(pp, g, p, ori)
+    local region, gr, b = ApplyLook(pp, g, profile, ori)
     ApplyText(c, region, gr, b)
     local wasLive = S.live
     Refresh()

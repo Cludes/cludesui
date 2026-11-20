@@ -850,8 +850,8 @@ end)--  Swiftmend by matching icon file ID. Re-scans on slot changes so bar
 ; ------------------------------------------------------------------------------- --  Swiftmend Brightness Fix (action bar scan): scans all EABButton slots for
 (function()
     local function ScanABSwiftmend()
-        local _, cls = UnitClass("player")
-        if cls ~= "DRUID" then
+        local _, classTok = UnitClass("player")
+        if classTok ~= "DRUID" then
             return
         end
         local hook = CludesUI and CludesUI._HookSwiftmendIcon

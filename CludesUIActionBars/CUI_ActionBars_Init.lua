@@ -392,16 +392,16 @@ function ABAR:OnFirstLogin()
     -- Capture Blizzard layout while bars are still visible
     local captured = CaptureBlizzardDefaults()
     for barId, payload in pairs(captured) do
-        local s = self.db.profile.bars[barId]
-        if s and payload then
+        local barCfg = self.db.profile.bars[barId]
+        if barCfg and payload then
             if payload.numIcons then
-                s.overrideNumIcons = payload.numIcons
+                barCfg.overrideNumIcons = payload.numIcons
             end
             if payload.numRows then
-                s.overrideNumRows = payload.numRows
+                barCfg.overrideNumRows = payload.numRows
             end
             if payload.orientation then
-                s.orientation = payload.orientation
+                barCfg.orientation = payload.orientation
             end
             if payload.blizzIconScale then
                 -- Convert Blizzard's icon scale to explicit button dimensions.
@@ -416,24 +416,24 @@ function ABAR:OnFirstLogin()
                         baseH = math.floor((btn1:GetHeight() or 45) + 0.5)
                     end
                 end
-                s.buttonWidth = math.floor(baseW * payload.blizzIconScale + 0.5)
-                s.buttonHeight = math.floor(baseH * payload.blizzIconScale + 0.5)
+                barCfg.buttonWidth = math.floor(baseW * payload.blizzIconScale + 0.5)
+                barCfg.buttonHeight = math.floor(baseH * payload.blizzIconScale + 0.5)
             end
             if payload.alwaysShowButtons ~= nil then
-                s.alwaysShowButtons = payload.alwaysShowButtons
+                barCfg.alwaysShowButtons = payload.alwaysShowButtons
             end
             -- Visibility: 3=Hidden, 1=InCombat, 2=OutOfCombat, 0=Always
             -- Keep barVisibility and boolean flags in sync so the
             -- options dropdown reflects the actual state.
             if payload.visibility then
                 if payload.visibility == 3 then
-                    ABAR.VisibilityCompat.ApplyMode(s, "never")
+                    ABAR.VisibilityCompat.ApplyMode(barCfg, "never")
                 elseif payload.visibility == 1 then
-                    ABAR.VisibilityCompat.ApplyMode(s, "in_combat")
+                    ABAR.VisibilityCompat.ApplyMode(barCfg, "in_combat")
                 elseif payload.visibility == 2 then
-                    ABAR.VisibilityCompat.ApplyMode(s, "out_of_combat")
+                    ABAR.VisibilityCompat.ApplyMode(barCfg, "out_of_combat")
                 else
-                    ABAR.VisibilityCompat.ApplyMode(s, "always")
+                    ABAR.VisibilityCompat.ApplyMode(barCfg, "always")
                 end
             end
             if payload.point then
@@ -450,8 +450,8 @@ function ABAR:OnFirstLogin()
     -- Action Bar 1's end caps go to the outer ends of a row of bars Blizzard
     -- placed directly beside it (WoW Forever: the micro menu and bags).
     do
-        local p = self.db.profile
-        p.endCapSpanLeft, p.endCapSpanRight = mod.AB_CaptureCapSpan(captured)
+        local profile = self.db.profile
+        profile.endCapSpanLeft, profile.endCapSpanRight = mod.AB_CaptureCapSpan(captured)
     end
 
     -- WoW Forever keeps Blizzard's XP / reputation bars (useBlizzardDataBars),
@@ -515,9 +515,9 @@ function ABAR:OnFirstLogin()
     -- new character, no pet out) must not stick. Through ApplyMode, since
     -- barVisibility wins over the legacy booleans.
     for _, key in ipairs({ "StanceBar", "PetBar" }) do
-        local s = self.db.profile.bars[key]
-        if s then
-            ABAR.VisibilityCompat.ApplyMode(s, "always")
+        local barCfg = self.db.profile.bars[key]
+        if barCfg then
+            ABAR.VisibilityCompat.ApplyMode(barCfg, "always")
         end
     end
 

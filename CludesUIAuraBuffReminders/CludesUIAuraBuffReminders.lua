@@ -293,8 +293,8 @@ local function ResolveGlowTint(p)
     end
     EnsureGlowModeMigrated(p)
     if p.glowColorMode == "class" then
-        local cc = CludesUI.GetClassColor(CludesUI._playerClass)
-        return cc.r, cc.g, cc.b
+        local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+        return classColor.r, classColor.g, classColor.b
     end
     if p.glowColorMode ~= "custom" then
         return nil
@@ -352,8 +352,8 @@ end
 local _cachedPlayerClass
 local function GetPlayerClass()
     if not _cachedPlayerClass then
-        local _, cls = UnitClass("player")
-        _cachedPlayerClass = cls
+        local _, classTok = UnitClass("player")
+        _cachedPlayerClass = classTok
     end
     return _cachedPlayerClass
 end

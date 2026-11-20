@@ -77,8 +77,8 @@ local function IsSealsCd(cdID)
     end
     local known = S.cd[cdID]
     if known == nil then
-        local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-        known = IsSealsInfo(gci and gci(cdID)) and true or false
+        local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+        known = IsSealsInfo(getCdInfo and getCdInfo(cdID)) and true or false
         S.cd[cdID] = known
     end
     return known

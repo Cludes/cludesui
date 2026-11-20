@@ -737,8 +737,8 @@ function mod.EnumerateCDMSettingsCatalog(wantSet)
     if not ordered then
         return nil
     end
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not gci then
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    if not getCdInfo then
         return nil
     end
 
@@ -753,7 +753,7 @@ function mod.EnumerateCDMSettingsCatalog(wantSet)
             -- Same shape the migration and spell caches use. Prefer override
             -- only when the player actually has it -- CDM info can report a
             -- stale override after the talent providing it is gone.
-            local details = gci(cooldownId)
+            local details = getCdInfo(cooldownId)
             local spellRef
             if details then
                 local ovr = details.overrideSpellID
@@ -782,13 +782,13 @@ function mod.IsCDMTrackedCooldown(spellId)
     if not _IsUsableSID(spellId) then
         return false
     end
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
     local set = {}
     local function Add(cooldownId, spellRef)
         if _IsUsableSID(spellRef) then
             set[spellRef] = true
         end
-        local details = gci and _IsUsableSID(cooldownId) and gci(cooldownId)
+        local details = getCdInfo and _IsUsableSID(cooldownId) and getCdInfo(cooldownId)
         if details then
             if _IsUsableSID(details.spellID) then
                 set[details.spellID] = true
@@ -1125,16 +1125,16 @@ function mod.MigrateSpecToBarFilterModelV6()
     end
 
     local gcs = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCategorySet
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
     local evc = Enum and Enum.CooldownViewerCategory
-    if gcs and gci and evc then
+    if gcs and getCdInfo and evc then
         -- Full CD/utility category set so SpecAgnosticEssential/EquipSlotEssential
         -- entries become ghost/migration candidates alongside Essential/Utility.
         for cat in pairs(mod.CDM_ICON_CD_CATS) do
             local cdIDs = gcs(cat, true)
             if cdIDs then
                 for _, cooldownId in ipairs(cdIDs) do
-                    local details = gci(cooldownId)
+                    local details = getCdInfo(cooldownId)
                     if details then
                         local spellRef = details.overrideSpellID or details.spellID
                         if _IsUsableSID(spellRef) then
@@ -1607,8 +1607,8 @@ end
 --- nor be told apart from an equipment use-spell by the prune; its cooldownID
 --- is fixed per equipment slot, so the usual cooldownID drift does not apply.
 local function IsTrackedTrinketRow(cooldownId)
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    local details = gci and gci(cooldownId)
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    local details = getCdInfo and getCdInfo(cooldownId)
     local cat = details and details.category
     if type(cat) ~= "number" or (issecretvalue and issecretvalue(cat)) then
         return false
@@ -2871,11 +2871,11 @@ function mod.PruneEquipmentBuffRows()
     -- source below needs neither and must run regardless.
     local entryList = mod._cdmDataLoaded and mod.EnumerateCDMViewerSpells and mod.EnumerateCDMViewerSpells(true)
         or nil
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if entryList and entryList[1] and gci then
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    if entryList and entryList[1] and getCdInfo then
         for _, entry in ipairs(entryList) do
             if entry.sid and entry.cdID then
-                local details = gci(entry.cdID)
+                local details = getCdInfo(entry.cdID)
                 if details and details.equipSlot then
                     if details.category == eqTracked then
                         StoreVariantValue(exempt, entry.sid, true, false)

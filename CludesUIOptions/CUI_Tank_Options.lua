@@ -711,10 +711,10 @@ CludesUI.AtOptionsLogin(function()
                     return
                 end
                 spellRef = math.floor(spellRef)
-                local d = DB()
-                d.spellAlerts = d.spellAlerts or {}
-                local existing = d.spellAlerts[spellRef]
-                d.spellAlerts[spellRef] = {
+                local profile = DB()
+                profile.spellAlerts = profile.spellAlerts or {}
+                local existing = profile.spellAlerts[spellRef]
+                profile.spellAlerts[spellRef] = {
                     enabled = true,
                     threshold = (existing and existing.threshold) or 1,
                     preset = mod.SpellData.IsPreset(spellRef) or nil,

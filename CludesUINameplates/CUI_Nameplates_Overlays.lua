@@ -229,8 +229,8 @@ do
     -- Spec + talent watcher, built ONLY for a class that can have an execute. Talents cannot
     -- change in combat, so these events cost nothing at runtime.
     do
-        local _, cls = UnitClass("player")
-        if EXEC_CLASSES[cls] then
+        local _, classTok = UnitClass("player")
+        if EXEC_CLASSES[classTok] then
             local watcher = CreateFrame("Frame")
             watcher:RegisterEvent("PLAYER_LOGIN")
             watcher:RegisterEvent("PLAYER_ENTERING_WORLD")

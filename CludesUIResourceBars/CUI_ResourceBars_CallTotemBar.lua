@@ -537,12 +537,12 @@ local function ReleaseBarMouse()
 end
 
 Refresh = function()
-    local c = P()
-    if not (owned and c) then
+    local profile = P()
+    if not (owned and profile) then
         return
     end
-    Layout(c)
-    SkinAll(c)
+    Layout(profile)
+    SkinAll(profile)
 end
 
 local function Release()
@@ -585,8 +585,8 @@ local function Release()
 end
 
 function mod.CT_Apply()
-    local c = P()
-    if not (c and c.enabled) then
+    local profile = P()
+    if not (profile and profile.enabled) then
         Release()
         -- In combat Release waits for regen with the bar still pinned to the
         -- holder (which that makes protected); its queued pass hides it then.
@@ -607,9 +607,9 @@ function mod.CT_Apply()
             _G._CURB_RegisterUnlock()
         end
     end
-    holderFrame:SetSize(HolderSize(c))
+    holderFrame:SetSize(HolderSize(profile))
     holderFrame:Show()
-    PlaceHolder(c)
+    PlaceHolder(profile)
     Hook()
     if not owned then
         if not home then
@@ -635,34 +635,34 @@ function mod.CT_MakeUnlockElement(MK)
         if not anchorPoint then
             return
         end
-        local c = P()
-        if not c then
+        local profile = P()
+        if not profile then
             return
         end
-        c.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
+        profile.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
         if not CludesUI._unlockActive and holderFrame then
             holderFrame:ClearAllPoints()
             holderFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
         end
     end
     local function load()
-        local c = P()
-        local place = c and c.unlockPos
+        local profile = P()
+        local place = profile and profile.unlockPos
         if not place then
             return nil
         end
         return { point = place.point, relPoint = place.relPoint or place.point, x = place.x, y = place.y }
     end
     local function clear()
-        local c = P()
-        if not c then
+        local profile = P()
+        if not profile then
             return
         end
-        c.unlockPos = nil
+        profile.unlockPos = nil
     end
     local function apply()
-        local c = P()
-        local place = c and c.unlockPos
+        local profile = P()
+        local place = profile and profile.unlockPos
         if not (place and holderFrame) then
             return
         end
@@ -678,8 +678,8 @@ function mod.CT_MakeUnlockElement(MK)
         noResize = true,
         noAnchorTarget = true,
         isHidden = function()
-            local c = P()
-            return not (c and c.enabled)
+            local profile = P()
+            return not (profile and profile.enabled)
         end,
         getFrame = function()
             return holderFrame

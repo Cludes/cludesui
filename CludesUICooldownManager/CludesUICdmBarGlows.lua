@@ -899,8 +899,8 @@ UpdateOverlayVisuals = function()
                     end
                     local cr, cg, callback
                     if record.colorMode == "class" then
-                        local cc = CludesUI.GetClassColor(CludesUI._playerClass)
-                        cr, cg, callback = cc.r, cc.g, cc.b
+                        local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+                        cr, cg, callback = classColor.r, classColor.g, classColor.b
                     elseif record.colorMode == "custom" and record.glowColor then
                         cr = record.glowColor.r or 1
                         cg = record.glowColor.g or 0.788

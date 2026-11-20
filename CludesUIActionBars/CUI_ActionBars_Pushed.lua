@@ -389,12 +389,12 @@ mod._ixRole = function(button, s, role, enabled)
 end
 
 function ABAR:ApplyPushedTextures()
-    local p = self.db.profile
+    local profile = self.db.profile
     local abStyle = mod.AB_Style()
-    local pType = p.pushedTextureType or 2
-    local useCC = p.pushedUseClassColor
-    local customC = p.pushedCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
-    local brdSize = p.pushedBorderSize or 4
+    local pType = profile.pushedTextureType or 2
+    local useCC = profile.pushedUseClassColor
+    local customC = profile.pushedCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
+    local brdSize = profile.pushedBorderSize or 4
 
     local cr, cg, callback = customC.r, customC.g, customC.b
     if useCC then
@@ -410,7 +410,7 @@ function ABAR:ApplyPushedTextures()
     -- Match Bar Border (pushed): eligible bars trade the flat edges for the
     -- button's own border copy, tinted with this colour and its alpha. Once a
     -- copy exists (ixEver), every path that does not arm the role disarms it.
-    local ixOn = abStyle == "cui" and (mod._ixRolesOn(p))
+    local ixOn = abStyle == "cui" and (mod._ixRolesOn(profile))
     if ixOn then
         local t = mod._ixPushC
         t[1], t[2], t[3], t[4] = cr, cg, callback, customC.a or 1
@@ -420,7 +420,7 @@ function ABAR:ApplyPushedTextures()
     for _, details in ipairs(BAR_CONFIG) do
         local buttons = barButtons[details.key]
         if buttons then
-            local s = p.bars[details.key]
+            local s = profile.bars[details.key]
             local ixBar = ixOn and mod._ixBarEligible(details.key)
             for index = 1, #buttons do
                 local button = buttons[index]
@@ -628,12 +628,12 @@ do
 end
 
 function ABAR:ApplyHighlightTextures()
-    local p = self.db.profile
+    local profile = self.db.profile
     local abStock = mod.AB_Style() ~= "cui"
-    local hType = p.highlightTextureType or 2
-    local useCC = p.highlightUseClassColor
-    local customC = p.highlightCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
-    local brdSize = p.highlightBorderSize or 4
+    local hType = profile.highlightTextureType or 2
+    local useCC = profile.highlightUseClassColor
+    local customC = profile.highlightCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
+    local brdSize = profile.highlightBorderSize or 4
 
     local cr, cg, callback = customC.r, customC.g, customC.b
     if useCC then
@@ -652,7 +652,7 @@ function ABAR:ApplyHighlightTextures()
     -- up a colour change here. The tint is refreshed on every pass, options
     -- off included: the Spell Cast Highlight toggles arm the cast role through
     -- ApplyCheckedTextures alone, which paints with this slot as it stands.
-    local _, ixOn, ixCast = mod._ixRolesOn(p)
+    local _, ixOn, ixCast = mod._ixRolesOn(profile)
     ixOn = ixOn and not abStock
     do
         local t = mod._ixHlC
@@ -676,7 +676,7 @@ function ABAR:ApplyHighlightTextures()
         else
             local buttons = barButtons[details.key]
             if buttons then
-                local s = p.bars[details.key]
+                local s = profile.bars[details.key]
                 local ixBar = ixOn and mod._ixBarEligible(details.key)
                 for index = 1, #buttons do
                     local button = buttons[index]

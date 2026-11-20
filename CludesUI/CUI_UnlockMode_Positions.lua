@@ -2411,11 +2411,11 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- True if a given element key has an anchor relationship. ReloadFrames uses it to
     -- skip positioning anchored frames (the anchor system is their sole authority).
     CludesUI.IsAnchored = function(key)
-        local adb = GetAnchorDB()
-        if not adb then
+        local anchorDB = GetAnchorDB()
+        if not anchorDB then
             return false
         end
-        local details = adb[key]
+        local details = anchorDB[key]
         return details and details.target and true or false
     end
 
@@ -2441,8 +2441,8 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- Reapply ALL unlock-mode anchors. Called when a target frame moves so
     -- anchored children follow. Computes positions from anchor offsets.
     CludesUI.ReapplyAllUnlockAnchors = function()
-        local adb = GetAnchorDB()
-        if not adb then
+        local anchorDB = GetAnchorDB()
+        if not anchorDB then
             return
         end
 
@@ -2458,8 +2458,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                 return 0
             end -- cycle guard
             visiting[k] = true
-            local details = adb[k]
-            if details and details.target and adb[details.target] then
+            local details = anchorDB[k]
+            if details and details.target and anchorDB[details.target] then
                 depth[k] = 1 + GetDepth(details.target, visiting)
             else
                 depth[k] = 0 -- target is a root (not in adb) or missing
@@ -2469,7 +2469,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         end
 
         local sequence = {}
-        for childBarKey in pairs(adb) do
+        for childBarKey in pairs(anchorDB) do
             GetDepth(childBarKey, {})
             sequence[#sequence + 1] = childBarKey
         end
@@ -2478,7 +2478,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         end)
 
         for _, childBarKey in ipairs(sequence) do
-            local details = adb[childBarKey]
+            local details = anchorDB[childBarKey]
             if
                 details
                 and details.target
@@ -2504,8 +2504,8 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- authoritative-pass trigger (ns._spellsReadyForApply) so it fires once at the same
     -- known-good moment used to retrigger width matches. Same dependency-sorted order; skips combat-protected children automatically.
     CludesUI.ReapplyAllUnlockAnchorsForced = function()
-        local adb = GetAnchorDB()
-        if not adb then
+        local anchorDB = GetAnchorDB()
+        if not anchorDB then
             return
         end
 
@@ -2519,8 +2519,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                 return 0
             end
             visiting[k] = true
-            local details = adb[k]
-            if details and details.target and adb[details.target] then
+            local details = anchorDB[k]
+            if details and details.target and anchorDB[details.target] then
                 depth[k] = 1 + GetDepth(details.target, visiting)
             else
                 depth[k] = 0
@@ -2530,7 +2530,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         end
 
         local sequence = {}
-        for childBarKey in pairs(adb) do
+        for childBarKey in pairs(anchorDB) do
             GetDepth(childBarKey, {})
             sequence[#sequence + 1] = childBarKey
         end
@@ -2540,7 +2540,7 @@ CUI_NS.unlockParts.Positions = function(LM)
 
         local inCombat = InCombatLockdown()
         for _, childBarKey in ipairs(sequence) do
-            local details = adb[childBarKey]
+            local details = anchorDB[childBarKey]
             if details and details.target then
                 local childFrame = LM.GetBarFrame(childBarKey)
                 local targetBar = LM.GetBarFrame(details.target)
@@ -2584,8 +2584,8 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- ApplyAnchorPosition's tCX/tCY so a captured value is directly comparable to the
     -- runtime target center. CDM savePos stores it as the follow baseline (sp.tgtx/.tgty). nil if no anchor target or no screen bounds.
     function CludesUI.GetAnchorTargetCenterUI(childBarKey)
-        local adb = GetAnchorDB()
-        local details = adb and adb[childBarKey]
+        local anchorDB = GetAnchorDB()
+        local details = anchorDB and anchorDB[childBarKey]
         if not details or not details.target then
             return nil
         end
@@ -2607,8 +2607,8 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- store them as sp.tgtL/.tgtR/.tgtT/.tgtB (follow baselines). Corner-follow gates on
     -- a CDM target, but StanceBar side-follow uses any target type, so edges are captured unconditionally. nil with no anchor target or screen bounds.
     function CludesUI.GetAnchorTargetEdgesUI(childBarKey)
-        local adb = GetAnchorDB()
-        local details = adb and adb[childBarKey]
+        local anchorDB = GetAnchorDB()
+        local details = anchorDB and anchorDB[childBarKey]
         if not details or not details.target then
             return nil
         end
@@ -2630,11 +2630,11 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- reads current screen positions and recomputes offsets so anchors stay correct for
     -- future drags. Skips offsets that already have valid values -- reading live bounds adds floating-point noise (SetPoint->GetLeft round-trip) and drifts 1px.
     CludesUI.ResyncAnchorOffsets = function()
-        local adb = GetAnchorDB()
-        if not adb then
+        local anchorDB = GetAnchorDB()
+        if not anchorDB then
             return
         end
-        for childBarKey, details in pairs(adb) do
+        for childBarKey, details in pairs(anchorDB) do
             if details.target and LM.GetBarFrame(childBarKey) and LM.GetBarFrame(details.target) then
                 -- Only resync offsets if they're missing (legacy data or first setup).
                 -- Existing offsets from unlock mode are authoritative.
@@ -3100,8 +3100,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                     -- Also skip elements anchored via the unlock mode anchor system
                     local unlockAnchored = false
                     if not addonAnchored then
-                        local adb = GetAnchorDB()
-                        local anchorInfo = adb and adb[key]
+                        local anchorDB = GetAnchorDB()
+                        local anchorInfo = anchorDB and anchorDB[key]
                         if anchorInfo and anchorInfo.target then
                             unlockAnchored = true
                         end
@@ -3134,8 +3134,8 @@ CUI_NS.unlockParts.Positions = function(LM)
 
         -- Reapply all anchor positions sorted by dependency depth.
         -- Parents must be positioned before children so children read correct bounds.
-        local adb = GetAnchorDB()
-        if adb then
+        local anchorDB = GetAnchorDB()
+        if anchorDB then
             -- Build dependency-sorted list: elements with no anchored parent first
             local sorted = {}
             local visited = {}
@@ -3148,13 +3148,13 @@ CUI_NS.unlockParts.Positions = function(LM)
                 end -- circular guard
                 visited[childBarKey] = true
                 -- If our target is also anchored, process it first
-                local targetInfo = adb[details.target]
+                local targetInfo = anchorDB[details.target]
                 if targetInfo and targetInfo.target and not visited[details.target] then
                     addWithDeps(details.target, targetInfo, depth + 1)
                 end
                 sorted[#sorted + 1] = { key = childBarKey, info = details }
             end
-            for childBarKey, details in pairs(adb) do
+            for childBarKey, details in pairs(anchorDB) do
                 if details.target then
                     addWithDeps(childBarKey, details, 0)
                 end
@@ -3244,8 +3244,8 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- Global check: is this unlock key anchored to another element?
     -- Any addon can call this to decide whether to skip positioning in BuildBars.
     function CludesUI.IsUnlockAnchored(unlockKey)
-        local adb = GetAnchorDB()
-        local anchorInfo = adb and adb[unlockKey]
+        local anchorDB = GetAnchorDB()
+        local anchorInfo = anchorDB and anchorDB[unlockKey]
         return anchorInfo and anchorInfo.target and true or false
     end
 
@@ -3253,8 +3253,8 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- position (see _anchorExtraOffset), that change must be pushed through the anchor
     -- rather than applied to the frame directly.
     function CludesUI.ReapplyUnlockAnchor(unlockKey)
-        local adb = GetAnchorDB()
-        local anchorInfo = adb and adb[unlockKey]
+        local anchorDB = GetAnchorDB()
+        local anchorInfo = anchorDB and anchorDB[unlockKey]
         if not (anchorInfo and anchorInfo.target) then
             return
         end

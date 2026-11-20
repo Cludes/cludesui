@@ -3847,12 +3847,12 @@ CludesUI.AtOptionsLogin(function()
         local dark = CludesUI.DARK_BG
         local bg = CludesUI.SolidTex(button, "BACKGROUND", dark.r, dark.g, dark.b, 0.92)
         bg:SetAllPoints()
-        local eg = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
-        local border = CludesUI.MakeRoundedBorder(button, eg.r, eg.g, eg.b, 0.7, bg)
+        local brandGreen = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
+        local border = CludesUI.MakeRoundedBorder(button, brandGreen.r, brandGreen.g, brandGreen.b, 0.7, bg)
         local label = button:CreateFontString(nil, "OVERLAY")
         label:SetPoint("CENTER")
         label:SetFont(fontPath, 13, GetABROptOutline())
-        label:SetTextColor(eg.r, eg.g, eg.b, 0.7)
+        label:SetTextColor(brandGreen.r, brandGreen.g, brandGreen.b, 0.7)
         label:SetText(CludesUI.L(text))
         local lerp = CludesUI.lerp
         local FADE = 0.1
@@ -3864,8 +3864,8 @@ CludesUI.AtOptionsLogin(function()
                 progress = target
                 self:SetScript("OnUpdate", nil)
             end
-            label:SetTextColor(eg.r, eg.g, eg.b, lerp(0.7, 1, progress))
-            border:SetColor(eg.r, eg.g, eg.b, lerp(0.7, 1, progress))
+            label:SetTextColor(brandGreen.r, brandGreen.g, brandGreen.b, lerp(0.7, 1, progress))
+            border:SetColor(brandGreen.r, brandGreen.g, brandGreen.b, lerp(0.7, 1, progress))
         end
         button:SetScript("OnEnter", function(self)
             target = 1
@@ -3998,7 +3998,7 @@ CludesUI.AtOptionsLogin(function()
             local ITEM_H = 28
             local dialog, child, searchBox, placeholder, scrollTo =
                 TRSearchPopup("zone", zoneBtn, DD_W, math.min(#zones * ITEM_H + 8, 300), fontPath)
-            local eg = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
+            local brandGreen = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
             local rows = {}
             for i, z in ipairs(zones) do
                 local line = TRPopupRow(child, i, ITEM_H)
@@ -4012,7 +4012,7 @@ CludesUI.AtOptionsLogin(function()
                 local check = boxFrame:CreateTexture(nil, "OVERLAY")
                 check:SetSize(10, 10)
                 check:SetPoint("CENTER")
-                check:SetColorTexture(eg.r, eg.g, eg.b, 1)
+                check:SetColorTexture(brandGreen.r, brandGreen.g, brandGreen.b, 1)
                 CludesUI.RoundBody(boxFrame, check, 2)
                 check:Hide()
                 line._cbCheck = check

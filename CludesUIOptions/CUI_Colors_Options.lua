@@ -299,12 +299,12 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             tooltip = "Fill color and opacity of Dark Mode bars.",
             tooltipOnControl = "Fill Opacity",
             getValue = function()
-                local d = CludesUI.GetDarkModeDB()
-                return math.floor((d.fillA or DM_DEF.fillA) * 100 + 0.5)
+                local darkDB = CludesUI.GetDarkModeDB()
+                return math.floor((darkDB.fillA or DM_DEF.fillA) * 100 + 0.5)
             end,
             setValue = function(val)
-                local d = CludesUI.GetDarkModeDB()
-                d.fillA = val / 100
+                local darkDB = CludesUI.GetDarkModeDB()
+                darkDB.fillA = val / 100
                 CludesUI.RefreshDarkMode()
             end,
         }, {
@@ -317,12 +317,12 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             tooltip = "Color and opacity behind Dark Mode bars.",
             tooltipOnControl = "Background Opacity",
             getValue = function()
-                local d = CludesUI.GetDarkModeDB()
-                return math.floor((d.bgA or DM_DEF.bgA) * 100 + 0.5)
+                local darkDB = CludesUI.GetDarkModeDB()
+                return math.floor((darkDB.bgA or DM_DEF.bgA) * 100 + 0.5)
             end,
             setValue = function(val)
-                local d = CludesUI.GetDarkModeDB()
-                d.bgA = val / 100
+                local darkDB = CludesUI.GetDarkModeDB()
+                darkDB.bgA = val / 100
                 CludesUI.RefreshDarkMode()
             end,
         })
@@ -394,12 +394,12 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 {
                     tooltip = "Fill Color",
                     getValue = function()
-                        local d = CludesUI.GetDarkModeDB()
-                        return d.fillR or DM_DEF.fillR, d.fillG or DM_DEF.fillG, d.fillB or DM_DEF.fillB, 1
+                        local darkDB = CludesUI.GetDarkModeDB()
+                        return darkDB.fillR or DM_DEF.fillR, darkDB.fillG or DM_DEF.fillG, darkDB.fillB or DM_DEF.fillB, 1
                     end,
                     setValue = function(red, green, blue)
-                        local d = CludesUI.GetDarkModeDB()
-                        d.fillR, d.fillG, d.fillB = red, green, blue
+                        local darkDB = CludesUI.GetDarkModeDB()
+                        darkDB.fillR, darkDB.fillG, darkDB.fillB = red, green, blue
                         CludesUI.RefreshDarkMode()
                     end,
                 },
@@ -408,12 +408,12 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 {
                     tooltip = "Background Color",
                     getValue = function()
-                        local d = CludesUI.GetDarkModeDB()
-                        return d.bgR or DM_DEF.bgR, d.bgG or DM_DEF.bgG, d.bgB or DM_DEF.bgB, 1
+                        local darkDB = CludesUI.GetDarkModeDB()
+                        return darkDB.bgR or DM_DEF.bgR, darkDB.bgG or DM_DEF.bgG, darkDB.bgB or DM_DEF.bgB, 1
                     end,
                     setValue = function(red, green, blue)
-                        local d = CludesUI.GetDarkModeDB()
-                        d.bgR, d.bgG, d.bgB = red, green, blue
+                        local darkDB = CludesUI.GetDarkModeDB()
+                        darkDB.bgR, darkDB.bgG, darkDB.bgB = red, green, blue
                         CludesUI.RefreshDarkMode()
                     end,
                 },

@@ -26,8 +26,8 @@ local function DB()
 end
 
 local function MA()
-    local d = DB()
-    return d and d.profile and d.profile.movementAlert
+    local profile = DB()
+    return profile and profile.profile and profile.profile.movementAlert
 end
 
 local function Refresh()

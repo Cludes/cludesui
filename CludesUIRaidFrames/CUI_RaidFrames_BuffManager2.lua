@@ -306,9 +306,9 @@ end
 
 -- Snapshot of the live v2 fork data for layer harvests.
 function _G._CURF_BM2HarvestFork()
-    local b = Store()
-    if not b then return nil end
-    return { specs = LegacyCopy(b.specs), seeded = LegacyCopy(b.seeded) }
+    local store = Store()
+    if not store then return nil end
+    return { specs = LegacyCopy(store.specs), seeded = LegacyCopy(store.seeded) }
 end
 
 -- Preset v2 payloads for a fork created from scratch (SpecOverrides' create
@@ -338,18 +338,18 @@ end
 -- layers in place on first touch. layer.bm2 doubles as the conversion marker:
 -- layers already carrying v2 data are never re-derived from legacy fields.
 function _G._CURF_BM2ApplyLayer(layer)
-    local b = Store()
-    if not b or not layer then return end
+    local store = Store()
+    if not store or not layer then return end
     if not layer.bm2 then
         -- WoW Forever never converts legacy layers: it starts blank there.
         if not (FVBW and FVBW.BlankLayer(layer)) then
             layer.bm2 = mod.BM2_ConvertLegacySet(layer.indicators, layer.displayMode)
         end
     end
-    wipe(b.specs)
-    for k, v in pairs(layer.bm2.specs or {}) do b.specs[k] = LegacyCopy(v) end
-    wipe(b.seeded)
-    for k, v in pairs(layer.bm2.seeded or {}) do b.seeded[k] = v end
+    wipe(store.specs)
+    for k, v in pairs(layer.bm2.specs or {}) do store.specs[k] = LegacyCopy(v) end
+    wipe(store.seeded)
+    for k, v in pairs(layer.bm2.seeded or {}) do store.seeded[k] = v end
     -- WoW Forever: the starter seed reads which layer live now holds
     -- (CludesUI_Migration.lua).
     if FVBW then FVBW.Painted(layer) end
@@ -374,16 +374,16 @@ end
 -- Seeds missing preset filters and merges only NEW curated ids: an id the
 -- filter has already seen keeps the user's checkbox state.
 local function EnsureFilters()
-    local b = Store()
-    if not b then return nil end
+    local store = Store()
+    if not store then return nil end
     for idx = 1, #PRESET_FILTERS do
         local def = PRESET_FILTERS[idx]
-        local f = FindPreset(b, def.key)
+        local f = FindPreset(store, def.key)
         if not f then
-            f = { id = b.filters.nextId, name = def.name, preset = def.key,
+            f = { id = store.filters.nextId, name = def.name, preset = def.key,
                 spells = {}, custom = {} }
-            b.filters.nextId = b.filters.nextId + 1
-            b.filters.list[#b.filters.list + 1] = f
+            store.filters.nextId = store.filters.nextId + 1
+            store.filters.list[#store.filters.list + 1] = f
         end
         local curated = DEFAULT_FILTER_SPELLS[def.key]
         if curated then
@@ -413,10 +413,10 @@ local function EnsureFilters()
     -- WoW Forever: the starter seed, decided once per store now that the
     -- preset filters exist ("fvBmSeed" is its frozen mark,
     -- CludesUI_Migration.lua). A marked store costs one field read.
-    if FVBW and b.fvBmSeed == nil and FVBW.SeedStarter(P(), b) then
+    if FVBW and store.fvBmSeed == nil and FVBW.SeedStarter(P(), store) then
         mod.BM2_Invalidate()
     end
-    return b
+    return store
 end
 
 -- The filter list every picker and editor shows: the stored list itself, or,
@@ -436,10 +436,10 @@ end
 -- nil for a preset only the other client offers: resolution, pickers and
 -- colors treat an assignment to it as a dangling id.
 function mod.BM2_GetFilter(ident)
-    local b = Store()
-    if not b then return nil end
-    for idx = 1, #b.filters.list do
-        local f = b.filters.list[idx]
+    local store = Store()
+    if not store then return nil end
+    for idx = 1, #store.filters.list do
+        local f = store.filters.list[idx]
         if f.id == ident then
             if OtherClientPreset(f) then return nil end
             return f
@@ -452,10 +452,10 @@ end
 -- dangling ones included. Always false while this client offers every preset.
 function mod.BM2_HiddenPresetFilter(ident)
     if next(OTHER_ONLY_PRESETS) == nil then return false end
-    local b = Store()
-    if not b then return false end
-    for idx = 1, #b.filters.list do
-        local f = b.filters.list[idx]
+    local store = Store()
+    if not store then return false end
+    for idx = 1, #store.filters.list do
+        local f = store.filters.list[idx]
         if f.id == ident then return OtherClientPreset(f) end
     end
     return false
@@ -534,12 +534,12 @@ function mod.BM2_SquareFilterColors(ind)
 end
 
 function mod.BM2_AddFilter(name)
-    local b = Store()
-    if not b then return nil end
-    local f = { id = b.filters.nextId, name = name or "New Filter",
+    local store = Store()
+    if not store then return nil end
+    local f = { id = store.filters.nextId, name = name or "New Filter",
         spells = {}, custom = {} }
-    b.filters.nextId = b.filters.nextId + 1
-    b.filters.list[#b.filters.list + 1] = f
+    store.filters.nextId = store.filters.nextId + 1
+    store.filters.list[#store.filters.list + 1] = f
     mod.BM2_Invalidate()
     return f
 end
@@ -552,15 +552,15 @@ end
 -- Presets cannot be deleted; deleting a custom filter also strips its
 -- assignments from every indicator on every spec.
 function mod.BM2_DeleteFilter(ident)
-    local b = Store()
-    if not b then return end
-    for idx = #b.filters.list, 1, -1 do
-        local f = b.filters.list[idx]
+    local store = Store()
+    if not store then return end
+    for idx = #store.filters.list, 1, -1 do
+        local f = store.filters.list[idx]
         if f.id == ident and not f.preset then
-            table.remove(b.filters.list, idx)
+            table.remove(store.filters.list, idx)
         end
     end
-    for _, specInfo in pairs(b.specs) do
+    for _, specInfo in pairs(store.specs) do
         for jdx = 1, #specInfo.inds do
             local ind = specInfo.inds[jdx]
             if ind.filters then ind.filters[ident] = nil end
@@ -804,8 +804,8 @@ end
 -- it, and re-enabling is a pure key delete.
 -------------------------------------------------------------------------------
 function mod.BM2_InhDisabled(concreteKey, groupKey, ident)
-    local b = Store()
-    local specInfo = b and concreteKey and b.specs[concreteKey]
+    local store = Store()
+    local specInfo = store and concreteKey and store.specs[concreteKey]
     local dis = specInfo and specInfo.inhDis
     return (dis and dis[groupKey .. ":" .. ident]) and true or false
 end
@@ -854,21 +854,21 @@ end
 -- Deleting a GROUP indicator sweeps its per-spec disable keys from every
 -- concrete bucket (stale keys are inert but would leak forever).
 function mod.BM2_SweepInhDis(groupKey, ident)
-    local b = Store()
-    if not b then return end
+    local store = Store()
+    if not store then return end
     local k = groupKey .. ":" .. ident
-    for _, specInfo in pairs(b.specs) do
+    for _, specInfo in pairs(store.specs) do
         if specInfo.inhDis then specInfo.inhDis[k] = nil end
     end
 end
 
 -- key (optional) = the EDITED bucket; defaults to the player's active key.
 function mod.BM2_AddIndicator(indType, key)
-    local b = Store()
-    if not b then return nil end
+    local store = Store()
+    if not store then return nil end
     local specKey = key or mod.BM2_SpecKey()
-    SeedSpec(b, specKey)
-    local specInfo = b.specs[specKey]
+    SeedSpec(store, specKey)
+    local specInfo = store.specs[specKey]
     -- Growth must match the position the way the Position dropdown derives it
     -- (TOPLEFT -> RIGHT): CENTER growth centers the run ON the anchor, so a
     -- corner + CENTER hangs half the icons off the frame (preview and live).

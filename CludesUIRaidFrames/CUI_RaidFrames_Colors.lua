@@ -155,9 +155,9 @@ do
             r0, g0, b0 = c0.r, c0.g, c0.b
             r50, g50, b50 = c50.r, c50.g, c50.b
         end
-        local cc = CludesUI.GetClassColor(classToken) or GRAY
+        local classColor = CludesUI.GetClassColor(classToken) or GRAY
         local e = curves[classToken]
-        if not (e and e.r == cc.r and e.g == cc.g and e.b == cc.b) then
+        if not (e and e.r == classColor.r and e.g == classColor.g and e.b == classColor.b) then
             local curve = C_CurveUtil.CreateColorCurve()
             curve:SetType(Enum.LuaCurveType.Linear)
             -- Front-loaded class return: full reactive at 40% health, and the
@@ -168,14 +168,14 @@ do
             curve:AddPoint(
                 0.75,
                 CreateColor(
-                    c50.r + (cc.r - c50.r) * 0.75,
-                    c50.g + (cc.g - c50.g) * 0.75,
-                    c50.b + (cc.b - c50.b) * 0.75,
+                    c50.r + (classColor.r - c50.r) * 0.75,
+                    c50.g + (classColor.g - c50.g) * 0.75,
+                    c50.b + (classColor.b - c50.b) * 0.75,
                     1
                 )
             )
-            curve:AddPoint(1, CreateColor(cc.r, cc.g, cc.b, 1))
-            e = { curve = curve, r = cc.r, g = cc.g, b = cc.b }
+            curve:AddPoint(1, CreateColor(classColor.r, classColor.g, classColor.b, 1))
+            e = { curve = curve, r = classColor.r, g = classColor.g, b = classColor.b }
             curves[classToken] = e
         end
         return e.curve
@@ -515,9 +515,9 @@ local function GetHealthColor(unitToken, s)
         local _, classToken = UnitClass(unitToken)
         -- Secret-safe: a secret classToken would throw on GetClassColor's table index.
         if classToken and not issecretvalue(classToken) then
-            local cc = CludesUI.GetClassColor(classToken)
-            if cc then
-                return cc.r, cc.g, cc.b
+            local classColor = CludesUI.GetClassColor(classToken)
+            if classColor then
+                return classColor.r, classColor.g, classColor.b
             end
         end
         return 0.5, 0.5, 0.5
@@ -692,9 +692,9 @@ function mod.GetBgColor(unitToken, s)
         -- classToken can be secret (out-of-range/uninspectable units) and indexing GetClassColor's
         -- tables with one throws "table index is secret"; fall back to custom bg when secret/nil.
         if classToken and not issecretvalue(classToken) then
-            local cc = CludesUI.GetClassColor(classToken)
-            if cc then
-                return cc.r, cc.g, cc.b, a
+            local classColor = CludesUI.GetClassColor(classToken)
+            if classColor then
+                return classColor.r, classColor.g, classColor.b, a
             end
         end
     end
@@ -712,9 +712,9 @@ local function GetTopNameBarColor(unitToken, s)
     end
     local _, classToken = UnitClass(unitToken)
     if classToken and not issecretvalue(classToken) then
-        local cc = CludesUI.GetClassColor(classToken)
-        if cc then
-            return cc.r, cc.g, cc.b
+        local classColor = CludesUI.GetClassColor(classToken)
+        if classColor then
+            return classColor.r, classColor.g, classColor.b
         end
     end
     return 1, 1, 1
@@ -901,8 +901,8 @@ function mod.RF_PreviewTextColor(mode, custom, classToken, red, green, blue, pTo
             return ar, ag, ab
         end
     elseif mode == "class" then
-        local cc = CludesUI.GetClassColor(classToken)
-        return cc.r, cc.g, cc.b
+        local classColor = CludesUI.GetClassColor(classToken)
+        return classColor.r, classColor.g, classColor.b
     elseif mode == "power" then
         local pc = CludesUI.GetPowerColor(pToken or "MANA")
         if pc then

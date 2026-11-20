@@ -1814,15 +1814,15 @@ CludesUI.AtLogin(function()
                                         if PoolGen(target) ~= targetGen or not target:IsShown() then
                                             return
                                         end
-                                        local eg = CludesUI.CLUDES_GREEN
+                                        local brandGreen = CludesUI.CLUDES_GREEN
                                         if
                                             not editGlow
-                                            or glowR ~= eg.r
-                                            or glowG ~= eg.g
-                                            or glowB ~= eg.b
+                                            or glowR ~= brandGreen.r
+                                            or glowG ~= brandGreen.g
+                                            or glowB ~= brandGreen.b
                                         then
-                                            glowR, glowG, glowB = eg.r, eg.g, eg.b
-                                            editGlow = CludesUI.MakeSettingGlow({ color = eg })
+                                            glowR, glowG, glowB = brandGreen.r, brandGreen.g, brandGreen.b
+                                            editGlow = CludesUI.MakeSettingGlow({ color = brandGreen })
                                         end
                                         editGlow(target)
                                     end)

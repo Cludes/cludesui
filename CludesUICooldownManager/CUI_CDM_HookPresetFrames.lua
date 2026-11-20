@@ -551,8 +551,8 @@ local function ResolvePlaceholderIconSID(spellRef, cdID)
         return hit
     end
 
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    local details = (cdID ~= nil and gci) and gci(cdID) or nil
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    local details = (cdID ~= nil and getCdInfo) and getCdInfo(cdID) or nil
     if details then
         hit = TryID(details.spellID) or TryID(details.overrideSpellID)
         if hit then

@@ -881,8 +881,8 @@ function BVI.Secret(details)
     return false
 end
 local function BuffActiveViaCooldownViewer(spellId, wantName)
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not gci then
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    if not getCdInfo then
         return false
     end
     for vi = 1, #_cuiBuffViewers do
@@ -904,7 +904,7 @@ local function BuffActiveViaCooldownViewer(spellId, wantName)
                         local cdID = widget.cooldownID
                         details = nil
                         if type(cdID) == "number" and not (issecretvalue and issecretvalue(cdID)) then
-                            details = gci(cdID)
+                            details = getCdInfo(cdID)
                             if details and BVI.Secret(details) then
                                 details = nil
                             end

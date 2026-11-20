@@ -231,10 +231,10 @@ CludesUI.AtOptionsLogin(function()
             editOverlayFrame._bg = backdrop
 
             if CludesUI and CludesUI.MakeBorder then
-                local eg = CludesUI.CLUDES_GREEN
+                local brandGreen = CludesUI.CLUDES_GREEN
                 local ar, ag, ab = 1, 1, 1
-                if eg then
-                    ar, ag, ab = eg.r, eg.g, eg.b
+                if brandGreen then
+                    ar, ag, ab = brandGreen.r, brandGreen.g, brandGreen.b
                 end
                 editOverlayFrame._border =
                     CludesUI.MakeBorder(editOverlayFrame, ar, ag, ab, 0.6, CludesUI.PanelPP)

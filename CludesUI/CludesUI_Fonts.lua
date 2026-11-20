@@ -479,8 +479,8 @@ function CludesUI.IsSlugDisabled()
         return c.slug
     end
 
-    local f = CludesUI.GetFontsDB()
-    local val = f and f.neverShowSlug
+    local fontsDB = CludesUI.GetFontsDB()
+    local val = fontsDB and fontsDB.neverShowSlug
     if val == nil then
         val = CludesUIDB and CludesUIDB.neverShowSlug
     end
@@ -1187,8 +1187,8 @@ function CludesUI.GetIconTextOutlineFlag(moduleKey)
     end
 
     -- Per-profile (rides profile export); the account-global table is the read-time fallback.
-    local f = CludesUI.GetFontsDB()
-    local t = (f and f.outlineIconText) or (CludesUIDB and CludesUIDB.outlineIconText)
+    local fontsDB = CludesUI.GetFontsDB()
+    local t = (fontsDB and fontsDB.outlineIconText) or (CludesUIDB and CludesUIDB.outlineIconText)
     local outlineFlag
     if t and t[moduleKey] == false then
         -- Follows the outline mode, which is already slug-gated at the source.

@@ -84,9 +84,9 @@ end
 -- A health, power or class resource bar's frame scale: the group's while
 -- the setting is on under Classic WoW UI, the bar's own otherwise.
 function mod.ERB_BarFrameK(conf)
-    local p = ERB.db and ERB.db.profile
-    if p and mod.ERB_GroupSettingOn(p) then
-        return mod.ERB_ClassicFrameK(mod.ERB_GroupLeadCfg(p))
+    local profile = ERB.db and ERB.db.profile
+    if profile and mod.ERB_GroupSettingOn(profile) then
+        return mod.ERB_ClassicFrameK(mod.ERB_GroupLeadCfg(profile))
     end
     return mod.ERB_ClassicFrameK(conf)
 end
@@ -328,25 +328,25 @@ function mod.ERB_GroupEval()
     end
     mod._erbGrpLastSig = sig
     mod._erbGrpGeomDirty = nil
-    local p = ERB.db and ERB.db.profile
-    if not (p and mainFrame) then
+    local profile = ERB.db and ERB.db.profile
+    if not (profile and mainFrame) then
         mod.ERB_GroupRelease(sig)
         return
     end
-    local g = p.general or DEFAULTS.profile.general
+    local g = profile.general or DEFAULTS.profile.general
     local m, lo, hi, num = mod._erbGrpMembers, mod._erbGrpLo, mod._erbGrpHi, 0
     local vertical
     for index = 1, 3 do
         local frame, val
         if index == 1 and mod._erbGrpH then
             frame = health
-            val = IsVerticalOrientation(p.health.orientation or g.orientation)
+            val = IsVerticalOrientation(profile.health.orientation or g.orientation)
         elseif index == 2 and mod._erbGrpP then
             frame = primaryBar
-            val = IsVerticalOrientation(p.primary.orientation or g.orientation)
+            val = IsVerticalOrientation(profile.primary.orientation or g.orientation)
         elseif index == 3 and mod._erbGrpS then
             frame = secondaryFrame
-            val = (p.secondary.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL"
+            val = (profile.secondary.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL"
         end
         if frame then
             val = val and true or false

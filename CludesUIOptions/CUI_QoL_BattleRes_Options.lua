@@ -21,8 +21,8 @@ local function DB()
 end
 
 local function P()
-    local d = DB()
-    return d and d.profile and d.profile.battleRes
+    local profile = DB()
+    return profile and profile.profile and profile.profile.battleRes
 end
 
 local function Cfg(key, fallback)

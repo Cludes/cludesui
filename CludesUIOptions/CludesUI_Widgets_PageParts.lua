@@ -29,8 +29,8 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -------------------------------------------------------------------------------
 function CludesUI.BuildUnlockPlaceholder(options)
     local hostFrame = options.parent
-    local eg = CludesUI.CLUDES_GREEN
-    local ar, ag, ab = eg.r, eg.g, eg.b
+    local brandGreen = CludesUI.CLUDES_GREEN
+    local ar, ag, ab = brandGreen.r, brandGreen.g, brandGreen.b
 
     local f = CreateFrame("Button", nil, hostFrame)
     f:SetAllPoints(hostFrame)
@@ -1112,9 +1112,9 @@ function CludesUI.BuildActivationOverlay(outerRoot, options)
     local labelFS = CludesUI.MakeFont(button, 12, nil, 1, 1, 1, 0.85)
     labelFS:SetPoint("CENTER")
     labelFS:SetText(options.buttonLabel)
-    local eg = CludesUI.CLUDES_GREEN
+    local brandGreen = CludesUI.CLUDES_GREEN
     button:SetScript("OnEnter", function()
-        brd:SetColor(eg.r, eg.g, eg.b, 0.9)
+        brd:SetColor(brandGreen.r, brandGreen.g, brandGreen.b, 0.9)
     end)
     button:SetScript("OnLeave", function()
         brd:SetColor(1, 1, 1, 0.22)

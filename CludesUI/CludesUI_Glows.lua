@@ -270,14 +270,14 @@ local function _AntsResolveSize(self, glowData)
     -- snap below to w = h = 0 and turns the k divide into N/0. Every phase
     -- endpoint then goes non-finite and SetTexCoord rejects it on every driver
     -- tick. Stay unresolved instead and retry once the scale is real.
-    local es = self:GetEffectiveScale()
+    local effScale = self:GetEffectiveScale()
     -- Same subtree class the GetSize taint-strip above exists for: a secret
     -- effective scale would hard-error on the comparison below, so take the
     -- retry path instead. No-op for normal values.
-    if not es or (issecretvalue and issecretvalue(es)) or es < 0.1 then
+    if not effScale or (issecretvalue and issecretvalue(effScale)) or effScale < 0.1 then
         return false
     end
-    local onePixel = Pix.perfect / es
+    local onePixel = Pix.perfect / effScale
     wid = floor(wid / onePixel + 0.5) * onePixel
     hgt = floor(hgt / onePixel + 0.5) * onePixel
     -- A genuinely sub-pixel wrapper passes the size test above but snaps to 0;

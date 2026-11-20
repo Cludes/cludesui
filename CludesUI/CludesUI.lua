@@ -2734,12 +2734,12 @@ do
         if statPick[kind] then
             return statPick[kind]
         end
-        local _, cls = UnitClass("player")
-        if not issecretvalue(cls) then
-            if FOREVER_CASTER[cls] then
+        local _, classTok = UnitClass("player")
+        if not issecretvalue(classTok) then
+            if FOREVER_CASTER[classTok] then
                 return "spell"
             end
-            if cls == "HUNTER" and (kind == "crit" or foreverRangedHaste) then
+            if classTok == "HUNTER" and (kind == "crit" or foreverRangedHaste) then
                 return "ranged"
             end
         end
@@ -3254,8 +3254,8 @@ do
     -- For non-Shamans: random owned toy HS, fallback to item 6948
     -- noAstralRecall: resolve as a non-Shaman (Quickdraw's Random Hearthstone).
     function CludesUI.ResolveHearthSlot(noAstralRecall)
-        local _, cls = UnitClass("player")
-        local isShaman = not noAstralRecall and cls == "SHAMAN" and IsPlayerSpell(SHAMAN_ASTRAL_RECALL)
+        local _, classTok = UnitClass("player")
+        local isShaman = not noAstralRecall and classTok == "SHAMAN" and IsPlayerSpell(SHAMAN_ASTRAL_RECALL)
 
         if isShaman and InProtectedInstance() then
             local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(SHAMAN_ASTRAL_RECALL)

@@ -280,10 +280,10 @@ function ABAR:RefreshAllCustomFade(animate, force)
         return
     end
     for _, details in ipairs(ALL_BARS) do
-        local s = self.db.profile.bars[details.key]
+        local barCfg = self.db.profile.bars[details.key]
         -- Only bars with a condition checked; force repaints even a bar whose
         -- last target still stands, never a native bar.
-        if EAB_VTABLE.Hover.AdvancedFadeEnabled(s) then
+        if EAB_VTABLE.Hover.AdvancedFadeEnabled(barCfg) then
             EAB_VTABLE.Hover.RefreshCustomFadeBar(details.key, animate, force and true or false)
         end
     end
@@ -333,14 +333,14 @@ end
 -- hooks, a bar left with none runs the one-time alpha handoff above.
 function ABAR:RefreshAdvancedFadeEnabled(changed)
     if type(changed) == "string" then
-        local s = self.db.profile.bars[changed]
-        if s and not EAB_VTABLE.Hover.AdvancedFadeEnabled(s) then
+        local barCfg = self.db.profile.bars[changed]
+        if barCfg and not EAB_VTABLE.Hover.AdvancedFadeEnabled(barCfg) then
             EAB_VTABLE.Hover.ReleaseAdvancedFadeBar(changed)
         end
     elseif type(changed) == "table" then
         for _, barId in ipairs(changed) do
-            local s = self.db.profile.bars[barId]
-            if s and not EAB_VTABLE.Hover.AdvancedFadeEnabled(s) then
+            local barCfg = self.db.profile.bars[barId]
+            if barCfg and not EAB_VTABLE.Hover.AdvancedFadeEnabled(barCfg) then
                 EAB_VTABLE.Hover.ReleaseAdvancedFadeBar(barId)
             end
         end
@@ -636,8 +636,8 @@ end
 function ABAR:RefreshMouseover(onlyHoverGated)
     for _, details in ipairs(ALL_BARS) do
         local key = details.key
-        local s = self.db.profile.bars[key]
-        if s and (not onlyHoverGated or (s.mouseoverEnabled and s.visibilityMatch == "any")) then
+        local barCfg = self.db.profile.bars[key]
+        if barCfg and (not onlyHoverGated or (barCfg.mouseoverEnabled and barCfg.visibilityMatch == "any")) then
             local widget = BarAlphaFrame(key, details)
             if widget then
                 if details.noManagedVisibility then
@@ -645,7 +645,7 @@ function ABAR:RefreshMouseover(onlyHoverGated)
                     -- controls its visibility, so never fade or alpha-hide it --
                     -- force full opacity regardless of stale mouseover settings.
                     StopFade(widget, 1)
-                elseif s.mouseoverEnabled then
+                elseif barCfg.mouseoverEnabled then
                     if details.isDataBar then
                         AttachDataBarHoverHooks(key)
                     end
@@ -660,7 +660,7 @@ function ABAR:RefreshMouseover(onlyHoverGated)
                     -- changes); it now also runs on combat/group/mount edges, where
                     -- repainting would yank a hovered bar invisible mid-hover.
                     if not (status and status.isHovered) then
-                        local resting = EAB_VTABLE.Hover.RestingAlpha(key, s)
+                        local resting = EAB_VTABLE.Hover.RestingAlpha(key, barCfg)
                         StopFade(widget, resting)
                         if status then
                             status.fadeDir = (resting == 0) and "out" or nil
@@ -670,13 +670,13 @@ function ABAR:RefreshMouseover(onlyHoverGated)
                         end
                     end
                 else
-                    StopFade(widget, s.mouseoverAlpha or 1)
+                    StopFade(widget, barCfg.mouseoverAlpha or 1)
                     local status = hoverStates[key]
                     if status then
                         status.fadeDir = nil
                     end
                     if key == "MainBar" then
-                        SyncPagingAlpha(s.mouseoverAlpha or 1)
+                        SyncPagingAlpha(barCfg.mouseoverAlpha or 1)
                     end
                 end
             end

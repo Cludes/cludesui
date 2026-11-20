@@ -178,8 +178,8 @@ local function AddCooldownInfoIDs(include, conf)
         AddCleanID(include, ns.GetCanonicalSpellIDForFrame(widget))
     end
     local cdID = widget.cooldownID
-    local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    local details = cdID and gci and gci(cdID)
+    local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    local details = cdID and getCdInfo and getCdInfo(cdID)
     if not details then
         return
     end

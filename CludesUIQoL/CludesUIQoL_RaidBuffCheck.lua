@@ -579,8 +579,8 @@ end
 --  Roster and refresh: a state per unit, then Render draws the shown subset
 -------------------------------------------------------------------------------
 local function UnitClassToken(unitToken)
-    local _, cls = UnitClass(unitToken)
-    return PlainString(cls)
+    local _, classTok = UnitClass(unitToken)
+    return PlainString(classTok)
 end
 
 -- Alphabetical by name; a secret name sorts last, by unit token.

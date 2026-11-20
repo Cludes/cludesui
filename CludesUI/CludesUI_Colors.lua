@@ -385,11 +385,11 @@ CludesUI._dmCache = { gen = -1 }
 
 function CludesUI._RebuildDarkModeCache()
     local c = CludesUI._dmCache
-    local d = CludesUI.GetDarkModeDB()
+    local darkDB = CludesUI.GetDarkModeDB()
     local def = CludesUI.DEFAULT_DARK_MODE
     c.fr, c.fg, c.fb, c.fa =
-        d.fillR or def.fillR, d.fillG or def.fillG, d.fillB or def.fillB, d.fillA or def.fillA
-    c.br, c.bg, c.bb, c.ba = d.bgR or def.bgR, d.bgG or def.bgG, d.bgB or def.bgB, d.bgA or def.bgA
+        darkDB.fillR or def.fillR, darkDB.fillG or def.fillG, darkDB.fillB or def.fillB, darkDB.fillA or def.fillA
+    c.br, c.bg, c.bb, c.ba = darkDB.bgR or def.bgR, darkDB.bgG or def.bgG, darkDB.bgB or def.bgB, darkDB.bgA or def.bgA
     c.gen = CludesUI._dmGen
 end
 
@@ -832,12 +832,12 @@ function CludesUI.SyncUFColors()
     end
     if colors.class then
         for classToken, _ in pairs(CLASS_COLOR_MAP) do
-            local cc = CludesUI.GetClassColor(classToken)
+            local classColor = CludesUI.GetClassColor(classToken)
             local record = colors.class[classToken]
             if record and record.SetRGBA then
-                record:SetRGBA(cc.r, cc.g, cc.b, 1)
+                record:SetRGBA(classColor.r, classColor.g, classColor.b, 1)
             else
-                colors.class[classToken] = CreateColor(cc.r, cc.g, cc.b, 1)
+                colors.class[classToken] = CreateColor(classColor.r, classColor.g, classColor.b, 1)
             end
         end
     end
